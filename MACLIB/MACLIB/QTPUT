@@ -1,0 +1,17 @@
+         MACRO                                                          00000010
+&LABEL   QTPUT &MSG                                                     00000020
+.********************************************************************** 00000030
+.*                                                                      00000040
+.*       QUICK FORM OF TPUT TERMINAL INTERFACE ROUTINE(TPUT).           00000050
+.*                                                                      00000060
+.*       NOTE THAT THE MESSAGE MUST BE ENCLOSED WITHIN QUOTES.          00000070
+.*                                                                      00000080
+.********************************************************************** 00000090
+&LABEL   DS    0H                                                       00000100
+         TPUT  MSG&SYSNDX,LEN&SYSNDX SEND USER MESSAGE TO TERMINAL      00000110
+         B     NOP&SYSNDX       BYPASS CONSTANTS                        00000120
+MSG&SYSNDX DC  C&MSG            MSG TEXT                                00000130
+LEN&SYSNDX EQU *-MSG&SYSNDX     MSG SIZE                                00000140
+         DS    0H               ALIGNMENT                               00000150
+NOP&SYSNDX EQU *                                                        00000160
+         MEND                                                           00000170

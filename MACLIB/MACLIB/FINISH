@@ -1,0 +1,210 @@
+         MACRO ,                                                        00000100
+&LABEL   FINISH &RC=0,                    Return code                  C00000202
+               &LV=,                      Level to freemain            C00000302
+               &RR=,                      Return registers             C00000402
+               &FMTYPE=R,                 FREEMAIN type                C00000502
+               &RENT=NO,                  Re-entrant?                  C00000602
+               &GPR=YES,                  General Purpose registers?   C00000702
+               &SP=0                      Sub-pool to freemain          00000800
+.*                                                                   *  00000900
+.*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*  00001000
+.*                                                                   *  00001100
+.*  RC={LITERAL�(REG)}                                               *  00001200
+.*       RETURN CODE:  SPECIFY LITERAL 0 - 4095 OR SINGLE REGISTER   *  00001300
+.*       (2) - (12) OR (15), TO BE RETURNED TO CALLER IN R15.        *  00001400
+.*       DEFAULT RETURN CODE IS ZERO.                                *  00001500
+.*                                                                   *  00001600
+.*  RR={(REG,...,REGN)}                                              *  00001700
+.*       RETURN REGISTER:  CONTENTS OF REGISTERS IN LIST WILL BE     *  00001800
+.*       RETURNED TO CALLER (I.E., CALLERS REGISTERS CORRESPONDING   *  00001903
+.*       TO REGISTERS SPECIFIED IN LIST WILL NOT BE RESTORED).       *  00002000
+.*       SPECIFY REGISTERS 2 - 12 OR 0.  CAPABILITY TO RETURN R0 IS  *  00002100
+.*       PROVIDED FOR FORTRAN FUNCTION COMPATIBILITY.  IT SHOULD BE  *  00002200
+.*       NOTED THAT IF RR=(0) AND RENT=YES ARE BOTH SELECTED, THEN   *  00002300
+.*       THE CONTENTS OF R0 MUST BE STORED IN, AND SUBSEQUENTLY      *  00002400
+.*       RESTORED FROM, THE CALLERS SAVE AREA, SINCE THE FREEMAIN    *  00002500
+.*       SVC ALTERS THE CONTENTS OF R0.                              *  00002600
+.*                                                                   *  00002700
+.*  LV={LITERAL}                                                     *  00002800
+.*       LITERAL VALUE:  IF RENT=YES IS CODED, THE LITERAL VALUE IS  *  00002900
+.*       THE SIZE OF THE AREA TO BE FREED BY THE FREEMAIN SVC.       *  00003000
+.*       PARAMETER LV IS NOT REQUIRED IF ENTER MACRO HAS             *  00003101
+.*       PREVIOUSLY BEEN USED.  IT IS OBTAINED THROUGH GLOBAL        *  00003200
+.*       VARIABLE &VIRT.  IF RENT=NO IS CODED OR ALLOWED TO DEFAULT, *  00003300
+.*       THE LV PARAMETER IS IGNORED.                                *  00003400
+.*                                                                   *  00003500
+.*  RENT={YES�NO}                                                    *  00003600
+.*       YES:  GENERATE FREEMAIN TO FREE STORAGE ACQUIRED BY ENTER   *  00003701
+.*       MACRO.  IF THE LEAVE MACRO IS BEING USED TO FREE AN AREA    *  00003800
+.*       THAT WAS NOT ACQUIRED BY THE ENTER MACRO, THEN THE LV       *  00003901
+.*       PARAMETER MUST ALSO BE SPECIFIED.                           *  00004000
+.*       NO:   NO FREEMAIN SVC REQUIRED.                             *  00004100
+.*                                                                   *  00004200
+.*  GPR={YES�NO}                                                     *  00004300
+.*       YES:  INVOKE REQUATE TO EQUATE REGISTERS                    *  00004400
+.*       NO:   DON'T INVOKE REQUATE TO EQUATE REGISTERS              *  00004500
+.*                                                                   *  00004600
+.*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*  00004700
+.*                                                                   *  00004800
+.*  EXAMPLES:                                                        *  00004900
+.*       LEAVE RC=32,RR=(9,4),LV=300,RENT=YES                        *  00005001
+.*       LEAVE RR=(0),RENT=YES                                       *  00005101
+.*       LEAVE RC=(5),RR=(6)                                         *  00005201
+.*       LEAVE                                                       *  00005301
+.*                                                                   *  00005400
+.*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*  00005500
+.*                                                                      00005600
+.*  DEFINE GLOBAL AND LOCAL SET SYMBOLS                                 00005700
+.*                                                                      00005800
+         GBLC  &VIRT                                                    00005900
+         GBLB  &RE,&REGS,&ENTER31                                       00006000
+.*                                                                      00006100
+         LCLA  &R1,&R2,&RRT,&RICT                                       00006200
+         LCLB  &ALV,&CLV,&RT(16),&RCR,&CC15                             00006300
+         LCLC  &DISP,&CC,&CCT,&NDX,&LAB                                 00006400
+.*                                                                      00006500
+.** REGISTER EQUATES                                                    00006600
+.*                                                                      00006700
+         AIF   ('&GPR' EQ 'NO').L000                                    00006800
+         AIF   ('&GPR' EQ 'YES').REQ00                                  00006900
+         MNOTE ,'GPR=&GPR. IS INVALID, YES ASSUMED'                     00007000
+.REQ00   ANOP  ,                                                        00007100
+         AIF   (&REGS).L000                                             00007200
+         IEZREGS                                                        00007301
+.L000    ANOP                                                           00007400
+.*                                                                      00007500
+.*  SET CONSTANTS AND LOGICAL SWITCHES                                  00007600
+.*                                                                      00007700
+&RCR     SETB  ('&RC'(1,1) EQ '(')           SET RETURN CODE TYPE FLAG  00007800
+&RRT     SETA  N'&RR                         SET NUMBER OF RETRN REGS   00007900
+&RICT    SETA  1                             SET RETURN REG COUNTER     00008000
+&ALV     SETB  (('&LV' GE '72') AND ('&LV' LE '4096'))   SET LV FLAG    00008100
+&CLV     SETB  ('&LV' LE '0')                SET LV FLAG                00008200
+&DISP    SETC  '20242832364044485256606468081216' STANDARD S.A. DISPLS  00008300
+.*                                                                      00008400
+.*  SET RT FLAGS FOR REGISTERS INCLUDED IN RR PARAMETER                 00008500
+.*                                                                      00008600
+         AIF   (&RRT EQ 0).L002                                         00008700
+.L001    ANOP                                                           00008800
+&R1      SETA  &RR(&RICT)                                               00008900
+         AIF   (NOT &RT(&R1+1)).L001A        CHECK REDUNDANCY           00009000
+         MNOTE 8,'REG &R1 REDUNDANTLY SPECIFIED - GEN SUPPRESSED'       00009100
+         MEXIT                                                          00009200
+.L001A   ANOP                                                           00009300
+&RT(&R1+1) SETB  1                           SET REG USE BIT            00009400
+         AIF   (((&R1 GE 2) AND (&R1 LE 12)) OR (&R1 EQ 0)).L001B       00009500
+         MNOTE 8,'RETURN REG &R1 NOT PERMITTED - GEN SUPPRESSED'        00009600
+         MEXIT                                                          00009700
+.L001B   ANOP                                                           00009800
+&RICT    SETA  &RICT+1                                                  00009900
+         AIF   (&RICT LE &RRT).L001                                     00010000
+.*                                                                      00010100
+.*  CHAIN BACK TO CALLERS SAVE AREA                                     00010200
+.*                                                                      00010300
+.L002    ANOP                                                           00010400
+&LAB     SETC  '&LABEL'                                                 00010500
+         AIF   ((NOT &RE) AND ('&RENT' EQ 'NO')).L002C                  00010600
+&LAB     LR    R1,R13                   OUR RSA ADDR                    00010700
+&LAB     SETC  ''                                                       00010800
+.L002C   ANOP                                                           00010900
+&LAB     L     R13,4(,R13)                Caller's RSA address          00011000
+.*                                                                      00011100
+.*  INITIALIZE RETURN CODE REGISTER (R15)                               00011200
+.*                                                                      00011300
+         AIF   (&RCR).L002B                                             00011400
+&CCT     SETC  'A'                         SET RETURN CODE TYPE         00011500
+         AIF   ((&RC GE 0) AND (&RC LE 4095)).L002A                     00011600
+         MNOTE 4,'INVALID RETURN CODE - USING 4095'                     00011700
+&CC      SETC  '4095'                      SET RETURN CODE LITERAL      00011800
+         AGO   .L003                                                    00011900
+.L002A   ANOP                                                           00012000
+&CC      SETC  '&RC'                       SET RETURN CODE LITERAL      00012100
+         AGO   .L003                                                    00012200
+.L002B   ANOP                                                           00012300
+&CCT     SETC  'R'                         SET RETURN CODE TYPE         00012400
+&CC      SETC  'R'.'&RC'(2,K'&RC-2)        SET RETURN CODE REGISTER     00012500
+&CC15    SETB  ('&CC' EQ 'R15')            SET CC15 FLAG                00012600
+         AIF   ((('&CC' GE 'R2') AND ('&CC' LE 'R12')) OR (&CC15)).L003 00012700
+         MNOTE 4,'INVALID RETURN CODE REGISTER - USING LITERAL 4095'    00012800
+&CCT     SETC  'A'                         SET RETURN CODE TYPE         00012900
+&CC      SETC  '4095'                      SET RETURN CODE LITERAL      00013000
+.*                                                                      00013100
+.*  ISSUE FREEMAIN TO FREE OWN SAVE AREA (IF RENT=YES OR &RE ON)        00013200
+.*                                                                      00013300
+.L003    ANOP                                                           00013400
+         AIF   ((NOT &RE) AND ('&RENT' EQ 'NO')).L004                   00013500
+         AIF   (NOT &RT(1)).L003A          IF R0 NOT AN RR PARM, CONT.  00013600
+*    ** WARNING **                                                      00013700
+*    RR=(0) WITH RENT=YES NECESSITATES MODIFYING THE CALLERS SAVE       00013800
+*    AREA (R0 SLOT) BECAUSE THE FREEMAIN SVC ALTERS R0.                 00013900
+         ST    R0,20(,R13)        ** SAVE R0 IN CALLER'S RSA **         00014000
+.L003A   ANOP                                                           00014100
+         AIF   (NOT &CC15).L003A1           IF NOT RC=(15), CONTINUE    00014200
+*    ** WARNING **                                                      00014300
+*    RC=(15) WITH RENT=YES NECESSITATES MODIFYING THE CALLERS SAVE      00014400
+*    AREA (R15 SLOT) BECAUSE THE FREEMAIN SVC ALTERS R15.               00014500
+         ST    R15,16(,R13)       ** SAVE R15 IN CALLER'S RSA **        00014600
+&CCT     SETC  ''                    * SET UP                           00014700
+&CC      SETC  '16(,R13)'            *   TO FORCE                       00014800
+&CC15    SETB  0                     *      LOAD ON R15                 00014900
+.L003A1  ANOP                                                           00015000
+         AIF   ('&VIRT' NE '0').L003C      USE VIRT IF NOT ZERO         00015100
+         AIF   (&ALV OR &CLV).L003B        ELSE USE LV IF VALID         00015200
+         MNOTE 8,'LV SPECIFIED IS INVALID - GEN SUPPRESSED'             00015300
+         MEXIT                                                          00015400
+.L003B   ANOP                                                           00015500
+&VIRT    SETC  '&LV'                                                    00015600
+.L003C   ANOP                                                           00015700
+         MNOTE '         FREEMAIN &FMTYPE,LV=&VIRT,A=(1),SP=&SP'        00015800
+         FREEMAIN &FMTYPE,LV=&VIRT,A=(1),SP=&SP                         00015900
+         AIF   (NOT &RT(1)).L004        IF R0 NOT AN RR PARM, CONT.     00016000
+&RT(1)   SETB  0                        TURN OFF RETURN REG FLAG FOR R0 00016100
+.*                                                                      00016200
+.*  RESTORE 14, LOAD 15                                                 00016300
+.*                                                                      00016400
+.L004    ANOP                                                           00016500
+         AIF   (&CC15).L004A            NO NEED TO LOAD R15 IF CC15 SET 00016600
+         L&CCT R15,&CC                    Return code                   00016700
+.L004A   ANOP                                                           00016800
+         L     R14,12(,R13)               Return address                00016900
+         AIF   (&RRT GT 0).L005                                         00017000
+         LM    R0,R12,20(R13)             Restore caller's registers    00017100
+         AGO   .L006                                                    00017200
+.*                                                                      00017300
+.*  RESTORE REGS NOT INCLUDED IN RR PARAMETER                           00017400
+.*                                                                      00017500
+.L005    ANOP                                                           00017600
+&RICT    SETA  0                        SET LOOP CONTROL                00017700
+.L005A   ANOP                                                           00017800
+&R1      SETA  &RICT                                                    00017900
+&RICT    SETA  &RICT+1                  INCREMENT LOOP CONTROL          00018000
+         AIF   ((&RT(&R1+1)) AND (&R1 LE 12)).L005A                     00018100
+         AIF   ((NOT &RT(&R1+2)) AND (&R1 LE 12)).L005B                 00018200
+         AIF   (NOT (&R1 LE 12)).L006                                   00018300
+&CC      SETC  '&DISP'((&R1*2+1),2)                                     00018400
+         L     R&R1.,&CC.(,R13)                                         00018500
+         AGO   .L005A                                                   00018600
+.L005B   ANOP                                                           00018700
+&R2      SETA  &RICT                                                    00018800
+&RICT    SETA  &RICT+1                  INCREMENT LOOP CONTROL          00018900
+         AIF   ((NOT &RT(&R2+1)) AND (&R2 LE 12)).L005B                 00019000
+&R2      SETA  &R2-1                                                    00019100
+&CC      SETC  '&DISP'((&R1*2+1),2)                                     00019200
+         AIF   (&R1 EQ &R2).L005C                                       00019300
+         LM    R&R1.,R&R2.,&CC.(R13)    RESTORE REGS                    00019400
+         AGO   .L005D                                                   00019500
+.L005C   ANOP                                                           00019600
+         L     R&R1.,&CC.(,R13)                                         00019700
+.L005D   ANOP                                                           00019800
+         AIF   (&RICT LE 12).L005A                                      00019900
+.*                                                                      00020000
+.*  COMMON END FOR LEAVE MACRO - GENERATE RETURN INSTRUCTION            00020101
+.*                                                                      00020200
+.L006    ANOP                                                           00020300
+         AIF   (&ENTER31).L007                                          00020400
+         BR    R14                                                      00020501
+.*       BSM   0,R14                      Return to caller              00020601
+         MEXIT ,                                                        00020700
+.L007    ANOP  ,                                                        00020800
+         BSM   0,R14                      Return to caller              00020900
+         MEND                                                           00021000

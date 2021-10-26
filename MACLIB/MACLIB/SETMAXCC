@@ -1,0 +1,16 @@
+         MACRO                                                          00010000
+&LABEL   SETMAXCC &CODE                                                 00020000
+         AIF   ('&LABEL' EQ '').NOLAB                                   00030000
+&LABEL   DS    0H                     , Set lastcc and maxcc            00040000
+.NOLAB   ANOP                                                           00050000
+         MVC   LASTCC,=F'&CODE'       , set LASTCC                      00060000
+*        IF    (CLC,LASTCC,GT,MAXCC)  , is LASTCC greater than MAXCC    00070000
+         IF    (CLC,LASTCC,GT,MAXCC)  , is LASTCC greater than MAXCC    00080000
+         MVC   MAXCC,LASTCC           , set MAXCC                       00090000
+         ENDIF                                                          00100000
+*        IF    (CLC,LASTCC,GT,MEMCC)  , is LASTCC greater than MEMCC    00110000
+         IF    (CLC,LASTCC,GT,MEMCC)  , is LASTCC greater than MAXCC    00120000
+         MVC   MEMCC,LASTCC           , update MEMCC                    00130000
+         ENDIF                                                          00140000
+         MEXIT                                                          00150000
+         MEND                                                           00160000

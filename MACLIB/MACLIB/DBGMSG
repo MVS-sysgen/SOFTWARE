@@ -1,0 +1,14 @@
+         MACRO                                                          00010000
+&LABEL   DBGMSG &P1,&P2               , create debug message            00020000
+         GBLC  &DEBUG                 , DEBUG controller                00030000
+         AIF   ('&LABEL' EQ '').NOLAB                                   00040000
+&LABEL   DS    0H                     , send debug message              00050000
+.NOLAB   ANOP                                                           00060000
+         AIF   ('&DEBUG' EQ 'NO').NODEBUG                               00070000
+         MSGPUT MSG15I                , insert message body             00080000
+         MVC   MSG15I1,&P1            , insert DDNAME to message        00090000
+         MVC   MSG15I2,&P2            , insert function message         00100000
+         BAL   R14,PUTMSG             , send message                    00110000
+.NODEBUG ANOP                                                           00120000
+         MEXIT                                                          00130000
+         MEND                                                           00140000

@@ -1,0 +1,92 @@
+         MACRO                                                          00000010
+&SYM     SYSPRINT &HEADER1=,&HEADER2=,&LINES=56,&DDNAME=SYSPRINT,      X00000020
+               &LRECL=121                                               00000030
+         AIF   (K'&SYM EQ 0).NOSYM                                      00000040
+         AIF   (K'&SYM GT 5).ERRSYM                                     00000050
+         AIF   (K'&DDNAME GT 8).DDNERR                                  00000060
+         AIF   ('&LRECL' GT '133').ERRLEN                               00000070
+         MNOTE *,'DCB = DDNAME=&DDNAME,LRECL=&LRECL,LINES=&LINES'       00000080
+         AIF   ('&HEADER1' EQ '').HD1                                   00000090
+         MNOTE *,'    &HEADER1 IS FIRST HEADER LINE'                    00000100
+         AIF   ('&HEADER2' EQ '').HD2                                   00000110
+         MNOTE *,'    &HEADER2 IS SECOND HEADER LINE'                   00000120
+.HD2     MNOTE *,'    THE FIRST BYTE OF ANY BUFFER SPECIFIED WILL'      00000130
+         MNOTE *,'    BE USED BY THIS ROUTINE FOR ASA CHARACTERS'       00000140
+         MNOTE *,'    AND UNPREDICTABLE RESULTS MAY OCCUR IF USED.'     00000150
+         CNOP  0,4                                                      00000160
+&SYM     NOP   DRC&SYSNDX.C .          NOP BRANCH SET AFTER OPEN        00000170
+         NOP   DRC&SYSNDX.D .          NOP BRANCH SET AFTER OPEN        00000180
+         OI    &SYM.+5,C'0' .          SET NOP TO BRANCH                00000190
+         OI    &SYM.+1,C'0' .          SET FIRST NOP TO BRANCH          00000200
+         STM   14,2,DRC&SYSNDX.B .     SAVE USERS REGS                  00000210
+         LA    1,DRC&SYSNDX.A .        LOAD ADDRESS OF OPEN LIST        00000220
+         SVC   19 .                    ISSUE OPEN SVC                   00000230
+         AIF   ('&HEADER1' EQ '').HD4                                   00000240
+DRC&SYSNDX.F MVI &HEADER1,C'1' .       SET CARRIAGE CONTROL             00000250
+         PUT   &SYM.DCB,&HEADER1                                        00000260
+         AIF   ('&HEADER2' EQ '').HD5                                   00000270
+         MVI   &HEADER2,C'-' .         SET TRIPLE SPACE AFTER SKIP      00000280
+         PUT   &SYM.DCB,&HEADER2                                        00000290
+         AGO   .HD5                                                     00000300
+.HD4     L     15,DRC&SYSNDX.B+12 .    GET POINTER TO RECORD            00000310
+DRC&SYSNDX.E MVI 0(15),C'1' .            SKIP TO ONE FIRST TIME         00000320
+         LA    2,&LINES.+1 .           GET LINE COUNT                   00000330
+         AGO   .HD55                                                    00000340
+.HD5     L     15,DRC&SYSNDX.B+12 .    PICK UP DATA POINTER             00000350
+         MVI   0(15),C'0' .            SET DOUBLE SPACE AFTER SK97      00000360
+         LA    2,&LINES.+1 .           PICK UP LINE COUNT               00000370
+.HD55    ANOP                                                           00000380
+DRC&SYSNDX.G BCT 2,DRC&SYSNDX.H .      BR TO PRINT FOR NUMBER OF LINES  00000390
+         AIF   ('&HEADER1' NE '').HD6                                   00000400
+         B     DRC&SYSNDX.E .          START NEW PAGE                   00000410
+         AGO   .P4                                                      00000420
+.HD6     B     DRC&SYSNDX.F .          GO TO DO SKIP AND PRINT HDR      00000430
+.P4      ANOP                                                           00000440
+DRC&SYSNDX.H PUT &SYM.DCB,(15)                                          00000450
+         ST    2,DRC&SYSNDX.J .        SAVE THE LINE COUNT              00000460
+         LM    14,2,DRC&SYSNDX.B .     RESTORE USERS REGS               00000470
+         MVI   0(1),C' ' .             PLACE BLANK INTO CARRIAGE CONTR  00000480
+         MVC   1(&LRECL.-1,1),0(1) .   CLEAR THE BUFFER                 00000490
+         BR    14 .                    RETURN                           00000500
+ SPACE                                                                  00000510
+DRC&SYSNDX.D STM 14,2,DRC&SYSNDX.B .   SAVE REGS ALWAYS                 00000520
+         AIF   ('&HEADER1' EQ '').P6                                    00000530
+         B     DRC&SYSNDX.F .          GO TO HEADER ROUTINE             00000540
+         AGO   .P5                                                      00000550
+.P6     ANOP                                                            00000560
+         L     15,DRC&SYSNDX.B+12 .    PICK UP POINTER TO DATA          00000570
+         B     DRC&SYSNDX.E .          GO TO HEADER RTN                 00000580
+.P5      ANOP                                                           00000590
+DRC&SYSNDX.C STM 14,2,DRC&SYSNDX.B .   SAVE REGS ALWAYS                 00000600
+         L     2,DRC&SYSNDX.J .        RESTORE THE LINE COUNTER         00000610
+         L     15,DRC&SYSNDX.B+12 .    PICK UP POINTER TO DATA          00000620
+         MVI   0(15),C' ' .            MOVE X'40' TO ASA                00000630
+         B     DRC&SYSNDX.G .          GO TEST FOR LINE COUNT           00000640
+DRC&SYSNDX.M CLC &SYM.DCB+62(2),=H'0' . IS BLOCK SIZE THERE             00000650
+         BNE   DRC&SYSNDX.L .          IF SO SKIP                       00000660
+         MVC   &SYM.DCB+62(2),=H'&LRECL'  .     MOVE IN DEFAULT SIZE    00000670
+DRC&SYSNDX.L BR 14 .               RETURN TO OPEN                       00000680
+ SPACE                                                                  00000690
+DRC&SYSNDX.B DC 5F'0' .                PRINT RTNS SAVE AREA             00000700
+DRC&SYSNDX.J DC F'0' .                 SAVE FOR LINE COUNTER            00000710
+DRC&SYSNDX.K DC X'85' .                EXIT LIST FOR OPEN               00000720
+         DC    AL3(DRC&SYSNDX.M) .     POINTER TO THE EXIT ROUTINE      00000730
+DRC&SYSNDX.A DC AL1(143) .             OPTION BYTE FOR OPEN             00000740
+         DC    AL3(&SYM.DCB) .         DCB ADCON FOR OPEN               00000750
+ SPACE                                                                  00000760
+&SYM.DCB DCB DDNAME=&DDNAME,LRECL=&LRECL,RECFM=FBA,EXLST=DRC&SYSNDX.K, X00000770
+               DSORG=PS,MACRF=(PM)                                      00000780
+         MEXIT                                                          00000790
+.HD1     AIF   ('&HEADER2' EQ '').HD2                                   00000800
+         MNOTE 8,'8,*** HEADER2 INVALID WITHOUT HEADER1 SPECIFIED'      00000810
+         MEXIT                                                          00000820
+.ERRLEN MNOTE 8,'8,*** LRECL TOO LARGE FOR SYSPRINT'                    00000830
+         MEXIT                                                          00000840
+.NOSYM  MNOTE 8,'8,*** SYSPRINT MACRO MUST HAVE A LABEL'                00000850
+         MEXIT                                                          00000860
+.ERRSYM MNOTE 8,'8,*** LABEL ON SYSPRINT MACRO MUST BE LESS THAN SIX'   00000870
+         MEXIT                                                          00000880
+.DDNERR MNOTE 8,'8 *** MAXIMUM DDNAME SIZE IS EIGHT CHARACTERS'         00000890
+         MEXIT                                                          00000900
+.BUFERR  MNOTE 8,'8,*** NO BUFFER SUPPLIED, EXECUTION IMPOSSIBLE'       00000910
+.END     MEND                                                           00000920

@@ -1,0 +1,92 @@
+         MACRO                                                          00000010
+&LABEL   $PROLOG &LV=0                                                  00000020
+.********************************************************************** 00000030
+.*                                                                      00000040
+.*       THIS MACRO WILL PROVIDE ENTRY LINKAGE AND OPTIONALLY           00000050
+.*       MULTIPLE BASE REGISTERS.  ALSO, VIA THE 'LV=' KEYWORD          00000060
+.*       PROVIDE ADDITIONAL USER STORAGE (APPENDED TO THE               00000070
+.*       SAVE AREA) ADDRESSABLE FROM REG 13.  IF NO OPERANDS            00000080
+.*       ARE CODED, REG 12 IS ASSUMED THE BASE. EXAMPLE:                00000090
+.*              SECTNAME $PROLOG          = STANDARD REG 12 BASE        00000100
+.*              SECTNAME $PROLOG 5        = STANDARD, REG 5 BASE        00000110
+.*              SECTNAME $PROLOG 10,LV=20 = ADD 20 BYTES TO SAVE AREA   00000120
+.*                                             REG 10 IS BASE           00000130
+.*              SECTNAME $PROLOG R10,R11  = REGS 10 AND 11 ARE BASES    00000140
+.*                                                                      00000150
+.********************************************************************** 00000160
+         LCLA  &AA,&AB,&AC                                              00000170
+         GBLB  &PRORG                                                   00000180
+&AC      SETA  4096                                                     00000190
+&LABEL   CSECT                                                          00000200
+         B     32(R15)             BRANCH AROUND                        00000210
+         DC    AL1(26)                                                  00000220
+         DC    CL8'&LABEL'         CSECT NAME                           00000230
+         DC    C'-'                                                     00000240
+         DC    CL8'&SYSDATE'       COMPILE DATE                         00000250
+         DC    C'-'                                                     00000260
+         DC    CL8'&SYSTIME'       COMPILE TIME                         00000270
+         CNOP  0,4                 ALIGNMENT                            00000280
+         STM   R14,R12,12(R13)     SAVE REGISTERS                       00000290
+         LR    R12,R15             LOAD BASE REG                        00000300
+         USING &LABEL,R12          INFORM ASSEMBLER                     00000310
+         AIF   (&LV GT 4023).MERR                                       00000320
+         LA    R0,&LV+72           LOAD REG 0 WITH LENGTH VARIABLE      00000330
+         GETMAIN R,LV=(0)          GET CORE FOR SAVEAREA AND USER       00000340
+         AIF   (&LV+72 LE 256).XC2                                      00000350
+         AIF   (&LV+72 LE 512).XC1                                      00000360
+         MVI   0(R1),X'00'         MOVE X'00' TO FIRST BYTE             00000370
+         LR    R2,R1               SAVE POINTER IN EVEN REG             00000380
+         LA    R4,1(R1)            SET RECEIVING POINTER                00000390
+         LR    R5,R0               SET RECEIVING LENGTH                 00000400
+         BCTR  R5,R0               DECREMENT LENGTH                     00000410
+         LA    R5,0(R5)            CLEAR HIGH ORDER BYTE                00000420
+         LA    R3,1                SET SENDING LENGTH                   00000430
+         MVCL  R4,R2               INSTRUCTION PADS WITH X'00'          00000440
+         AGO   .STORE                                                   00000450
+.XC1     ANOP                                                           00000460
+         XC    256(&LV-184,R1),256(R1)  CLEAR SAVE AREA                 00000470
+         XC    0(256,R1),0(R1)          CLEAR SAVE AREA                 00000480
+         AGO   .STORE                                                   00000490
+.XC2     ANOP                                                           00000500
+         XC    0(&LV+72,R1),0(R1)       CLEAR SAVE AREA                 00000510
+.STORE   ANOP                                                           00000520
+         ST    R13,4(R1)           SAVE BACK CHAIN                      00000530
+         ST    R1,8(R13)           SET FORWARD CHAIN                    00000540
+         LR    R11,R1              SAVE NEW SAVEAREA ADDRESS            00000550
+         L     R15,16(R13)         RESTORE REG 15                       00000560
+         ST    R0,16(R13)          SAVE SAVEAREA LENGTH                 00000570
+         LM    R0,R1,20(R13)       RESTORE REGS USED IN GETMAIN         00000580
+         LR    R13,R11             SET SAVEAREA POINTER                 00000590
+         AIF   (N'&SYSLIST EQ 0).MEND                                   00000600
+         AIF   ('&SYSLIST(1)' EQ 'R12').SKIPIT                          00000610
+         AIF   ('&SYSLIST(1)' EQ '12').SKIPIT                           00000620
+         LA    &SYSLIST(1),&LABEL  LOAD REQUESTED BASE REG              00000630
+         DROP  R12                 DROP ASSUMED BASE REG                00000640
+         USING &LABEL,&SYSLIST(1)  INFORM ASSEMBLER                     00000650
+.SKIPIT  ANOP                                                           00000660
+&AA      SETA  2                                                        00000670
+.LOOP    ANOP                                                           00000680
+         AIF   (&AA GT N'&SYSLIST).MEXIT                                00000690
+&AB      SETA  &AA-1                                                    00000700
+         LA    &SYSLIST(&AA),2048(&SYSLIST(&AB))  LOAD NEXT BASE REG    00000710
+         LA    &SYSLIST(&AA),2048(&SYSLIST(&AA))  LOAD NEXT BASE REG    00000720
+         USING &LABEL+&AC,&SYSLIST(&AA) INFORM ASSEMBLER                00000730
+&AC      SETA  &AC+4096                                                 00000740
+&AA      SETA  &AA+1                                                    00000750
+         AGO   .LOOP                                                    00000760
+.MEXIT   ANOP                                                           00000770
+         AIF   (&PRORG).MEX2                                            00000780
+         SPACE                                                          00000790
+         $REGS                                                          00000800
+         SPACE                                                          00000810
+.MEX2    ANOP                                                           00000820
+&AA      SETA  &LV+72                                                   00000830
+         MNOTE *,'TOTAL STORAGE AREA RECEIVED = &AA'                    00000840
+         MEXIT                                                          00000850
+.MEND    ANOP                                                           00000860
+         MNOTE *,'NO REGISTER SPECIFIED - R12 ASSUMED'                  00000870
+         AGO   .MEXIT                                                   00000880
+.MERR    ANOP                                                           00000890
+         MNOTE 12,'LV > 4023 - REQUEST IGNORED'                         00000900
+         AGO   .MEXIT                                                   00000910
+         MEND                                                           00000920

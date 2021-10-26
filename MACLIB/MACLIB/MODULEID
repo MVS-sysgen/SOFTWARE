@@ -1,0 +1,212 @@
+         MACRO                                                          00240100
+         MODULEID &CSECT,       CSECT name                             C00240200
+               &MSG,            Eye catcher message                    C00240300
+               &DATEFMT=OLD,    Date format defaults to EUR format     C00240400
+               &TIMEFMT=STD,    Time format defaults to standard       C00240400
+               &ASMINFO=YES,    Insert Assembly date and time?         C00240400
+               &USING=15        Register used during eyecatcher branch  00240500
+.*                                                                   *  00242100
+.*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*  00242200
+.*  May be used to generate CSECT Cards and standard format module   *  00241300
+.*  eye-catchers.  Both the CSECT and module eye-catchers are        *  00241400
+.*  optional.  See operand descriptions and examples below.          *  00241500
+.*                                                                   *  00241600
+.*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*  00242200
+.*                                                                   *  00242300
+.*  CSECT                                                            *  00242400
+.*       IF SPECIFIED, THIS POSITIONAL PARAMETER WILL GENERATE A     *  00242500
+.*       CSECT CARD USING THE SPECIFIED NAME.  IF IT IS OMITTED BY   *  00242600
+.*       CODING A COMMA, THEN NO CSECT CARD IS GENERATED.  IN EITHER *  00242700
+.*       CASE, THE FOLLOWING CARDS WILL BE GENERATED:                *  00242800
+.*                USING *,15                                         *  00242900
+.*                CNOP  0,4                                          *  00243000
+.*                B     Past-Eyecatcher                              *  00243100
+.*                DC    AL1(Length-of-EyeCatcher)                    *  00243200
+.*                                                                   *  00243300
+.*  ASMINFO=YES|NO                                                   *  00243400
+.*       Generate the eyecatcher with the date and time of the       *  00243500
+.*       assembly?                                                   *  00243600
+.*                                                                   *  00243700
+.*  TIMEFMT=STD | CON                                                *  00243700
+.*                                                                   *  00243700
+.*       - STD: hh:mm                                                *  00243700
+.*       - CON: "hh:mm AM" or "hh:mm PM"                             *  00243700
+.*                                                                   *  00243700
+.*  DATEFMT=ISO | EUR | OLD                                          *  00243700
+.*                                                                   *  00243700
+.*       - ISO: ccyy-mm-dd                                           *  00243700
+.*       - EUR: dd-mon-ccyy                                          *  00243700
+.*       - OLD: mm/dd/yy      (Required if not HLASM)                *  00243700
+.*                                                                   *  00243700
+.*  MSG                                                              *  00243800
+.*       Text to be added to the standard MVS module eyecatcher      *  00243900
+.*       which will consist of:                                      *  00244000
+.*       - CSECT name                                                *  00244100
+.*       - Date of assembly - Converted to Day-Month-Year            *  00244200
+.*       - Time of assembly - Converted to standard time             *  00244300
+.*       - The &MSG parameter (if any)                               *  00244400
+.*                                                                   *  00244500
+.*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*  00245600
+.*                                                                      00246900
+.**  DEFINE GLOBAL AND LOCAL SET SYMBOLS                                00247000
+.*                                                                      00247100
+         LCLC  &CS,&ECDATE,&ECTIME,&YEAR                                00247300
+         LCLA  &L1,&L2,&L3                                              00247400
+.*                                                                      00247600
+&CS      SETC  '&SYSECT'                                                00247800
+ AIF  ('&ASMINFO' NE 'YES').TIMEX           .Want date and time info?   00249600
+.*                                                                      00249700
+.** Get Date                                                            00249800
+.*                                                                      00249900
+ AIF  ('&DATEFMT' EQ 'ISO').DATEISO         Want "ccyy-mm-dd"?
+ AIF  ('&DATEFMT' EQ 'OLD').DATEOLD         Want "mm/dd/yy"?
+&ECDATE SETC '&SYSDATE'(4,2)'-'             .Get Day of month           00250000
+.*                                                                      00250100
+&YEAR  SETC '&SYSDATC'(1,4)                   .Grab century from HLASM  00250500
+.*                                                                      00250700
+ AIF  ('&SYSDATE'(1,2) EQ '01').DATEM01                                 00250800
+ AIF  ('&SYSDATE'(1,2) EQ '02').DATEM02                                 00250900
+ AIF  ('&SYSDATE'(1,2) EQ '03').DATEM03                                 00251000
+ AIF  ('&SYSDATE'(1,2) EQ '04').DATEM04                                 00251100
+ AIF  ('&SYSDATE'(1,2) EQ '05').DATEM05                                 00251200
+ AIF  ('&SYSDATE'(1,2) EQ '06').DATEM06                                 00251300
+ AIF  ('&SYSDATE'(1,2) EQ '07').DATEM07                                 00251400
+ AIF  ('&SYSDATE'(1,2) EQ '08').DATEM08                                 00251500
+ AIF  ('&SYSDATE'(1,2) EQ '09').DATEM09                                 00251600
+ AIF  ('&SYSDATE'(1,2) EQ '10').DATEM10                                 00251700
+ AIF  ('&SYSDATE'(1,2) EQ '11').DATEM11                                 00251800
+ AIF  ('&SYSDATE'(1,2) EQ '12').DATEM12                                 00251900
+ MNOTE 'DA#EYEC-01E Invalid month'                                      00252000
+ AGO  .DATEMX                                                           00252100
+.*                                                                      00252200
+.DATEM01 ANOP ,                                                         00252300
+&ECDATE SETC '&ECDATE'.'JAN-&YEAR'                                      00252400
+ AGO  .DATEMX                                                           00252500
+.DATEM02 ANOP ,                                                         00252600
+&ECDATE SETC '&ECDATE'.'FEB-&YEAR'                                      00252700
+ AGO  .DATEMX                                                           00252800
+.DATEM03 ANOP ,                                                         00252900
+&ECDATE SETC '&ECDATE'.'MAR-&YEAR'                                      00253000
+ AGO  .DATEMX                                                           00253100
+.DATEM04 ANOP ,                                                         00253200
+&ECDATE SETC '&ECDATE'.'APR-&YEAR'                                      00253300
+ AGO  .DATEMX                                                           00253400
+.DATEM05 ANOP ,                                                         00253500
+&ECDATE SETC '&ECDATE'.'MAY-&YEAR'                                      00253600
+ AGO  .DATEMX                                                           00253700
+.DATEM06 ANOP ,                                                         00253800
+&ECDATE SETC '&ECDATE'.'JUN-&YEAR'                                      00253900
+ AGO  .DATEMX                                                           00254000
+.DATEM07 ANOP ,                                                         00254100
+&ECDATE SETC '&ECDATE'.'JUL-&YEAR'                                      00254200
+ AGO  .DATEMX                                                           00254300
+.DATEM08 ANOP ,                                                         00254400
+&ECDATE SETC '&ECDATE'.'AUG-&YEAR'                                      00254500
+ AGO  .DATEMX                                                           00254600
+.DATEM09 ANOP ,                                                         00254700
+&ECDATE SETC '&ECDATE'.'SEP-&YEAR'                                      00254800
+ AGO  .DATEMX                                                           00254900
+.DATEM10 ANOP ,                                                         00255000
+&ECDATE SETC '&ECDATE'.'OCT-&YEAR'                                      00255100
+ AGO  .DATEMX                                                           00255200
+.*                                                                      00255300
+.DATEM11 ANOP ,                                                         00255400
+&ECDATE SETC '&ECDATE'.'NOV-&YEAR'                                      00255500
+ AGO  .DATEMX                                                           00255600
+.*                                                                      00255700
+.DATEM12 ANOP ,                                                         00255800
+&ECDATE SETC '&ECDATE'.'DEC-&YEAR'                                      00255900
+.*AGO .DATEMX                                                           00256000
+.DATEMX  ANOP ,                                                         00256100
+ AGO .DATEX
+.*
+.DATEOLD ANOP  ,               If not HLASM or higher                   00256200
+&ECDATE  SETC  '&SYSDATE'
+ AGO .DATEX
+.*
+.DATEISO ANOP  ,                                                        00256200
+&ECDATE  SETC  '&SYSDATC'(1,4).'-'.'&SYSDATC'(5,2).'-'.'&SYSDATC'(7,2)
+.DATEX ANOP                                                             00256200
+.*                                                                      00256300
+.** Time                                                                00256400
+.*                                                                      00256500
+ AIF  ('&TIMEFMT' EQ 'STD').TIMESTD         Want "hh:mm"
+ AIF  ('&SYSTIME'(1,2) LT '12').TIMEN                                   00256600
+ AIF  ('&SYSTIME'(1,2) EQ '12').TIMEH12                                 00256700
+ AIF  ('&SYSTIME'(1,2) EQ '13').TIMEH13                                 00256800
+ AIF  ('&SYSTIME'(1,2) EQ '14').TIMEH14                                 00256900
+ AIF  ('&SYSTIME'(1,2) EQ '15').TIMEH15                                 00257000
+ AIF  ('&SYSTIME'(1,2) EQ '16').TIMEH16                                 00257100
+ AIF  ('&SYSTIME'(1,2) EQ '17').TIMEH17                                 00257200
+ AIF  ('&SYSTIME'(1,2) EQ '18').TIMEH18                                 00257300
+ AIF  ('&SYSTIME'(1,2) EQ '19').TIMEH19                                 00257400
+ AIF  ('&SYSTIME'(1,2) EQ '20').TIMEH20                                 00257500
+ AIF  ('&SYSTIME'(1,2) EQ '21').TIMEH21                                 00257600
+ AIF  ('&SYSTIME'(1,2) EQ '22').TIMEH22                                 00257700
+ AIF  ('&SYSTIME'(1,2) EQ '23').TIMEH23                                 00257800
+ AIF  ('&SYSTIME'(1,2) EQ '24').TIMEH24                                 00257900
+ AGO  .TIMEX                                                            00258000
+.TIMEH12 ANOP ,                                                         00258100
+&ECTIME SETC '12.'.'&SYSTIME'(4,2)' PM'                                 00258200
+ AGO  .TIMEX                                                            00258300
+.TIMEH13 ANOP ,                                                         00258400
+&ECTIME SETC '01.'.'&SYSTIME'(4,2)' PM'                                 00258500
+ AGO  .TIMEX                                                            00258600
+.TIMEH14 ANOP ,                                                         00258700
+&ECTIME SETC '02.'.'&SYSTIME'(4,2)' PM'                                 00258800
+ AGO  .TIMEX                                                            00258900
+.TIMEH15 ANOP ,                                                         00259000
+&ECTIME SETC '03.'.'&SYSTIME'(4,2)' PM'                                 00259100
+ AGO  .TIMEX                                                            00259200
+.TIMEH16 ANOP ,                                                         00259300
+&ECTIME SETC '04.'.'&SYSTIME'(4,2)' PM'                                 00259400
+ AGO  .TIMEX                                                            00259500
+.TIMEH17 ANOP ,                                                         00259600
+&ECTIME SETC '05.'.'&SYSTIME'(4,2)' PM'                                 00259700
+ AGO  .TIMEX                                                            00259800
+.TIMEH18 ANOP ,                                                         00259900
+&ECTIME SETC '06.'.'&SYSTIME'(4,2)' PM'                                 00260000
+ AGO  .TIMEX                                                            00260100
+.TIMEH19 ANOP ,                                                         00260200
+&ECTIME SETC '07.'.'&SYSTIME'(4,2)' PM'                                 00260300
+ AGO  .TIMEX                                                            00260400
+.TIMEH20 ANOP ,                                                         00260500
+&ECTIME SETC '08.'.'&SYSTIME'(4,2)' PM'                                 00260600
+ AGO  .TIMEX                                                            00260700
+.TIMEH21 ANOP ,                                                         00260800
+&ECTIME SETC '09.'.'&SYSTIME'(4,2)' PM'                                 00260900
+ AGO  .TIMEX                                                            00261000
+.TIMEH22 ANOP ,                                                         00261100
+&ECTIME SETC '10.'.'&SYSTIME'(4,2)' PM'                                 00261200
+ AGO  .TIMEX                                                            00261300
+.TIMEH23 ANOP ,                                                         00261400
+&ECTIME SETC '11.'.'&SYSTIME'(4,2)' PM'                                 00261500
+ AGO  .TIMEX                                                            00261600
+.TIMEH24 ANOP ,                                                         00261700
+&ECTIME SETC '12.'.'&SYSTIME'(4,2)' AM'                                 00261800
+ AGO  .TIMEX                                                            00261900
+.TIMEN  ANOP ,                                                          00262000
+&ECTIME SETC '&SYSTIME'(1,5)' AM'         .Get Day of month             00262100
+ AGO .TIMEX
+.TIMESTD ANOP ,
+&ECTIME SETC '&SYSTIME'                   .Standard time from ASMblr
+.TIMEX ANOP                                                             00262200
+.*                                                                      00262300
+.** Generate Eye Catcher                                                00262400
+.*                                                                      00262500
+                B     &CS._ECX            Branch around Eyecatcher      00262800
+&CS._ECLEN      DC    AL1(&CS._ECL-1)                                   00262900
+&CS._ECNAME     DC    CL8'&CS'                                          00263000
+                DC    CL1' '
+ AIF ('&ASMINFO' NE 'YES').ECDTX          .Want date and time info?     00263100
+&CS._ECDATE     DC    C'&ECDATE'                                        00263200
+                DC    C' '
+&CS._ECTIME     DC    C'&ECTIME'                                        00263300
+                DC    C' '
+.ECDTX          ANOP  ,                                                 00263400
+ AIF ('&MSG' EQ '').ECMSGX                                              00263500
+&CS._ECMSG      DC    C&MSG                                             00263600
+.ECMSGX         ANOP  ,                                                 00263700
+&CS._ECL        EQU   *-&CS._ECLEN                                      00263800
+&CS._ECX        DS    0H                                                00263900
+ MEND  ,                                                                00264100

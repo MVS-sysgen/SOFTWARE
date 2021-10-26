@@ -1,0 +1,16 @@
+         MACRO                                                          00010000
+&NAME    SVC34 &MESG                  , issue OS command                00020000
+         LCLC  &L1,&L2,&L3                                              00030000
+&L1      SETC  '$'.'&SYSNDX'.'A'                                        00040000
+&L2      SETC  '$'.'&SYSNDX'.'B'                                        00050000
+&L3      SETC  '$'.'&SYSNDX'.'C'                                        00060000
+&NAME    DS    0H                     , align                           00070000
+         LA    1,&L1                  , branch around constant          00080000
+         B     &L3                                                      00090000
+&L1      DC    AL2(&L2-&L1),AL2(0)    , text length, flags              00100000
+         DC    C&MESG                 , command text                    00110000
+&L2      EQU   *                      , end of message                  00120000
+&L3      DS    0H                     , alignment again                 00130000
+         SR    0,0                    , indicate master console         00140000
+         SVC   34                     , issue command                   00150000
+         MEND                                                           00160000

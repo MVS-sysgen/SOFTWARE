@@ -1,0 +1,3 @@
+This package was generated with package_release.py
+Package generated on: 10/25/21 17:05:21
+Command arguments: ['/home/phil/DEV/MVP/extras/package_release.py', '--xmi-files', 'i370load.xmi', '--task-files', '#001JCL.jcl', '--mvsce', '/home/phil/Downloads/MVSCE', '--name', '/home/phil/DEV/MVP/packages/IMON370']

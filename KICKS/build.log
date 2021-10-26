@@ -1,0 +1,1 @@
+['../make_release.py', '-x', 'KICKS.xmi', '-t', '#001JCL.jcl', '-m', '../test/MVSCE', '-a', '../../MVSCE/sysgen/MVSCE/MVP/packages/KICKS', '-d', '#?']

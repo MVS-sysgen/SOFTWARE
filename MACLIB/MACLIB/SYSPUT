@@ -1,0 +1,41 @@
+         MACRO                                                          00000010
+&SYM     SYSPUT &DDNAME=SYSPUNCH,&LRECL=80,&RECFM=,&BLKSIZE=80          00000020
+         AIF   (K'&SYM GT 5).ERRSYM                                     00000030
+         AIF   (K'&SYM EQ 0).NOSYM                                      00000040
+         AIF   (K'&DDNAME GT 8).DDNERR                                  00000050
+       MNOTE *,'DCB = DDNAME=&DDNAME,DSORG=PS,MACRF=PM'                 00000060
+       MNOTE *,'             DD CARD CHANGES WILL WORK FOR'             00000070
+       MNOTE *,'      LRECL=&LRECL,BLKSIZE=&BLKSIZE,RECFM=&RECFM'       00000080
+         DS    0H                                                       00000090
+&SYM     NOP   &SYM.1S .               NOP BRANCH SET AFTER OPEN        00000100
+         OI    &SYM.+1,C'0' .          SET NOP TO BRANCH                00000110
+         STM   14,1,&SYM.14 .          SAVE REGS                        00000120
+         OPEN  (&SYM.DCB,(OUTPUT))                                      00000130
+&SYM.1   L     0,&SYM.14+12 .          SET DATA REG                     00000140
+         PUT   &SYM.DCB,(0)                                             00000150
+         LM    14,1,&SYM.14 .          RESTORE REGS                     00000160
+         BR    14 .                    RETURN                           00000170
+&SYM.1S  STM   14,1,&SYM.14 .          SAVE REGS                        00000180
+         B     &SYM.1 .                GO TO PUT RTN                    00000190
+&SYM.XIT CLC   &SYM.DCB+62(2),=H'0' .  IS BLKSIZE THERE                 00000200
+         BNE   &SYM.3 .                IF SO SKIP                       00000210
+         MVC   &SYM.DCB+62(2),=H'&BLKSIZE' MOVE IN BLKSIZE              00000220
+&SYM.3   CLC   &SYM.DCB+82(2),=H'0' .  IS LRECL THERE                   00000230
+         BNE   &SYM.4 .                IF SO SKIP                       00000240
+         MVC   &SYM.DCB+82(2),=H'&LRECL' MOVE IN LRECL                  00000250
+&SYM.4   CLI   &SYM.DCB+36,X'00' .     IS RECFM THERE                   00000260
+         BNE   &SYM.5 .                BRANCH IF THERE                  00000270
+         MVI   &SYM.DCB+36,X'90' .     MOVE IN DEFAULT RECFM FB         00000280
+&SYM.5   BR    14 .                    RETURN TO OPEN                   00000290
+&SYM.14  DS    4F .                    REG SAVE AREA                    00000300
+&SYM.LST DC    X'85' .                 OPEN EXIT LIST                   00000310
+         DC    AL3(&SYM.XIT) .         ENTRY FOR OPEN EXIT              00000320
+&SYM.DCB DCB   DDNAME=&DDNAME,DSORG=PS,MACRF=(PM),EXLST=&SYM.LST,      X00000330
+               RECFM=&RECFM                                             00000340
+         AGO   .END                                                     00000350
+.ERRSYM MNOTE 8,'8,*** LABEL ON SYSPUT MACRO MUST BE LESS THAN SIX'     00000360
+         AGO   .END                                                     00000370
+.NOSYM  MNOTE 8,'8,*** SYSPUT MACRO MUST HAVE A LABEL'                  00000380
+         AGO   .END                                                     00000390
+.DDNERR MNOTE 8,'8,*** DDNAME LARGER THAN EIGHT CHARACTERS'             00000400
+.END     MEND                                                           00000410

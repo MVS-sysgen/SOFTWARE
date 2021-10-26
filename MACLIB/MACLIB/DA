@@ -1,0 +1,372 @@
+*          DATA SET SFALLOC    AT LEVEL 006 AS OF 05/17/78              00121300
+*********************************************************************** 00121400
+*                                                                     * 00121500
+*                                                                     * 00121600
+*               DDDDDDDDD                     AAAAAAAAAA              * 00121700
+*              DDDDDDDDDD                   AAAAAAAAAAAA              * 00121800
+*             DD       DD                  AA        AA               * 00121900
+*            DD        DD                 AA        AA                * 00122000
+*           DD        DD                 AA        AA                 * 00122100
+*          DD        DD                 AAAAAAAAAAAA                  * 00122200
+*         DD        DD                 AAAAAAAAAAAA                   * 00122300
+*        DD        DD                 AA        AA                    * 00122400
+*       DD        DD                 AA        AA                     * 00122500
+*      DD        DD                 AA        AA                      * 00122600
+*     DDDDDDDDDDD                  AA        AA                       * 00122700
+*    DDDDDDDDDD                   AA        AA                        * 00122800
+*                                                                     * 00122900
+* 1978                                                                * 00123000
+*        USAGE -THIS MACRO MADE BE USED  MULTIPLE TIMES IN ONE        * 00123100
+*              PROGRAM AND GENERATE UNIQUE LABELS VIA THE 'UNQSUF'    * 00123200
+*              PARAMETER.  PRIOR TO ISSUING SVC 99 REGISTER 1 MUST    * 00123300
+*              CONTAIN THE ADDRESS OF   THIS PARAMETER LIST.          * 00123400
+*              EX. -      PARMLIB   DA  DSN='SYS1.PARMLIB'            * 00123500
+*                                   ... ANY OTHER CODE                * 00123600
+*                                   LA  R1,PARMLIB                    * 00123700
+*                                   SVC 99                            * 00123800
+*                                   ... ANY OTHER CODE                * 00123900
+*        DEFAULTS -THERE ARE NO DEFAULTS FOR ANY PARM.    THE ONLY    * 00124000
+*              PARMETERS THAT WILL BE GENERATED FOR DYNAMIC           * 00124100
+*              ALLOCATION ARE THE ONES  THAT ARE SPECIFICALLY CODED.  * 00124200
+*              THE TYPE OF CALL TO DYNAMIC ALLOCATION DEFAULTS TO     * 00124300
+*              ALLOCATION.  BY CODING IN A VALUE FOR DEALLOC, THE     * 00124400
+*              PARAMETERS WILL DEALLOCATE THE RESOURCE INSTEAD OF     * 00124500
+*              ALLOCATING IT.                                         * 00124600
+*                                                                     * 00124700
+*        LABELS - LABELS HAVE BEEN PROVIDED FOR OFTEN USED FIELDS.    * 00124800
+*              SOME OF THESE ARE :                                    * 00124900
+*                      1. DAER    WHICH  POINTS TO THE ERROR CODE     * 00125000
+*                                       FROM SVC 99                   * 00125100
+*                      2. DAIN    WHICH  POINTS TO THE INFORMATION    * 00125200
+*                                       CODE FROM SVC 99              * 00125300
+*              ALSO, EACH VALUE SUCH AS THE DSNAME TO ALLOCATE        * 00125400
+*              HAS A LABEL ASSOCIATED WITH IT FOR EASY REFERENCE.     * 00125500
+*                                                                     * 00125600
+*                                                                     * 00125700
+*********************************************************************** 00125800
+         MACRO                                                          00125900
+&NAME    DA    &DSN=,              THE DATASET NAME                    X00126000
+               &DDN=,              DDNAME TO ALLOCATE OR DEALLOCATE    X00126100
+               &MEM=,              MEMBER NAME FOR PDS OR BIAS FOR GDG X00126200
+               &STATUS=,           PRIMARY DISPOSITION                 X00126300
+               &DISP=,             DISPOSITION IF NORMAL EOJ           X00126400
+               &CDISP=,            DISPOSITION IF ABNORMAL EOJ         X00126500
+               &SPACE=,            PRIMARY SPACE REQUIREMENT           X00126600
+               &TYPSP=,            TYPE OF SPACE TO ALLOCATE           X00126700
+               &SECSP=,            SECONDARY SPACE REQUIREMENT         X00126800
+               &VOLSER=,           VOLUME SERIAL #                     X00126900
+               &UNIT=,             UNIT DESIGNATION                    X00127000
+               &SYSOUT=,           CLASS SPECIFICATION FOR SYSOUT      X00127100
+               &FREE=,             DEALLOCATE AT CLOSE                 X00127200
+               &COPIES=,           COPIES OF YOUR SYSOUT               X00127300
+               &LABEL=,            TYPE LABEL - SL,NL,ETC.             X00127400
+               &EXPDT=,            EXPIDATION DATE                     X00127500
+               &RETPD=,            RETENTION PERIOD                    X00127600
+               &DUMMY=,            ALLOCATE A DUMMY DATA SET           X00127700
+               &BLKSIZE=,          BLOCK SIZE                          X00127800
+               &FUNC=,             FOR PUNCH OUTPUT INTERPRETING       X00127900
+               &FORM=,             FORM NAME SPECIFICATION.            X00128000
+               &LRECL=,            LOGICAL RECORD LENGTH               X00128100
+               &DIRSP=,            # OF DIRECTORY BLOCKS OR INDEX SPACEX00128200
+               &RLSE=,             TO REQUEST THE RELEASE OF UNUSED SP X00128300
+               &UNQSUF=,           UNIQUE SUFFIX FOR LABEL NAMES LEN=4 X00128400
+               &DCB=,              SPECIFY A DSNAME TO COPY DCB FROM   X00128500
+               &DEALLOC=                                                00128600
+         LCLA  &A,&K,&A2                                                00128700
+         LCLC  &X,&NM                                                   00128800
+&X       SETC  '&UNQSUF'                                                00128900
+&NAME    DS    0F                                                       00129000
+         DC    X'80'                                                    00129100
+         DC    AL3(DARB&X)                                              00129200
+DARB&X   DS    0F                                                       00129300
+         DC    AL1(20)                                                  00129400
+         AIF   (T'&DEALLOC EQ 'O').ALLOC                                00129500
+         DC    AL1(02)             THIS CONTROL BLOCK IS FOR DEALLOCATE 00129600
+         AGO   .PAST                                                    00129700
+.ALLOC   DC    AL1(01)             THIS CONTROL IS FOR ALLOCATION       00129800
+.PAST    DC    AL2(0)                                                   00129900
+DAER&X   DC    AL2(0)              ERROR CODE FROM DYNAMIC ALLOCATION   00130000
+DAIN&X   DC    AL2(0)              INFORMATION CODE FROM DYNALLOC       00130100
+         DC    A(TS&X)             POINTER TO CALL LIST FOR SVC 99      00130200
+         DC    XL8'0'              RESERVED                             00130300
+&A       SETA  1                                                        00130400
+         DS    0F                  FULLWORD ALIGNED                     00130500
+TS&A&X   DC    X'0001'             KEY FOR DDNAME SPECIFICATION         00130600
+         DC    XL2'1'                                                   00130700
+&K       SETA  K'&DDN                                                   00130800
+         DC    XL2'&K'             LENGTH OF DDNAME SPECIFIED           00130900
+DADN&X   DC    C'&DDN'             DDNAME PLUGGED IN HERE               00131000
+&A       SETA  &A+1                                                     00131100
+         AIF   (T'&DSN EQ 'O').A                                        00131200
+         DS    0F                                                       00131300
+TS&A&X   DC    X'0002'             KEY FOR DSNAME SPECIFICATION         00131400
+         DC    XL2'1'                                                   00131500
+         DC    AL2(44)             LENGTH OF DSNAME MAX IS 44           00131600
+DADS&X   DC    CL44'&DSN'          DSNAME IS PLUGGED IN HERE            00131700
+&A       SETA  &A+1                                                     00131800
+.A       AIF   (T'&MEM EQ 'O').B                                        00131900
+         DS    0F                                                       00132000
+TS&A&X   DC    X'0003'             KEY FOR MEMBER OR GDG SPECIFICATION  00132100
+         DC    XL2'1'                                                   00132200
+&K       SETA  K'&MEM                                                   00132300
+         DC    XL2'&K'             LENGTH OF SPECFIED MEMBER NAME       00132400
+DAMB&X   DC    C'&MEM'             THE MEMBER NAME IS PLUGGED IN HERE   00132500
+&A       SETA  &A+1                                                     00132600
+.B       AIF   (T'&STATUS EQ 'O').C                                     00132700
+         DS    0F                                                       00132800
+TS&A&X   DC    X'0004'             KEY FOR PRIMARY DISPOSITION OF DDN   00132900
+         DC    XL2'1'                                                   00133000
+         DC    XL2'1'              THIS IS ALWAYS A ONE BYTE CODE       00133100
+&A       SETA  &A+1                                                     00133200
+         AIF   ('&STATUS' EQ 'OLD').B1       OLD = X'01'                00133300
+         AIF   ('&STATUS' EQ 'MOD').B2       MOD = X'02'                00133400
+         AIF   ('&STATUS' EQ 'NEW').B3       NEW = X'04'                00133500
+         AIF   ('&STATUS' EQ 'SHR').B4       SHR = X'08'                00133600
+         MNOTE 8,'&STATUS INVALID FOR STATUS'                           00133700
+         AGO   .C                                                       00133800
+.B1      DC    X'1'                CONSTANT FOR DISP=OLD                00133900
+         AGO   .C                                                       00134000
+.B2      DC    X'2'                CONSTANT FOR DISP=MOD                00134100
+         AGO   .C                                                       00134200
+.B3      DC    X'4'                CONSTANT FOR DISP=NEW                00134300
+         AGO   .C                                                       00134400
+.B4      DC    X'8'                CONSTANT FOR DISP=SHR                00134500
+         AGO   .C                                                       00134600
+.C       AIF   (T'&DISP EQ 'O').D                                       00134700
+         DS    0F                                                       00134800
+TS&A&X   DC    X'0005'             KEY FOR NORMAL EOJ SPECIFICATION     00134900
+&A       SETA  &A+1                                                     00135000
+         DC    XL2'1'                                                   00135100
+         DC    XL2'1'              THIS WILL ALWAYS BE A ONE BYTE KEY   00135200
+         AIF   ('&DISP' EQ 'UNCATLG').C1     UNCATLG = X'01'            00135300
+         AIF   ('&DISP' EQ 'CATLG').C2       CATLG   = X'02'            00135400
+         AIF   ('&DISP' EQ 'DELETE').C3      DELETE  = X'04'            00135500
+         AIF   ('&DISP' EQ 'KEEP').C4        KEEP    = X'08'            00135600
+         MNOTE 8,'&DISP INVALID FOR DISP'    ALL ELSE IS WRONG          00135700
+         AGO   .D                                                       00135800
+.C1      DC    X'1'                CONSTANT FOR UNCATLG AT NORMAL EOJ   00135900
+         AGO   .D                                                       00136000
+.C2      DC    X'2'                CONSTANT FOR CATLG  AT NORMAL EOJ    00136100
+         AGO   .D                                                       00136200
+.C3      DC    X'4'                CONSTANT FOR DELETE AT NORMAL EOJ    00136300
+         AGO   .D                                                       00136400
+.C4      DC    X'8'                CONSTANT FOR KEEP   AT NORMAL EOJ    00136500
+         AGO   .D                                                       00136600
+.D       AIF   (T'&CDISP EQ 'O').E                                      00136700
+         DS    0F                                                       00136800
+TS&A&X   DC    X'0006'             KEY FOR ABNORMAL EOJ DISPOSITION     00136900
+&A       SETA  &A+1                                                     00137000
+         DC    XL2'1'                                                   00137100
+         DC    XL2'1'              THIS IS ALWAYS A ONE BYTE KEY        00137200
+         AIF   ('&CDISP' EQ 'UNCATLG').D1      UNCATLG = X'01'          00137300
+         AIF   ('&CDISP' EQ 'CATLG').D2        CATLG   = X'02'          00137400
+         AIF   ('&CDISP' EQ 'DELETE').D3       DELETE  = X'04'          00137500
+         AIF   ('&CDISP' EQ 'KEEP').D4         KEEP    = X'08'          00137600
+         MNOTE 8,'&CDISP INVALID FOR DISP'     ALL ELSE IS WRONG        00137700
+         AGO   .E                                                       00137800
+.D1      DC    X'1'                CONSTANT FOR UNCATLG IF ABEND        00137900
+         AGO   .E                                                       00138000
+.D2      DC    X'2'                CONSTANT FOR CATLG  IF ABEND         00138100
+         AGO   .E                                                       00138200
+.D3      DC    X'4'                CONSTANT FOR DELETE IF ABEND         00138300
+         AGO   .E                                                       00138400
+.D4      DC    X'08'               CONSTANT FOR KEEP   IF ABEND         00138500
+         AGO   .E                                                       00138600
+.E       AIF   (T'&TYPSP EQ 'O').I                                      00138700
+         DS    0F                                                       00138800
+         AIF   ('&TYPSP' EQ 'TRK').E1  IF TYPE OF SPACE SPECIFICATION   00138900
+         AIF   ('&TYPSP' EQ 'CYL').E2  IS NOT TRACKS OR CYLINDERS THEN  00139000
+TS&A&X   DC    X'0009'                 IT MUST BE IN BLOCKS             00139100
+         DC    XL1'1'                                                   00139200
+         DC    XL1'3'                                                   00139300
+         DC    AL3(&TYPSP)                                              00139400
+&A       SETA  &A+1                                                     00139500
+         AGO   .F                                                       00139600
+.E1      ANOP                                                           00139700
+TS&A&X   DC    X'0007'             SPACE IS TO BE ALLOCATED IN TRKS     00139800
+         DC    XL2'0'                                                   00139900
+&A       SETA  &A+1                                                     00140000
+         AGO   .F                                                       00140100
+.E2      ANOP                                                           00140200
+TS&A&X   DC    X'0008'             SPACE IS TO BE ALLOCATED IN CYLS     00140300
+         DC    XL2'0'                                                   00140400
+&A       SETA  &A+1                                                     00140500
+.F       AIF   (T'&SPACE EQ 'O').FO                                     00140600
+         DS    0F                                                       00140700
+TS&A&X   DC    X'000A'             KEY TO SPECIFY PRIMARY SPACE         00140800
+         DC    XL2'1'                                                   00140900
+         DC    XL2'3'              MAXIMUM LENGTH IS THREE              00141000
+DASP&X   DC    AL3(&SPACE)                                              00141100
+&A       SETA  &A+1                                                     00141200
+         AGO   .G                                                       00141300
+.FO      MNOTE 8,'PRIMARY SPACE OMITTED'   TYPSP REQUIRES AT LEAST      00141400
+         AGO   .I                  THE PRIMARY SPACE SPECIFICATION      00141500
+.G       AIF   (T'&SECSP EQ 'O').H                                      00141600
+         DS    0F                                                       00141700
+TS&A&X   DC    X'000B'             KEY TO SPECIFY SECONDARY SPACE       00141800
+         DC    XL2'1'                                                   00141900
+         DC    XL2'3'              MAXIMUM LENGTH IS THREE              00142000
+DASS&X   DC    AL3(&SECSP)                                              00142100
+&A       SETA  &A+1                                                     00142200
+.H       AIF   (T'&DIRSP EQ 'O').I                                      00142300
+         DS    0F                                                       00142400
+TS&A&X   DC    X'000C'             KEY TO SPECIFY DIRECTORY SPACE       00142500
+         DC    XL2'1'                                                   00142600
+         DC    XL2'3'              MAXIMUM LENGTH IS THREE              00142700
+DADI&X   DC    AL3(&DIRSP)                                              00142800
+&A       SETA  &A+1                                                     00142900
+.I       AIF   (T'&VOLSER EQ 'O').J                                     00143000
+         DS    0F                                                       00143100
+TS&A&X   DC    X'0010'             KEY TO SPECIFY A PARTICULAR VOLSER   00143200
+         DC    XL2'1'                                                   00143300
+&K       SETA  K'&VOLSER           PICK UP LENGTH OF NAME SPECIFIED     00143400
+         DC    XL2'&K'             AND USE THAT LENGTH                  00143500
+DAVO&X   DC    C'&VOLSER'          AND NAME                             00143600
+&A       SETA  &A+1                                                     00143700
+.J       AIF   (T'&UNIT EQ 'O').K                                       00143800
+         DS    0F                                                       00143900
+TS&A&X   DC    X'0015'             KEY FOR UNIT SPECIFICATION           00144000
+         DC    XL2'1'                                                   00144100
+&K       SETA  K'&UNIT             PICK UP LENGTH OF UNIT NAME GIVEN    00144200
+         DC    AL2(&K)             THEN USE THAT LENGTH                 00144300
+DAUN&X   DC    C'&UNIT'            AND NAME                             00144400
+&A       SETA  &A+1                                                     00144500
+.K       AIF   (T'&SYSOUT EQ 'O').L                                     00144600
+         DS    0F                                                       00144700
+TS&A&X   DC    X'0018'             KEY FOR SYSOUT CLASS SPECIFICATION   00144800
+         DC    XL2'1'                                                   00144900
+&K       SETA  K'&SYSOUT                                                00145000
+         DC    AL2(&K)                                                  00145100
+DASY&X   DC    C'&SYSOUT'                                               00145200
+&A       SETA  &A+1                                                     00145300
+.L       AIF   (T'&FORM EQ 'O').M                                       00145400
+         DS    0F                                                       00145500
+TS&A&X   DC    X'001A'             KEY FOR FORMS ID SPECIFICATION       00145600
+         DC    XL2'1'                                                   00145700
+&K       SETA  K'&FORM             PICK UP LENGTH OF FORMS ID           00145800
+         DC    AL2(&K)             AND USE THAT LENGTH                  00145900
+DAFM&X   DC    C'&FORM'            AND THAT FORM NUMBER                 00146000
+&A       SETA  &A+1                                                     00146100
+.M       AIF   (T'&FREE EQ 'O').N                                       00146200
+         AIF   ('&FREE' NE 'CLOSE').M2                                  00146300
+         DS    0F                                                       00146400
+TS&A&X   DC    X'001C'             KEY TO SPECIFY FREE=CLOSE            00146500
+DACL&X   DC    XL2'0'              MUST BE CODED FREE=CLOSE             00146600
+&A       SETA  &A+1                ALL ELSE WILL GENERATE MNOTE         00146700
+         AGO   .N                                                       00146800
+.M2      MNOTE 8,'&FREE INVALID FOR FREE'                               00146900
+.N       AIF   (T'&COPIES EQ 'O').O                                     00147000
+         DS    0F                                                       00147100
+TS&A&X   DC    X'001D'             KEY TO SPECIFY MULTIPLE COPIES       00147200
+         DC    XL2'1'              OF OUTPUT.                           00147300
+         DC    XL2'1'                                                   00147400
+DACO&X   DC    AL1(&COPIES)        NUMBER OF COPIES REQUESTED           00147500
+&A       SETA  &A+1                                                     00147600
+.O       AIF   (T'&LABEL EQ 'O').P                                      00147700
+         DS    0F                                                       00147800
+TS&A&X   DC    X'001E'             KEY TO SPECIFY TYPE LABEL            00147900
+         DC    XL2'1'                                                   00148000
+         DC    XL2'1'              LENGTH OF THIS FIELD IS ALWAYS ONE   00148100
+&A       SETA  &A+1                                                     00148200
+         AIF   ('&LABEL' EQ 'NL').O1     NL  = X'01'                    00148300
+         AIF   ('&LABEL' EQ 'SL').O2     SL  = X'02'                    00148400
+         AIF   ('&LABEL' EQ 'NSL').O3    NSL = X'04'                    00148500
+         AIF   ('&LABEL' EQ 'SUL').O4    SUL = X'08'                    00148600
+         AIF   ('&LABEL' EQ 'BLP').O5    BLP = X'10'                    00148700
+         AIF   ('&LABEL' EQ 'LTM').O6    LTM = X'21'                    00148800
+         AIF   ('&LABEL' EQ 'AL').O7     AL  = X'40'                    00148900
+         AIF   ('&LABEL' EQ 'AUL').O8    AUL = X'48'                    00149000
+         MNOTE 8,'&LABEL INVALID FOR LABEL'                             00149100
+         AGO   .P                                                       00149200
+.O1      DC    X'1'               LABEL = NL                            00149300
+         AGO   .P                                                       00149400
+.O2      DC    X'2'                LABEL = SL                           00149500
+         AGO   .P                                                       00149600
+.O3      DC    X'04'               LABEL = NSL                          00149700
+         AGO   .P                                                       00149800
+.O4      DC    X'08'               LABEL = SUL                          00149900
+         AGO   .P                                                       00150000
+.O5      DC    X'10'               LABEL = BLP                          00150100
+         AGO   .P                                                       00150200
+.O6      DC    X'21'               LABEL = LTM                          00150300
+         AGO   .P                                                       00150400
+.O7      DC    X'40'               LABEL = AL                           00150500
+         AGO   .P                                                       00150600
+.O8      DC    X'48'               LABEL = AUL                          00150700
+         AGO   .P                                                       00150800
+.P       AIF   (T'&EXPDT EQ 'O').Q                                      00150900
+         DS    0F                                                       00151000
+TS&A&X   DC    X'0022'             KEY TO SPECIFY EXPIRATION DATE       00151100
+         DC    XL2'1'                                                   00151200
+         DC    XL2'5'              FIELD IS FIVE NUMERICS               00151300
+DAEX&X   DC    CL5'&EXPDT'         AND IS PUT IN HERE                   00151400
+&A       SETA  &A+1                                                     00151500
+.Q       AIF   (T'&RETPD EQ 'O').R                                      00151600
+         DS    0F                                                       00151700
+TS&A&X   DC    X'0023'             KEY TO SPECIFY A RETENTION PERIOD    00151800
+         DC    XL2'1'                                                   00151900
+         DC    XL2'2'              MAXIMUM LENGTH IS TWO                00152000
+DARP&X   DC    AL2(&RETPD)         AND IS PLACED HERE.                  00152100
+&A       SETA  &A+1                                                     00152200
+.R       AIF   (T'&DUMMY EQ 'O').S                                      00152300
+         DS    0F                                                       00152400
+TS&A&X   DC    X'0024'             KEY TO ALLOCATE A DUMMY DATA SET     00152500
+         DC    XL2'0'                                                   00152600
+         DC    XL2'0'                                                   00152700
+         DC    X'0'                                                     00152800
+&A       SETA  &A+1                                                     00152900
+.S       AIF   (T'&BLKSIZE EQ 'O').T                                    00153000
+         DS    0F                                                       00153100
+TS&A&X   DC    X'0030'             KEY TO SPECIFY THE BLOCKSIZE         00153200
+         DC    XL2'1'                                                   00153300
+         DC    XL2'2'                                                   00153400
+DABS&X   DC    AL2(&BLKSIZE)                                            00153500
+&A       SETA  &A+1                                                     00153600
+.T       AIF   (T'&FUNC EQ 'O').U                                       00153700
+         DS    0F                                                       00153800
+         AIF   ('&FUNC' EQ 'I').T2                                      00153900
+         MNOTE 8,'&FUNC INVALID FOR FUNC'                               00154000
+         AGO   .U                                                       00154100
+.T2      ANOP                                                           00154200
+TS&A&X   DC    X'005A'                                                  00154300
+         DC    XL2'1'                                                   00154400
+         DC    XL2'1'                                                   00154500
+         DC    X'80'                                                    00154600
+&A       SETA  &A+1                                                     00154700
+.U       AIF   (T'&LRECL EQ 'O').V                                      00154800
+         DS    0F                                                       00154900
+TS&A&X   DC    X'0042'             KEY TO SPECIFY THE LRECL             00155000
+         DC    XL2'1'                                                   00155100
+         DC    XL2'2'                                                   00155200
+         DC    AL2(&LRECL)                                              00155300
+&A       SETA  &A+1                                                     00155400
+.V       AIF   (T'&RLSE EQ 'O').W                                       00155500
+         DS    0F                                                       00155600
+TS&A&X   DC    X'000D'             KEY  TO SPECIFY RELEASE SPACE        00155700
+         DC    XL2'0'                                                   00155800
+&A       SETA  &A+1                                                     00155900
+.W       AIF   (T'&DCB EQ 'O').X                                        00156000
+         DS    0F                                                       00156100
+TS&A&X   DC    X'002C' KEY TO SPECIFY DCB REFERENCE NAME                00156200
+         DC    XL2'1'                                                   00156300
+&K       SETA  K'&DCB                                                   00156400
+         DC    XL2'&K'             LENGTH OF DSN SPECIFIED              00156500
+DCB&X    DC    C'&DCB'             DSNAME TO COPY DCB FROM              00156600
+&A       SETA  &A+1                                                     00156700
+.X       ANOP                                                           00156800
+.*                                                                      00156900
+.*                                                                      00157000
+.*                                                                      00157100
+.*                                                                      00157200
+         DS    0F                                                       00157300
+&A2      SETA  1                                                        00157400
+&A       SETA  &A-1                                                     00157500
+&NM      SETC  'TS&X'                                                   00157600
+.CM1     AIF   (&A2 EQ &A).CM2                                          00157700
+&NM      DC    A(TS&A2&X)                                               00157800
+&NM      SETC  ' '                                                      00157900
+&A2      SETA  &A2+1                                                    00158000
+         AGO   .CM1                                                     00158100
+.CM2     DC    X'80'                                                    00158200
+         DC    AL3(TS&A2&X)                                             00158300
+         MEND                                                           00158400

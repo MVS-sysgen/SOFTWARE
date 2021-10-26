@@ -1,0 +1,42 @@
+         MACRO                                                          00000010
+         $REGS                                                          00000020
+         GBLB  &PRORG                                                   00000030
+         AIF   (&PRORG).MEX2                                            00000040
+&PRORG   SETB  1                                                        00000050
+ SPACE                                                                  00000060
+R0       EQU   0                                                        00000070
+R1       EQU   1                                                        00000080
+R2       EQU   2                                                        00000090
+R3       EQU   3                                                        00000100
+R4       EQU   4                                                        00000110
+R5       EQU   5                                                        00000120
+R6       EQU   6                                                        00000130
+R7       EQU   7                                                        00000140
+R8       EQU   8                                                        00000150
+R9       EQU   9                                                        00000160
+R10      EQU   10                                                       00000170
+R11      EQU   11                                                       00000180
+R12      EQU   12                                                       00000190
+R13      EQU   13                                                       00000200
+R14      EQU   14                                                       00000210
+R15      EQU   15                                                       00000220
+ SPACE                                                                  00000230
+REG0     EQU   0                                                        00000240
+REG1     EQU   1                                                        00000250
+REG2     EQU   2                                                        00000260
+REG3     EQU   3                                                        00000270
+REG4     EQU   4                                                        00000280
+REG5     EQU   5                                                        00000290
+REG6     EQU   6                                                        00000300
+REG7     EQU   7                                                        00000310
+REG8     EQU   8                                                        00000320
+REG9     EQU   9                                                        00000330
+REG10    EQU   10                                                       00000340
+REG11    EQU   11                                                       00000350
+REG12    EQU   12                                                       00000360
+REG13    EQU   13                                                       00000370
+REG14    EQU   14                                                       00000380
+REG15    EQU   15                                                       00000390
+ SPACE                                                                  00000400
+.MEX2    ANOP                                                           00000410
+       MEND                                                             00000420

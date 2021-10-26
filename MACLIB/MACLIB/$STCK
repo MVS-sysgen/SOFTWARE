@@ -1,0 +1,109 @@
+         MACRO                                                          00000010
+&LABEL   $STCK  &NOGEN                                                  00000020
+         LCLC   &L                                                      00000030
+.********************************************************************** 00000040
+.****                                                             ***** 00000050
+.****    THIS MACRO WILL PROVIDE THE DAY, DATE, AND TIME FROM     ***** 00000060
+.****    THE TIME-OF-DAY CLOCK IN GREGORIAN (ENGLISH) FORMAT.     ***** 00000070
+.****                                                             ***** 00000080
+.****    IF INVOKED WITHOUT THE OPTIONAL 'NOGEN' KEYWORD, THE     ***** 00000090
+.****    CONSTANTS NAMED BELOW WILL BE GENERATED.  IF THE         ***** 00000100
+.****    'NOGEN' KEYWORD IS USED, THE USER MUST PROVIDE THIS      ***** 00000110
+.****    ROUTINE WITH ADDRESSABILITY TO THEM AS PRE-DEFINED       ***** 00000120
+.****    CONSTANTS.                                               ***** 00000130
+.****                                                             ***** 00000140
+.****    DAY    DS   X      A BINARY NUMBER (HEX) RELATIVE TO     ***** 00000150
+.****                       THE DAY OF THE WEEK AS FOLLOWS        ***** 00000160
+.****                       0=MONDAY, 1=TUESDAY, 2=WEDNESDAY,     ***** 00000170
+.****                       3=THURSDAY, 4=FRIDAY,                 ***** 00000180
+.****                       5=SATURDAY, 6=SUNDAY                  ***** 00000190
+.****                                                             ***** 00000200
+.****    DATE   DS   CL8    AN EIGHT CHARACTER FIELD CONTAINING   ***** 00000210
+.****                       THE DATE IN MM/DD/YY FORMAT           ***** 00000220
+.****                                                             ***** 00000230
+.****    TIME   DS   CL8    AN EIGHT CHARACTER FIELD CONTAINING   ***** 00000240
+.****                       THE TIME IN HH:MM:SS FORMAT           ***** 00000250
+.****                                                             ***** 00000260
+.****    NOTE THAT THE CALLER MUST PROVIDE A REGISTER SAVE AREA   ***** 00000270
+.****    THAT BEGINS ON A DOUBLEWORD BOUNDARY TO BE USED AS A     ***** 00000280
+.****    WORK AREA BY THIS ROUTINE (R-13 BASED).                  ***** 00000290
+.****                                                             ***** 00000300
+.********************************************************************** 00000310
+&L       SETC  '&SYSNDX'                                                00000320
+&LABEL   STCK  8(13)              STORE THE TIME-OF-DAY CLOCK           00000330
+         LM    0,1,8(13)          LOAD INTO WORK REGS                   00000340
+         L     15,16              GET CVT ADDRESS                       00000350
+         A     0,304(15)          ADD LOCAL TIME DEVIATION              00000360
+         SRDL  0,12               ISOLATE NUMBER OF MICROSECONDS        00000370
+         D     0,=F'60000000'     DIVIDE BY 60M (R1=MINUTES AFT EPOCH)  00000380
+         LR    15,0               COPY REMAINDER OF MICS TO GET SECS    00000390
+         SR    14,14              CLEAR FOR DIVIDE                      00000400
+         D     14,=F'951424'      DIVIDE TO GET REMAINING SECONDS (R5)  00000410
+         LR    14,15              COPY TO WORK REG                      00000420
+S&L.B    SL    14,=F'60'          DECREMENT BY 60 SECONDS               00000430
+         BM    S&L.S              LESS THAN SIXTY, CONTINUE             00000440
+         SL    15,=F'60'          MORE THAN SIXTY, ADJUST FOR LEAP      00000450
+         AL    1,=F'1'            BUMP MINUTES                          00000460
+         B     S&L.B              CHECK AGAIN                           00000470
+S&L.S    CVD   15,8(13)           CONVERT SECONDS TO PACKED FORMAT      00000480
+         UNPK  24(4,13),14(2,13)  UNPACK SECONDS FOR PRINT              00000490
+         OI    27(13),X'F0'       SET UP FOR PRINTING                   00000500
+         MVC   TIME+6(2),26(13)   MOVE THE SECONDS                      00000510
+         CVD   1,8(13)            CONVERT MINUTES TO PACKED FORMAT      00000520
+         DP    8(8,13),=P'60'     DIVIDE INTO HOURS AND MINUTES         00000530
+         UNPK  24(4,13),14(2,13)  UNPACK THE MINUTES                    00000540
+         OI    27(13),X'F0'       SET UP FOR PRINTING                   00000550
+         MVC   TIME+3(2),26(13)   MOVE THE MINUTES                      00000560
+         ZAP   8(8,13),8(6,13)    RESET TO FULL LENGTH                  00000570
+         DP    8(8,13),=P'24'     DIVIDE INTO DAYS AND HOURS            00000580
+         UNPK  24(4,13),14(2,13)  UNPACK THE HOURS                      00000590
+         OI    27(13),X'F0'       SET UP FOR PRINTING                   00000600
+         MVC   TIME(2),26(13)     MOVE THE HOURS                        00000610
+         MVI   TIME+2,C':'        ADD COLIN                             00000620
+         MVI   TIME+5,C':'        ADD COLIN                             00000630
+         ZAP   8(8,13),8(6,13)    RESET TO FULL LENGTH                  00000640
+         DP    8(8,13),=P'7'      DIVIDE BY NUMBER OF DAYS IN A WEEK    00000650
+         ZAP   8(8,13),15(1,13)   FILL DOUBLEW WITH THE REMAINDER       00000660
+         CVB   0,8(13)            CONVERT RELATIVE DAY TO BINARY        00000670
+         STC   0,DAY              SET RELATIVE DAY OF WEEK              00000680
+         ZAP   16(8,13),8(8,13)   SAVE THE NUMBER OF DAYS               00000690
+         L     1,16               GET CVT ADDRESS                       00000700
+         MVC   24(4,13),57(1)     MOVE CVT DATE TO WORK AREA            00000710
+         ZAP   8(8,13),=P'0'      ZERO WORK AREA                        00000720
+         MVO   14(2,13),24(1,13)  MOVE YEAR PORTION                     00000730
+         UNPK  DATE+6(2),14(2,13) UNPACK INTO OUTPUT AREA               00000740
+         LA    15,S&L.T           LOAD ADDR OF TABLE                    00000750
+         CVB   1,8(13)            CONVERT TO BIN                        00000760
+         SLL   1,30               SHIFT ALL BUT LAST TWO                00000770
+         LTR   1,1                TEST RESIDUAL                         00000780
+         BNZ   *+8                NOT 0, BRANCH                         00000790
+         LA    15,S&L.TL          LEAP YEAR                             00000800
+         LR    14,15              SAVE TABLE IN USE                     00000810
+         ZAP   8(8,13),25(2,13)   MOVE DAY PORTION                      00000820
+         CVB   0,8(13)            CONVERT TO BIN                        00000830
+         SR    1,1                CLEAR REG                             00000840
+         IC    1,0(15)            LOAD CHAR FROM TABLE                  00000850
+         LA    15,1(15)           INDEX TABLE POINTER                   00000860
+         SR    0,1                SUBTRACT FROM WORK VALUE              00000870
+         BP    *-10               STILL POSITIVE, DO AGAIN              00000880
+         AR    0,1                ELSE, ADD IT BACK                     00000890
+         CVD   0,8(13)            CONVERT TO DEC                        00000900
+         UNPK  DATE+3(2),14(2,13) UNPACK DAY INTO OUTPUT                00000910
+         SR    15,14              FIND VALUE OF CURRENT INDEX           00000920
+         CVD   15,8(13)           CONVERT TO DEC                        00000930
+         UNPK  DATE(2),14(2,13)   UNPACK MONTH INTO OUTPUT              00000940
+         OI    DATE+1,C'0'        INSURE NUMERICS                       00000950
+         OI    DATE+4,C'0'        INSURE NUMERICS                       00000960
+         OI    DATE+7,C'0'        INSURE NUMERICS                       00000970
+         MVI   DATE+2,C'/'        ADD SLASH                             00000980
+         MVI   DATE+5,C'/'        ADD SLASH                             00000990
+         B     S&L.E              BRANCH AROUND CONSTANTS               00001000
+S&L.T    DC    AL1(31,28,31,30,31,30,31,31,30,31,30,31) MONTH TABLE     00001010
+S&L.TL   DC    AL1(31,29,31,30,31,30,31,31,30,31,30,31) LEAP YEAR       00001020
+         AIF    (T'&NOGEN NE 'O').NOGEN   NOGEN SPECIFIED, SKIP         00001030
+DAY      DC    XL1'00'            RELATIVE DAY OF THE WEEK              00001040
+DATE     DC    C'  /  /  '        CURRENT DATE                          00001050
+TIME     DC    C'  :  :  '        CURRENT TIME                          00001060
+.NOGEN   ANOP                                                           00001070
+S&L.E    DS    0H                                                       00001080
+         MEND                                                           00001090

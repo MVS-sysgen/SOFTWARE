@@ -1,0 +1,18 @@
+         MACRO                                                          00010000
+         FC    &X                                                       00020000
+         LCLC  &C                                                       00030000
+         GBLA  &COUNT                                                   00040000
+&COUNT   SETA  &COUNT+1                                                 00050000
+         AIF   (&COUNT GT 9000).SETB                                    00060000
+&C       SETC  'A&SYSNDX'                                               00070000
+         AGO   .TESTIT                                                  00080000
+.SETB    ANOP                                                           00090000
+         AIF   (&COUNT GT 18000).SETC                                   00100000
+&C       SETC  'B&SYSNDX'                                               00110000
+         AGO   .TESTIT                                                  00120000
+.SETC    ANOP                                                           00130000
+&C       SETC  'C&SYSNDX'                                               00140000
+.TESTIT  ANOP                                                           00150000
+         DC    AL1(L'&C)              , LENGTH OF FORTUNE COOKIE        00160000
+&C       DC    C&X                    , FORTUNE COOKIE TEXT             00170000
+         MEND                                                           00180000

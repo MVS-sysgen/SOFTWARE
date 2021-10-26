@@ -1,0 +1,18 @@
+         MACRO                                                          00000100
+         IEZBITS                                                        00000200
+         GBLA  &IEZBITS                                                 00000300
+         AIF   (&IEZBITS EQ 0).SETSW                                    00000400
+         MEXIT                                                          00000500
+.SETSW   ANOP                                                           00000600
+&IEZBITS SETA  1                                                        00000700
+*                                                                       00000800
+BIT0     EQU   128                                                      00000900
+BIT1     EQU   64                                                       00001000
+BIT2     EQU   32                                                       00001100
+BIT3     EQU   16                                                       00001200
+BIT4     EQU   8                                                        00001300
+BIT5     EQU   4                                                        00001400
+BIT6     EQU   2                                                        00001500
+BIT7     EQU   1                                                        00001600
+*                                                                       00001700
+         MEND                                                           00001800

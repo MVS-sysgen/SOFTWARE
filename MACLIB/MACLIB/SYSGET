@@ -1,0 +1,47 @@
+         MACRO                                                          00000010
+&SYM     SYSGET &EODAD=EODAD,&DDNAME=SYSIN,&LRECL=80,&RECFM=,          X00000020
+               &BLKSIZE=80                                              00000030
+         AIF   (K'&SYM EQ 0).NOSYM                                      00000040
+         AIF   (K'&SYM GT 5).ERRSYM                                     00000050
+         AIF   (K'&DDNAME GT 8).DDNERR                                  00000060
+         AIF   (K'&EODAD GT 8).ERREOD                                   00000070
+       MNOTE *,'DCB = DDNAME=&DDNAME,DSORG=PS,MACRF=GL,EODAD=&EODAD'    00000080
+       MNOTE *,'          DD CARD CHANGES WILL WORK FOR '               00000090
+       MNOTE *,'      LRECL=&LRECL,BLKSIZE=&BLKSIZE,RECFM=&RECFM'       00000100
+         DS    0H                                                       00000110
+&SYM     NOP   &SYM.S1 .               NOP UNTIL OPEN                   00000120
+         OI    &SYM.+1,C'0' .          SET NOP TO UNCONDITIONAL         00000130
+         ST    14,&SYM.14 .            SAVE RETURN REG                  00000140
+         OPEN  (&SYM.DCB,(INPUT))                                       00000150
+&SYM.1   GET   &SYM.DCB                                                 00000160
+         L     14,&SYM.14 .            RESTORE RETURN REG               00000170
+         BR    14 .                    RETURN                           00000180
+&SYM.S1  ST    14,&SYM.14 .            SAVE RETURN POINTER              00000190
+         B     &SYM.1 .                GO GET RECORD                    00000200
+&SYM.XIT CLC   &SYM.DCB+62(2),=H'0' .  IS BLOCK SIZE THERE              00000210
+         BNE   &SYM.3 .                IF SO SKIP                       00000220
+         MVC   &SYM.DCB+62(2),=H'&BLKSIZE' .MOVE IN SIZE                00000230
+&SYM.3   CLC   &SYM.DCB+82(2),=H'0' .  IS LRECL HERE                    00000240
+         BNE   &SYM.4 .                IF SO SKIP                       00000250
+         MVC   &SYM.DCB+82(2),=H'&LRECL' .   MOVE IN LRECL              00000260
+&SYM.4   CLI   &SYM.DCB+36,X'00' .     IS RECFM THERE                   00000270
+         BNE   &SYM.5 .                BRANCH IF THERE                  00000280
+         MVI   &SYM.DCB+36,X'90' .     MOVE IN DEFAULT RECFM FB         00000290
+&SYM.5   BR    14 .                    RETURN TO OPEN                   00000300
+&SYM.EOD CLOSE &SYM.DCB                                                 00000310
+         NI    &SYM.+1,X'0F' .         RESET NOP FOR POSSIBLE REOPEN    00000320
+         B     &EODAD .                GO TO USERS EODAD RTN            00000330
+&SYM.14  DS    1F .                    RETURN REG SAVE AREA             00000340
+&SYM.LST DC    X'85' .                 DCB OPEN EXIT                    00000350
+         DC    AL3(&SYM.XIT) .         POINTER TO XIT RTN               00000360
+&SYM.DCB DCB   DDNAME=&DDNAME,DSORG=PS,MACRF=(GL),EODAD=&SYM.EOD,      ,00000370
+               EXLST=&SYM.LST,RECFM=&RECFM                              00000380
+         AGO   .END                                                     00000390
+.ERRSYM MNOTE 8,'8,*** LABEL ON SYSGET MACRO MUST BE LESS THAN SIX'     00000400
+         AGO   .END                                                     00000410
+.NOSYM  MNOTE 8,'8,*** SYSGET MACRO MUST HAVE A LABEL'                  00000420
+         AGO   .END                                                     00000430
+.DDNERR MNOTE 8,'8,*** DDNAME LARGER THAN EIGHT CHARACTERS'             00000440
+         AGO   .END                                                     00000450
+.ERREOD MNOTE 8,'8,*** MAXIMUM LABEL SIZE IS EIGHT CHARACTERS'          00000460
+.END     MEND                                                           00000470

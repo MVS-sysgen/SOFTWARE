@@ -1,0 +1,27 @@
+         MACRO                                                          00000100
+         IEZREGS &DUMMY                                                 00000200
+         GBLA  &DEFREGS                                                 00000300
+         AIF   (&DEFREGS EQ 1).NOGEN   FLAG ON ? BYPASS EQUATES         00000401
+         SPACE 1                                                        00000500
+R0       EQU   0                                                        00000600
+R1       EQU   1                                                        00000700
+R2       EQU   2                                                        00000800
+R3       EQU   3                                                        00000900
+R4       EQU   4                                                        00001000
+R5       EQU   5                                                        00001100
+R6       EQU   6                                                        00001200
+R7       EQU   7                                                        00001300
+R8       EQU   8                                                        00001400
+R9       EQU   9                                                        00001500
+R10      EQU   10                                                       00001600
+R11      EQU   11                                                       00001700
+R12      EQU   12                                                       00001800
+R13      EQU   13                                                       00001900
+R14      EQU   14                                                       00002000
+R15      EQU   15                                                       00002100
+         SPACE 1                                                        00002201
+.*             EQUATES GENERATED, TURN ON DEFREGS FLAG TO PREVENT       00002301
+.*             DUPLICATE EQUATES BEING GENERATED                        00002401
+&DEFREGS SETA  1                                                        00002501
+.NOGEN   ANOP                                                           00002602
+         MEND                                                           00002700
