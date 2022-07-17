@@ -30,7 +30,8 @@
 //SYSIN    DD  DUMMY
 //* Work temp dataset
 //SYSUT1   DD  DSN=&&SYSUT1,
-//             UNIT=SYSALLDA,
+//             VOL=SER=PUB001,
+//             UNIT=3390,
 //             SPACE=(CYL,(8,4),RLSE),
 //             DISP=(,DELETE)
 //* Output dataset
@@ -43,10 +44,29 @@
 //         PEND
 //* ***************************
 //DOC      EXEC RECV,DSN=DOC
-//LLIB     EXEC RECV,DSN=LLIB
 //MLIB     EXEC RECV,DSN=MLIB
 //PLIB     EXEC RECV,DSN=PLIB
 //RFEPLIB  EXEC RECV,DSN=RFEPLIB
+//* ---- RECEIVE LOADLIB ----
+//RECVLOAD EXEC PGM=RECV370
+//STEPLIB  DD  DISP=SHR,DSN=SYSC.LINKLIB
+//XMITIN   DD  DSN=MVP.WORK(LLIB),DISP=SHR
+//RECVLOG  DD  SYSOUT=*
+//SYSPRINT DD  SYSOUT=*
+//SYSIN    DD  DUMMY
+//* Work temp dataset
+//SYSUT1   DD  DSN=&&SYSUT1,
+//             VOL=SER=PUB001,
+//             UNIT=3390,
+//             SPACE=(CYL,(8,4),RLSE),
+//             DISP=(,DELETE)
+//* Output dataset
+//SYSUT2   DD  DISP=(NEW,CATLG),
+//             DSN=SYSGEN.ISPF.LLIB,
+//             SPACE=(CYL,(2,0,20),RLSE),
+//             UNIT=SYSDA,
+//             VOL=SER=PUB001,
+//             DCB=(RECFM=U,BLKSIZE=19069)
 //* ***************************
 //* Create empty DSNs
 //* I'm not sure we need these
@@ -94,6 +114,8 @@ ALLOC F(ISPPROF) DA('&SYSUID..ISP.PROF') SHR
 ALLOC F(REVPROF) DA('&SYSUID..ISP.PROF') SHR
 /* Launch ISPF */
 CALL 'SYSGEN.ISPF.LLIB(ISPF)'
+FREE  F(ISPCLIB,ISPLLIB,ISPMLIB,ISPPLIB,ISPSLIB,ISPTABL,ISPTLIB)
+FREE  F(ISPPROF,REVPROF)
 @@
 //*
 //* Apply ISPMAINT
