@@ -1,0 +1,482 @@
+# This script packages up NJE38 and adds required JCL
+# to deploy NJE38
+# 
+#
+
+cat << 'END'
+//NJE38  JOB (TSO),
+//             'Install NJE38',
+//             CLASS=A,
+//             MSGCLASS=A,
+//             MSGLEVEL=(1,1),
+//             USER=IBMUSER,
+//             PASSWORD=SYS1
+/*JOBPARM   LINES=1000
+//*
+//*  Installs SYSGEN.NJE38.MACLIB
+//*
+//NJE38MAC EXEC PGM=PDSLOAD
+//STEPLIB  DD  DSN=SYSC.LINKLIB,DISP=SHR
+//SYSPRINT DD  SYSOUT=*
+//SYSUT2   DD  DSN=SYSGEN.NJE38.MACLIB,DISP=(NEW,CATLG),
+//             VOL=SER=PUB001,
+//             UNIT=3390,SPACE=(CYL,(1,1,5)),
+//             DCB=(BLKSIZE=3120,RECFM=FB,LRECL=80)
+//SYSUT1   DD  DATA,DLM=@@
+END
+
+for i in N38.MACLIB/*;do
+    filename=$(basename -- "$i")
+    echo "./ ADD NAME=${filename%.*}"
+    cat $i
+done
+echo "@@"
+
+cat << 'END'
+//*
+//*  Installs SYSGEN.NJE38.ASMSRC
+//*
+//ASMSRC   EXEC PGM=PDSLOAD
+//STEPLIB  DD  DSN=SYSC.LINKLIB,DISP=SHR
+//SYSPRINT DD  SYSOUT=*
+//SYSUT2   DD  DSN=SYSGEN.NJE38.ASMSRC,DISP=(NEW,CATLG),
+//             VOL=SER=PUB001,
+//             UNIT=3390,SPACE=(CYL,(2,1,10)),
+//             DCB=(BLKSIZE=6160,LRECL=80,RECFM=FB)
+//SYSUT1   DD  DATA,DLM=@@
+END
+
+for i in N38.ASMSRC/*.txt;do
+    filename=$(basename -- "$i")
+    echo "./ ADD NAME=${filename%.*}"
+    cat $i
+done
+echo "@@"
+
+cat << 'END'
+//*
+//*  Installs SYSGEN.NJE38.SAMPLIB
+//*
+//SAMPLIB   EXEC PGM=PDSLOAD
+//STEPLIB  DD  DSN=SYSC.LINKLIB,DISP=SHR
+//SYSPRINT DD  SYSOUT=*
+//SYSUT2   DD  DSN=SYSGEN.NJE38.SAMPLIB,DISP=(NEW,CATLG),
+//             VOL=SER=PUB001,
+//             UNIT=3390,SPACE=(CYL,(2,1,10)),
+//             DCB=(BLKSIZE=6160,LRECL=80,RECFM=FB)
+//SYSUT1   DD  DATA,DLM=@@
+END
+
+for i in N38.SAMPLIB/*;do
+    filename=$(basename -- "$i")
+    echo "./ ADD NAME=${filename%.*}"
+    cat $i
+done
+echo "@@"
+
+cat << 'ENDJCL'
+//*
+//* These steps will assemble all components of NJE38 and link it
+//* into SYSGEN.NJE38.AUTHLIB
+//*
+//* All steps should receive COND CODE 0
+//*
+//ASSEM    PROC R=RENT,M=
+//ASSEMBLE EXEC  PGM=IFOX00,REGION=4096K,
+// PARM=('XREF(FULL),OBJ,SYSPARM((ON,GEN,NODATA,YES,YES))',
+//       'NODECK,&R')
+//SYSLIB   DD    DSN=SYSGEN.NJE38.MACLIB,DISP=SHR,DCB=BLKSIZE=32720
+//         DD    DSN=SYS1.SMPMTS,DISP=SHR
+//         DD    DSN=SYS1.SMPSTS,DISP=SHR
+//         DD    DSN=SYS1.MACLIB,DISP=SHR
+//         DD    DSN=SYS1.AMODGEN,DISP=SHR
+//SYSUT1   DD    DSN=&&SYSUT1,UNIT=SYSDA,SPACE=(1700,(5600,500))
+//SYSUT2   DD    DSN=&&SYSUT2,UNIT=SYSDA,SPACE=(1700,(1300,500))
+//SYSUT3   DD    DSN=&&SYSUT3,UNIT=SYSDA,SPACE=(1700,(1300,500))
+//SYSPRINT DD SYSOUT=*
+//SYSPUNCH DD SYSOUT=B
+//SYSGO    DD DSN=&&NJE38OBJ(&M),DISP=(MOD,PASS),
+//            SPACE=(800,(2000,1000,10)),UNIT=SYSDA
+//SYSIN    DD DSN=SYSGEN.NJE38.ASMSRC(&M),DISP=SHR
+// PEND
+//* ***********************************
+//         EXEC ASSEM,M=NJEINIT,R=RENT
+//         EXEC ASSEM,M=NJECMX,R=RENT
+//         EXEC ASSEM,M=NJEDRV,R=RENT
+//         EXEC ASSEM,M=NJEFMT,R=RENT
+//         EXEC ASSEM,M=NJERCV,R=RENT
+//         EXEC ASSEM,M=NJERLY,R=RENT
+//         EXEC ASSEM,M=NJESCN,R=RENT
+//         EXEC ASSEM,M=NJESPOOL,R=RENT
+//         EXEC ASSEM,M=NJESYS,R=RENT
+//         EXEC ASSEM,M=NJETRN,R=RENT
+//         EXEC ASSEM,M=NJE38,R=RENT
+//         EXEC ASSEM,M=NJ38RECV,R=RENT
+//         EXEC ASSEM,M=NJ38XMIT,R=RENT
+//         EXEC ASSEM,M=DMTXJE,R=NORENT
+//         EXEC ASSEM,M=DMTMSG,R=RENT
+//* ***********************************
+//LINKAUTH EXEC PGM=IEWL,PARM='XREF,LET,LIST,NCAL,RENT',COND=(4,LT)
+//SYSPRINT DD  SYSOUT=*
+//SYSUT1   DD  DSN=&&SYSUT1,UNIT=SYSDA,SPACE=(1024,(50,20))
+//SYSLMOD  DD  DISP=(NEW,CATLG),DSN=SYSGEN.NJE38.AUTHLIB,
+//             VOL=SER=MVS000,SPACE=(CYL,(1,1,5)),UNIT=3350,
+//             DCB=(BLKSIZE=6144,RECFM=U)
+//NJEOBJ   DD  DSN=&&NJE38OBJ,DISP=(OLD,PASS)
+//SYSLIN   DD  *
+        ORDER NJEDRV(P)
+        ORDER NJECOM
+        ORDER NJEREQ
+        ORDER NJEAXS
+        ORDER NJESIO
+        ORDER NJESPL
+        ORDER NJEWT
+        ORDER NJEGPG
+        ORDER NJEGMQ
+        ORDER NJEGLQ
+        ORDER NJEGRQ
+        ORDER NJEALQ
+        ORDER NJETOD
+        ORDER DMTXJE(P)
+        ORDER DMTXJE1
+        ORDER DMTXJE2
+        ORDER DMTXJE3
+        ORDER DMTXJEA
+        ORDER DMTXJEB
+        ORDER DMTMSG
+        INCLUDE NJEOBJ(NJEDRV)
+        INCLUDE NJEOBJ(DMTXJE)
+        INCLUDE NJEOBJ(DMTMSG)
+        ENTRY NJEDRV
+   NAME NJEDRV(R)
+        ORDER NJECMX(P)
+        INCLUDE NJEOBJ(NJECMX)
+        INCLUDE NJEOBJ(NJESCN)
+        ENTRY NJECMX
+   NAME NJECMX(R)
+        INCLUDE NJEOBJ(NJERLY)
+        INCLUDE NJEOBJ(NJESYS)
+        SETCODE AC(1)
+   NAME NJERLY(R)
+        ORDER NJESPOOL(P)
+        INCLUDE NJEOBJ(NJESPOOL)
+   NAME NJESPOOL(R)
+        ORDER NJEINIT(P)
+        INCLUDE NJEOBJ(NJEINIT)
+        INCLUDE NJEOBJ(NJESCN)
+        INCLUDE NJEOBJ(NJESYS)
+        ENTRY NJEINIT
+        SETCODE AC(1)
+   NAME NJEINIT(R)
+        INCLUDE NJEOBJ(NJEFMT)
+   NAME NJEFMT(R)
+        ORDER NJ38RECV
+        INCLUDE NJEOBJ(NJ38RECV)
+        INCLUDE NJEOBJ(NJESYS)
+        INCLUDE NJEOBJ(NJESPOOL)
+        ENTRY NJ38RECV
+   NAME NJ38RECV(R)
+        ORDER NJ38XMIT
+        INCLUDE NJEOBJ(NJ38XMIT)
+        INCLUDE NJEOBJ(NJESYS)
+        INCLUDE NJEOBJ(NJESPOOL)
+        ENTRY NJ38XMIT
+        SETCODE AC(1)
+   NAME NJ38XMIT(R)
+        INCLUDE NJEOBJ(NJE38)
+        INCLUDE NJEOBJ(NJESYS)
+        ENTRY NJE38
+        SETCODE AC(1)
+   NAME NJE38(R)
+        ORDER NJERCV(P)
+        INCLUDE NJEOBJ(NJERCV)
+        INCLUDE NJEOBJ(NJESYS)
+        INCLUDE NJEOBJ(NJESPOOL)
+        ENTRY NJERCV
+        SETCODE AC(1)
+        ALIAS RECV
+   NAME RECEIVE(R)
+        ORDER NJETRN(P)
+        INCLUDE NJEOBJ(NJETRN)
+        INCLUDE NJEOBJ(NJESYS)
+        INCLUDE NJEOBJ(NJESPOOL)
+        ENTRY NJETRN
+        SETCODE AC(1)
+        ALIAS XMIT
+   NAME TRANSMIT(R)
+/*
+//*
+//LKCMDLIB EXEC PGM=IEWL,PARM='XREF,LET,LIST,NCAL,RENT',COND=(4,LT)
+//SYSPRINT DD  SYSOUT=*
+//SYSUT1   DD  DSN=&&SYSUT1,UNIT=SYSDA,SPACE=(1024,(50,20))
+//SYSLMOD  DD  DSN=SYS2.CMDLIB,DISP=SHR
+//NJEOBJ   DD  DSN=&&NJE38OBJ,DISP=(OLD,PASS)
+//SYSLIN   DD *
+        INCLUDE NJEOBJ(NJE38)
+        INCLUDE NJEOBJ(NJESYS)
+        ENTRY NJE38
+        SETCODE AC(1)
+   NAME NJE38(R)
+        ORDER NJERCV(P)
+        INCLUDE NJEOBJ(NJERCV)
+        INCLUDE NJEOBJ(NJESYS)
+        INCLUDE NJEOBJ(NJESPOOL)
+        ENTRY NJERCV
+        SETCODE AC(1)
+        ALIAS RECV
+   NAME RECEIVE(R)
+        ORDER NJETRN(P)
+        INCLUDE NJEOBJ(NJETRN)
+        INCLUDE NJEOBJ(NJESYS)
+        INCLUDE NJEOBJ(NJESPOOL)
+        ENTRY NJETRN
+        SETCODE AC(1)
+        ALIAS XMIT
+   NAME TRANSMIT(R)
+/*
+//*
+//* This step will add SYSGEN.NJE38.AUTHLIB to IEAAPF00
+//*
+//ADDAPF   EXEC PGM=IKJEFT01,REGION=1024K,DYNAMNBR=50
+//SYSPRINT DD  SYSOUT=*
+//SYSTSPRT DD  SYSOUT=*
+//SYSTERM  DD  SYSOUT=*
+//SYSTSIN  DD  *
+EDIT 'SYS1.PARMLIB(IEAAPF00)' DATA OLD
+LIST
+TOP
+FIND LINK
+INSERT  SYSGEN.NJE38.AUTHLIB MVS000, NJE38 LIB
+LIST
+END SAVE
+//*
+//* CREATE THE NJE38 NETSPOOL DATASET
+//*
+//CRTSPOOL EXEC PGM=IDCAMS
+//SYSPRINT DD SYSOUT=*
+//SPLVOL   DD UNIT=SYSDA,DISP=SHR,VOL=SER=PUB001
+//SYSIN    DD *
+  DELETE (PUB001.NJE38.NETSPOOL) CLUSTER PURGE
+  /* IF THERE WAS NO DATASET TO DELETE, RESET CC           */
+  IF LASTCC = 8 THEN
+    DO
+        SET LASTCC = 0
+        SET MAXCC  = 0
+    END
+
+   /* DEFINE NJE38 CLUSTER */
+
+  DEF CL (  NAME( PUB001.NJE38.NETSPOOL )                     -
+            RECSZ(4089,4089)                                  -
+            CYL(100)                                          -
+            NUMBERED                                          -
+            CISZ(4096)                                        -
+            SHR(4 4)                                          -
+            FILE( SPLVOL )                                    -
+            VOLUMES( PUB001 ))                                -
+  DATA (  NAME( PUB001.NJE38.NETSPOOL.DATA )                  -
+            UNIQUE )
+/*
+//*
+//* FORMAT THE NJE38 NETSPOOL DATASET
+//*
+//FMTSPOOL EXEC PGM=NJEFMT
+//STEPLIB  DD DISP=SHR,DSN=SYSGEN.NJE38.AUTHLIB
+//SYSPRINT DD SYSOUT=*
+//SYSUDUMP DD SYSOUT=*
+//NETSPOOL DD DISP=OLD,DSN=PUB001.NJE38.NETSPOOL
+//*
+//* ADD THE NJE CONFIG FILE TO SYS2.PARMLIB(NJE38C00)
+//*
+//COPYPARM EXEC PGM=IEBGENER
+//SYSPRINT DD SYSOUT=*
+//SYSIN    DD DUMMY
+//SYSUT1   DD *
+*
+* NJE38 EXAMPLE CONFIGURATION FILE
+*
+*-- Local parameters
+*
+LOCAL MVSA     DEFUSER IBMUSER
+*
+*-- Physical links to remote nodes
+*
+LINK  MVSB     LINE 602   AUTO YES   BUFF 1012
+*
+*-- Routes to indirect nodes
+*
+*ROUTE nodeid   TO linkid
+*
+*
+*-- Authorized users
+*
+*     Userid   AT Node
+*     -------- -- --------
+AUTH  HMVS01   AT MVSA
+AUTH  HMVS01   AT MVSB
+*
+//SYSUT2   DD DSN=SYS2.PARMLIB(NJE38C00),DISP=SHR
+//*
+//* Add the NJE38 proc to SYS2.PROCLIB(NJE38)
+//*
+//NJEPROC  EXEC PGM=PDSLOAD
+//STEPLIB  DD  DSN=SYSC.LINKLIB,DISP=SHR
+//SYSPRINT DD  SYSOUT=*
+//SYSUT2   DD  DSN=SYS2.PROCLIB,DISP=SHR
+//SYSUT1   DD  DATA,DLM=@@
+./ ADD NAME=NJE38
+//NJE38    PROC M=NJE38C00,
+//            D='SYS2.PARMLIB'
+//*
+//* STARTED TASK PROCEDURE FOR NJE38
+//*
+//NJEINIT  EXEC PGM=NJEINIT,REGION=4096K
+//STEPLIB  DD DSN=SYSGEN.NJE38.AUTHLIB,DISP=SHR
+//NETSPOOL DD DSN=PUB001.NJE38.NETSPOOL,DISP=SHR
+//CONFIG   DD DSN=&D(&M),DISP=SHR,FREE=CLOSE
+//IEFRDER  DD DUMMY
+@@
+/*
+//*
+//* Edit SYS1.UMODSRC(IKJEFTE2) Adding NJE38 programs
+//* that need auth
+//*
+//EDITUMOD EXEC PGM=IKJEFT01,REGION=1024K,DYNAMNBR=50
+//SYSPRINT DD  SYSOUT=*
+//SYSTSPRT DD  SYSOUT=*
+//SYSTERM  DD  SYSOUT=*
+//SYSTSIN  DD  *
+ EDIT 'SYS1.UMODSRC(IKJEFTE2)' DATA 
+ LIST
+ TOP
+ FIND /TERMINATOR/
+ UP
+ INSERT          DC    C'NJE38   '             NJE38 Command
+ INSERT          DC    C'RECEIVE '             NJE38 RECEIVE
+ INSERT          DC    C'RECV    '             NJE38 RECEIVE Alias
+ INSERT          DC    C'TRANSMIT'             NJE38 TRANSMIT
+ INSERT          DC    C'XMIT    '             NJE38 TRANSMIT Alias
+ LIST
+ END SAVE
+/*
+//*
+//* Install NJE001 Usermod to IKJEFTE2
+//*
+//NJSMPASM EXEC SMPASML,M=IKJEFTE2,COND=(0,NE)
+//*
+//NJERECV  EXEC SMPAPP,COND=(0,NE),WORK=SYSALLDA
+//SMPPTFIN DD  *
+++USERMOD(NJE0001)
+  .
+++VER(Z038)
+  FMID(EBB1102)
+  PRE(JLM0003)
+  .
+++MOD(IKJEFTE2)
+  DISTLIB(AOST4)
+  LKLIB(UMODLIB)
+  .
+/*
+//SMPCNTL  DD  *
+ RECEIVE
+         SELECT(NJE0001)
+         .
+  APPLY
+        SELECT(NJE0001)
+        DIS(WRITE)
+        .
+/*
+//*
+//* ADD RAKF PROFILE
+//*
+//ADDRAKFP EXEC PGM=SORT,REGION=512K,PARM='MSG=AP'
+//STEPLIB  DD   DSN=SYSC.LINKLIB,DISP=SHR
+//SYSOUT   DD   SYSOUT=A
+//SYSPRINT DD  SYSOUT=A
+//SORTLIB  DD   DSNAME=SYSC.SORTLIB,DISP=SHR
+//SORTOUT  DD   DSN=SYS1.SECURE.CNTL(PROFILES),
+//             DISP=SHR,DCB=(BLKSIZE=80,RECFM=F)
+//SORTWK01 DD  UNIT=2314,SPACE=(CYL,(5,5)),VOL=SER=SORTW1
+//SORTWK02 DD  UNIT=2314,SPACE=(CYL,(5,5)),VOL=SER=SORTW2
+//SORTWK03 DD  UNIT=2314,SPACE=(CYL,(5,5)),VOL=SER=SORTW3
+//SORTWK04 DD  UNIT=2314,SPACE=(CYL,(5,5)),VOL=SER=SORTW5
+//SORTWK05 DD  UNIT=2314,SPACE=(CYL,(5,5)),VOL=SER=SORTW6
+//SYSIN  DD    *
+ SORT FIELDS=(1,80,CH,A)
+ RECORD TYPE=F,LENGTH=(80)
+ END
+/*
+//SORTIN DD DSN=SYS1.SECURE.CNTL(PROFILES),DISP=SHR
+//       DD *
+DATASET PUB001.NJE38.NETSPOOL                               UPDATE
+/*
+//*
+//* Reload profile table
+//*
+//RAKFUPDT EXEC RAKFPROF
+//RAKFUPDT EXEC RAKFUSER
+//*
+//* REXX and MVP to write the new config file
+//* First create temp REXX file
+//*
+//MAKEREXX EXEC PGM=IEBGENER
+//SYSPRINT DD SYSOUT=*
+//SYSIN DD DUMMY
+//SYSUT1    DD *
+say ''
+say '******************************************'
+say '* REXX Script to Add NJE38 custom config *'
+say '******************************************'
+say ''
+
+file = "conf/local/nje38.cnf"
+cmd = 'CP SH MVP/MVP WRITE "'
+
+say "*** Writing to" file
+
+command.1 = "#############################################"
+command.2 = "#"
+command.3 = "# NJE38 Config"
+command.4 = "#"
+command.5 = "#############################################"
+command.6 = "#"
+command.7 = "# Temporary NJE38 settings below, modify for your environment"
+command.8 = "#"
+command.9 = "0602 tcpnje 2703 lnode=SYSA rnode=SYSB lport=1175"||,
+" rport=1175 rhost=10.10.10.10"
+command.10 = "#############################################" 
+
+command.0 = 10
+
+do i=1 to command.0
+    say "*** Adding" COMMAND.i
+    say "*** Issuing "||cmd||file||' '||COMMAND.i||'"' 
+    ADDRESS COMMAND cmd||file||' '||COMMAND.i||'"'
+end
+
+say "*** Appending to conf/local/custom.cnf"
+conffile = "conf/local/custom.cnf"
+say "*** Issuing " cmd||conffile||' INCLUDE '||file||'"'
+ADDRESS COMMAND cmd||conffile||' INCLUDE '||file||'"'
+
+say "*** Done"
+/*
+//SYSUT2   DD DSN=&&REXXCONF(NJECONF),DISP=(,PASS),UNIT=VIO,
+//            SPACE=(TRK,(5,5,5))
+//*
+//* Execute the REXX script in TSO
+//*
+//EXECREXX EXEC PGM=IKJEFT01,
+//       PARM='BREXX NJECONF',
+//       REGION=8192K
+//TSOLIB   DD   DSN=BREXX.CURRENT.RXLIB,DISP=SHR
+//RXLIB    DD   DSN=BREXX.CURRENT.RXLIB,DISP=SHR
+//SYSEXEC  DD   DSN=&&REXXCONF,DISP=SHR
+//SYSPRINT DD   SYSOUT=*
+//SYSTSPRT DD   SYSOUT=*
+//SYSTSIN  DD   DUMMY
+//STDOUT   DD   SYSOUT=*,DCB=(RECFM=FB,LRECL=140,BLKSIZE=5600)
+//STDERR   DD   SYSOUT=*,DCB=(RECFM=FB,LRECL=140,BLKSIZE=5600)
+//STDIN    DD   DUMMY
+//**************************** \/\/\/\/
+ENDJCL
