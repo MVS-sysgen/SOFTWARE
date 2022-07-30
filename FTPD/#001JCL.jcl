@@ -1,9 +1,15 @@
-//#001JCL JOB (FTPD),
+//INSTALL JOB (FTPD),
 //            'FTPD INSTALL',
 //            CLASS=A,
 //            MSGCLASS=A,
 //            REGION=8M,
 //            MSGLEVEL=(1,1)
+//*
+//* Installs FTPD/FTPDXCTL to SYS2.LINKLIB
+//* Adds FTPDPM00 to SYS1.PARMLIB
+//* Adds FTPD procedure to SYS2.PROCLIB
+//* Adds the FTP user and updates RAKF profiles
+//*
 //FTDELETE EXEC PGM=IDCAMS,REGION=1024K
 //SYSPRINT DD  SYSOUT=A
 //SYSIN    DD  *
@@ -138,9 +144,14 @@ SRVPORT=2121
 #         '0.0.0.0'.
 SRVIP=ANY
 # PASVADR - IP address to return for passive mode, comma separated. The
-#           default is '127,0,0,1'. This address is used only if
-#           getsockname doesnt return a suitable value.
+#           default is '127,0,0,1'. 
 PASVADR=127,0,0,1
+# PASVPORTS - Port range for passive ports. Default is all ephmeral port
+#             i.e. 1025-65535
+#PASVPORTS=22000-22200
+# INSECURE - By default the FTP server will only accept connections on
+#            127.0.0.1, set INSECURE=1 to allow connections from any IP
+#INSECURE=1
 # FAST - Uncomment this line to enable Library Optimisation Extensions
 #FAST=TRUE
 # The AUTHUSER can stop ftp daemon from a client session using
@@ -243,3 +254,4 @@ RX SYS2.EXEC(RAKFUPDT)
 //SYSTSPRT DD   SYSOUT=*
 //RAKFUSER EXEC RAKFUSER
 //RAKFPROF EXEC RAKFPROF
+
