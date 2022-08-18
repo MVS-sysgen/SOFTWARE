@@ -34,6 +34,19 @@
 //RFEPLIB  DD DSN=MVP.STAGING.RFEPLIB,DISP=(,CATLG),
 //         VOL=SER=PUB001,UNIT=SYSDA,SPACE=(CYL,(2,0,20),RLSE)
 //*
+//* Create temp dataset for IEBCOPY control statements
+//*
+//TEMPFILE EXEC PGM=IEBGENER
+//SYSPRINT DD  SYSOUT=*
+//SYSIN    DD  DUMMY
+//* :....1....:....2....:....3....:....4....:....5....:....6....:....7.
+//SYSUT1   DD  *
+DOIT  	   COPY OUTDD=SYSUT2
+                INDD=((SYSUT1,R))
+/*
+//SYSUT2   DD  DSN=&&CONTROL,UNIT=SYSDA,SPACE=(CYL,1),
+//             DISP=(NEW,CATLG,DELETE)
+//*
 //* Unload neccesary files
 //*
 //LOAD     PROC INDSN=LLIB,OUTDSN=LLIB,LABEL=1
@@ -43,7 +56,7 @@
 //         VOL=(PRIVATE,RETAIN,SER=ISP220),UNIT=TAPE,
 //         LABEL=(&LABEL,SL,,IN)
 //SYSUT2   DD   DSN=MVP.STAGING.&OUTDSN,DISP=SHR
-//SYSIN    DD   DUMMY
+//SYSIN    DD   DSN=&&CONTROL,DISP=SHR
 //         PEND
 //* *******************************************************
 //DOC      EXEC LOAD,INDSN=DOC,OUTDSN=DOC,LABEL=2
