@@ -9,7 +9,7 @@ cat << END
 //             USER=IBMUSER,
 //             PASSWORD=SYS1
 //*
-//*  Installs SYS2.MACLIB
+//*  Installs SYS2.ESPMAC
 //*
 //STEP1   EXEC PGM=PDSLOAD
 //STEPLIB  DD  DSN=SYSC.LINKLIB,DISP=SHR
