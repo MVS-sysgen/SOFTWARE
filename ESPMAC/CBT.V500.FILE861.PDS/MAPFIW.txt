@@ -1,0 +1,31 @@
+         MACRO ,                                                        00010000
+&NM      MAPFIW &DSECT=,&PFX=FIW,&LEN=0                 ADDED ON 84237  00020000
+         LCLC  &P,&Q                                                    00030000
+&P       SETC  '&PFX'                                                   00040000
+&Q       SETC  '&P'.'SECT'                                              00050000
+         AIF   ('&NM' EQ '').DFDS                                       00060000
+&Q       SETC  '&NM'                                                    00070000
+.DFDS    AIF   ('&DSECT' EQ 'NO').NODS                                  00080000
+&Q       DSECT ,                                                        00090000
+         AGO   .CMDS                                                    00100000
+.NODS    AIF   ('&NM' EQ '').CMDS                                       00110000
+&Q       DS    0X                                                       00120000
+.CMDS    ANOP  ,                                                        00130000
+&P.FG    DC    X'00'         ENTRY FLAG                                 00140000
+&P.FTXT  EQU   X'80'           ENTRY CONTAINS TEXT                      00150000
+&P.FERR  EQU   X'40'           TEXT IS IN ERROR                         00160000
+&P.FPEN  EQU   X'20'           FIELD SELECTED BY LIGHT-PEN              00170000
+&P.FHLP  EQU   X'10'           TEXT IS HELP OR ?                 88221  00180000
+&P.FPRO  EQU   X'08'           PROCESSED BY EXIT; IGNORE        GP04111 00190000
+&P.FINT  EQU   X'02'           DISPLAY FIELD INTENSIFIED                00200000
+&P.FINV  EQU   X'01'           DISPLAY OPPOSITE INTENSITY               00210000
+&P.LEN   DC    AL1(0)        CURRENT TEXT LENGTH                        00220000
+&P.ATB   DC    AL2(0)        ADDRESS+1 OF ATTRIBUTE BYTE                00230000
+         AIF   ('&LEN' EQ '0' OR '&LEN' EQ '').NULLEN            87166  00240000
+&P.TEXT  DC    CL(&LEN)' '   TEXT FIELD (FROM CRT)               87166  00250000
+         AGO   .COMLEN                                           87166  00260000
+.NULLEN  ANOP  ,                                                 87166  00270000
+&P.TEXT  DC    0C' '         TEXT FIELD (FROM CRT)                      00280000
+.COMLEN  ANOP  ,                                                 87166  00290000
+&P.SIZE  EQU   *-&P.FG       SIZE OF ONE ENTRY (+FDOLEN)         87166  00300000
+         MEND  ,                                                        00310000

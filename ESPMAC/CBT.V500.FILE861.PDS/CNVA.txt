@@ -1,0 +1,6 @@
+         MACRO                                                          00010000
+&NM      CNVA  &R,&AD,&LEN,&DB=DB                                       00020000
+&NM      ST    &R,&DB                                                   00030000
+         LA    R0,&DB                                                   00040000
+         CNVX  (R0),&AD,&LEN                                            00050000
+         MEND                                                           00060000

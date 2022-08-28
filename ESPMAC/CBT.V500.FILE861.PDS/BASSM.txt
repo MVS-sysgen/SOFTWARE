@@ -1,0 +1,21 @@
+         MACRO ,                                                        00010000
+&NM      BASSM &R,&A                                   ADDED ON GP04234 00020000
+         GBLB  &MVSXA                                           GP10054 00030000
+         GBLC  &MODEL                                           GP10054 00040000
+.*                                                                      00050000
+.*       THIS MODULE GENERATES A BASR FOR MVS COMPATIBILITY.            00060000
+.*       REQUIRE AT LEAST SP 2 (MVS/XA) FOR HARDWARE SUPPORT            00070000
+.*                                                                      00080000
+.*R1   R2   BALR R1,R2                                                  00090000
+.*0    R2   BALR 0,R2                                                   00100000
+.*R1   0    BALR R1,0                                                   00110000
+.*0    0    BALR 0,0                                                    00120000
+.*                                                                      00130000
+         AIF   ('&MODEL' EQ '380').BASSM                        GP10054 00140000
+         AIF   (NOT &MVSXA).OLD                                 GP10054 00150000
+.BASSM   ANOP  ,                                                GP10054 00160000
+&NM      DC    0H'0',AL.4(0,12,&R,&A)   BASSM                   GP10054 00170000
+         MEXIT ,                                                        00180000
+.OLD     ANOP  ,                                                GP10054 00190000
+&NM      DC    0H'0',AL.4(0,13,&R,&A)   BASR                    GP10054 00200000
+         MEND  ,                                                        00210000

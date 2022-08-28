@@ -1,0 +1,15 @@
+         MACRO                                                          00010000
+&NM      INEDIT &OUT,&IN,&MASK                                          00020000
+         LCLC  &L                                                       00030000
+&L       SETC  'L'''                                                    00040000
+       INSETS  INDEC                                                    00050000
+         AIF   ('&MASK' EQ '').DEF                                      00060000
+&NM      MVC   DCONWORK(&L&OUT+1),&MASK                                 00070000
+         ED    DCONWORK(&L&OUT+1),&IN                                   00080000
+.COM     MVC   &OUT,DCONWORK+1                                          00090000
+         MEXIT                                                          00100000
+.DEF     ANOP                                                           00110000
+&NM      MVC   DCONWORK,DCONMASK                                        00120000
+         ED    DCONWORK,&IN                                             00130000
+         AGO   .COM                                                     00140000
+         MEND                                                           00150000

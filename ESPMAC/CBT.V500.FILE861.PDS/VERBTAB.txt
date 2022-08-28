@@ -1,0 +1,55 @@
+         MACRO ,                                                        00010000
+&NM      VERBTAB &STR,&LB,&BASE=,&LEN=                UPDATED ON 81169  00020000
+         GBLA  &TABMBLN                                          81169  00030000
+         GBLC  &TABMBAS                                                 00040000
+         LCLA  &I,&J,&K,&L                                              00050000
+         LCLC  &H                                                81169  00060000
+&K       SETA  K'&STR-1                                                 00070000
+         AIF   (&TABMBLN NE 0).HADLEN                            81169  00080000
+&TABMBLN SETA  3             SET DEFAULT                         81169  00090000
+         AIF   (T'&LEN EQ 'O').HADLEN                            81169  00100000
+&TABMBLN SETA  &LEN                                              81169  00110000
+.HADLEN  AIF   ('&STR' EQ '').PARMA                              81169  00120000
+         AIF   ('&STR'(1,1) NE '''').COMLEN                             00130000
+&I       SETA  2                                                        00140000
+&J       SETA  &K-1                                                     00150000
+&K       SETA  &J                                                       00160000
+.LOOP    AIF   ('&STR'(&I,2) EQ '''''').SK2                             00170000
+         AIF   ('&STR'(&I,2) EQ '&&').SK2                               00180000
+&I       SETA  &I+1                                                     00190000
+         AGO   .INC                                                     00200000
+.SK2     ANOP  ,                                                        00210000
+&I       SETA  &I+2                                                     00220000
+&K       SETA  &K-1                                                     00230000
+.INC     AIF   (&I LE &J).LOOP                                          00240000
+&K       SETA  &K-1                                                     00250000
+         AIF   (&K GE 0).COMLEN                                         00260000
+&K       SETA  0                                                        00270000
+.COMLEN  AIF   ('&BASE' EQ '').NBAS                                     00280000
+         AIF   ('&BASE' NE '*').UBAS                                    00290000
+&TABMBAS SETC  '&SYSECT'                                                00300000
+         AGO   .NBAS                                                    00310000
+.UBAS    ANOP  ,                                                        00320000
+&TABMBAS SETC  '&BASE'                                                  00330000
+.NBAS    AIF   ('&TABMBAS' NE '').BASOK                                 00340000
+&TABMBAS SETC  '&SYSECT'     DEFAULT BASE TO CURRENT                    00350000
+.BASOK   AIF   ('&STR' EQ '*END').LAST                                  00360000
+         AIF   ('&LB' NE '').THEX                                81169  00370000
+.PARMA   MNOTE 8,'MISSING OR CONFLICTING PARAMETERS'                    00380000
+         MEXIT ,                                                        00390000
+.THEX    AIF   (&K LT 1).TO                                      81169  00400000
+         AIF   ('&STR'(1,1) NE '*').TO                           81169  00410000
+&L       SETA  &K            SUPPLIED LENGTH-1                   81169  00420000
+&K       SETA  (&K+1)/2-1    NEW TEXT LENGTH                     81169  00430000
+&H       SETC  '&STR'(2,&L)                                      81169  00440000
+&NM      DC    AL1(&K),AL&TABMBLN.(&LB-&TABMBAS),X'&H'                  00450000
+         MEXIT ,                                                 81169  00460000
+.TO      AIF   ('&STR'(1,1) EQ '''').TOAP                               00470000
+&NM      DC    AL1(&K),AL&TABMBLN.(&LB-&TABMBAS),C'&STR'                00480000
+         MEXIT ,                                                        00490000
+.TOAP    ANOP  ,                                                        00500000
+&NM      DC    AL1(&K),AL&TABMBLN.(&LB-&TABMBAS),C&STR                  00510000
+         MEXIT ,                                                        00520000
+.LAST    ANOP  ,                                                        00530000
+&NM      DC    X'FF'         END OF TABLE                               00540000
+         MEND  ,                                                        00550000

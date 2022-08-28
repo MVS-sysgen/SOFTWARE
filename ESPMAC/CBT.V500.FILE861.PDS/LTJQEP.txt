@@ -1,0 +1,19 @@
+         MACRO ,                                                        00010000
+&NM      LTJQEP &REG,&OFFSET,&BASE=,&END=               ADDED ON 85076  00020000
+         COPY  OPTIONGB                                                 00030000
+         GBLC  &MACPLAB                                                 00040000
+&MACPLAB SETC  ''                                                       00050000
+         AIF   (NOT &MVS).MEND                                          00060000
+         AIF   (K'&JES2REL LT 3).OLDJESP                                00070000
+&NM      ICM   &REG,15,&OFFSET                                          00080000
+         N     &REG,=X'00FFFFFF'                                        00090000
+         AGO   .COMMON                                                  00100000
+.OLDJESP ANOP  ,                                                        00110000
+&NM      ICM   &REG,12,&OFFSET                                          00120000
+         SRL   &REG,16                                                  00130000
+         SLA   &REG,2                                                   00140000
+.COMMON  AIF   (T'&END EQ 'O').NOEND                                    00150000
+         MACPARM &END,OP=BZ,OPR=BZR                                     00160000
+.NOEND   AIF   (T'&BASE EQ 'O').MEND                                    00170000
+         MACPARM &BASE,OP=AL,OPR=ALR                                    00180000
+.MEND    MEND  ,                                                        00190000

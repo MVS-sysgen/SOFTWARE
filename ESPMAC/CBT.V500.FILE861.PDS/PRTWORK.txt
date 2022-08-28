@@ -1,0 +1,75 @@
+         MACRO                                                          00010000
+&NM      PRTWORK &DD,&ALTDD,&TITLE=0,&FOOTER=0,&LPP=0,&WIDTH=0,        *00020000
+               &FILL=0,&RECFM=0,&PAGE=0,&SPAGE=0,&PGUP=NO,&EXLST=0,    *00030000
+               &BUF=                                            GP08088 00040000
+         LCLA  &PFG,&I,&J,&K                                     84169  00050000
+         LCLB  &B0,&B1,&B2,&B3,&B4,&B5,&B6,&B7,&PFX             GP05120 00060000
+         LCLC  &REC                                              81155  00070000
+&REC     SETC  '&RECFM'                                          81155  00080000
+         AIF   ('&REC' EQ '0').DEFREC                            81155  00090000
+&I       SETA  K'&RECFM                                          81155  00100000
+         AIF   (&I LT 4).NRECSD                                  81155  00110000
+         AIF   ('&RECFM'(&I,1) EQ '''').DEFREC                   81155  00120000
+.NRECSD  AIF   (&J GE &I).DONREC                                 81155  00130000
+&J       SETA  &J+1                                              81155  00140000
+         AIF   ('&REC'(&J,1) EQ 'U').RECU                        81155  00150000
+         AIF   ('&REC'(&J,1) EQ 'V').RECV                        81155  00160000
+         AIF   ('&REC'(&J,1) EQ 'F').RECF                        81155  00170000
+         AIF   ('&REC'(&J,1) EQ 'D').RECD                        81155  00180000
+         AIF   ('&REC'(&J,1) EQ 'T').RECT                        81155  00190000
+         AIF   ('&REC'(&J,1) EQ 'B').RECB                        81155  00200000
+         AIF   ('&REC'(&J,1) EQ 'S').RECS                        81155  00210000
+         AIF   ('&REC'(&J,1) EQ 'M').RECM                        81155  00220000
+         AIF   ('&REC'(&J,1) EQ 'N').RECN                        81271  00230000
+         AIF   ('&REC'(&J,1) NE 'A').DEFREC                      81155  00240000
+&B5      SETB  1                                                 81155  00250000
+         AGO   .NRECSD                                           81155  00260000
+.RECM    ANOP  ,                                                 81155  00270000
+&B6      SETB  1                                                 81155  00280000
+         AGO   .NRECSD                                           81155  00290000
+.RECN    ANOP  ,             SUPPRESS CC DEFAULT IN PRTOPEN      81271  00300000
+&B7      SETB  1                                                 81271  00310000
+         AGO   .NRECSD                                           81271  00320000
+.RECS    ANOP  ,                                                 81155  00330000
+&B4      SETB  1                                                 81155  00340000
+         AGO   .NRECSD                                           81155  00350000
+.RECB    ANOP  ,                                                 81155  00360000
+&B3      SETB  1                                                 81155  00370000
+         AGO   .NRECSD                                           81155  00380000
+.RECD    AIF   (&B0 OR &B1).DEFREC     FAIL VD, ETC.             81155  00390000
+.RECT    ANOP  ,                                                 81155  00400000
+&B2      SETB  1                                                 81155  00410000
+.RECV    ANOP  ,                                                 81155  00420000
+&B1      SETB  1                                                 81155  00430000
+         AGO   .NRECSD                                           81155  00440000
+.RECU    ANOP  ,                                                 81155  00450000
+&B1      SETB  1                                                 81155  00460000
+.RECF    ANOP  ,                                                 81155  00470000
+&B0      SETB  1                                                 81155  00480000
+         AGO   .NRECSD                                           81155  00490000
+.DONREC  ANOP  ,                                                 81155  00500000
+&REC     SETC  'B'''.'&B0&B1&B2&B3&B4&B5&B6&B7'.''''             81155  00510000
+.DEFREC  AIF   ('&PAGE' EQ '0').NOPG                                    00520000
+&I       SETA  &PAGE                                                    00530000
+&PFG     SETA  1             SET PAGE FEED-BACK                         00540000
+&PFX     SETB  1             EXPAND PAGE VALUES                 GP05120 00550000
+.NOPG    AIF   ('&SPAGE' EQ '0').NOSPG                                  00560000
+&J       SETA  &SPAGE                                                   00570000
+&PFG     SETA  1             SET PAGE FEED-BACK                         00580000
+&PFX     SETB  1             EXPAND PAGE VALUES                 GP05120 00590000
+.NOSPG   AIF   ('&PGUP' EQ 'NO').NOPGUP                          84169  00600000
+&PFG     SETA  3             SET UPDATING BY USER                84169  00610000
+         AIF   ('&PGUP' EQ '' OR '&PGUP' EQ 'YES').NOPGUP        84169  00620000
+         MNOTE 4,'INVALID PGUP OPTION : &PGUP'                   84169  00630000
+.NOPGUP  AIF   ('&EXLST' EQ '0').NOLST1                                 00640000
+&PFG     SETA  &PFG+4        SET EXIT LIST FLAG                  84169  00650000
+.NOLST1  AIF   ('&BUF' NE '1').NOBUF1                           GP08088 00660000
+&PFG     SETA  &PFG+16       SIGNLE BUFFER                      GP08088 00670000
+.NOBUF1  ANOP  ,                                                GP08088 00680000
+         DC    0H'0'                                                    00690000
+&NM      DC    CL8'&DD ',CL8'&ALTDD ',AL2(&LPP),AL1(&FILL,&WIDTH,&TITLE*00700000
+               ,&FOOTER,&REC,&PFG)                                      00710000
+         AIF   (NOT &PFX).SKIPPG#                               GP05120 00720000
+         DC    Y(&I,&J)      PAGE/SUB-PAGE FEEDBACK AREA                00730000
+.SKIPPG# DC    AL4(&EXLST)   EXIT LIST POINTER                   84169  00740000
+.MEND    MEND  ,                                                        00750000

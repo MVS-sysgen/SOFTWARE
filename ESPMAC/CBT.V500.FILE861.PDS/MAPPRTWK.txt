@@ -1,0 +1,93 @@
+         MACRO ,                                        ADDED ON 81201  00010000
+&NM      MAPPRTWK &PREFIX=PW,&WIDTH=    PRINTER WORK AREA MAPPING       00020000
+         LCLC  &DS                                                      00030000
+         LCLC  &P            SHORT PREFIX                               00040000
+&P       SETC  '&PREFIX'                                                00050000
+&DS      SETC  '&P'.'WORK'                                              00060000
+         AIF   ('&NM' EQ '').NONAME                                     00070000
+&DS      SETC  '&NM'                                                    00080000
+.NONAME  ANOP  ,                                                        00090000
+&DS      DSECT ,             MAPPING OF PRINT DCB AND WORK AREA         00100000
+&P.LINK   DS   F             LINK TO NEXT GETMAINED AREA                00110000
+&P.ID     DS   C'PRT-'       ID OF PRINT FILE 'N'                       00120000
+&P.SPLEN  DS   F             SUBPOOL/LENGTH OF THIS AREA                00130000
+&P.TCB    DS   A             ADDRESS OF OWNING TCB                      00140000
+&P.DCB@   DS   X'BF',AL3(&P.DCB)  DCB POINTER                           00150000
+&P.PU@    DS   A             ADDRESS OF USER'S OPEN WORK AREA           00160000
+&P.TRAN   DC   F'0'          ADDRESS OF TRANSLATE TABLE OR 0            00170000
+&P.DDNAM  DS   CL8           DDNAME                                     00180000
+&P.UCS    DS   CL4           UCS NAME                                   00190000
+&P.FCB    DS   CL4           FCB NAME                                   00200000
+&P.LSTWRK DS   0XL14         WORK AREA FOR EACH FD ENTRY                00210000
+&P.LSTLEN DS   A             FIELD LENGTH                               00220000
+&P.LSTLTX DS   A             ITEM LENGTH                                00230000
+&P.LSTADD DS   A             ITEM ADDRESS                               00240000
+&P.LSTDAT DS   X             DATA TYPE                                  00250000
+&P.CUROPT DS   X             CURRENT PROCESSING OPTIONS                 00260000
+&P.PREOPT DS   X             PRIOR OPTIONS                              00270000
+&P.LSTEDT DS   X             EDIT OPTIONS                               00280000
+&P.BUFNXT DS   A             ADDRESS OF NEXT BYTE                       00290000
+&P.SCRCUR DS   H             BYTES USED IN CURRENT LINE                 00300000
+&P.FLAG   DS   X             PROCESSING FLAG                            00310000
+&P.FPUN   EQU  X'80' =PUPUNCH   THIS IS A PUNCH FILE                    00320000
+&P.FAKE   EQU  X'40'         IN-STORAGE ACCESS METHOD            83275  00330000
+&P.FCON   EQU  X'20'         OUTPUT ROUTED TO CONSOLE                   00340000
+&P.FHEAD  EQU  X'10'         TITLE PRINTED ON THIS PAGE                 00350000
+&P.FPRINT EQU  X'08'         BUFFER CONTAINS TEXT                       00360000
+&P.FPXLST EQU  X'04' =PUPGXLST   EXIT LIST PRESENT               84169  00370000
+&P.FUPAGE EQU  X'02' =PUPUPAGE   USER MAINTAINS PAGE #S          84169  00380000
+&P.FGPAGE EQU  X'01' =PUPGPAGE   USER PAGE # FEED-BACK OPTION           00390000
+&P.FLG2  DS    X             PROCESSING FLAGS                    90309  00400000
+&P.F3800 EQU   X'80'           IBM 3800 LASER MODE (?)           90309  00410000
+&P.F4050 EQU   X'40'           XEROX 4050/9700/2700 ...(?)       90309  00420000
+&P.FNUST EQU   X'10'           EJECT TO NEW SHEET                90309  00430000
+&P.FOVER EQU   X'02'           REPLACE BOLD(OVERPRINT) BY FONT+1 90309  00440000
+&P.FOPTJ EQU   X'01'           INSERT FONT CONTROL CHARACTERS    90309  00450000
+&P.FONT# DS    X             CURRENT FONT NUMBER                 90309  00460000
+&P.FONTB DS    XL2           FONT # PUSHDOWN STACK               90309  00470000
+&P.CHARS DS    4CL4          SAVED CHARACTERS/XEROX SETUP/PAPER  90309  00480000
+&P.FONT$ DS    8Y            CHARACTERS/LINE PER FONT (0-7)      90309  00490000
+&P.EXTEN DS    2A            SUBPOOL/LENGTH/ADDRESS OF EXTENSION 90309  00500000
+&P.SOUTFM DC   CL8' '        SYSOUT FORM NAME (BLANKS IF N/A)    91001  00510000
+&P.SOUTWT DC   CL8' '        SYSOUT SPECIAL WRITER NAME          91001  00520000
+&P.FILL   DC   AL1(0)        UNPRINTABLE CHARACTER REPLACEMENT          00530000
+&P.SOUTCL DC   C' '          SYSOUT CLASS (OR MSGCLASS IF *)     91001  00540000
+          DC   AL1(0,0)         RESERVED                                00550000
+&P.DCB    DCB  DDNAME=ANY,DSORG=PS,MACRF=PM,EROPT=ACC,                 *00560000
+               RECFM=VBSA,LRECL=137,EXLST=&P.EXLIST                     00570000
+&P.EXLIST DC   0A(0),X'87',AL3(0),A(0,0) +JFCB+@DCBEXIT                 00580000
+&P.TOPPG  DC   F'0'          EDIT LEN/ADDRESS FOR PAGE NUMBER           00590000
+&P.TOPPS  DC   F'0'             DITTO FOR SUB-PAGE                      00600000
+&P.TOPDT  DC   F'0'             DITTO FOR DATE                          00610000
+&P.TOPTM  DC   F'0'             AND TIME                                00620000
+&P.BOTPG  DC   F'0'          EDIT LEN/ADDRESS FOR PAGE NUMBER           00630000
+&P.BOTPS  DC   F'0'             DITTO FOR SUB-PAGE                      00640000
+&P.BOTDT  DC   F'0'             DITTO FOR DATE                          00650000
+&P.BOTTM  DC   F'0'             AND TIME                                00660000
+&P.CURLN  DC   H'-1'                                                    00670000
+&P.MAXLN  DC   H'60'         MAXIMUM LINES PER PAGE (INCL. TITLES)      00680000
+&P.WIDTH  DC   H'0'          DATA WIDTH FOR TRUNCATION                  00690000
+&P.TIT#   DC   H'0'          NUMBER OF TITLE LINES                      00700000
+&P.FOOT#  DC   H'0'          NUMBER OF FOOTER LINES                     00710000
+&P.PAGE   DC   H'0'          CURRENT PAGE NUMBER                        00720000
+&P.SPAGE  DC   H'0'          PAGE SINCE LAST TITLE CHANGE               00730000
+&P.TRTAB  DC   256AL1(0)     TRANSLATE TABLE                            00740000
+&P.CCSAV  DC   C' '          SAVE PWRECCC OVER PUT                      00750000
+&P.BUFSP  DC   AL1(0)        SUB-POOL OF GETPOOL REQUEST         83275  00760000
+&P.VCON   DC   F'0'          V-FORMAT RECORD HEADER                     00770000
+&P.RECCC  DC   C' '          CARRIAGE CONTROL                           00780000
+         AIF   ('&WIDTH' NE '').HAVEW                                   00790000
+&P.REC    EQU  *             DATA RECORD                                00800000
+         AGO   .MEND         TRUNCATE THE MAPPING                       00810000
+.HAVEW   ANOP  ,                                                        00820000
+&P.REC    DC   CL(&WIDTH+1)' '   TEXT RECORD                     90309  00830000
+         DS    0F                                                       00840000
+&P.MCREC  DC   CL((&WIDTH+6+3)/4*4)' '   MACHINE CONTROL SAVE RECORD    00850000
+&P.MCC    EQU  &P.MCREC+4,1,C'C'        CARRIAGE CONTROL                00860000
+         SPACE 1                                                        00870000
+         DS    0F                                                       00880000
+&P.SIZE  EQU   *-&DS         LENGTH OF FIXED AREA                       00890000
+&P.ULOP   DC   CL((&WIDTH+6+3)/4*4)' '   UNDERLINE/OVERPRINT RCD        00900000
+         DS    0F                                                       00910000
+&P.TIT1   DC   CL((&WIDTH+6+3)/4*4)' '   1-14 TITLE/FOOTER RECORDS      00920000
+.MEND    MEND  ,                                                        00930000

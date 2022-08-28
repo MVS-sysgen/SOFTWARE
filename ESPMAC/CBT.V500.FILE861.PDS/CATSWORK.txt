@@ -1,0 +1,70 @@
+         MACRO ,                                                        00010000
+&NM      CATSWORK &PFX=CSW,&DSECT=YES                                   00020001
+         AIF   ('&DSECT' NE 'YES').ALTSECT                              00030002
+&PFX.DSECT DSECT ,                                                      00040002
+         AGO   .NODSECT ,                                               00050002
+.ALTSECT ANOP  ,                                                        00060002
+&PFX.DSECT  DS 0D            PLANT A LABEL                              00070002
+.NODSECT AIF   (T'&NM EQ 'O').NOLABEL                                   00080001
+&NM      DS    0F                                                       00090001
+.NOLABEL ANOP  ,                                                        00100001
+&PFX.SAVE   DC 18A(0)        MAIN OS SAVE AREA                          00110000
+&PFX.SAV1   DC 18A(0)        INTERNAL SUBROUTINE SAVE AREA              00120000
+&PFX.SAV2   DC 18A(0)        INTERNAL SUBROUTINE SAVE AREA              00130000
+&PFX.DB     DC D'0'          WORK AREA                                  00140003
+&PFX.@CAHD  DC A(0)          HEAD OF CATALOG NAME LIST                  00150003
+&PFX.@CATL  DC A(0)          ADDRESS OF LAST ALLOCATED ELEMENT          00160000
+&PFX.@CAMS  DC A(0)          ADDRESS OF ENTRY FOR MASTER CATALOG        00170011
+&PFX.#MASK  DC F'0'          LENGTH OF MASK                             00180000
+&PFX.#CCOD  DC F'0'          PROGRAM RETURN CODE                        00190003
+&PFX.@CSI   DC A(0)          ADDRESS OF IGGCSI00                        00200000
+&PFX.@CPRM  DC 3A(0)         CSI CALL PARAMETER                         00210000
+&PFX.@CBXL  DC 3A(0)         CSI RETURN SCANNING                        00220000
+&PFX.@CRTN  DC A(0)          RETURN CODE                                00230000
+&PFX.@FORM  DC A(0)          ADDRESS OF EXTRACTION ROUTINE              00240003
+&PFX.@FLD   DC A(0)          ADDRESS OF FORMATTING ROUTINE              00250007
+         SPACE 1                                                        00260000
+&PFX.MSCAT  DC CL44' '       MASTER CATALOG                             00270000
+&PFX.CUCAT  DC CL44' '       CURRENT CATALOG NAME (FROM CSI)            00280000
+&PFX.DACLS  DC CL8' '        DATA SET CLASS                             00290000
+&PFX.MGCLS  DC CL8' '        MANAGEMENT CLASS                           00300000
+&PFX.STCLS  DC CL8' '        STORAGE CLASS                              00310000
+&PFX.FDLEN  DC F'0'          LENGTH OF CSI FIELD LENGHTS                00320000
+&PFX.CULEN  DC F'0'          LENGTH OF CURRENT CSI ENTRY                00330000
+&PFX.PFLGS  DC X'00'         MISCELLANEOUS FLAGS                        00340000
+&PFX.PFCSI  EQU  X'80'          IGGCSI00 LOADED                         00350000
+&PFX.PFCMP  EQU  X'40'          WE LOADED SUBCOMP ROUTINE               00360010
+&PFX.PFMST  EQU  X'20'          FIRST CATALOG PROCESS - STACK OTHERS    00370010
+&PFX.PFLUK  EQU  X'10'          LOOK OR NON-LOOP REQUEST                00380006
+&PFX.PFBUF  EQU  X'08'          LOOP INITIATED                          00390006
+&PFX.PF1CT  EQU  X'04'          ONE CATALOG ONLY                        00400006
+&PFX.PFCT1  EQU  X'02'          FIRST CATALOG FOUND                     00410006
+&PFX.PFONE  EQU  X'01'          AT LEAST ONE MATCHED ENTRY              00420000
+         SPACE 1                                                        00430003
+*   SUBCOMP PARAMETER LIST PASSED                                       00440003
+*                                                                       00450000
+&PFX.CMPRM  DC A(CSWCMMSK,CSW@CFLT,CSPMASK,CSWCM@WK)                    00460000
+&PFX.CM@WK  DC A(0)          ADDRESS OFGETMAINED WORK AREA              00470000
+&PFX.CMMSK  DC C'MSK'        EXAMINE MASK                               00480000
+&PFX.CMDSN  DC C'DSN'        COMPARE DSN TO MASK                        00490000
+&PFX.CMVOL  DC C'VOL'        COMPARE VOLSER MASK                        00500000
+&PFX.CIMSK  DC CL44' '       MASK REWORKED FOR CSI CALLS                00510000
+&PFX.CIVMS  DC CL6' ',CL2' '    REFERENCED VOLUME (COMPARE PAD)         00520000
+&PFX.CIVTS  DC CL6' ',CL2' '    VOLUME SERIAL FOR COMPARE               00530000
+         SPACE 1                                                        00540003
+*   IGGCSI00 PARAMETER LIST PASSED                                      00550003
+*                                                                       00560003
+&PFX.@CFLD  DS 0F        CSI REQUEST AREA                               00570003
+&PFX.@CFLT  DC CL44' '       (MAJOR) KEY                                00580003
+&PFX.@CCAT  DC CL44' '       CATALOG NAME OR BLANKS                     00590003
+&PFX.@CRES  DC CL44' '       ..RESUME DATA..                            00600003
+&PFX.@CTYP  DC 16C' '        ENTRY TYPE SELECTION. BLANK FOR ALL        00610003
+&PFX.@COPT  DC 0CL4' '     CSI OPTIONS                                  00620003
+&PFX.@CODI  DC C' '          ..RETURN DATA OR INDEX, OR BLANKS..        00630003
+&PFX.@CORS  DC C' '          ..RESUME..                                 00640003
+&PFX.@CO1C  DC C' '          Y - SEARCH ONE CATALOG ONLY; BLANK - ALL   00650003
+&PFX.@CORV  DC C' '                                                     00660003
+&PFX.@C#EN  DC HL2'0'        NUMBER OF FIELD NAMES                      00670003
+&PFX.@C$EN  DC (PATFIENM)CL8' '   NAME1, NAME2, .....                   00680003
+&PFX.SIZE  EQU  *-&PFX.SAVE  AREA SIZE                                  00690000
+         MEND  ,                                                        00700000

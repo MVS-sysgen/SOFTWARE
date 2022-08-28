@@ -1,0 +1,48 @@
+         MACRO ,                                                        00010000
+         MACLIST &LIST                                 NEW 2004.234 GYP 00020000
+.*--------------------------------------------------------------------* 00030000
+.*   MACLIST IS USED TO COMPENSATE FOR ASSEMBLER F/XF INABILITY TO    * 00040000
+.*     PROVIDE N'&LIST(&I,&N) SUPPORT.                                * 00050000
+.*   THIS MACRO STRIPS UP TO 10 INNER VALUES                          * 00060000
+.*   E.G.       MYMAC OPTS=(A,(B1,B2,B3),(C1,C2))                     * 00070000
+.*    HLASM N'&OPTS(2) IS 3, N'&OPTS(3) IS 2                          * 00080000
+.*    XFASM FAILS ALL BUT N'&OPTS                                     * 00090000
+.*                                                                    * 00100000
+.*    USE:   MACLIST &OPTS(2)                                         * 00110000
+.*    RESULTS RETURNED IN &MACP1-&MACP10, COUNT IN &MACP#             * 00120000
+.*--------------------------------------------------------------------* 00130000
+         GBLA  &MACP#        NUMBER OF (SUB)LIST ARGUMENTS              00140000
+         GBLC  &MACP1,&MACP2,&MACP3,&MACP4,&MACP5                       00150000
+         GBLC  &MACP6,&MACP7,&MACP8,&MACP9,&MACP10                      00160000
+         LCLA  &I,&J,&K,&N                                              00170000
+         LCLC  &STR,&LAB                                                00180000
+         LCLC  &VAL(10)                                                 00190000
+&STR     SETC  '&LIST'                                                  00200000
+&J       SETA  1             OUTPUT SUBSCRIPT                           00210000
+&K       SETA  K'&LIST                                                  00220000
+         AIF   (&K LT 1).DONE                                           00230000
+         AIF   ('&STR'(1,1) NE '(' OR '&STR'(&K,1) NE ')').NOPARS       00240000
+&STR     SETC  '&STR'(2,&K-2)                                           00250000
+&K       SETA  K'&STR                                                   00260000
+.NOPARS  AIF   (&I GE &K).DONE                                          00270000
+&I       SETA  &I+1                                                     00280000
+         AIF   ('&STR'(&I,1) EQ ',').NEWPRM                             00290000
+&VAL(&J) SETC  '&VAL(&J)'.'&STR'(&I,1)                                  00300000
+         AGO   .NOPARS                                                  00310000
+.NEWPRM  AIF   (&J GE 10).TOOMANY                                       00320000
+&J       SETA  &J+1                                                     00330000
+         AGO   .NOPARS                                                  00340000
+.TOOMANY MNOTE 8,'MACLIST SUPPORTS MAX OF 10 SUBLIST ITEMS'             00350000
+.DONE    ANOP  ,                                                        00360000
+&MACP#   SETA  &J            GET NUMBER OF OPERANDS                     00370000
+&MACP1   SETC  '&VAL(1)'                                                00380000
+&MACP2   SETC  '&VAL(2)'                                                00390000
+&MACP3   SETC  '&VAL(3)'                                                00400000
+&MACP4   SETC  '&VAL(4)'                                                00410000
+&MACP5   SETC  '&VAL(5)'                                                00420000
+&MACP6   SETC  '&VAL(6)'                                                00430000
+&MACP7   SETC  '&VAL(7)'                                                00440000
+&MACP8   SETC  '&VAL(8)'                                                00450000
+&MACP9   SETC  '&VAL(9)'                                                00460000
+&MACP10  SETC  '&VAL(10)'                                               00470000
+.MEND    MEND  ,                                                        00480000

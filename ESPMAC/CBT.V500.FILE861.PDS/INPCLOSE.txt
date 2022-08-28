@@ -1,0 +1,18 @@
+         MACRO                                                          00010000
+&NM      INPCLOSE &TYPE,&DEV=,&OPT=DISP                 ADDED ON 81194  00020000
+         LCLA  &FN,&DSP                                          86113  00030000
+&DSP     SETA  2                                                 86113  00040000
+         AIF   ('&OPT' EQ 'LEAVE').DONDISP                       86113  00050000
+&DSP     SETA  1                                                 86113  00060000
+         AIF   ('&OPT' EQ 'REREAD').DONDISP                      86113  00070000
+&DSP     SETA  0                                                 86113  00080000
+         AIF   ('&OPT' EQ 'DISP' OR '&OPT' EQ '').DONDISP        86113  00090000
+         MNOTE 4,'INVALID DISPOSITION OPTION DISP=&OPT'          86113  00100000
+.DONDISP AIF   ('&TYPE' EQ '').COMM                              86113  00110000
+         AIF   ('&TYPE' EQ 'TCLOSE').SET1                               00120000
+         MNOTE 4,'*** UNRECOGNIZED TYPE &TYPE'                          00130000
+.SET1    ANOP  ,                                                        00140000
+&FN      SETA  1             SET TCLOSE FUNCTION                        00150000
+.COMM    ANOP  ,                                                        00160000
+&NM      INPCOM &DSP,0,&FN,DEV=&DEV  EXPAND REQUEST              86113  00170000
+         MEND  ,                                                        00180000

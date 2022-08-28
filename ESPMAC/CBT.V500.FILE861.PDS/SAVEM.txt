@@ -1,0 +1,510 @@
+         MACRO ,                                                        00010000
+&L       SAVEM &DUMMY,&PFX=SAVE,&END=,&ENDZERO=,&DSECT=,&PARM=R11,     *00020000
+               &SAVE=*,                                          81208 *00030000
+               &BASE=R12,&BASE2=,&BASE3=,&BASE4=,&BASED=*,             *00040000
+               &EID=SHORT,&ENTRY=,&ENTNO=,                             *00050000
+               &RIGHT=,                                                *00060000
+               &ID=*,&DATE=,&SP=0,&BNDRY=                        82002  00070000
+.********************************************************************** 00080000
+.*                                                                      00090000
+.*             COPYRIGHT 1978 BY SHMUEL (SEYMOUR J.) METZ               00100000
+.*                        ALL RIGHTS RESERVED.                          00110000
+.*                                                                      00120000
+.*             THIS MACRO IS NOT TO BE DISTRIBUTED WITHOUT PERMISSION,  00130000
+.*             AS DESCRIBED IN MEMBER $$RIGHTS.                         00140000
+.*                                                                      00150000
+.*       FOR SIMPLE ENTRIES, PARM=R1 NOW RELOADS R0 AND R1       87223  00160000
+.*       BASE=(B1,B2,B3,B4) SUPPORT ADDED (EASIER TO USE?)       87223  00170000
+.*                                                               87223  00180000
+.********************************************************************** 00190000
+         COPY  OPTIONGB                                                 00200000
+         GBLB  &DROP@1                                           81163  00210000
+         GBLB  &MAPONCE                                                 00220000
+         GBLB  &SAV@REG                                                 00230000
+         GBLB  &SAV@DYN(10)                                             00240000
+         GBLC  &SAV@NAM(10)                                             00250000
+         GBLC  &MACPLAB                                          81154  00260000
+         GBLC  &SYSSPLV      VERSION OF SP (1, 2...)             93174  00270000
+         LCLA  &I,&J,&N,&NUMENT                                         00280000
+         LCLB  &BWOPT,&Y           BIGWORK  OPTION                      00290000
+         LCLB  &HWOPT              HUGEWORK OPTION ( > 32767 )   84307  00300000
+         LCLB  &CME                BASED/ENTRY PRESENT           81163  00310000
+         LCLB  &CPYREGS            CPYREGS  OPTION                      00320000
+         LCLB  &DSOPT              NODSECT  OPTION                      00330000
+         LCLB  &EQUOPT             NOEQU    OPTION                      00340000
+         LCLB  &NOENTRY            NOENTRY  OPTION                      00350000
+         LCLB  &NOSAVE             NOSAVE   OPTION                      00360000
+         LCLB  &NWOPT              NOWORK   OPTION                      00370000
+         LCLB  &OLDSAVE            OLDSAVE  OPTION                      00380000
+         LCLB  &BUMASM             ASM DOESN'T SUPPORT LONG SETC        00390000
+         LCLB  &BZOPT              ZERO > 256                           00400000
+         LCLB  &NOT1ST             NOT FIRST USE OF &PFX                00410000
+         LCLB  &ZERO               ZERO     OPTION                      00420000
+         LCLB  &ZERO8              ZERO     <= 256               81202  00430000
+         LCLB  &ZERO12             ZERO     >  256               81202  00440000
+         LCLB  &ZERO15             ZERO     > 4095               81208  00450000
+         LCLB  &ZERO31             ZERO     > 32767              84307  00460000
+         LCLC  &B@                 GENERATED LABEL FOR B TARGET         00470000
+         LCLC  &CMB                COMMON BASE NAME              81163  00480000
+         LCLC  &CMU                BASE REG. STRING FOR USING    81163  00490000
+         LCLC  &C9                 TEST FOR LONG SETC SUPPORT           00500000
+         LCLC  &DSCTG              DSECT NAME                    81208  00510000
+         LCLC  &ENDG               END LABEL FOR GETMAINED AREA  81208  00520000
+         LCLC  &ENDZ               END OF ZEROED AREA            81208  00530000
+         LCLC  &LAB                LABEL FOR ENTRY POINT                00540000
+         LCLC  &LQ                 L'                                   00550000
+         LCLC  &N@                 GENERATED NAME FOR DC                00560000
+         LCLC  &SECT               CSECT NAME                           00570000
+         LCLC  &SP@                SUBPOOL FOR GETMAIN                  00580000
+         LCLC  &NAME               NAME FOR CONSTRUCTED ID              00590000
+         LCLC  &SV                 SAVE AREA PREFIX              81208  00600000
+         LCLC  &BEGZ         WHERE TO START ZEROING (FWD DEFAULT)       00610000
+         LCLC  &PARMEXP                                                 00620000
+         LCLC  &PARMREG                                                 00630000
+         LCLC  &CASE,&CASE2,&CASE3,&CASE4   LOCAL BASES          87223  00640000
+       SYSPARM ,                   SET GLOBALS                          00650000
+&C9      SETC  '*********'                                              00660000
+&SECT    SETC  '&SYSECT'                                                00670000
+&SV      SETC  '&PFX'                                                   00680000
+&DSCTG   SETC  '&PFX'                                                   00690000
+&ENDG    SETC  '&PFX'.'ND'                                              00700000
+&BEGZ    SETC  '&PFX'.'FWD'        ZERO BEGINNING AT FWD LINK    94272  00710000
+.*                                                                      00720000
+         AIF   ('&C9' EQ '*********').ASMVS                             00730000
+         MNOTE 4,'USE THE OS/VS-DOS/VS-CMS ASSEMBLER,'                  00740000
+         MNOTE 4,'OR USE ASMG WITH LSETC=80'                            00750000
+&BUMASM  SETB  1                                                        00760000
+.*                                                                      00770000
+.ASMVS   AIF   ('&DSECT' EQ '').DSGOK                                   00780000
+&DSCTG   SETC  '&DSECT'                                                 00790000
+.DSGOK   AIF   ('&END' EQ '').ENDGOK                                    00800000
+&ENDG    SETC  '&END'                                                   00810000
+.ENDGOK  ANOP                                                           00820000
+.*                                                                      00830000
+&N       SETA  1                                                        00840000
+.NXTSLOT ANOP                                                           00850000
+&NOT1ST  SETB  (&NOT1ST OR ('&PFX' EQ '&SAV@NAM(&N)'))                  00860000
+         AIF   (&NOT1ST).FND1ST                                         00870000
+         AIF   ('&SAV@NAM(&N)' EQ '').FNDSLOT                           00880000
+&N       SETA  &N+1                                                     00890000
+         AIF   (&N LE 10).NXTSLOT                                       00900000
+         MNOTE 12,'TOO MANY SAVEM DSECTS'                               00910000
+         MEXIT                                                          00920000
+.FNDSLOT ANOP                                                           00930000
+&SAV@NAM(&N) SETC '&PFX'                                                00940000
+.*                                                                      00950000
+.FND1ST  AIF   ('&SYSECT' EQ '' AND T'&L EQ 'O').NOL                    00960000
+&I       SETA  1                                                        00970000
+         AIF   (N'&SYSLIST EQ 0).ENDOPT                                 00980000
+.*                                                                      00990000
+.LOOP    AIF   ('&SYSLIST(&I)' EQ 'CPYREGS').CPYREGS                    01000000
+         AIF   ('&SYSLIST(&I)' EQ 'COPYREGS').CPYREGS            81154  01010000
+         AIF   ('&SYSLIST(&I)' EQ 'COPYREGISTERS').CPYREGS              01020000
+         AIF   ('&SYSLIST(&I)' EQ 'NODSECT').NODSECT                    01030000
+         AIF   ('&SYSLIST(&I)' EQ 'NOEQU').NOEQU                        01040000
+         AIF   ('&SYSLIST(&I)' EQ 'BIGWORK').BIGWORK                    01050000
+         AIF   ('&SYSLIST(&I)' EQ 'HUGEWORK').HUGWORK            84307  01060000
+         AIF   ('&SYSLIST(&I)' EQ 'BIGZERO').BIGZERO                    01070000
+         AIF   ('&SYSLIST(&I)' EQ 'HUGEZERO').ZERO31             84307  01080000
+         AIF   ('&SYSLIST(&I)' EQ 'NOWORK').NOWORK                      01090000
+         AIF   ('&SYSLIST(&I)' EQ 'NOSAVE').NOSAVE1                     01100000
+         AIF   ('&SYSLIST(&I)' EQ 'OLDSAVE').OLDSAVE                    01110000
+         AIF   ('&SYSLIST(&I)' EQ 'NOENTRY').NOENTRY                    01120000
+         AIF   ('&SYSLIST(&I)' EQ 'ZERO').ZERO                          01130000
+         AIF   ('&SYSLIST(&I)' EQ 'ZERO8').ZERO8                 81208  01140000
+         AIF   ('&SYSLIST(&I)' EQ 'ZERO12').ZERO12               81208  01150000
+         AIF   ('&SYSLIST(&I)' EQ 'ZERO15').ZERO15               81208  01160000
+         AIF   ('&SYSLIST(&I)' EQ 'ZERO31').ZERO31               84307  01170000
+         AIF   ('&SYSLIST(&I)' EQ '').NXTOPT                            01180000
+         MNOTE 4,'''&SYSLIST(&I)'' IS AN INVALID OPTION - IGNORED'      01190000
+         AGO   .NXTOPT                                                  01200000
+.*                                                                      01210000
+.NOL     MNOTE 12,'LABEL REQUIRED IF  NO  CSECT'                        01220000
+         MEXIT                                                          01230000
+.*                                                                      01240000
+.CPYREGS ANOP                                                           01250000
+&CPYREGS SETB  1                                                        01260000
+         AGO   .NXTOPT                                                  01270000
+.NODSECT ANOP                                                           01280000
+&DSOPT   SETB  1                                                        01290000
+         AGO   .NXTOPT                                                  01300000
+.NOEQU   ANOP                                                           01310000
+&EQUOPT  SETB  1                                                        01320000
+         AGO   .NXTOPT                                                  01330000
+.HUGWORK ANOP  ,                                                 84307  01340000
+&HWOPT   SETB  1             SET FOR HUGE WORK AREA              84307  01350000
+.BIGWORK ANOP                                                           01360000
+&BWOPT   SETB  1                                                        01370000
+&BZOPT   SETB  1                                                        01380000
+         AGO   .NXTOPT                                                  01390000
+.NOWORK  ANOP                                                           01400000
+&NWOPT   SETB  1                                                        01410000
+         AGO   .NXTOPT                                                  01420000
+.NOSAVE1 ANOP                                                           01430000
+&NOSAVE  SETB  1                                                        01440000
+         AGO   .NXTOPT                                                  01450000
+.OLDSAVE ANOP                                                           01460000
+&OLDSAVE SETB  1                                                        01470000
+         AGO   .NXTOPT                                                  01480000
+.NOENTRY ANOP                                                           01490000
+&NOENTRY SETB  1                                                        01500000
+         AGO   .NXTOPT                                                  01510000
+.*                                                               81208  01520000
+.ZERO8   ANOP  ,                                                 81208  01530000
+&ZERO8   SETB  1                                                 81208  01540000
+         AGO   .ZERO                                             81208  01550000
+.ZERO12  ANOP  ,                                                 81208  01560000
+&ZERO12  SETB  1                                                 81218  01570000
+         AGO   .ZERO                                             81208  01580000
+.ZERO31  ANOP  ,                                                 84307  01590000
+&HWOPT   SETB  1             HUGE WORK AREA > 32767              84307  01600000
+&ZERO31  SETB  1                                                 84307  01610000
+.ZERO15  ANOP  ,                                                 81208  01620000
+&ZERO15  SETB  1                                                 81208  01630000
+&BWOPT   SETB  1                                                 81218  01640000
+         AGO   .ZERO                                             81208  01650000
+.BIGZERO ANOP                                                           01660000
+&BZOPT   SETB  1                                                 81202  01670000
+.ZERO    ANOP                                                           01680000
+&ZERO    SETB  1                                                        01690000
+.NXTOPT  ANOP                                                           01700000
+&I       SETA  &I+1                                                     01710000
+         AIF   (&I LE N'&SYSLIST).LOOP                                  01720000
+.ENDOPT  AIF   (&ZERO8 OR &ZERO12 OR &ZERO15).GOTZERO            81208  01730000
+&ZERO31  SETB  (&ZERO AND &HWOPT)                                84307  01740000
+&ZERO15  SETB  (&ZERO AND &BWOPT)                                81208  01750000
+&ZERO12  SETB  (&BZOPT AND NOT &ZERO15)                          81208  01760000
+&ZERO8   SETB  (&ZERO AND NOT &ZERO12 AND NOT &ZERO15)           81202  01770000
+.GOTZERO AIF   (T'&L EQ 'O').CSECTOK                             81208  01780000
+         AIF   ('&SYSECT' EQ '' OR '&L' EQ '&SYSECT').LABOK      81202  01790000
+&LAB     SETC  '&L'                                                     01800000
+         AIF   (&NOENTRY).LABOK                                         01810000
+         ENTRY &L                                                       01820000
+.LABOK   AIF   ('&SYSECT' NE '').CSECTOK                                01830000
+.*                                                                      01840000
+&L       CSECT                                                          01850000
+&SECT    SETC  '&L'                                                     01860000
+.CSECTOK AIF   (T'&BASED EQ 'O' AND T'&ENTRY EQ 'O').NOCLAB      81163  01870000
+         AIF   (T'&ENTRY NE 'O').DOCLAB                          81163  01880000
+         AIF   ('&BASED' EQ '*').NOCLAB                          81163  01890000
+.DOCLAB  ANOP  ,                                                 81163  01900000
+&CME     SETB  1             SET SPECIAL BASE PROCESSING         81163  01910000
+.NOCLAB  AIF   ('&LAB' NE '').OKCLAB                             81163  01920000
+&LAB     SETC  'A@&SYSNDX'                                       81163  01930000
+.OKCLAB  ANOP  ,                                                 81163  01940000
+&CMB     SETC  '&LAB'        DEFAULT BASED VALUE                 81163  01950000
+         AIF   (T'&BASED EQ 'O').CLABOK                          81163  01960000
+         AIF   ('&BASED' EQ '*').CLABOK                          81163  01970000
+         AIF   ('&BASED' NE '*SYSECT').CLABSET                   81163  01980000
+         AIF   ('&SYSECT' EQ '').CLABOK   BOO                    81163  01990000
+&CMB     SETC  '&SYSECT'                                         81163  02000000
+         AGO   .CLABOK                                           81163  02010000
+.CLABSET ANOP  ,                                                 81163  02020000
+&CMB     SETC  '&BASED'                                          81163  02030000
+.CLABOK  ANOP  ,                                                 81163  02040000
+&CMU     SETC  'R15'         DEFAULT BASE REGISTER ON USING      81163  02050000
+&SAV@DYN(&N) SETB (NOT &NOSAVE)                                         02060000
+&PARMEXP SETC  '(R1)'                                                   02070000
+&PARMREG SETC  '1'                                                      02080000
+         AIF   ('&PARM' EQ '').PARM1                                    02090000
+         AIF   (N'&PARM LT 2).PARM1                                     02100000
+&PARMEXP SETC  '&PARM(2)'                                               02110000
+         AIF   (NOT &OLDSAVE).PARM1                                     02120000
+&PARMREG SETC  '&PARM(2)'                                               02130000
+         AIF   ('&PARMEXP'(1,1) EQ '(').STRIP                           02140000
+         MNOTE 8,'PARM=&PARM INVALID'                                   02150000
+         MNOTE 8,'PARM=(&PARM(1),(&PARM(2)) ASSUMED'                    02160000
+         AGO   .STRIPT                                                  02170000
+.STRIP   AIF   ('&PARMEXP'(K'&PARMEXP,1) EQ ')').STRIP1                 02180000
+         MNOTE 12,'PARM=&PARM INVALID'                                  02190000
+         MEXIT ,                                                        02200000
+.STRIP1  ANOP  ,                                                        02210000
+&PARMREG SETC  '&PARMREG'(2,K'&PARMREG-2)                               02220000
+.STRIPT  AIF   ('&PARMREG'(1,1) GE '0').PARM1                           02230000
+&PARMREG SETC  '&PARMREG'(2,K'&PARMREG-1)                               02240000
+.PARM1   AIF   (NOT &DROP@1).NODROP                              81163  02250000
+         DROP  ,                                                 81163  02260000
+.NODROP  ANOP  ,                                                 81163  02270000
+&DROP@1  SETB  1                                                 81163  02280000
+         AIF   (T'&BASE EQ 'O').OLDBASE                          87223  02290000
+         AIF   (N'&BASE LT 2).OLDBASE                            87223  02300000
+ AIF (T'&BASE2 EQ 'O' AND T'&BASE3 EQ 'O' AND T'&BASE4 EQ 'O').NEWBASE  02310000
+         MNOTE 8,'CONFLICTING SPECIFICATION: BASE=(.,.) AND BASEn='     02320000
+.NEWBASE ANOP  ,                                                 87223  02330000
+&CASE    SETC  '&BASE(1)'                                        87223  02340000
+&CASE2   SETC  '&BASE(2)'                                        87223  02350000
+&CASE3   SETC  '&BASE(3)'                                        87223  02360000
+&CASE4   SETC  '&BASE(4)'                                        87223  02370000
+         AIF   (N'&BASE LT 5).COMBASE                            87223  02380000
+         MNOTE 0,'ONLY FOUR BASES SUPPORTED'                     87223  02390000
+         AGO   .COMBASE      BOMB ON ADDRESSABILITY ?            87223  02400000
+.OLDBASE ANOP  ,                                                 87223  02410000
+&CASE    SETC  '&BASE(1)'                                        87223  02420000
+&CASE2   SETC  '&BASE2'                                          87223  02430000
+&CASE3   SETC  '&BASE3'                                          87223  02440000
+&CASE4   SETC  '&BASE4'                                          87223  02450000
+.COMBASE AIF   ('&CASE4' NE '').FORBASE                          87223  02460000
+         AIF   ('&CASE3' NE '').THRBASE                          87223  02470000
+         AIF   ('&CASE2' NE '').TWOBASE                          87223  02480000
+         AIF   ('&CASE' NE '').ONEBASE                           87223  02490000
+.NOBASE  AIF   (T'&ENTRY NE 'O').NOBASEU                         81163  02500000
+         DS    0H                                                       02510000
+         USING *,R15                                             81163  02520000
+.NOBASEU ANOP  ,                                                 81163  02530000
+&CMU     SETC  'R15'                                             81163  02540000
+         AGO   .BASED                                                   02550000
+.FORBASE AIF   ('&CASE3' EQ '').GAP43                            87223  02560000
+         AIF   ('&CASE2' EQ '').GAP42                            87223  02570000
+         AIF   ('&CASE' EQ '').GAP41                             87223  02580000
+&CMU     SETC  '&CASE'.','.'&CASE2'.','.'&CASE3'.','.'&CASE4'    87223  02590000
+         AGO   .BASED                                                   02600000
+.GAP43   MNOTE 12,'BASE3 REQUIRED WHEN BASE4 SPECIFIED'                 02610000
+         AIF   ('&CASE2' NE '').GAP41T                           87223  02620000
+.GAP42   MNOTE 12,'BASE2 REQUIRED WHEN BASE4 SPECIFIED'                 02630000
+.GAP41T  AIF   ('&CASE' NE '').NOBASE                            87223  02640000
+.GAP41   MNOTE 12,'BASE REQUIRED WHEN BASE4 SPECIFIED'                  02650000
+         AGO   .NOBASE                                                  02660000
+.THRBASE AIF   ('&CASE2' EQ '').GAP32                            87223  02670000
+         AIF   ('&CASE' EQ '').GAP31                             87223  02680000
+&CMU     SETC  '&CASE'.','.'&CASE2'.','.'&CASE3'                 87223  02690000
+         AGO   .BASED                                                   02700000
+.GAP32   MNOTE 12,'BASE2 REQUIRED WHEN BASE3 SPECIFIED'                 02710000
+         AIF   ('&CASE' NE '').NOBASE                            87223  02720000
+.GAP31   MNOTE 12,'BASE REQUIRED WHEN BASE3 SPECIFIED'                  02730000
+         AGO   .NOBASE                                                  02740000
+.TWOBASE AIF   ('&CASE' EQ '').GAP21                             87223  02750000
+&CMU     SETC  '&CASE'.','.'&CASE2'                              87223  02760000
+         AGO   .BASED                                                   02770000
+.GAP21   MNOTE 12,'BASE REQUIRED WHEN BASE2 SPECIFIED'                  02780000
+         AGO   .NOBASE                                                  02790000
+.ONEBASE ANOP  ,                                                 81163  02800000
+&CMU     SETC  '&CASE'                                           87223  02810000
+.BASED   USING &DSCTG,R13                                               02820000
+&B@      SETC  'B@&SYSNDX'                                              02830000
+&N@      SETC  'N@&SYSNDX'                                              02840000
+&LQ      SETC  'L'''                                                    02850000
+&LAB     B     &B@-*(,R15)                                              02860000
+         DC    AL1(&LQ&N@)                                              02870000
+         AIF   ('&ID' NE '*').USEID                                     02880000
+&NAME    SETC  '&L'                                                     02890000
+         AIF   (T'&L NE 'O').USENAME                                    02900000
+&NAME    SETC  '&SYSECT'                                                02910000
+.USENAME AIF   ('&RIGHT' EQ '').NORIGHT                                 02920000
+&NAME    SETC  '&NAME'.' '.'COPYRIGHT '.'&RIGHT'                        02930000
+.NORIGHT AIF   ('&DATE' EQ 'NO' OR &BUMASM).NODATE                      02940000
+&N@      DC    C'&NAME - &SYSDATE - &SYSTIME'                           02950000
+         AGO   .NAMEOK                                                  02960000
+.NODATE  ANOP                                                           02970000
+&N@      DC    C'&NAME'                                                 02980000
+         AGO   .NAMEOK                                                  02990000
+.USEID   ANOP                                                           03000000
+         AIF   ('&ID'(1,1) NE '''').USEIDQ                              03010000
+&N@      DC    C&ID                                                     03020000
+         AGO   .NAMEOK                                                  03030000
+.USEIDQ  ANOP                                                           03040000
+&N@      DC    C'&ID'                                                   03050000
+.NAMEOK  AIF   (T'&ENTRY EQ 'O').NOENTR                          81163  03060000
+&I       SETA  0                                                 81163  03070000
+&J       SETA  N'&ENTRY                                          81163  03080000
+&N@      SETC  ''            SHORT ID                            81163  03090000
+         AIF   ('&EID' EQ 'SHORT').ENTRSH                        81163  03100000
+&N@      SETC  ' - '.'&SYSDATE'.' - '.'&SYSTIME'                 81163  03110000
+.ENTRSH  AIF   (&I GE &J).ENTRDN                                 81163  03120000
+&I       SETA  &I+1                                              81163  03130000
+&C9      SETC  '&ENTRY(&I)'                                      81163  03140000
+         AIF   (&NOENTRY).ENTRNN                                 81347  03150000
+         ENTRY &C9                                               81163  03160000
+.ENTRNN  AIF   (T'&ENTNO EQ 'O').ENTRNM                          88255  03170000
+&NUMENT  SETA  &NUMENT+1     INCREASE ENTRY NUMBER               88255  03180000
+         DC    Y(&NUMENT)    MAKE ENTRY PREFIX                   88255  03190000
+.ENTRNM  ANOP  ,                                                 88255  03200000
+&C9      B     &B@-*(,R15)                                       81163  03210000
+         AIF   ('&EID' EQ 'NONE' OR '&EID' EQ 'NO').ENTRSH      GP99062 03220000
+&N       SETA  K'&N@+K'&C9                                       81163  03230000
+&N       SETA  ((&N/2)*2)+1  MAKE ODD LENGTH FOR ALIGNMENT       81163  03240000
+         DC    AL1(&N),CL(&N)'&ENTRY(&I)&N@'                     81163  03250000
+         AGO   .ENTRSH                                           81163  03260000
+.ENTRDN  AIF   (T'&ENTNO EQ 'O').ENTRDM                          88255  03270000
+         DC    Y(0)          SET ENTRY PREFIX =0 (MAIN)          88255  03280000
+.ENTRDM  AIF   (&OLDSAVE).ELDSV                                  81163  03290000
+&B@      SAVEX R14,R12,&SV.14,TYPE=STM                           81203  03300000
+&B@      SETC  ''                                                81163  03310000
+.ELDSV   AIF   ('&CASE' EQ '').ELDSVLR                           87223  03320000
+         AIF   ('&BASED' NE '*').ELDSVLR                         81263  03330000
+&B@      BASR  &CASE,0                                           93006  03340000
+         LA    R15,*-&CMB                                        81263  03350000
+         SLR   &CASE,R15                                         87223  03360000
+         AGO   .COMBAS2                                          81263  03370000
+.ELDSVLR ANOP  ,                                                 81263  03380000
+&B@      BASR  R15,0                                             93006  03390000
+         USING *,R15                                             81163  03400000
+         AIF   ('&CASE' EQ '').NOBASE2                           87223  03410000
+         L     &CASE,=A(&CMB)                                    87223  03420000
+         DROP  R15                                               81163  03430000
+         AGO   .COMBAS2                                          81163  03440000
+.NOENTR  AIF   (&OLDSAVE).OLDSV                                  81163  03450000
+&B@      SAVEX R14,R12,&SV.14,TYPE=STM                           81203  03460000
+&B@      SETC  ''                                                       03470000
+.OLDSV   AIF   ('&CASE' EQ '').NOBASE2                           87223  03480000
+         AIF   (&CME).BASEL                                      81163  03490000
+&B@      LR    &CASE,R15                                         87223  03500000
+         AGO   .COMBAS2                                          81163  03510000
+.BASEL   USING &LAB,R15                                          81163  03520000
+&B@      L     &CASE,=A(&CMB)                                    87223  03530000
+         DROP  R15                                               81163  03540000
+.COMBAS2 AIF   ('&CASE2' EQ '').NOBASE2                          87223  03550000
+         AIF   ('&CASE3' EQ '').NOBASE3                          87223  03560000
+         AIF   ('&CASE4' EQ '').NOBASE4                          87223  03570000
+         LA    &CASE4,2048                                       87223  03580000
+         LA    &CASE2,2048(&CASE4,&CASE)                         87223  03590000
+         LA    &CASE3,2048(&CASE4,&CASE2)                        87223  03600000
+         LA    &CASE4,2048(&CASE4,&CASE3)                        87223  03610000
+         AGO   .NOBASE2                                                 03620000
+.NOBASE4 LA    &CASE3,2048                                       87223  03630000
+         LA    &CASE2,2048(&CASE3,&CASE)                                03640000
+         LA    &CASE3,2048(&CASE3,&CASE2)                        87223  03650000
+         AGO   .NOBASE2                                                 03660000
+.NOBASE3 LA    &CASE2,4095                                       87223  03670000
+         LA    &CASE2,1(&CASE2,&CASE)                            87223  03680000
+.NOBASE2 AIF   (NOT &OLDSAVE).NOLDSV                                    03690000
+         L     R15,&SV.13                                               03700000
+         ST    &CASE,&SV.15-&DSCTG.(,R15)                        87223  03710000
+         AIF   ('&PARM' EQ '').NOLDSV1                                  03720000
+         L     &PARM(1),&SV.&PARMREG-&DSCTG.(,R15)                      03730000
+         AGO   .NOLDSV1                                                 03740000
+.NOLDSV  AIF   (&NOSAVE).NOLDSV1                                        03750000
+         AIF   ('&PARM' EQ '').NOPARM                                   03760000
+         AIF   ('&PARM' EQ '1' OR '&PARM' EQ 'R1').NOPARM        87223  03770000
+&MACPLAB SETC  ''                                                81154  03780000
+         MACPARM &PARM(1),&PARMEXP                               81154  03790000
+.*                                                                      03800000
+.NOPARM  AIF   ('&CASE' EQ '').NOUSEB                            87223  03810000
+         USING &CMB,&CMU                                         81163  03820000
+.NOUSEB  AIF   ('&SAVE' NE '*').LA                               81163  03830000
+         AIF   (NOT &HWOPT).LYLEN                                84307  03840000
+         L     R14,=A(&ENDG-&DSCTG)                              84307  03850000
+         AGO   .NOLA                                             84307  03860000
+.LYLEN   AIF   (NOT &BWOPT).LALEN                                84307  03870000
+         LH    R14,=Y(&ENDG-&DSCTG)                                     03880000
+         AGO   .NOLA                                                    03890000
+.LA      LA    R1,&SAVE                                                 03900000
+         SLR   R15,R15                                                  03910000
+         AGO   .NOGM                                                    03920000
+.LALEN   LA    R14,&ENDG-&DSCTG                                         03930000
+.*             NOTE THAT R15 IS DESTROYED (OS/VS2) BY RMAIN             03940000
+.NOLA    AIF   (&MVSXA OR '&SYSSPLV' GT '1').DOXA                93174  03950000
+         AIF   ('&BNDRY' NE 'PAGE').GMDBLWD                      82002  03960000
+         AIF   (NOT &MVS).SOLA                                   82002  03970000
+.DOXA    LR    R0,R14        COPY LENGTH                         82002  03980000
+         SLR   R1,R1         CLEAR FREEMAIN ADDRESS              82002  03990000
+&Y       SETB  ('&BNDRY' EQ 'PAGE')                              93174  04000000
+         LA    R15,2+4*&Y    UNCONDITIONAL GETMAIN(PAGE BNDRY)   93174  04010000
+         AIF   ('&SP' EQ '0').POLA                               82002  04020000
+         ICM   R15,2,=AL1(&SP)                                   82002  04030000
+.POLA    SVC   120           GET PAGE ALIGNED STORAGE            82002  04040000
+         ST    R14,&SV.SPLN-&DSCTG.(R1)                          82002  04050000
+         AIF   ('&SP' EQ '0').NOGM                               82002  04060000
+         MVI   &SV.SPLN-&DSCTG.(R1),&SP                          82002  04070000
+         AGO   .NOGM                                             82002  04080000
+.*       FOR NON-MVS SYSTEMS, PAGE ALIGNMENT IS ATTEMPTED, BUT   82002  04090000
+.*       NOT GUARANTEED BY DOING THE GETMAIN IN A 4K CHUNK IN A  82002  04100000
+.*       NON-ZERO SUB-POOL.  MVT/MFT NOT SUPPORTED.              82002  04110000
+.SOLA    LA    R14,4095(,R14)                                    82002  04120000
+         SRL   R14,12                                            82002  04130000
+         SLL   R14,12                                            82002  04140000
+         AIF   ('&SP' NE '0').GMDBLWD                            82002  04150000
+         ICM   R14,8,=AL1(10)                                    82002  04160000
+         AGO   .GM                                               82002  04170000
+.GMDBLWD AIF   ('&SP' EQ '0').GM                                 82002  04180000
+         AIF   ('&MODEL' EQ '360').GM360                                04190000
+.GMICM   ICM   R14,8,=AL1(&SP)                                   82002  04200000
+.GM    GETMAIN R,LV=(R14)                                               04210000
+         AGO   .GMCOM                                                   04220000
+.GM360 GETMAIN R,SP=(&SP),LV=(R14)                                      04230000
+         ST    R14,&SV.SPLN-&DSCTG.(R1)                          82002  04240000
+         MVI   &SV.SPLN-&DSCTG.(R1),&SP                          82002  04250000
+         AGO   .NOGM                                             82002  04260000
+.GMCOM   ST    R14,&SV.SPLN-&DSCTG.(R1)                                 04270000
+.NOGM    ST    R1,&SV.FWD                                               04280000
+         ST    R13,&SV.13-&DSCTG.(R1)                                   04290000
+         AIF   (NOT &CPYREGS).LR13                                      04300000
+         MVC   &SV.14-&DSCTG.(&SV.12+4-&SV.14,R1),&SV.14         81151  04310000
+&BEGZ    SETC  '&PFX'.'FWK'  CLEAR ONLY AFTER REGISTERS          94272  04320000
+         AIF   (NOT &ZERO).LR13                                  94272  04330000
+         XC    &SV.FWD-&DSCTG.(&SV.14-&SV.FWD,R1),&SV.FWD-&DSCTG.(R1)   04340000
+.LR13    LR    R13,R1                                                   04350000
+&ENDZ    SETC  '&ENDG'             DEFAULT END OF CLEAR          81208  04360000
+         AIF   (T'&ENDZERO EQ 'O').CLRDFLT                       81209  04370000
+&ENDZ    SETC  '&ENDZERO'                                        81208  04380000
+&ZERO    SETB  1                                                 81208  04390000
+&ZERO15  SETB  (NOT &ZERO8 AND NOT &ZERO12)                      81208  04400000
+.CLRDFLT AIF   (NOT &ZERO).NOLDSV1                               81208  04410000
+         AIF   (&ZERO8).XC                                       81202  04420000
+         AIF   ('&MODEL' NE '360').MVCL                                 04430000
+         LA    R0,(&ENDG-&BEGZ)/256-1 ASM ERROR IF LEN<256       94272  04440000
+         ORG   *-4                                                      04450000
+         LA    R0,(&ENDG-&BEGZ)/256   NUMBER OF SEGMENTS TO ZERO 94272  04460000
+         LA    R1,&BEGZ      ZERO WORK AREA                      94272  04470000
+         LA    R15,&ENDG-&BEGZ-(&ENDG-&BEGZ)/256*256             94272  04480000
+         XC    0(256,R1),0(R1)          ZERO WORK AREA SEGMENT          04490000
+         LA    R1,256(,R1)                                              04500000
+         BCT   R0,*-10                                                  04510000
+         SH    R15,=H'1'                                                04520000
+         BM    *+14                                                     04530000
+         EX    R15,*+4                  ZERO PARTIAL SEGMENT            04540000
+         XC    0(0,R1),0(R1)            EXECUTED TO ZERO WORK AREA      04550000
+         AGO   .NOLDSV1                                                 04560000
+.XC      XC    &BEGZ.(&ENDG-&BEGZ),&BEGZ                         94272  04570000
+         AGO   .NOLDSV1                                                 04580000
+.MVCL    LA    R0,&BEGZ      ZERO WORK AREA                      94272  04590000
+         AIF   (NOT &ZERO31).ZEROLY                              84307  04600000
+         L     R1,=A(&ENDG-&BEGZ)                                94272  04610000
+         AGO   .XR15                                             84307  04620000
+.ZEROLY  AIF   (&ZERO12).ZEROLA                                  84307  04630000
+         LH    R1,=Y(&ENDG-&BEGZ)                                94272  04640000
+         AGO   .XR15                                             81202  04650000
+.ZEROLA  LA    R1,&ENDG-&BEGZ                                    94272  04660000
+.XR15    SLR   R15,R15                                           81202  04670000
+         MVCL  R0,R14                                                   04680000
+.NOLDSV1 AIF   (T'&ENTRY EQ 'O' OR T'&ENTNO EQ 'O').NOLDENT      88255  04690000
+         L     R1,&SV.13     GET OLD SAVE AREA BACK              88255  04700000
+         CLM   &CASE,7,&SV.15+1-&DSCTG.(R1)  MAIN ENTRY ?        88255  04710000
+         BE    *+16          YES; DON'T MOVE                     88255  04720000
+         L     R1,&SV.15-&DSCTG.(,R1) GET ENTRY ADDRESS BACK     88255  04730000
+         BCTR  R1,0          SPACE TO ENTRY COUNTER              88255  04740000
+         MVC   &ENTNO+L'&ENTNO-1(1),0(R1) COPY COUNT             88255  04750000
+.NOLDENT AIF   ('&PARM' NE '1' AND '&PARM' NE 'R1').NOPARM1      87223  04760000
+         L     R1,&SV.13     OLD SAVE AREA                       87223  04770000
+         LM    R0,R1,&SV.0-&DSCTG.(R1)  RESTORE ENTRY REGISTERS  94272  04780000
+.NOPARM1 AIF   (&NOT1ST).END                                            04790000
+         AIF   (&DSOPT).DSOPT                                           04800000
+&DSCTG   DSECT                                                          04810000
+&SV.SPLN DS    F                                                        04820000
+&SV.13   DS    F                                                        04830000
+&SV.FWD  DS    A                                                        04840000
+&SV.14   DS    A                                                        04850000
+&SV.15   DS    A                                                        04860000
+&SV.0    DS    A                                                        04870000
+&SV.1    DS    A                                                        04880000
+&SV.2    DS    A                                                        04890000
+&SV.3    DS    A                                                        04900000
+&SV.4    DS    A                                                        04910000
+&SV.5    DS    A                                                        04920000
+&SV.6    DS    A                                                        04930000
+&SV.7    DS    A                                                        04940000
+&SV.8    DS    A                                                        04950000
+&SV.9    DS    A                                                        04960000
+&SV.10   DS    A                                                        04970000
+&SV.11   DS    A                                                        04980000
+&SV.12   DS    A                                                        04990000
+&SV.FWK  EQU   *                                                 94272  05000000
+         AIF   (NOT &NWOPT).NOEND                                       05010000
+&ENDG    EQU   *                                                        05020000
+.NOEND   ANOP                                                           05030000
+&SECT   CSECT                                                           05040000
+.DSOPT   AIF   (&EQUOPT OR &MAPONCE OR &SAV@REG).END                    05050000
+&MAPONCE SETB  1                                                        05060000
+&SAV@REG SETB  1                                                        05070000
+         REGEQU ,                                                       05080000
+         MASKEQU ,                                               87223  05090000
+.END     MEND  ,                                                        05100000

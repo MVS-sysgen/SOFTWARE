@@ -1,0 +1,5 @@
+         MACRO                                                          00010000
+&NM      INPFIND &WORK,&DEV=                             NEW ON GP02248 00020000
+.*   @INPREAD CALL TO (RE)POSITION TO A MEMBER                          00030000
+&NM      INPCOM 0,0,8,0,&WORK,DEV=&DEV                                  00040000
+         MEND  ,                                                        00050000

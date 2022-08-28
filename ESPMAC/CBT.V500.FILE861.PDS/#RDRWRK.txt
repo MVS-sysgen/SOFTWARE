@@ -1,0 +1,36 @@
+         MACRO ,                                                        00010000
+&NM      #RDRWRK  &DDNAME=SYSIN,&PFX=RD1,&FLAGS=0,&EODAD=0,            *00020000
+               &WIDTH=0,&FILL=C' '                                      00030000
+.*  This macro defines work space for one input file. The definition    00040000
+.*     is used with the #RDR macro and the SUBRDR subroutine.           00050000
+.*                                                                      00060000
+.*  A unique DDNAME is required, and a unique prefix. Only eight        00070000
+.*   concurrent input files are supported, and it is suggested to use   00080000
+.*   prefixes of RD1 to RD8 for convenience.  The name of this work     00090000
+.*   area (invocation name field) must be placed into the @RDRWORK      00100000
+.*   list at this file number's offset using a #RDR TYPE=OPEN call.     00110000
+.*                                                                      00120000
+.*  FLAGS should be set (with the appropriate prefix):                  00130000
+.*     =pr1xxxxx - none as yet                                          00140000
+.*  WIDTH=0    requests locate mode. TYPE=GET will return the address   00150000
+.*              (R1) and length (R0) of the input record.               00160000
+.*  WIDTH>0    will truncate/expand the record in rd1REC DEFInED IN     00170000
+.*              this macRo.                                             00180000
+.*                                                                      00190000
+.*  FILL=   self-defining character - sets the fill character for short 00200000
+.*     records copied in move mode (WIDTH>0)                            00210000
+.*                                                                      00220000
+&NM      DS    0D            WORK AREA FOR PRINTER &PFX (PRT#)          00230000
+&PFX.EODAD DC  A(&EODAD)     OPTIONAL END FILE BRANCH ADDRESS           00240000
+&PFX.REC@  DC  A(0)          ADDRESS OF INPUT RECORD                    00250000
+&PFX.REC#  DC  F'0'          LENGTH OF INPUT RECORD                     00260000
+         DC    3A(0)           RESERVED FOR FUTURE EXPANSION            00270000
+         SPACE 1                                                        00280000
+&PFX.DCB DCB   DDNAME=&DDNAME,DSORG=PS,MACRF=GL RDREXLST RDREODAD       00290000
+&PFX.WIDTH DC  Y(&WIDTH)     MAXIMUM TEXT WIDTH                         00300000
+&PFX.FLAGS DC  AL1(&FLAGS)   PROCESSING FLAGS                           00310000
+&PFX.FILL  DC  AL1(&FILL)    PADDING CHARACTER                          00320000
+&PFX.RDW   DC  Y(5,0)        RECORD DESCRIPTOR FOR RECFM=V              00330000
+&PFX.TEXT  DC  CL(1+&WIDTH)' ' DATA RECORD                              00340000
+         DC    4X'00'          RESERVED                                 00350000
+         MEND  ,                                                        00360000

@@ -1,0 +1,175 @@
+         MACRO ,             LOCAL CSVQUERY REPLACEMENT (MVS 3.8)       00010000
+&NM      MVSQUERY &INEPNM=,&INADDR=,&SEARCHM=,&SEARCH=JPALPA,&OLEN=,&OX*00020000
+               TLST=,&OEPA=,&OEPNM=,&OMJNM=,&OLOADPT=,&OSP=,&OATTR1=,&O*00030000
+               ATTR2=,&OATTR3=,&OVALID=,&OPDATA=,&OPID=,&ODIAG=,&RETCOD*00040000
+               E=,&MF=S,&PFX=CVQ,&DSECT=DSECT,&OEPTKN=,&TCB=0           00050000
+         GBLC  &MACPLAB                                                 00060000
+         LCLC  &P                                                       00070000
+         LCLC  &A01,&A02,&A03,&A04,&A05,&A06,&A07,&A08,&A09             00080000
+         LCLC  &A10,&A11,&A12,&A13,&A14,&A15,&A16,&A17,&A18             00090000
+         LCLA  &OPTFG,&I,&F                                             00100000
+         LCLB  &OPJPA,&OPLPA,&OPMIN,&OPNAM                              00110000
+&P       SETC  '&PFX'                                                   00120000
+&MACPLAB SETC  '&NM'                                                    00130000
+&I       SETA  &SYSNDX                                                  00140000
+         AIF   ('&MF' EQ 'D').MAPDSCT                                   00150000
+.*                                                                      00160000
+&OPJPA   SETB  ('&SEARCH' EQ 'JPA' OR '&SEARCH' EQ 'JPALPA')            00170000
+&OPLPA   SETB  ('&SEARCH' EQ 'LPA' OR '&SEARCH' EQ 'JPALPA')            00180000
+&OPNAM   SETB  ('&INEPNM' NE '')                                        00190000
+&OPMIN   SETB  ('&SEARCHM' EQ 'YES')                                    00200000
+         AIF   (&OPNAM AND '&INADDR' EQ '').INOK                        00210000
+         AIF   (NOT &OPNAM AND '&INADDR' NE '').INOK                    00220000
+         AIF   ('&MF(1)' EQ 'L' OR '&MF(1)' EQ 'E').INOK  DEFER         00230000
+ MNOTE 8,'EITHER INEPNM OR INADDR MUST BE SPECIFIED, BUT NOT BOTH'      00240000
+         MEXIT ,                                                        00250000
+.*                                                                      00260000
+.INOK    AIF   ('&MF' EQ '').BADMF                                      00270000
+&F       SETA  128*&OPJPA+64*&OPLPA+32*&OPNAM+16*&OPMIN                 00280000
+         AIF   (N'&MF GT 1 AND '&MF(1)' EQ 'L').LFORM                   00290000
+         AIF   ('&MF' EQ 'S').STDFORM                                   00300000
+         AIF   (N'&MF LT 2).BADMF                                       00310000
+         AIF   ('&MF(1)' EQ 'E').EFORM                                  00320000
+         AIF   ('&MF(1)' EQ 'M').EFORM                                  00330000
+         AIF   ('&MF(1)' EQ 'L').LFORM                                  00340000
+.BADMF   MNOTE 8,'VALUE OF MF= IS UNSUPPORTED'                          00350000
+         MEXIT ,                                                        00360000
+.STDFORM CNOP  0,4           FORCE ALIGNMENT                            00370000
+         MACPARM R1,ZZQ&I.S,OP=BAL  LOAD THE IN-LINE LIST ADDRESS       00380000
+&MACPLAB SETC  'ZZQ'.'&I'.'S'  MAKE TARGET LABEL                        00390000
+         DC    XL(18*4)'0'     DEFINE PARAMETER LIST SPACE              00400000
+         AGO   .LOADLST                                                 00410000
+.EFORM   MACPARM R1,&MF(2)   LOAD PARM LIST ADDRESS                     00420000
+         AIF   (NOT &OPNAM AND '&INADDR' EQ '').LOADLST  MF=L HAS?      00430000
+         MACPARM 0(R1),X'DF',OP=NI  RESET OLD INEPNM FLAG               00440000
+         MACPARM 0(R1),&F,OP=OI,OPR=OI  SET  OPTION FLAGS               00450000
+         AGO   .LOADFLG                                                 00460000
+.LOADLST MACPARM 0(R1),&F,OP=MVI,OPR=MVI  LOAD OPTION FLAGS             00470000
+.*       MVI   3(R1),AL1(&PLVER+0)  PLIST VERSION - IGNORE              00480000
+.LOADFLG MACPARM R0,&INEPNM,NULL=SKIP                                   00490000
+         MACPARM R0,&INADDR,NULL=SKIP                                   00500000
+         ST    R0,04(,R1)     INPUT POINTER                             00510000
+         AIF   ('&RETCODE' EQ '').SKIP08                                00520000
+         MACPARM R0,&RETCODE                                            00530000
+         ST    R0,08(,R1)     RETURN CODE                               00540000
+.SKIP08  AIF   ('&OVALID' EQ '').SKIP12                                 00550000
+         MACPARM R0,&OVALID                                             00560000
+         ST    R0,12(,R1)     VALIDITY FLAGS                            00570000
+.SKIP12  AIF   ('&OLEN' EQ '').SKIP16                                   00580000
+         MACPARM R0,&OLEN                                               00590000
+         ST    R0,16(,R1)     MODULE LENGTH                             00600000
+.SKIP16  AIF   ('&OEPA' EQ '').SKIP20                                   00610000
+         MACPARM R0,&OEPA                                               00620000
+         ST    R0,20(,R1)     ENTRY ADDRESS W/AM FLAG IN HIGH BIT       00630000
+.SKIP20  AIF   ('&OEPNM' EQ '').SKIP24                                  00640000
+         MACPARM R0,&OEPNM                                              00650000
+         ST    R0,24(,R1)     MODULE NAME/ALIAS                         00660000
+.SKIP24  AIF   ('&OMJNM' EQ '').SKIP28                                  00670000
+         MACPARM R0,&OMJNM                                              00680000
+         ST    R0,28(,R1)     MAJOR NAME                                00690000
+.SKIP28  AIF   ('&OSP' EQ '').SKIP32                                    00700000
+         MACPARM R0,&OSP                                                00710000
+         ST    R0,32(,R1)     SUBPOOL                                   00720000
+.SKIP32  AIF   ('&OATTR1' EQ '').SKIP36                                 00730000
+         MACPARM R0,&OATTR1                                             00740000
+         ST    R0,36(,R1)     ATTRIBUTE 1                               00750000
+.SKIP36  AIF   ('&OATTR2' EQ '').SKIP40                                 00760000
+         MACPARM R0,&OATTR2                                             00770000
+         ST    R0,40(,R1)     ATTRIBUTE 2                               00780000
+.SKIP40  AIF   ('&OATTR3' EQ '').SKIP44                                 00790000
+         MACPARM R0,&OATTR3                                             00800000
+         ST    R0,44(,R1)     ATTIBUTE 3                                00810000
+.SKIP44  AIF   ('&OLOADPT' EQ '').SKIP48                                00820000
+         MACPARM R0,&OLOADPT                                            00830000
+         ST    R0,48(,R1)     LOAD POINT (FIRST EXTENT)                 00840000
+.SKIP48  AIF   ('&OPDATA' EQ '').SKIP52                                 00850000
+         MACPARM R0,&OPDATA                                             00860000
+         ST    R0,52(,R1)     P DATA                                    00870000
+.SKIP52  AIF   ('&OPID' EQ '').SKIP56                                   00880000
+         MACPARM R0,&OPID                                               00890000
+         ST    R0,56(,R1)     P ID                                      00900000
+.SKIP56  AIF   ('&OEPTKN' EQ '').SKIP60                                 00910000
+         MACPARM R0,&OEPTKN                                             00920000
+         ST    R0,60(,R1)     TOKEN - NOT SUPPORTED                     00930000
+.SKIP60  AIF   ('&OXTLST' EQ '').SKIP64                                 00940000
+         MACPARM R0,&OXTLST                                             00950000
+         ST    R0,64(,R1)     EXTENT LIST                               00960000
+.SKIP64  AIF   ('&ODIAG' EQ '').SKIP68                                  00970000
+         MACPARM R0,&ODIAG                                              00980000
+         ST    R0,68(,R1)     DIAG - NOT IMPLEMENTED                    00990000
+.SKIP68  AIF   ('&MF(1)' EQ 'M').MEND  MODIFY ONLY                      01000000
+         MACPARM R0,&TCB,NULL=0                                 GP08117 01010000
+         MACPARM R15,=V(SUBQUERY),OP=L  ADDRESS OF SUBROUTINE           01020000
+         MACPARM R14,(R15),OP=BALR,OPR=BALR                             01030000
+         MEXIT ,                                                        01040000
+.LFORM   ANOP  ,                                                        01050000
+&A01     SETC  '&INEPNM&INADDR+0'                                       01060000
+&A02     SETC  '&RETCODE+0'                                             01070000
+&A03     SETC  '&OVALID+0'                                              01080000
+&A04     SETC  '&OLEN+0'                                                01090000
+&A05     SETC  '&OEPA+0'                                                01100000
+&A06     SETC  '&OEPNM+0'                                               01110000
+&A07     SETC  '&OMJNM+0'                                               01120000
+&A08     SETC  '&OSP+0'                                                 01130000
+&A09     SETC  '&OATTR1+0'                                              01140000
+&A10     SETC  '&OATTR2+0'                                              01150000
+&A11     SETC  '&OATTR3+0'                                              01160000
+&A12     SETC  '&OLOADPT+0'                                             01170000
+&A13     SETC  '&OPDATA+0'                                              01180000
+&A14     SETC  '&OPID+0'                                                01190000
+&A15     SETC  '&OEPTKN+0'                                              01200000
+&A16     SETC  '&OXTLST+0'                                              01210000
+&A17     SETC  '&ODIAG+0'                                               01220000
+&A18     SETC  '0'                                                      01230000
+&MF(2)   MACMAPHD DSECT=NO,PFX=&PFX                                     01240000
+         AIF   ('&NM' EQ '').MAPCOM                                     01250000
+&NM      DS    0A                                                       01260000
+         AGO   .MAPCOM                                                  01270000
+.MAPDSCT ANOP  ,                                                        01280000
+&A01     SETC  '0'                                                      01290000
+&A02     SETC  '0'                                                      01300000
+&A03     SETC  '0'                                                      01310000
+&A04     SETC  '0'                                                      01320000
+&A05     SETC  '0'                                                      01330000
+&A06     SETC  '0'                                                      01340000
+&A07     SETC  '0'                                                      01350000
+&A08     SETC  '0'                                                      01360000
+&A09     SETC  '0'                                                      01370000
+&A10     SETC  '0'                                                      01380000
+&A11     SETC  '0'                                                      01390000
+&A12     SETC  '0'                                                      01400000
+&A13     SETC  '0'                                                      01410000
+&A14     SETC  '0'                                                      01420000
+&A15     SETC  '0'                                                      01430000
+&A16     SETC  '0'                                                      01440000
+&A17     SETC  '0'                                                      01450000
+&A18     SETC  '0'                                                      01460000
+&NM      MACMAPHD DSECT=&DSECT,PFX=&PFX,DFLT=DSECT                      01470000
+.MAPCOM  ANOP  ,                                                        01480000
+&P.FLAGS DC    0A(0),AL1(&F) REQUEST FLAGS                              01490000
+&P.OPJPA EQU   X'80'           SEARCH JOB'S JPA AND LOAD LIST           01500000
+&P.OPLPA EQU   X'40'           SEARCH SYSTEM'S MLPA AND PLPA            01510000
+&P.OPNAM EQU   X'20'           SEARCH FOR NAME, NOT ADDRESS             01520000
+&P.OPMIN EQU   X'10'           SEARCH INCLUDES MINOR CDES               01530000
+         DC    X'00'                                                    01540000
+         DC    X'00'                                                    01550000
+&P.#PLST DC    B'0'          LIST VERSION                               01560000
+&P.@INRQ DC    A(&A01)  4    ADDRESS REQUESTED, OR LOC OF NAME          01570000
+&P.@OCOD DC    A(&A02)  8    ADDRESS OF OUTPUT RETURN CODE              01580000
+&P.@OVAL DC    A(&A03) 12    ADDRESS OF OUTPUT VALIDITY FLAGS           01590000
+&P.@OLEN DC    A(&A04) 16    ADDRESS OF OUTPUT LENGTH WORD              01600000
+&P.@OEPA DC    A(&A05) 20    ADDRESS OF OUTPUT ENTRY ADDRESS            01610000
+&P.@ONAM DC    A(&A06) 24    ADDRESS OF OUTPUT ENTRY NAME               01620000
+&P.@OMAJ DC    A(&A07) 28    ADDRESS OF OUTPUT MAJOR NAME               01630000
+&P.@OSP  DC    A(&A08) 32    ADDRESS OF OUTPUT SUBPOOL ADDRESS          01640000
+&P.@OAT1 DC    A(&A09) 36    ADDRESS OF OUTPUT ATTRIBUTE ADDRESS        01650000
+&P.@OAT2 DC    A(&A10) 40    ADDRESS OF OUTPUT ATTRIBUTE ADDRESS        01660000
+&P.@OAT3 DC    A(&A11) 44    ADDRESS OF OUTPUT ATTRIBUTE ADDRESS        01670000
+&P.@OLOD DC    A(&A12) 48    ADDRESS OF OUTPUT LOAD ADDRESS             01680000
+&P.@OPDA DC    A(&A13) 52    ADDRESS OF OUTPUT ?     - NOT IMPLEMENTED  01690000
+&P.@OPID DC    A(&A14) 56    ADDRESS OF OUTPUT ?     - NOT IMPLEMENTED  01700000
+&P.@OTKN DC    A(&A15) 60    ADDRESS OF OUTPUT TOKEN - NOT IMPLEMENTED  01710000
+&P.@OXTL DC    A(&A16) 64    ADDRESS OF OUTPUT EXTENT LIST AREA         01720000
+&P.@ODIA DC    A(&A17) 68    ADDRESS OF OUTPUT DIAG  - NOT IMPLEMENTED  01730000
+&P.LEN   EQU   *-&P.FLAGS      LIST LENGTH                              01740000
+.MEND    MEND  ,                                                        01750000

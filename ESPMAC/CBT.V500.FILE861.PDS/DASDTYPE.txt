@@ -1,0 +1,42 @@
+         MACRO                                                          00010000
+&NM    DASDTYPE &UCB=R3,&OUT=R1,&R=R15,&S=R14,&T=R0                     00020000
+         GBLC  &SYSTEM                                           82158  00030000
+         LCLA  &I                                                       00040000
+.*  THIS MACRO EXPANDS IN-LINE CODE TO SIMULATE THE DEVTYPE SVC         00050000
+.*  FOR DISK DEVICES. INPUT IS A UCB ADDRESS IN REGISTER UCB;           00060000
+.*  OUTPUT IS 20 BYTES IN AREA POINTED TO BY REGISTER OUT;              00070000
+.*  ON A WORD BOUNDARY, CORRESPONDING TO WORDS 2-6 OF DEVTYPE.          00080000
+.*   CODE WAS LIFTED FROM DEVTYPE SVC OS 21.8                           00090000
+.*                                                                      00100000
+&I       SETA  &SYSNDX                                                  00110000
+         PUSH  USING                                             93032  00120000
+&NM      XC    0(20,&OUT),0(&OUT)     CLEAR OUTPUT AREA                 00130000
+         NEED  CVT           REQUEST EXPANSIONS VIA MSECT               00140000
+         NUSE  UCB,&UCB                                          93032  00150000
+         IC    &R,UCBTBYT4   GET THE DISK SUB-TYPE               93032  00160000
+         LA    &S,X'0F'      MASK FOR SUB-TYPE INDEX                    00170000
+         NR    &R,&S         GET INDEX                                  00180000
+         L     &S,CVTPTR     GET CVT                                    00190000
+         L     &S,CVTZDTAB-CVTMAP(,&S)  GET CVT DEVICE POINTER          00200000
+         IC    &R,0(&R,&S)    GET INDEX TO DEVICE ENTRY                 00210000
+         AR    &S,&R         GET ENTRY FOR THIS TYPE                    00220000
+         MVC   4(12,&OUT),0(&S)    MOVE DATA                            00230000
+         TM    UCBTBYT2,UCB2OPT3    RPS DEVICE ?                 93032  00240000
+         BZ    *+10          NO                                         00250000
+         MVC   16(4,&OUT),14(&S)     MOVE RPS WORD ALSO                 00260000
+         LH    &R,4(,&S)     GET BLOCK SIZE                             00270000
+         AIF   ('&SYSTEM' EQ 'MVS').ISMVS                        82157  00280000
+         TM    UCBFL5,UCBEXTSN     EXTENDED SENSE DEVICE ?       93032  00290000
+         BZ    ZZZZ&I        NO; SKIP RECALCULATION                     00300000
+.ISMVS   XR    &T,&T                                             82157  00310000
+         IC    &T,6(,&S)     GET OVERHEAD                               00320000
+         TM    9(&S),8       TWO BYTE OVERHEAD ?                        00330000
+         BZ    *+8           NO                                         00340000
+         LH    &T,6(,&S)     GET FULL OVERHEAD                          00350000
+         SR    &R,&T         ADJUST                                     00360000
+         XR    &T,&T                                                    00370000
+         IC    &T,8(,&S)     GET ADJUSTMENT TO ADJUSTMENT               00380000
+         AR    &R,&T         FINAL ADJUSTED SIZE                        00390000
+ZZZZ&I   ST    &R,0(,&OUT)   SET RECALCULATED BLOCKSIZE                 00400000
+         POP   USING                                             93032  00410000
+         MEND                                                           00420000

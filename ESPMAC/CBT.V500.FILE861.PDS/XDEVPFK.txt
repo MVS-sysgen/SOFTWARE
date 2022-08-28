@@ -1,0 +1,413 @@
+         MACRO ,                                                        00010000
+&NM    XDEVPFK &QUY,&TEXT,&COPIES=1                              93057  00020000
+.*                                                                      00030000
+.*       ADDED 76060 FOR EXHPCXXX AND EXHPDFLT MODULES                  00040000
+.*             SETS 3270 PFK OPTIONS (OVERRIDES MAPSQSP SETTINGS)       00050000
+.*             ALSO SEE EXHAINIT MODIFICATIONS                          00060000
+.*                                                                      00070000
+         GBLB  &PFKONE,&PFKEND,&OPTONE,&OPTEND,&OPTEND2          88364  00080000
+         GBLC  &KEY(40),&HEX(40),&KVL(40),&SECT                  88272  00090000
+         GBLC  &OPTNAM(20),&OPTVAL(20),&OPTCOM(20)                      00100000
+         GBLC  &OPTCIN,&OPTCOT,&OPTCRP,&OPTEXP,&OPTIMP           88364  00110000
+         GBLA  &IND(40),&DEF(40),&OPTMAX,&PFKMAX                 88272  00120000
+         LCLA  &I,&J,&K,&L,&SI,&SM                              77110   00130000
+         LCLC  &N,&PRIT(16),&OPTT(16)                                   00140000
+&N       SETC  '&NM'                                                    00150000
+&SM      SETA  N'&SYSLIST                                       77110   00160000
+&SI      SETA  1                                                77110   00170000
+         AGO   .TESTL                                           77110   00180000
+.NEXTL   ANOP  ,                                                77110   00190000
+&SI      SETA  &SI+2                                            77110   00200000
+.TESTL   AIF   (&SI LE &SM).DOL                                 77110   00210000
+         MEXIT ,                                                77110   00220000
+.DOL     AIF   (NOT &PFKEND).OK                                 77110   00230000
+         MNOTE 8,'OUT OF SEQUENCE'                                      00240000
+         MEXIT                                                          00250000
+.OK  AIF  ('&SYSLIST(&SI)' EQ '*END' OR '&SYSLIST(&SI)' EQ 'END').LAST  00260000
+         AIF ('&SYSLIST(&SI)' EQ '' OR '&SYSLIST(&SI+1)' EQ '').BOOBOO  00270000
+         AIF   (&PFKONE).INIT                                           00280000
+.DEF     AIF   (&OPTONE).OPTOK                                          00290000
+         MNOTE 0,' ''DOPT'' MACRO NOT USED - OPTIONS DEFAULTED'         00300000
+&N       DOPT                                                           00310000
+&N       SETC  ''                                                       00320000
+.OPTOK   AIF   (&OPTEND).OPTDONE                                        00330000
+&OPTEND  SETB  1                                                        00340000
+&N       DC    C'OPTS' .     MODULE I.D.                                00350000
+&N       SETC  ''                                                       00360000
+         DC    CL4'&OPTVAL(1) ' .  LAYOUT                               00370000
+         DC    AL2(&OPTVAL(2)*100) .   LOOP TIME                        00380000
+         DC    AL2(&OPTVAL(3)*100) .   WAIT TIME                        00390000
+         DC    B'&OPTVAL(4)&OPTVAL(5)' .  GLOBAL PRIVILEGES             00400000
+         DC    AL2(&OPTVAL(6)*100) .   DISPLAY UPDATE TIME              00410000
+         DC    AL2(&OPTVAL(7),&OPTVAL(8),&OPTVAL(9)) .  CYCLE #         00420000
+         DC    AL1(&OPTVAL(10)) .      USER EXIT LEVEL                  00430000
+         DC    B'&OPTVAL(11)' .         OPTION FLAGS                    00440000
+         DC    CL3'&OPTVAL(12) '  LPA RESIDENT DISPLAY GROUP     79156  00450000
+         DC    B'&OPTVAL(13)'  DA SKIP OPTIONS                   82361  00460000
+         DC    CL4'&OPTVAL(14) '  CRT TRANSLATE TABLE SUFFIX     82361  00470000
+.OPTDONE AIF   ('&OPTCIN' EQ '').OLDSECT  OLD FORMAT             88364  00480000
+         AIF   (&OPTEND2).COMSECT                                88364  00490000
+&OPTEND2 SETB  1                                                 88364  00500000
+&N       DC    C'PFK2'       SET FOR NEW FORMAT                  88364  00510000
+&N       SETC  'KEYS'        SET LABEL FOR FIRST KEY DEFINITION  88364  00520000
+         DC    AL2(KEYS-&SYSECT,0)  DISPLACEMENT TO KEYS / FILLER       00530000
+         DC    CL32&OPTCIN      1/3   MATCHES MAPWORK COLORMAP/SET      00540000
+         DC    CL32&OPTCOT      2/3                              88364  00550000
+         DC    X'00',CL7&OPTCRP 3/3                              88364  00560000
+         DC    AL1(&OPTEXP),C'&OPTIMP'  SIZE(PARTITION) OPTIONS  88364  00570000
+         DC    AL2(0)        FILLER                              88364  00580000
+         DC    8A(0)         RESERVED                            88364  00590000
+         DC    CL4'&OPTVAL(15) '  CRT GE TRANSLATE TABLE SUFFIX GP99106 00600000
+         AGO   .COMSECT                                          88364  00610000
+.OLDSECT ANOP  ,                                                 88364  00620000
+&N       DC    C'PFKS' .     FUNCTION KEY DEFINITIONS                   00630000
+&N       SETC  ''                                                       00640000
+.COMSECT AIF   (K'&SYSECT EQ 8).SECTOK                           88364  00650000
+.BADSECT MNOTE 4,'CONTROL SECTION NAME INVALID'                         00660000
+         AGO   .CONT                                                    00670000
+.SECTOK  AIF   ('&SYSECT'(1,4) NE 'EXHP').BADSECT                       00680000
+&SECT    SETC  '&SYSECT'(5,4)                                           00690000
+         AIF   ('&SECT'(1,1) NE 'C').CONT                               00700000
+&SECT    SETC  'CRT '.'&SECT'(2,3)                                      00710000
+.CONT    ANOP  ,                                                        00720000
+&PFKONE  SETB  1                                                        00730000
+&PFKMAX  SETA  40            NUMBER OF PFK ARRAY ENTRIES         88272  00740000
+&HEX(11) SETC  '0B'                                                     00750000
+&HEX(12) SETC  '0C'                                                     00760000
+&HEX(13) SETC  '0D'                                                     00770000
+&HEX(14) SETC  '0E'                                                     00780000
+&HEX(16) SETC  '10'                                                     00790000
+&HEX(17) SETC  '11'                                                     00800000
+&HEX(18) SETC  '12'                                                     00810000
+&HEX(19) SETC  '13'                                                     00820000
+&HEX(20) SETC  '14'                                                     00830000
+&HEX(21) SETC  '15'                                                     00840000
+&HEX(22) SETC  '16'                                                     00850000
+&HEX(23) SETC  '17'                                                     00860000
+&HEX(24) SETC  '18'                                                     00870000
+&HEX(25) SETC  '19'                                                     00880000
+&HEX(26) SETC  '1A'                                                     00890000
+&HEX(27) SETC  '1B'                                                     00900000
+&HEX(28) SETC  '1C'                                                     00910000
+&HEX(29) SETC '21'                                               88272  00920000
+&HEX(30) SETC '22'                                               88272  00930000
+&HEX(31) SETC '23'                                               88272  00940000
+&HEX(32) SETC '24'                                               88272  00950000
+&HEX(33) SETC '25'                                               88272  00960000
+&HEX(34) SETC '26'                                               88272  00970000
+&HEX(35) SETC '27'                                               88272  00980000
+&HEX(36) SETC '28'                                               88272  00990000
+&HEX(37) SETC '29'                                               88272  01000000
+&HEX(38) SETC '2A'                                               88272  01010000
+&HEX(39) SETC '2B'                                               88272  01020000
+&HEX(40) SETC '2C'                                               88272  01030000
+&IND(01) SETA  14            ALIAS FOR PA2                              01040000
+&IND(02) SETA  02                                                       01050000
+&IND(03) SETA  03                                                       01060000
+&IND(04) SETA  04                                                       01070000
+&IND(05) SETA  05                                                       01080000
+&IND(06) SETA  06                                                       01090000
+&IND(07) SETA  07                                                       01100000
+&IND(08) SETA  08                                                       01110000
+&IND(09) SETA  09                                                       01120000
+&IND(10) SETA  10                                                       01130000
+&IND(11) SETA  11                                                       01140000
+&IND(12) SETA  12                                                       01150000
+&IND(13) SETA  13                                                       01160000
+&IND(14) SETA  14                                                       01170000
+&IND(15) SETA  15                                                       01180000
+&IND(16) SETA  16                                                       01190000
+&IND(17) SETA  17                                                       01200000
+&IND(18) SETA  18                                                       01210000
+&IND(19) SETA  19                                                       01220000
+&IND(20) SETA  20                                                       01230000
+&IND(21) SETA  21                                                       01240000
+&IND(22) SETA  22                                                       01250000
+&IND(23) SETA  23                                                       01260000
+&IND(24) SETA  24                                                       01270000
+&IND(25) SETA  25                                                       01280000
+&IND(26) SETA  26                                                       01290000
+&IND(27) SETA  27                                                       01300000
+&IND(28) SETA  28                                                       01310000
+&IND(29) SETA  29                                                       01320000
+&IND(30) SETA  30                                                       01330000
+&IND(31) SETA  31                                                       01340000
+&IND(32) SETA  32                                                       01350000
+&IND(33) SETA  33                                                88272  01360000
+&IND(34) SETA  34                                                88272  01370000
+&IND(35) SETA  35                                                88272  01380000
+&IND(36) SETA  36                                                88272  01390000
+&IND(37) SETA  37                                                88272  01400000
+&IND(38) SETA  38                                                88272  01410000
+&IND(39) SETA  39                                                88272  01420000
+&IND(40) SETA  40                                                88272  01430000
+&KVL(11) SETC  '¬PA3 '                                                  01440000
+&KVL(12) SETC  '¬PA1 '                                                  01450000
+&KVL(13) SETC  'ASC  '              WAS ¬CLR                     93057  01460000
+&KVL(14) SETC  '¬CAN '                                                  01470000
+&KVL(16) SETC  'ASC *'                                           93057  01480000
+&KVL(17) SETC  '$F   '                                                  01490000
+&KVL(18) SETC  '$I   '                                                  01500000
+&KVL(19) SETC  '$JOB '                                                  01510000
+&KVL(20) SETC  '$N   '                                                  01520000
+&KVL(21) SETC  '$U   '                                                  01530000
+&KVL(22) SETC  '$MSG '                                                  01540000
+&KVL(23) SETC  'CON -'                                           87176  01550000
+&KVL(24) SETC  'STOR '                                                  01560000
+&KVL(25) SETC  'ENQ  '                                                  01570000
+&KVL(26) SETC  'PIO  '                                                  01580000
+&KVL(27) SETC  'U M  '                                                  01590000
+&KVL(28) SETC  'U D,T'                                                  01600000
+&KVL(29) SETC  '$J   '                                           88272  01610000
+&KVL(30) SETC  'ASC  '                                           88272  01620000
+&KVL(31) SETC  '$DSN '                                           88272  01630000
+&KVL(32) SETC  '$LA  '                                           88272  01640000
+&KVL(33) SETC  'NET  '                                           88272  01650000
+&KVL(34) SETC  '$LOG '                                           88272  01660000
+&KVL(35) SETC  'DCO  '                                           88272  01670000
+&KVL(36) SETC  'PFK  '                                           88272  01680000
+&KVL(37) SETC  'RSV  '                                           93057  01690000
+&KVL(38) SETC  'PAT  '                                           88272  01700000
+&KVL(39) SETC  'SMC  '                                           88272  01710000
+&KVL(40) SETC  'U CRT'                                           88272  01720000
+&KEY(01) SETC  'CANCEL'      ALIAS FOR PA2                              01730000
+&KEY(11) SETC  'PA3'                                                    01740000
+&KEY(12) SETC  'PA1'                                                    01750000
+&KEY(13) SETC  'CLEAR'                                                  01760000
+&KEY(14) SETC  'PA2'                                                    01770000
+&KEY(16) SETC  'TEST'                                                   01780000
+&KEY(17) SETC  'PF1'                                                    01790000
+&KEY(18) SETC  'PF2'                                                    01800000
+&KEY(19) SETC  'PF3'                                                    01810000
+&KEY(20) SETC  'PF4'                                                    01820000
+&KEY(21) SETC  'PF5'                                                    01830000
+&KEY(22) SETC  'PF6'                                                    01840000
+&KEY(23) SETC  'PF7'                                                    01850000
+&KEY(24) SETC  'PF8'                                                    01860000
+&KEY(25) SETC  'PF9'                                                    01870000
+&KEY(26) SETC  'PF10'                                                   01880000
+&KEY(27) SETC  'PF11'                                                   01890000
+&KEY(28) SETC  'PF12'                                                   01900000
+&KEY(29) SETC  'PF13'                                            88272  01910000
+&KEY(30) SETC  'PF14'                                            88272  01920000
+&KEY(31) SETC  'PF15'                                            88272  01930000
+&KEY(32) SETC  'PF16'                                            88272  01940000
+&KEY(33) SETC  'PF17'                                            88272  01950000
+&KEY(34) SETC  'PF18'                                            88272  01960000
+&KEY(35) SETC  'PF19'                                            88272  01970000
+&KEY(36) SETC  'PF20'                                            88272  01980000
+&KEY(37) SETC  'PF21'                                            88272  01990000
+&KEY(38) SETC  'PF22'                                            88272  02000000
+&KEY(39) SETC  'PF23'                                            88272  02010000
+&KEY(40) SETC  'PF24'                                            88272  02020000
+&DEF(11) SETA  11                                                       02030000
+&DEF(12) SETA  12                                                       02040000
+&DEF(13) SETA  13                                                       02050000
+&DEF(14) SETA  14                                                       02060000
+&DEF(16) SETA  16                                                       02070000
+&DEF(17) SETA  17                                                       02080000
+&DEF(18) SETA  18                                                       02090000
+&DEF(19) SETA  19                                                       02100000
+&DEF(20) SETA  20                                                       02110000
+&DEF(21) SETA  21                                                       02120000
+&DEF(22) SETA  22                                                       02130000
+&DEF(23) SETA  23                                                       02140000
+&DEF(24) SETA  24                                                       02150000
+&DEF(25) SETA  25                                                       02160000
+&DEF(26) SETA  26                                                       02170000
+&DEF(27) SETA  27                                                       02180000
+&DEF(28) SETA  28                                                       02190000
+&DEF(29) SETA  29                                                88272  02200000
+&DEF(30) SETA  30                                                88272  02210000
+&DEF(31) SETA  31                                                88272  02220000
+&DEF(32) SETA  32                                                88272  02230000
+&DEF(33) SETA  33                                                88272  02240000
+&DEF(34) SETA  34                                                88272  02250000
+&DEF(35) SETA  35                                                88272  02260000
+&DEF(36) SETA  36                                                88272  02270000
+&DEF(37) SETA  37                                                88272  02280000
+&DEF(38) SETA  38                                                88272  02290000
+&DEF(39) SETA  39                                                88272  02300000
+&DEF(40) SETA  40                                                88272  02310000
+      AIF ('&SYSLIST(&SI)' EQ '*END' OR '&SYSLIST(&SI)' EQ 'END').LAST  02320000
+.INIT    ANOP  ,                                                77110   02330000
+&I       SETA  0                                                77110   02340000
+.INITL   AIF   (&I GT 31).BOOBOO                                77110   02350000
+&I       SETA  &I+1                                                     02360000
+         AIF   ('&KEY(&I)' NE '&SYSLIST(&SI)').INITL            77110   02370000
+&I       SETA  &IND(&I)                                                 02380000
+&J       SETA  K'&SYSLIST(&SI+1)                                77110   02390000
+         AIF   ('&SYSLIST(&SI+1)'(1,1) EQ '''').QUOTE           77110   02400000
+         AIF   (&J GT 5).BOOBOO                                         02410000
+&L       SETA  &J                                                       02420000
+&N       DC    X'&HEX(&I)',CL5'&SYSLIST(&SI+1) '                77110   02430000
+&KVL(&I) SETC  '&SYSLIST(&SI+1)'                                77110   02440000
+         AGO   .SAVE                                                    02450000
+.BOOBOO  AIF   ('&SYSLIST(&SI+1)' EQ '').BOOB                   77110   02460000
+         AIF   ('&SYSLIST(&SI+1)'(1,1) NE '''').BOOB            77110   02470000
+   MNOTE 8,'INVALID :  KEY=''&SYSLIST(&SI)'', VALUE='&SYSLIST(&SI+1)''  02480000
+         MEXIT                                                          02490000
+.BOOB    ANOP  ,                                                77110   02500000
+ MNOTE 8,'INVALID :  KEY=''&SYSLIST(&SI)'', VALUE=''&SYSLIST(&SI+1)'''  02510000
+         MEXIT                                                          02520000
+.QUOTE   ANOP  ,                                                        02530000
+&L       SETA  &J-2                                                     02540000
+&J       SETA  &L                                                       02550000
+&K       SETA  2                                                        02560000
+.LOOP    AIF   (&K GE &J).EXPQ                                          02570000
+         AIF   ('&SYSLIST(&SI+1)'(&K,2) EQ '&&').DOUB           77110   02580000
+         AIF   ('&SYSLIST(&SI+1)'(&K,2) EQ '''''').DOUB         77110   02590000
+&K       SETA  &K+1                                                     02600000
+         AGO   .LOOP                                                    02610000
+.DOUB    ANOP  ,                                                        02620000
+&K       SETA  &K+2                                                     02630000
+&L       SETA  &L-1                                                     02640000
+         AGO   .LOOP                                                    02650000
+.EXPQ    AIF   (&L GT 5).BOOBOO                                         02660000
+&KVL(&I) SETC  '&SYSLIST(&SI+1)'(2,&J)                          77110   02670000
+&N       DC    X'&HEX(&I)',CL5&SYSLIST(&SI+1)                   77110   02680000
+.SAVE    ANOP  ,                                                        02690000
+&N       SETC  ''                                                       02700000
+&DEF(&I) SETA  0                                                        02710000
+         AIF   (&L EQ &J AND &L EQ 5).NEXTL                     77110   02720000
+.NOT5    AIF   (&L GE 1).TACK                                           02730000
+&KVL(&I) SETC  '     '                                                  02740000
+         AGO   .NEXTL                                           77110   02750000
+.TACK    ANOP  ,                                                        02760000
+&KVL(&I) SETC  '&KVL(&I)'.'        '(1,5-&L)                            02770000
+         AGO   .NEXTL                                           77110   02780000
+.LAST    AIF   (&SI NE &SM).BOOBOO     FAIL END NOT AT END      77110   02790000
+         AIF   (&PFKONE).LEAST                                  77110   02800000
+         MNOTE 0,'NO PFK DEFINITIONS SUPPLIED - DEFAULTS WILL BE USED'  02810000
+         AGO   .DEF                                                     02820000
+.LEAST   ANOP  ,                                                        02830000
+&I       SETA  0                                                        02840000
+.DEFEX   AIF   (&I GE &PFKMAX).DOEND                             88272  02850000
+&I       SETA  &I+1                                                     02860000
+&J       SETA  &DEF(&I)                                                 02870000
+         AIF   (&J EQ 0).NODEF                                          02880000
+&N       DC    X'&HEX(&J)',CL5'&KVL(&J) ' .  DEFAULT                    02890000
+&N       SETC  ''                                               GP99106 02900000
+.NODEF   AIF   ('&KVL(&I)' EQ '').DEFEX                                 02910000
+         AIF   ('&KVL(&I)'(1,1) NE '¬').DEFEX                           02920000
+         AIF   ('&KVL(&I)'(2,3) EQ 'CAN').REPCAN                        02930000
+         AIF   ('&KVL(&I)'(2,3) EQ 'CLR').REPCLR                        02940000
+         AIF   ('&KVL(&I)'(2,3) EQ 'PA1').REPPA1                        02950000
+         AIF   ('&KVL(&I)'(2,3) NE 'PA3').DEFEX                         02960000
+&KVL(&I) SETC  '¬PA3 '       NOT USED                                   02970000
+         AGO   .DEFEX                                                   02980000
+.REPCAN  ANOP  ,                                                        02990000
+&KVL(&I) SETC  'LOCK '                                                  03000000
+         AGO   .DEFEX                                                   03010000
+.REPCLR  ANOP  ,                                                        03020000
+&KVL(&I) SETC  'CLEAR'                                                  03030000
+         AGO   .DEFEX                                                   03040000
+.REPPA1  ANOP  ,                                                        03050000
+&KVL(&I) SETC  'HOLD '                                                  03060000
+         AGO   .DEFEX                                                   03070000
+.DOEND   ANOP  ,                                                        03080000
+&N       DC    X'FF' .       END OF LIST                                03090000
+&PFKEND  SETB  1                                                        03100000
+&K       SETA  &OPTVAL(6)*&OPTVAL(7)                                    03110000
+&OPTCOM(7) SETC 'SECOND LEVEL UPDATES EVERY '.'&K'.' SECONDS'           03120000
+&K       SETA  &K*&OPTVAL(8)                                            03130000
+&OPTCOM(8) SETC 'THIRD LEVEL UPDATES EVERY '.'&K'.' SECONDS'            03140000
+&K       SETA  &K*&OPTVAL(9)                                            03150000
+&OPTCOM(9) SETC 'FOURTH LEVEL UPDATES EVERY '.'&K'.' SECONDS'           03160000
+&PRIT(9) SETC  'FAIL'                                                   03170000
+&PRIT(11) SETC 'KEYS-ONLY'                                              03180000
+&PRIT(12) SETC 'PSWD-ONLY'                                              03190000
+&PRIT(13) SETC 'CON'                                                    03200000
+&PRIT(14) SETC 'CAN'                                                    03210000
+&PRIT(15) SETC 'SYS'                                                    03220000
+&PRIT(16) SETC 'UNL'                                                    03230000
+&OPTT(5)  SETC 'NOEXIT'                                                 03240000
+&OPTT(13) SETC 'EXIT'                                                   03250000
+&OPTT(14) SETC 'NO-INPUT'                                               03260000
+&OPTT(16) SETC 'ID-LINE'                                                03270000
+&I       SETA  0                                                        03280000
+.PRILOOP AIF   (&I GE 8).PRILEND                                        03290000
+&I       SETA  &I+1                                                     03300000
+&N       SETC  '&OPTVAL(4)'(&I,1)                                       03310000
+&J       SETA  &N                                                       03320000
+&OPTCOM(4) SETC '&OPTCOM(4)'.' '.'&PRIT(8*&J+&I)'                       03330000
+         AGO   .PRILOOP                                                 03340000
+.PRILEND ANOP  ,                                                        03350000
+&I       SETA  0                                                        03360000
+.OPTTLOP AIF   (&I GE 8).OPTTLEN                                        03370000
+&I       SETA  &I+1                                                     03380000
+&N       SETC  '&OPTVAL(11)'(&I,1)                                      03390000
+&J       SETA  &N                                                       03400000
+&OPTCOM(11) SETC '&OPTCOM(11)'.' '.'&OPTT(8*&J+&I)'                     03410000
+         AGO   .OPTTLOP                                                 03420000
+.OPTTLEN ANOP  ,                                                        03430000
+&I       SETA  &OPTVAL(10)+1                                            03440000
+&OPTCOM(10) SETC 'INVOKED ON SW&I CYCLE'                                03450000
+&PRIT(9) SETC  'DELAY'                                         77117    03460000
+&PRIT(10) SETC 'IGNORE'                                          79194  03470000
+&PRIT(13) SETC 'NOGAMES'                                         79194  03480000
+&I       SETA  0                                               77117    03490000
+.PR2LOOP AIF   (&I GE 8).PR2LEND                               77117    03500000
+&I       SETA  &I+1                                            77117    03510000
+&N       SETC  '&OPTVAL(5)'(&I,1)                              77117    03520000
+&J       SETA  &N                                              77117    03530000
+&OPTCOM(5) SETC '&OPTCOM(5)'.' '.'&PRIT(8*&J+&I)'              77117    03540000
+         AGO   .PR2LOOP                                        77117    03550000
+.PR2LEND ANOP  ,                                               77117    03560000
+&OPTNAM(5) SETC '  OPT FLAGS 2'                                77117    03570000
+&OPTNAM(12) SETC 'GROUP'                                         79156  03580000
+         AIF   ('&OPTVAL(12)' NE '').HAVGRUP                     79156  03590000
+&OPTVAL(12) SETC  'NO'                                           79156  03600000
+.HAVGRUP AIF   ('&OPTVAL(14)' NE '').NTRTAB                      82361  03610000
+&OPTVAL(14) SETC 'NO'                                            82361  03620000
+.NTRTAB  AIF   ('&OPTVAL(13)' EQ '00000000').NDASKP              82361  03630000
+.NDASKP  ANOP  ,                                                 82361  03640000
+&L       SETA  0                                                        03650000
+.PRTLOOP EJECT                                                          03660000
+&I       SETA  0                                                        03670000
+&J       SETA  &OPTMAX                                                  03680000
+         MNOTE *,' '                                                    03690000
+         MNOTE *,' '                                                    03700000
+         MNOTE *,'        MODIFY / SET  OPTIONS :'                      03710000
+         MNOTE *,' '                                                    03720000
+         MNOTE *,' '                                                    03730000
+.OPTLOOP AIF   (&I GE &J).ENDOPT                                        03740000
+&I       SETA  &I+1                                                     03750000
+         MNOTE *,'         &OPTNAM(&I) = &OPTVAL(&I) &OPTCOM(&I)'       03760000
+         AGO   .OPTLOOP                                                 03770000
+.ENDOPT  ANOP  ,                                                        03780000
+         MNOTE *,' '                                                    03790000
+         MNOTE *,' '                                                    03800000
+ MNOTE *,'                                                      '       03810000
+ MNOTE *,'                                                      '       03820000
+ MNOTE *,'            FUNCTION KEY DEFINITIONS FOR &SECT        '       03830000
+ MNOTE *,'                                                      '       03840000
+ MNOTE *,'                                                    '         03850000
+ MNOTE *,'                                                    '         03860000
+ MNOTE *,'                        **************************  '         03870000
+ MNOTE *,'                        *       *       *        *  '         03880000
+ MNOTE *,'                        * &KVL(17) * &KVL(18) *  &KVL(19) *'  03890000
+ MNOTE *,'                        *       *       *        *  '         03900000
+ MNOTE *,'                        **************************  '         03910000
+ MNOTE *,'                        *       *       *        *  '         03920000
+ MNOTE *,'                        * &KVL(20) * &KVL(21) *  &KVL(22) *'  03930000
+ MNOTE *,'                        *       *       *        *  '         03940000
+ MNOTE *,'                        **************************  '         03950000
+ MNOTE *,'                        *       *       *        *  '         03960000
+ MNOTE *,'                        * &KVL(23) * &KVL(24) *  &KVL(25) *'  03970000
+ MNOTE *,'                        *       *       *        *  '         03980000
+ MNOTE *,'     *********************************************  '         03990000
+ MNOTE *,'     *        *         *       *       *        *  '         04000000
+ MNOTE *,'     *  &KVL(12) *  &KVL(14)  * &KVL(26) * &KVL(27) *  &KVL(2*04010000
+               8) *'                                                    04020000
+ MNOTE *,'     *        *         *       *       *        *  '         04030000
+ MNOTE *,'     *********************************************  '         04040000
+         MNOTE *,' '                                                    04050000
+         MNOTE *,' '                                                    04060000
+         MNOTE *,' '                                                    04070000
+         MNOTE *,' '                                                    04080000
+         MNOTE *,' '                                                    04090000
+         MNOTE *,' '                                                    04100000
+&L       SETA  &L+1                                                     04110000
+         AIF   (&L LT &COPIES).PRTLOOP                           93057  04120000
+         MEND ,                                                         04130000

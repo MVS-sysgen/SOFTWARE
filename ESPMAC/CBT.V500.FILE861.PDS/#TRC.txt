@@ -1,0 +1,185 @@
+         MACRO ,                                                        00010000
+&NM      #TRC  &MODE,&FAST,&ARG,&LOAD=YES,&ADDR=@TRACE,     NEW GP98300*00020000
+               &RENT=YES,&PFX=PGT,&DSECT=NO,&ADCON=NO,          GP08157*00030000
+               &REGSAVE=                                        GP11243 00040000
+         GBLB  &ZZ$TRFG,&ZZ$TDFG                                GP00192 00050000
+         GBLB  &ZZ$TRNT                                         GP99364 00060000
+         GBLC  &ZZ$TRAD                                                 00070000
+         GBLC  &MACPLAB                                         GP99364 00080000
+.********************************************************************** 00090000
+.*                                                                   ** 00100000
+.*   #TRC CONTROLS THE INVOCATION OF THE PROGRAM TRACE ROUTINE;      ** 00110000
+.*                                                                   ** 00120000
+.*   REQUIRES TRACEIN AND TRACEOUT DD CARDS. SEE PGMTRACE SOURCE.    ** 00130000
+.*                                                                   ** 00140000
+.********************************************************************** 00150000
+         LCLC  &EPNAME,&PTR,&P                                          00160000
+         LCLB  &DYN                                                     00170000
+         LCLA  &OFF,&I,&RQC                                             00180000
+&I       SETA  &SYSNDX                                                  00190000
+&DYN     SETB  ('&LOAD' EQ 'YES' OR '&MODE' EQ 'DYN')                   00200000
+&PTR     SETC  '&ADDR'                                                  00210000
+&MACPLAB SETC  '&NM'                                            GP99364 00220000
+&ZZ$TRNT SETB  (&ZZ$TRNT OR ('&RENT' EQ 'YES'))                 GP99364 00230000
+&EPNAME  SETC  'TRACEON'                                                00240000
+&OFF     SETA  8                                                        00250000
+&RQC     SETA  1             TRACE ON FLAG                              00260000
+         AIF   ('&MODE' EQ 'DATA').DODATA                       GP00192 00270000
+         AIF   ('&REGSAVE' NE 'YES').NOSAVE                     GP11243 00280000
+&MACPLAB STM   R14,R1,ZZ&I.V      SAVE USER'S REGISTERS         GP13222 00290000
+&MACPLAB SETC  ''                                               GP11243 00300000
+.NOSAVE  AIF   (NOT &DYN).HAVBAS                                        00310000
+         AIF   ('&ADDR' EQ '').DEFBAS                                   00320000
+&ZZ$TRAD SETC  '&ADDR'                                                  00330000
+.DEFBAS  ANOP  ,                                                        00340000
+&PTR     SETC  '&ZZ$TRAD'                                               00350000
+         AIF   ('&PTR' NE '').HAVBAS                                    00360000
+&PTR     SETC  '=A(PGMTRACE)'                                           00370000
+&ZZ$TRAD SETC  '=A(PGMTRACE)'                                           00380000
+.HAVBAS  AIF   (&ZZ$TRFG).LATER                                         00390000
+&ZZ$TRFG SETB  1                                                        00400000
+         WXTRN TRACE,TRACEON,TRACEOFF,TRACKILL                          00410000
+.LATER   AIF   ('&MODE' EQ 'ON' OR '&MODE' EQ 'TRACEON').SPEED          00420000
+&RQC     SETA  0             TRACE OFF FLAG                             00430000
+&OFF     SETA  12                                                       00440000
+&EPNAME  SETC  'TRACEOFF'                                               00450000
+         AIF   ('&MODE' EQ 'OFF' OR '&MODE' EQ 'TRACEOFF').SPEED        00460000
+&OFF     SETA  4                                                        00470000
+&EPNAME  SETC  'TRACKILL'                                               00480000
+         AIF   ('&MODE' EQ 'END' OR '&MODE' EQ 'TRACKILL').EXPAND       00490000
+         AIF   ('&MODE' EQ 'QUIT' OR '&MODE' EQ 'EXIT').EXPAND          00500000
+         AIF   ('&MODE' EQ 'KILL' OR '&MODE' EQ 'DONE').EXPAND          00510000
+&OFF     SETA  24                                               \       00520000
+&EPNAME  SETC  'TRACSUSP'                                       \       00530000
+         AIF   ('&MODE' EQ 'SUS' OR '&MODE' EQ 'TRACSUSP').EXPAND       00540000
+         AIF   ('&MODE' EQ 'SUSP' OR '&MODE' EQ 'SUSPEND').EXPAND       00550000
+&OFF     SETA  0                                                        00560000
+&EPNAME  SETC  'TRACE'                                                  00570000
+         AIF   ('&MODE' EQ 'INIT' OR '&MODE' EQ 'TRACE').SPECIAL        00580000
+         MNOTE 8,'#TRC - UNRECOGNIZED OPERAND : &MODE'                  00590000
+         MEXIT ,                                                        00600000
+.SPECIAL AIF   ('&ADCON' NE 'YES').NOADCON                      GP08157 00610000
+         AIF   (&ZZ$TRNT).NOADZER                               GP99364 00620000
+&MACPLAB B     4+&PTR                                           GP08255 00630000
+&PTR     DC    A(0)                                             GP08157 00640000
+&MACPLAB SETC  ''                                               GP99364 00650000
+         AGO   .NOADCON                                                 00660000
+.NOADZER ANOP  ,                                                GP08157 00670000
+&MACPLAB B     4+&ZZ$TRAD                                       GP08157 00680000
+&ZZ$TRAD DC    V(PGMTRACE)                                      GP08157 00690000
+&MACPLAB SETC  ''                                               GP99364 00700000
+&DYN     SETB  0             CANCEL DYNAMIC OPTION              GP99364 00710000
+.NOADCON AIF   (&ZZ$TRNT).NOMOD                                 GP99364 00720000
+&MACPLAB NOP   ZZ&I.B                                                   00730000
+&MACPLAB SETC  ''                                               GP99364 00740000
+         OI    *-4+1,X'F0'                                              00750000
+.NOMOD   AIF   (&DYN).DYNLOAD                                   GP99364 00760000
+         MACPARM R1,&FAST,NULL=0  SET API OPTION ADDRESS OR 0           00770000
+         ICM   R15,15,&PTR                                              00780000
+         BZ    ZZ&I.Z                                                   00790000
+         BASR  R14,R15                                                  00800000
+&EPNAME  SETC  'TRACEON'                                                00810000
+&OFF     SETA  8                                                        00820000
+ZZ&I.B   DS    0H                                                       00830000
+         AGO   .EXPAND                                                  00840000
+.DYNLOAD ANOP  ,                                                GP10164 00850000
+&MACPLAB ICM   R15,15,&PTR  LOADED BEFORE?                              00860000
+&MACPLAB SETC  ''                                               GP10164 00870000
+         BNZ   ZZ&I.A        YES?                                       00880000
+         LOAD  EP=PGMTRACE,ERRET=ZZ&I.Z                                 00890000
+         LA    R15,&PTR                                                 00900000
+         ST    R0,0(,R15)    NON-KOSHER                                 00910000
+ZZ&I.A   DS    0H                                                       00920000
+         AIF   ('&FAST' EQ 'ON').PRM3ON                                 00930000
+         AIF   ('&FAST' NE 'OFF').PRM2                                  00940000
+&OFF     SETA  12            INITIALIZE WITHOUT TRACE PRINTING          00950000
+&EPNAME  SETC  'TRACEOFF'                                               00960000
+         AGO   .PRM3                                                    00970000
+.PRM3ON  ANOP  ,             ALREADY SET FOR NORMAL TRACE?              00980000
+.PRM3    MACPARM R1,&ARG,NULL=0   SET API OPTION ADDRESS OR 0           00990000
+         AGO   .PRM2N3                                                  01000000
+.PRM2    MACPARM R1,&FAST,NULL=0  SET API OPTION ADDRESS OR 0           01010000
+.PRM2N3  L     R15,&PTR                                                 01020000
+         L     R15,&OFF+64(,R15)                                        01030000
+         BASR  R14,R15                                                  01040000
+         B     ZZ&I.Z                                                   01050000
+         AIF   ('&REGSAVE' NE 'YES').NOS14R1                    GP13222 01060000
+ZZ&I.V   DC    4A(0)                                            GP13222 01070000
+.NOS14R1 AIF   (&OFF NE 0).PRMOFF                                       01080000
+&EPNAME  SETC  'TRACEON'                                                01090000
+&OFF     SETA  8                                                        01100000
+.PRMOFF  ANOP  ,                                                        01110000
+ZZ&I.B   DS    0H                                                       01120000
+.EXPAND  AIF   (NOT &DYN).EXPANDS                                       01130000
+         MACPARM  R15,15,&PTR,OP=ICM,MODE=THREE                 GP02242 01140000
+         BZ    ZZ&I.Z                                                   01150000
+         L     R15,&OFF+64(,R15)                                        01160000
+         BASR  R14,R15                                                  01170000
+         AGO   .REGREST                                                 01180000
+.EXPANDS ANOP  ,                                                        01190000
+         MACPARM  R15,15,=A(&EPNAME),OP=ICM,MODE=THREE          GP02242 01200000
+         BZ    ZZ&I.Z                                                   01210000
+         BASR  R14,R15                                                  01220000
+.REGREST AIF   ('&REGSAVE' NE 'YES').GOAWAY                     GP11243 01230000
+ZZ&I.Z   LM    R14,R1,ZZ&I.V                                    GP13222 01240000
+         MEXIT ,                                                        01250000
+.GOAWAY  ANOP  ,                                                        01260000
+ZZ&I.Z   DS    0H                                                       01270000
+         MEXIT ,                                                        01280000
+.SPEED   AIF   ('&FAST' NE 'FAST').EXPAND                               01290000
+         AIF   ('&ARG' EQ '').NOARG                                     01300000
+&MACPLAB DC    0H'0',X'83',AL1(X'C0'+&RQC),SL2(&ARG)                    01310000
+         MEXIT ,                                                        01320000
+.NOARG   ANOP  ,                                                        01330000
+&MACPLAB DC    0H'0',X'83',AL1(X'C0'+&RQC),AL2(0)                       01340000
+         MEXIT ,                                                GP00192 01350000
+.DODATA  ANOP  ,                                                GP00192 01360000
+&P       SETC  '&PFX'                                           GP00192 01370000
+         AIF   ('&DSECT' EQ 'NO').NODADSC                       GP00192 01380000
+         AIF   ('&NM' EQ '').NFDADS                             GP00203 01390000
+&MACPLAB DSECT ,             PGMTRADA PARAMETER LIST            GP00203 01400000
+         AGO   .NODADS                                          GP00203 01410000
+.NFDADS  ANOP  ,                                                GP00203 01420000
+&P.SECT  DSECT ,             CALLER'S PARM DSECT                GP00192 01430000
+         AGO   .NODADS                                          GP00203 01440000
+.NODADSC AIF   ('&NM' EQ '').NODADS                             GP00203 01450000
+&MACPLAB DS    0D            PGMTRADA PARAMETER LIST            GP00203 01460000
+.NODADS  ANOP  ,                                                GP00192 01470000
+&P.FUN   DS    X             FUNCTION (L - LOOK-UP; M-MEMBER BUILD)     01480000
+         AIF   (&ZZ$TDFG).HAVEMAP                               GP00192 01490000
+CFLOOK   EQU   C'L'            LOCATE MEMBER/OFFSET - PRINT DATA        01500000
+CFPOINT  EQU   C'M'            LOCATE MEMBER; BUILD SOURCE CHAIN        01510000
+CFCLOSE  EQU   C'C'            CLOSE AND FREE EVERYTHING        GP00192 01520000
+.HAVEMAP ANOP  ,                                                GP00192 01530000
+&P.FLG1  DC    AL1(0)        PRINT OPTIONS                      GP00192 01540000
+         AIF   (&ZZ$TDFG).HAVEFG1                               GP00192 01550000
+CFDIR    EQU   X'80'           PRINT DIRECTORY ENTRY DATA       GP00192 01560000
+CFESD    EQU   X'40'           PRINT CESD LISTING               GP00192 01570000
+CFRLD    EQU   X'20'           PRINT RLD LISTING                GP00192 01580000
+CFSYM    EQU   X'10'           PRINT SYM LISTING                GP00192 01590000
+CFDAT    EQU   X'08'           PRINT SYSADATA INFO (LATER)      GP00192 01600000
+CFLBL    EQU   X'02'           PRINT LABELS                     GP00192 01610000
+CFTRC    EQU   X'01'           PRINT THE TRACE TABLE ON ABNORMAL END    01620000
+.HAVEFG1 ANOP  ,                                                GP00192 01630000
+&P.FLG2  DC    AL1(0)        PRINT OPTIONS                      GP00192 01640000
+         AIF   (&ZZ$TDFG).HAVEFG2                               GP00192 01650000
+CFHEX    EQU   X'80'           PRINT THE CSECT HEX DUMP         GP00192 01660000
+CFLST    EQU   X'40'           PRINT THE ASSEMBLY LISTING       GP00192 01670000
+CFXRF    EQU   X'20'           PRINT A LABEL CROSS-REFERENCE    GP00192 01680000
+CFPUN    EQU   X'10'           PUNCH OUTPUT (?)                 GP00192 01690000
+CFBUG    EQU   X'01'           PRINT ADDITIONAL DEBUG INFO      GP00192 01700000
+.HAVEFG2 ANOP  ,                                                GP00192 01710000
+&P.FLG3  DC    X'00'         PROCESSING FLAG                    GP00192 01720000
+         AIF   (&ZZ$TDFG).HAVEFG3                               GP00192 01730000
+CFMAC    EQU   X'80'           INCLUDE MACRO EXPANDED CODE (SYSADATA)   01740000
+CFIMAC   EQU   X'40'           INCLUDE INLINE MACRO CODE   (SYSADATA)   01750000
+CFCMT    EQU   X'20'           INCLUDE COMMENTS            (SYSADATA)   01760000
+CFASM    EQU   X'10'           INCLUDE ASSEMBLER PSEUDO-OPS(SYSADATA)   01770000
+&ZZ$TDFG SETB  1                                                GP00192 01780000
+.HAVEFG3 ANOP  ,                                                GP00192 01790000
+&P.MEM   DC    CL8' '        MEMBER NAME                        GP00192 01800000
+&P.ESD   DC    CL8' '        CSECT NAME (NOT USED AT PRESENT)   GP00192 01810000
+&P.OFF   DC    AL4(0)        OFFSET FROM LOAD POINT             GP00192 01820000
+&P.WORK  DC    A(0)          WORK AREA (BUILT/FREED HERE)       GP00192 01830000
+&P.@PRT  DC    A(0)          CALLER'S PRINT ROUTINE (R1 - BUFFER)       01840000
+.MEND    MEND  ,                                                        01850000

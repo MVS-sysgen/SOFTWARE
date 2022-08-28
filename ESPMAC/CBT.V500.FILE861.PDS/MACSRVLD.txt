@@ -1,0 +1,30 @@
+         MACRO ,                                                        00010000
+&NM      MACSRVLD &NAME                                                 00020000
+.*--------------------------------------------------------------------* 00030000
+.*  MACSRVLD IS AN INNER MACRO TO DETERMINE WHETHER A MODULE &NAME    * 00040000
+.*  HAS BEEN REQUESTED BY THE SERVLOAD MACRO/SERVICE.  IF IT HAS,     * 00050000
+.*  GLOBAL &MACPLOD IS SET TO THE NAME OF THE ADDRESS CONTAINING THE  * 00060000
+.*  LOADED ADDRESS (USUALLY THE MODULE NAME).                         * 00070000
+.*    OTHERWISE THE VALUE RETURNED IS =V(&NAME)                       * 00080000
+.*  2012-06-02  GYP  NEW; ADDED TO SUPPORT THE CPOOL MACRO            * 00090000
+.*--------------------------------------------------------------------* 00100000
+         GBLC  &MACPLOD                                                 00110000
+         GBLC  &SRVLMOD(20),&SRVLDEL(20)                                00120000
+         GBLB  &SRVBMOD(20),&BUGBEAR                                    00130000
+         GBLA  &SRVNMOD                                                 00140000
+         LCLC  &CL,&CM                                                  00150000
+         LCLA  &I,&J,&N                                                 00160000
+&CL      SETC  '&NAME'                                                  00170000
+&CM      SETC  '&NAME'                                                  00180000
+         AIF   ('&NAME' NE '').MEMLOOP                                  00190000
+         MNOTE 8,'MACSRVLD: ROUTINE NAME OMITTED'                       00200000
+         MEXIT ,                                                        00210000
+.*                                                                      00220000
+.MEMLOOP AIF   (&I GE &SRVNMOD).OOPS                                    00230000
+&I       SETA  &I+1                                                     00240000
+         AIF   ('&NAME' NE '&SRVLDEL(&I)').MEMLOOP                      00250000
+&MACPLOD SETC  '&SRVLMOD(&I)'                                           00260000
+         MEXIT  ,                                                       00270000
+.OOPS    ANOP  ,                                                        00280000
+&MACPLOD SETC  '=V('.'&NAME'.')'                                        00290000
+         MEND  ,                                                        00300000

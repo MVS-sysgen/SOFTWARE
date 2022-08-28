@@ -1,0 +1,33 @@
+         MACRO ,                                                GP02318 00010000
+&NM      STOMP &IV=,&ADDR=,&VAL=,&ADDRV=                        GP10236 00020000
+         GBLA  &ZZSTMP#                                         GP02318 00030000
+         GBLC  &ZZSTMP@,&ZZSTMPV                                GP02318 00040000
+.*                                                                      00050000
+.*   STOMP IS USED FOR DEBUGGING TO SET A FOOTPRINT.                    00060000
+.*   THE FIRST PHYSICAL OCCURRENCE IN AN ASSEMBLY REQUIRES              00070000
+.*   AND ADDR= OPERAND TO SPECIFY THE BYTE TO RECEIVE THE FOOTPRINT     00080000
+.*   VALUE. THE IV PARAMETER SETS AN OPTION (RE)STARTING COUNT.         00090000
+.*                                                                      00100000
+.*   THE OPTIONAL VAL PARAMETER MAY BE USED TO SAVE UP TO 8 BYTES       00110000
+.*   OF DATA IN ADDRV                                           GP10236 00120000
+.*                                                                      00130000
+.*                                                                      00140000
+.*                                                                      00150000
+         AIF   ('&IV' EQ '').NONUMB                             GP02318 00160000
+&ZZSTMP# SETA  &IV                                              GP02318 00170000
+.NONUMB  AIF   ('&ADDR' EQ '').NONADD                           GP02318 00180000
+&ZZSTMP@ SETC  '&ADDR'                                          GP02318 00190000
+.NONADD  AIF   ('&ADDRV' EQ '').NONVAD                          GP10236 00200000
+&ZZSTMPV SETC  '&ADDRV'                                         GP10236 00210000
+.NONVAD  ANOP  ,                                                GP02318 00220000
+&ZZSTMP# SETA  &ZZSTMP#+1                                       GP02318 00230000
+&NM      MVI   &ZZSTMP@,&ZZSTMP#                                GP02318 00240000
+ MNOTE *,'***************** STOMP &ZZSTMP# ********************'        00250000
+         AIF   ('&ZZSTMPV' EQ '' OR '&VAL' EQ '').MEND          GP10236 00260000
+         AIF   (K'&VAL LT 3).MVC                                GP10236 00270000
+         AIF   ('&VAL'(1,1) NE '(' OR '&VAL'(2,1) EQ '(').MVC   GP10236 00280000
+      AIF   ('&VAL'(K'&VAL,1) NE ')' OR '&VAL'(K'&VAL-1,1) EQ ')').MVC  00290000
+         ST    &VAL(1),&ZZSTMPV                                 GP10236 00300000
+         MEXIT ,                                                GP10236 00310000
+.MVC     MVC   &ZZSTMPV,&VAL                                    GP10236 00320000
+.MEND    MEND  ,                                                GP02318 00330000

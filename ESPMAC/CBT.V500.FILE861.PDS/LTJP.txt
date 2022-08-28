@@ -1,0 +1,28 @@
+         MACRO ,                                                        00010000
+&NM      LTJP  &REG,&OFFSET,&BASE=,&END=                ADDED ON 83332  00020000
+         GBLC  &SYSTEM,&MACPLAB,&LOCAL                           84317  00030000
+         GBLB  &MVSXA                                            92309  00040000
+         GBLA  &REL                                                     00050000
+&MACPLAB SETC  ''                                                       00060000
+         AIF   ('&SYSTEM' NE 'MVS').MEND                                00070000
+         AIF   (&REL LT 102).OLDJESP                                    00080000
+         AIF   (&REL EQ 102 AND '&LOCAL' EQ 'CCSI').OLDJESP      84317  00090000
+         AIF   ('&OFFSET' NE 'JQECHAIN').NOTOLD                  83345  00100000
+&NM      ICM   &REG,15,JQENEXT                                   83345  00110000
+         AGO   .COMNAM                                           83345  00120000
+.NOTOLD  ANOP  ,                                                 83345  00130000
+&NM      ICM   &REG,15,&OFFSET                                          00140000
+.COMNAM  AIF   (NOT &MVSXA OR &REL LT 220).COMASK                92309  00150000
+         N     &REG,=X'00FFFFFF'  OOPS                           92309  00160000
+         AGO   .COMMON                                           92309  00170000
+.COMASK  N     &REG,=X'00FFFFFF'                                 83345  00180000
+         AGO   .COMMON                                                  00190000
+.OLDJESP ANOP  ,                                                        00200000
+&NM      ICM   &REG,12,&OFFSET                                          00210000
+         SRL   &REG,16                                                  00220000
+         SLA   &REG,2                                                   00230000
+.COMMON  AIF   (T'&END EQ 'O').NOEND                                    00240000
+         MACPARM &END,OP=BZ,OPR=BZR                                     00250000
+.NOEND   AIF   (T'&BASE EQ 'O').MEND                                    00260000
+         MACPARM &BASE,OP=AL,OPR=ALR                                    00270000
+.MEND    MEND  ,                                                        00280000

@@ -1,0 +1,60 @@
+         MACRO                                                          00010000
+&NM      PRTF  &FAD,&LN,&DEV=,&TITLE=0,&FOOTER=0,&CC=,&OPT=,&MODE=,    *00020000
+               &AM=31                                           GP02235 00030000
+         GBLB  &MVSESA                                          GP04234 00040000
+.*  NOTE THAT OPT= USES THE HIGH BYTE OF R1 UNLESS AM=AM31 IS USED      00050000
+         LCLA  &CT,&I,&J,&K,&FN,&HF                              84068  00060000
+         LCLB  &AM24,&AM31                                      GP02235 00070000
+         LCLC  &L                                                       00080000
+         AIF   (&MVSESA).ACC                                    GP04234 00090000
+&AM24    SETB  1             FORCE OLD MODE                     GP04234 00100000
+         AGO   .GOODAM                                          GP04234 00110000
+.ACC     ANOP  ,                                                GP04234 00120000
+&AM24    SETB  ('&AM' EQ '24' OR '&AM' EQ 'AM24')               GP02235 00130000
+&AM31    SETB  ('&AM' EQ '31' OR '&AM' EQ 'AM31' OR '&AM' EQ 'ANY')     00140000
+         AIF   (&AM24 OR &AM31).GOODAM                          GP02235 00150000
+         MNOTE 4,'PRTF: USING AM=31 - UNRECOGNIZED AM=&AM'      GP02235 00160000
+&AM31    SETB  1                                                GP02235 00170000
+.GOODAM  AIF   (&TITLE EQ 0 AND &FOOTER EQ 0).NOT                       00180000
+         AIF   (&TITLE LT 16 AND &FOOTER LT 16).OKT                     00190000
+         MNOTE 4,'*** NON-NUMERIC TITLE/FOOTER NOT SUPPORTED'           00200000
+.OKT     ANOP  ,                                                        00210000
+&HF      SETA  &TITLE*16+&FOOTER                                        00220000
+.NOT     ANOP  ,                                                        00230000
+&FN      SETA  7+5*&AM31     USE FUNCTION CODE APPROPRIATE TO MODE      00240000
+         AIF   ('&LN' EQ '').DFLTLEN                             90309  00250000
+         AIF   ('&FAD'(1,1) EQ '''').LITLEN                     GP02235 00260000
+&NM      PRTCOM PRTF,FUN=&FN,DEV=&DEV,B1=&HF,A0=&LN,A1=&FAD,OPT=&CC     00270000
+         MEXIT ,                                                GP02235 00280000
+.LITLEN  ANOP  ,                                                GP02235 00290000
+&NM      LA    R1,&FAD                                          GP02235 00300000
+         PRTCOM PRTF,FUN=&FN,DEV=&DEV,B1=&HF,A0=&LN,A1=(R1),OPT=&CC     00310000
+         MEXIT ,                                                GP02235 00320000
+.DFLTLEN AIF   ('&FAD'(1,1) NE '''').LNNLIT                     GP02235 00330000
+&K       SETA  K'&FAD-2                                         GP02235 00340000
+         AIF   ('&FAD'(&K+2,1) NE '''').LNNLIT                  GP08114 00350000
+         AIF   (&K LT 4).LNNSHRT                                GP08114 00360000
+&I       SETA  2                                                GP02235 00370000
+&J       SETA  &K                                               GP02235 00380000
+&K       SETA  &J                                               GP02235 00390000
+.LNNLUP  AIF   ('&FAD'(&I,2) EQ '''''').LNNSK2                  GP02235 00400000
+         AIF   ('&FAD'(&I,2) EQ '&&').LNNSK2                    GP02235 00410000
+&I       SETA  &I+1                                             GP02235 00420000
+         AGO   .LNNINC                                          GP02235 00430000
+.LNNSK2  ANOP  ,                                                GP02235 00440000
+&I       SETA  &I+2                                             GP02235 00450000
+&K       SETA  &K-1                                             GP02235 00460000
+.LNNINC  AIF   (&I LE &J).LNNLUP                                GP02235 00470000
+.*                                                              GP02235 00480000
+.LNNSHRT AIF   (&K GE 0).LNNCOM                                 GP02235 00490000
+&K       SETA  0                                                GP02235 00500000
+.LNNCOM  ANOP  ,                                                GP02235 00510000
+&NM      LA    R1,=C&FAD                                        GP02235 00520000
+&HF      SETA  &TITLE*16+&FOOTER                                GP02235 00530000
+         PRTCOM PRTF,FUN=&FN,DEV=&DEV,B1=&HF,A0=&K,A1=(R1),OPT=&CC      00540000
+         MEXIT ,                                                GP02235 00550000
+.LNNLIT  ANOP  ,                                                GP02235 00560000
+&L       SETC  'L'''                                            GP02235 00570000
+&NM      PRTCOM PRTF,FUN=&FN,DEV=&DEV,B0=&CT,B1=&HF,A0=&L&FAD,A1=&FAD,O*00580000
+               PT=&CC                                           GP08110 00590000
+         MEND  ,                                                        00600000

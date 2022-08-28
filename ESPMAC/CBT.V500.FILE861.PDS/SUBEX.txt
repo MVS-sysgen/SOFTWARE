@@ -1,0 +1,17 @@
+         MACRO ,                                                 88150  00010000
+&NM      SUBEX &Q,&OFF=,&RC=0                              ADDED 88150  00020000
+         GBLC  &MACPLAB                                          88150  00030000
+         AIF   ('&Q' EQ '').GOOD                                GP09215 00040000
+         MNOTE 4,'SUBEX: EXTRANEOUS VALUE &Q IGNORED'           GP09215 00050000
+         MNOTE 4,'SUBEX: ONLY OFF= AND RC= SUPPORTED'           GP09215 00060000
+.GOOD    ANOP  ,                                                GP09215 00070000
+&NM      L     R13,4(,R13)   GET HIGHER SAVE AREA                88150  00080000
+&MACPLAB SETC  ''                                                88150  00090000
+         MACPARM R15,&RC,NULL=0  RETURN CODE                     88150  00100000
+         LM    R0,R12,20(R13)  RESTORE                           88150  00110000
+         L     R14,12(,R13)  SET RETURN ADDRESS                  88150  00120000
+         AIF   ('&OFF' EQ '' OR '&OFF' EQ '0').NOOFF            GP09216 00130000
+         B     &OFF.(R14)    RETURN WITH OFFSET                  88150  00140000
+         AGO   .COMOFF                                           88150  00150000
+.NOOFF   BR    R14           RETURN TO CALLER                    88150  00160000
+.COMOFF  MEND  ,                                                 88150  00170000

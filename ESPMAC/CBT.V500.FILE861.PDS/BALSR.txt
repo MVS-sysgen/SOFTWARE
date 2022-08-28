@@ -1,0 +1,14 @@
+         MACRO ,                                                        00010000
+&NM      BALSR &R,&S                                    ADDED ON 92281  00020000
+.*                                                                      00030000
+.*       THIS MODULE GENERATES EITHER                                   00040000
+.*       A BALR OR BASR, DEPENDING ON THE SYSTEM. BAS AND BASR          00050000
+.*       REQUIRE AT LEAST SP 2 (MVS/XA)                                 00060000
+.*                                                                      00070000
+         GBLB  &MVT          SET BY OPTIONGB/SYSPARM            GP04234 00080000
+         AIF   (&MVT).BAL                                               00090000
+&NM      DC    0H'0',AL.4(0,13,&R,&S)                                   00100000
+         MEXIT ,                                                        00110000
+.BAL     ANOP  ,                                                        00120000
+&NM      BALR  &R,&S                                                    00130000
+         MEND  ,                                                        00140000

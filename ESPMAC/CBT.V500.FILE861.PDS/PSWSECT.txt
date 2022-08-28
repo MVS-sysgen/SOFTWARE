@@ -1,0 +1,153 @@
+           MACRO                                                        00010000
+&NM      PSWSECT &PFX=PSW,&LIST=,&FLAGS=,&WYL=,&LCL=             81134  00020000
+         LCLB  &FL,&FF,&FW,&FX,&FWO                              81134  00030000
+&FL      SETB  ('&LIST' EQ '' OR '&LIST' EQ 'YES')               81134  00040000
+&FF      SETB  ('&FLAGS' EQ '' OR '&FLAGS' EQ 'YES')             81134  00050000
+&FW      SETB  ('&WYL' EQ 'YES')                                 81134  00060000
+&FWO     SETB  ('&WYL' EQ 'ONLY')                                81134  00070000
+&FX      SETB  ('&LCL' EQ 'YES')                                 81134  00080000
+*********************************************************************** 00090000
+*                                                                     * 00100000
+*                 PROTECT (SVC98) PASSWORD WORK AREA                  * 00110000
+*                                                                     * 00120000
+*********************************************************************** 00130000
+           SPACE 2                                                      00140000
+           AIF   ('&NM' EQ '').DSECT                                    00150000
+&NM        DS    0F .          PASSWORD/PROTECT WORK AREA               00160000
+           AGO   .NOSECT                                                00170000
+.DSECT     ANOP ,                                                       00180000
+&PFX.SECT  DSECT ,             PASSWORD/PROTECT WORK AREA               00190000
+.NOSECT  AIF   (NOT &FL).NOTLST1                                 81134  00200000
+&PFX.LIST  DC    XL28'0' .     DEFINE FOR XC CLEAR                      00210000
+           ORG   &PFX.LIST .   START INDIVIDUAL DEFINITIONS             00220000
+           SPACE 1                                                      00230000
+&PFX.PCODE DC    X'00' .       'PROTECT' FUNCTION REQUEST               00240000
+.NOTLST1   AIF (NOT &FL AND NOT &FF).NOTLST2                     81134  00250000
+&PFX.FADD  EQU   1 .           ADD A PASSWORD                           00260000
+&PFX.FREP  EQU   2 .           CHANGE A PASSWORD                        00270000
+&PFX.FDEL  EQU   3 .           DELETE A PASSWORD                        00280000
+&PFX.FLIST EQU   4 .           FIND A PASSWORD                          00290000
+&PFX.FTTR  EQU   5 .           RETURN TTR (LIKE FIND); TTR=>A(DATA)     00300000
+&PFX.FTTD  EQU   6 .           SUPPLY DSN, GET TTR OF FIRST ENTRY       00310000
+         AIF   (NOT &FL).NOTLST2                                 81134  00320000
+           SPACE 1                                                      00330000
+&PFX.PDATA DC    AL3(0) .      'FIND' OPERATION 80 BYTE DATA AREA PTR   00340000
+&PFX.DSNL  DC    X'00' .       DSN LENGTH                               00350000
+&PFX.DSNA  DC    AL3(0) .      DSN ADDRESS                              00360000
+           DC    X'00' .       UNUSED                                   00370000
+&PFX.PSWA  DC    AL3(0) .      PTR TO CURRENT PASSWORD                  00380000
+           SPACE 1                                                      00390000
+*          END OF LIST FOR 'FIND' OPERATION                             00400000
+           SPACE 1                                                      00410000
+           DC    X'00' .       UNUSED                                   00420000
+&PFX.CONP  DC    AL3(0) .      PTR TO CONTROL PSW IF NOT CPSW OP        00430000
+&PFX.VOL#  DC    X'00' .       NO. OF VOLUMES IN VOLUME LIST            00440000
+&PFX.VOLA  DC    AL3(0) .      PTR TO VOLUME LIST                       00450000
+           SPACE 1                                                      00460000
+*          END OF LIST FOR 'DELETE' OPERATION                           00470000
+           SPACE 1                                                      00480000
+&PFX.TCODE DC    X'00' .       PROTECTION CODE                          00490000
+.NOTLST2   AIF (NOT &FL AND NOT &FF).NOTLST3                     81134  00500000
+&PFX.TDEF  EQU   0 .           DEFAULT ?                                00510000
+&PFX.TRW   EQU   1 .           READ/WRITE ALLOWED                       00520000
+&PFX.TRD   EQU   2 .           READ ALLOWED                             00530000
+&PFX.TWR   EQU   3 .           WRITE ALLOWED                            00540000
+         AIF   (NOT &FL).NOTLST3                                 81134  00550000
+           SPACE 1                                                      00560000
+&PFX.NPSWA DC    AL3(0) .      ADDRESS OF NEW PASSWORD                  00570000
+&PFX.DATL  DC    X'00' .       LENGTH OF DATA FIELD                     00580000
+&PFX.DATB  DC    AL3(0) .      ADDRESS OF DATA FIELD                    00590000
+           SPACE 1                                                      00600000
+*          END OF LIST FOR ADD AND REPLACE                              00610000
+           SPACE 2                                                      00620000
+*********************** END OF SVC 98 WORKAREA ************************ 00630000
+           SPACE 2                                                      00640000
+&PFX.NPSW  DC    CL8' ' .      NEW PASSWORD FOR ADD/REPLACE             00650000
+&PFX.CPSW  DC    CL8' ' .      CONTROL PASSWORD FOR NON-CONTROL OP      00660000
+.NOTLST3   SPACE 2                                               81134  00670000
+*********************************************************************** 00680000
+*                                                                     * 00690000
+*                           PASSWORD RECORD                           * 00700000
+*                                                                     * 00710000
+*********************************************************************** 00720000
+           SPACE 2                                                      00730000
+&PFX.START DS    0F .          START OF PASSWORD RECORD                 00740000
+         AIF   (&FWO).WYLSHRT                                    81134  00750000
+&PFX.DSN   DC    CL44' ' .     DATASET NAME                             00760000
+         AGO   .WYLFULL                                          81134  00770000
+.WYLSHRT ANOP  ,                                                 81134  00780000
+&PFX.DSN   DC    CL25' ' .     DSN FOR WYLBUR-ONLY CALLS         81134  00790000
+.WYLFULL ANOP  ,                                                 81134  00800000
+&PFX.PSWD  DC    CL8' ' .      PASSWORD                                 00810000
+           SPACE 1                                                      00820000
+*          END OF KEY FIELD                                             00830000
+           SPACE 1                                                      00840000
+         DS    0H ,          SET COUNTER ALIGNMENT               81134  00850000
+&PFX.DATA  DC    CL80' ' .     DATA RECORD OF ENTRY                     00860000
+&PFX.DATAN EQU   *                                                      00870000
+           ORG   &PFX.DATA .   REDEFINE                                 00880000
+&PFX.COUNT DC    H'0' .        ACCESS COUNTER                           00890000
+&PFX.FLAG  DC    X'00' .       ENTRY TYPE FLAG                          00900000
+&PFX.FCON  EQU   X'80' .       CONTROL PASSWORD                         00910000
+&PFX.FRW   EQU   X'01' .       READ AND WRITE ACCESS ALLOWED            00920000
+*                              READ ONLY IF OFF                         00930000
+           ORG   &PFX.DATAN    END OF DATA FIELD                        00940000
+&PFX.RECL  EQU   *-&PFX.START . LENGTH OF PASSWORD RECORD               00950000
+.LOCOK   AIF   (NOT &FW AND NOT &FWO).NOWYL                      81134  00960000
+           SPACE 2                                                      00970000
+****************** WYLBUR DATA SET NAME DEFINITIONS ******************* 00980000
+           SPACE 1                                                      00990000
+           ORG   &PFX.DSN .    REDEFINE 'WYLBUR' RECORD                 01000000
+&PFX.WYLB  DC    CL9'WYLBUR' . SYSTEM IDENTIFIER                        01010000
+&PFX.ACCT  DC    0CL8' ' .     FULL ACCOUNT NUMBER                      01020000
+&PFX.ACT   DC    CL4' ' .      ACCOUNT NUMBER                           01030000
+&PFX.SUB   DC    CL4' ' .      SUB-ACCOUNT                              01040000
+&PFX.USER  DC    CL8' ' .      USER ID                                  01050000
+&PFX.WYLL  EQU   *-&PFX.WYLB . LENGTH OF DSN ENTRY FOR WYLBUR           01060000
+           SPACE 1                                                      01070000
+******************** WYLBUR DATA AREA DEFINITIONS ********************* 01080000
+           SPACE 1                                                      01090000
+           ORG   &PFX.FLAG+1 . START OF WYLBUR DATA FIELD               01100000
+&PFX.WPRIV DC    X'00' .       USER PRIVILEGES                          01110000
+&PFX.WOK   EQU   X'80' .       VALID PASSWORD (FOR ZAPS)                01120000
+&PFX.WSYS  EQU   X'40' .       SYSTEM PROGRAMMER                        01130000
+&PFX.WACCT EQU   X'20' .       CROSS ACCOUNTS PRIVILEGE                 01140000
+&PFX.WOPER EQU   X'10' .       OPERATOR PRIVILEGE                       01150000
+&PFX.WFAIL EQU   X'08' .       UNDER PRIVILEGED ?                       01160000
+&PFX.WLCL  EQU   X'04' .       IN-HOUSE USER                     81134  01170000
+&PFX.WTIME EQU   X'02' .       ALLOWED 'NOTIME-OUT'                     01180000
+&PFX.WSUB  EQU   X'01' .       SUB-ACCOUNT PRIVILEGE                    01190000
+           SPACE 1                                                      01200000
+&PFX.WHASP DC    X'00' .       JOB ENTRY INTERFACE BITS                 01210000
+&PFX.WNKEY EQU   X'80' .       DO KEYWORD CHECK FOR BATCH JOBS          01220000
+&PFX.WNBAT EQU   X'40' .       BATCH JOB ENTRY PERMITTED                01230000
+&PFX.WNSEQ EQU   X'20' .       USER RESTRICTED TO PDS ON WYLBUR PACKS   01240000
+&PFX.WNWYB EQU   X'10' .       USER RESTRICTED TO 'LIB' DATASET  81134  01250000
+&PFX.WXDAT EQU   X'01' .       DATA FIELD IS PRESENT                    01260000
+           SPACE 1                                                      01270000
+&PFX.WBIN  DC    CL3' ' .      DATE OF CREATION OR LAST MAINTENANCE     01280000
+&PFX.HINDX DC    X'00' .       INDEX TO 'WYL' INDEX IN VOLT      81134  01290000
+&PFX.WDATE DC    PL3'0' .      DATE OF LAST ACCESS                      01300000
+&PFX.WFLAG DC    X'00' .       PROCESSING FLAGS                         01310000
+&PFX.WAUL  EQU   X'80' .       AUTO LOAD LOGON GO (CONDITIONAL)         01320000
+&PFX.MODP  EQU   X'40' .       USER PASSWORD MODIFY ALLOWED             01330000
+&PFX.WAUA  EQU   X'20' .       AUTO LOGON FOR RECOVERY (UNCONDITIONAL)  01340000
+&PFX.WCPU  DC    X'00' .       INDEX TO DEFAULT CPU                     01350000
+&PFX.WRJID DC    2X'00' .      HASP RJE PRINT/PUNCH ROUTING             01360000
+&PFX.WSSID DC    CL8' ' .      DEFAULT SUB-SYSTEM                       01370000
+&PFX.WDVOL DC    CL6' ' .      DEFAULT SAVE VOLUME                      01380000
+&PFX.WACTS DC    6CL4' ' .     ADDITIONAL ACCTS. FOR JOB ACCESS         01390000
+&PFX.WAVOL DC    5CL5' ' .      PACKS PERMITTED TO ACCESS (1ST 5 DIG)   01400000
+           SPACE 2                                                      01410000
+.NOWYL   AIF   (NOT &FX).MDONE                                   81134  01420000
+********************* LOCAL SPECIAL PASSWORD ENTRY ******************** 01430000
+           SPACE 1                                                      01440000
+           ORG   &PFX.FLAG+1                                            01450000
+&PFX.AXACT DC    4CL8' ' .     ACCOUNTS                                 01460000
+&PFX.AXUID DC    3CL8' ' .     TSO USER ID                              01470000
+&PFX.AXRJE DC    3X'00' .      RJE REMOTE NUMBERS                       01480000
+           ORG   &PFX.DATAN                                             01490000
+.MDONE     SPACE 1                                               81134  01500000
+*********************** END OF PASSWORD RECORD ************************ 01510000
+           SPACE 2                                                      01520000
+         MEND  ,                                                        01530000

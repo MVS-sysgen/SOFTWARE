@@ -1,0 +1,18 @@
+         MACRO ,                                                        00010000
+&NM      MAPDSCHK &PFX=DSC,&DSECT=                                      00020000
+&NM      MACMAPHD MAP,PFX=&PFX,DSECT=&DSECT                             00030000
+&PFX.DSN   DS  CL44          UNQUOTED, TRUE NAME                        00040000
+&PFX.MEM   DS  CL8           MEMBER NAME                                00050000
+&PFX.VOL   DS  XL12          1 VOL ENTRY FOR DS1; ALL VOLUMES FOR DSQ   00060000
+&PFX.SER   EQU &PFX.VOL+6,6,C'C'  FIRST VOLUME SERIAL                   00070000
+&PFX.#TRKS DS  F             TRACKS IN DATA SET/PRIMARY SPACE REQUEST   00080000
+&PFX.#DES  DS  F             NUMBER/REQUESTED DIRECTORY BLOCKS          00090000
+&PFX.@UCB  DS  A             ADDRESS OF UCB OF FIRST VOLUME             00100000
+&PFX.#TPC  DS  H             TRACKS PER CYLINDER                        00110000
+&PFX.DSCB1 DS  CL44          DS1DSNAM; TRUE NAME AFTER CATALOG LOCATE   00120000
+&PFX.FMTID DS  XL96          REST OF DSCB                               00130000
+&PFX.DSCB3 DS  CL(44+96)     LAST DSCB3, IF ANY                         00140000
+&PFX.DIRM  DS  XL74          DIRECTORY ENTRY FOR MEMBER                 00150000
+         DS    CL32          WORK SPACE                                 00160000
+&PFX.LEN EQU   *-&PFX.DSN      LENGTH OF STORAGE REQUIRED               00170000
+         MEND  ,                                                        00180000

@@ -1,0 +1,124 @@
+         MACRO                                                          00010000
+&NM      VTAB  &OP,&TO,&IN,&INTO                                        00020000
+         LCLA  &I                                                       00030000
+         LCLC  &L,&T(16),&S(16)                                         00040000
+&L       SETC  'L'''                                                    00050000
+&T(1)    SETC  'ALL'                                                    00060000
+&T(2)    SETC  'MVC'                                                    00070000
+&T(3)    SETC  'REG'                                                    00080000
+&T(4)    SETC  'HEX'                                                    00090000
+&T(5)    SETC  'I1'                                                     00100000
+&T(6)    SETC  'I2'                                                     00110000
+&T(7)    SETC  'I3'                                                     00120000
+&T(8)    SETC  'I4'                                                     00130000
+&T(9)    SETC  'BIN'                                                    00140000
+&T(10)   SETC  'DEC'                                                    00150000
+&T(11)   SETC  'N A'                                                    00160000
+&T(12)   SETC  'N A'                                                    00170000
+&T(13)   SETC  'N A'                                                    00180000
+&T(14)   SETC  'CLC'                                                    00190000
+&T(15)   SETC  'N A'                                                    00200000
+&T(16)   SETC  'LOOP'                                                   00210000
+&S(1)    SETC  'NOP'                                                    00220000
+&S(2)    SETC  'AGO'                                                    00230000
+&S(3)    SETC  'LD'                                                     00240000
+&S(4)    SETC  'LO'                                                     00250000
+&S(5)    SETC  'LA'                                                     00260000
+&S(6)    SETC  'LTR'                                                    00270000
+&S(7)    SETC  'AH'                                                     00280000
+&S(8)    SETC  'ST'                                                     00290000
+&S(9)    SETC  'TM'                                                     00300000
+&S(10)   SETC  'MAX'                                                    00310000
+&S(11)   SETC  'BCT'                                                    00320000
+&S(12)   SETC  'N A'         UNUSED                                     00330000
+&S(13)   SETC  'N A'         UNUSED                                     00340000
+&S(14)   SETC  'N A'         UNUSED                                     00350000
+&S(15)   SETC  'N A'         UNUSED                                     00360000
+&S(16)   SETC  'N A'         UNUSED                                     00370000
+&I       SETA  1                                                        00380000
+.LOOP    ANOP                                                           00390000
+         AIF   ('&OP' EQ '&T(&I)').FND                                  00400000
+&I       SETA  &I+1                                                     00410000
+         AIF   (&I LT 17).LOOP                                          00420000
+         AIF   ('&OP' EQ '*END').END                                    00430000
+         AIF   ('&OP' NE 'END').BLKQ                                    00440000
+.END     ANOP                                                           00450000
+&NM      DC    X'FFFFFFFFFF' .   END OF TABLE                           00460000
+         AGO   .MEX                                                     00470000
+.BLKQ    AIF   ('&OP' NE 'BLK').LOTS                                    00480000
+&I       SETA  1                                                        00490000
+.FND     AIF   (&I EQ 16).DOL                                           00500000
+&I       SETA  (&I-1)*16                                                00510000
+         AIF   ('&OP' EQ 'BLK').BLK                                     00520000
+         AIF   (&I EQ 0).ALL                                            00530000
+         AIF   ('&TO'(1,1) EQ '(' AND '&TO(2)' NE '').SUB               00540000
+&NM      DC    SL2(&TO),AL1(&I+((&L&TO-1)-((&L&TO-1)/16)*16)),SL2(&IN)  00550000
+.MEX     MEXIT                                                          00560000
+.SUB     ANOP                                                           00570000
+&NM DC SL2(&TO(1)),AL1(&I+((&TO(2)-1)-((&TO(2)-1)/16)*16)),SL2(&IN)     00580000
+         AGO   .MEX                                                     00590000
+.BLK     AIF   ('&TO'(1,1) EQ '(' AND '&TO(2)' NE '').BSUB              00600000
+&NM      DC    SL2(&TO),AL1(&I+((&L&TO-1)-((&L&TO-1)/16)*16)),AL1((&L&TX00610000
+               O-1)/16,C' ') <    MOVE BLANKS                           00620000
+         AGO   .MEX                                                     00630000
+.BSUB    ANOP                                                           00640000
+&NM      DC    SL2(&TO(1)),AL1(&I+((&TO(2)-1)-((&TO(2)-1)/16)*16)),AL1(X00650000
+               (&TO(2)-1)/16,C' ') <     MOVE BLANKS                    00660000
+         AGO   .MEX                                                     00670000
+.ALL     AIF   ('&TO'(1,1) EQ '(' AND '&TO(2)' NE '').BALL              00680000
+&NM      DC    SL2(&TO),AL1(&I+((&L&TO-1)-((&L&TO-1)/16)*16)),AL1((&L&TX00690000
+               O-1)/16,&IN) <   MOVE ALL                                00700000
+         AGO   .MEX                                                     00710000
+.BALL    ANOP                                                           00720000
+&NM      DC    SL2(&TO(1)),AL1(&I+((&TO(2)-1)-((&TO(2)-1)/16)*16)),AL1(X00730000
+               (&TO(2)-1)/16,&IN) <    MOVE ALL                         00740000
+         AGO   .MEX                                                     00750000
+.DOL     ANOP                                                           00760000
+&NM      DC    AL2(&IN),AL1(X'F0'+((&TO-1)-(&TO-1)/16*16)),AL2(&INTO)   00770000
+         AGO   .MEX                                                     00780000
+.LOTS    ANOP                                                           00790000
+&I       SETA  1                                                        00800000
+.LLOP    AIF   ('&OP' EQ '&S(&I)').LFND                                 00810000
+&I       SETA  &I+1                                                     00820000
+         AIF   (&I LT 17).LLOP                                          00830000
+.BOOBOO  MNOTE 8,'INVALID OPERATION CODE ''&OP'''                       00840000
+         MEXIT                                                          00850000
+.LFND    ANOP                                                           00860000
+&I       SETA  14*16+&I-1                                               00870000
+         AIF   ('&OP' EQ 'AGO').SS                                      00880000
+         AIF   ('&OP' EQ 'LD' OR '&OP' EQ 'LA'                         *00890000
+               OR '&OP' EQ 'BCT'                                       *00900000
+               OR '&OP' EQ 'ST').RS                                     00910000
+         AIF   ('&OP' EQ 'LTR').RM                                      00920000
+         AIF   ('&OP' EQ 'AH').RH                                       00930000
+         AIF   ('&OP' EQ 'TM').SM                                       00940000
+         AIF   ('&OP' EQ 'MAX' AND '&TO' NE '').SZ                      00950000
+         AIF   ('&OP' EQ 'MAX').ZM                                      00960000
+         AIF   ('&OP' EQ 'LO').RZ                                       00970000
+.*       ASSUME NOP OR NOT CODED YET                                    00980000
+&NM      DC    AL1(0,0,&I,0,0) .     NOP                                00990000
+         AGO   .MEX                                                     01000000
+.RS      ANOP                                                           01010000
+&NM      DC    AL1(0,(&TO-(&TO/16)*16),&I),SL2(&IN)                     01020000
+         AGO   .MEX                                                     01030000
+.SS      ANOP                                                           01040000
+&NM      DC    SL2(&TO),AL1(&I),SL2(&IN)                                01050000
+         AGO   .MEX                                                     01060000
+.RM      ANOP                                                           01070000
+&NM      DC    AL1(0,(&TO-(&TO/16)*16),&I,0,&IN)                        01080000
+         AGO   .MEX                                                     01090000
+.RH      ANOP                                                           01100000
+&NM      DC    AL1(0,(&TO-(&TO/16)*16),&I),AL2(&IN)                     01110000
+         AGO   .MEX                                                     01120000
+.SM      ANOP                                                           01130000
+&NM      DC    SL2(&TO),AL1(&I,0,&IN)                                   01140000
+         AGO   .MEX                                                     01150000
+.ZM      DC    AL1(0,0,&I,0,&IN)                                        01160000
+         AGO   .MEX                                                     01170000
+.SZ      ANOP                                                           01180000
+&NM      DC    SL2(&TO),AL1(&I,0,0)                                     01190000
+         AGO   .MEX                                                     01200000
+.RZ      ANOP                                                           01210000
+&NM      DC    AL1(0,(&TO-(&TO/16)*16),&I,0,0)                          01220000
+         AGO   .MEX                                                     01230000
+         MEND                                                           01240000

@@ -1,0 +1,104 @@
+         MACRO ,                                                 88150  00010000
+&NM      SUBCALL &NAME,&PARM,&VL,&MF=S,&OP=BALR,&MODE=L     ADDED 88150 00020000
+         GBLC  &MACPLAB                                          88150  00030000
+         GBLC  &SRVLMOD(20),&SRVLDEL(20)                        GP03150 00040000
+         GBLB  &MVSESA,&OS390,&Z900                             GP08076 00050000
+         GBLA  &SRVNMOD                                         GP03150 00060000
+         LCLA  &I,&J,&N                                                 00070000
+         LCLC  &LBL,&M,&LOP                                     GP08076 00080000
+         AIF   ('&MF' EQ 'L').MFL                                       00090000
+&LOP     SETC  '&OP'                                            GP08076 00100000
+.*--------------------------------------------------------------------* 00110000
+.*  NON-STANDARD HANDLING OF PARAMETER LIST:                          * 00120000
+.*                                                                    * 00130000
+.*  &N IS 1 - GENERATE SIMPLE LA UNLESS PARENTHESIZED (BACKWARD COMP) * 00140000
+.*  &N IS 2 OR MORE - NORMAL PARAMETER LIST                           * 00150000
+.*--------------------------------------------------------------------* 00160000
+&MACPLAB SETC  '&NM'                                             88150  00170000
+&N       SETA  N'&PARM                                          GP03041 00180000
+         AIF   (&MVSESA OR &OS390 OR &Z900).OKBASS              GP08076 00190000
+         AIF   ('&OP' EQ 'BSM').FLAKY                           GP12162 00200000
+         AIF   ('&OP' NE 'BASSM' AND '&LOP' NE 'BASR').OKBASS   GP12162 00210000
+.FLAKY   ANOP  ,                                                GP12162 00220000
+&LOP     SETC  'BALR'        DON'T HAVE BASSM ON 360/370        GP08076 00230000
+.OKBASS  AIF   (&N LT 1).LAPARM                                 GP03041 00240000
+         AIF   (&N GT 1).NOTONE                                 GP03041 00250000
+         AIF   ('&PARM'(1,1) EQ '(' AND '&PARM'(1,2) NE '(').NOTONE     00260000
+         AIF   ('&PARM'(1,2) NE '((' OR                                *00270000
+               '&PARM'(K'&PARM-1,2) NE '))').LAPARM             GP03041 00280000
+.NOTONE  AIF   ('&MF(1)' EQ 'E').NODC                           GP03041 00290000
+*TEST*   CNOP  0,4           WORD ALIGN FOR PARM LIST           GP03041 00300000
+         MACPARM *+(&N+1)*4,OP=B,MODE=ONE                       GP03041 00310000
+&M       SETC  '&SYSNDX'                                        GP03041 00320000
+ZZ&M.P   DC    &N.AL4(0)     INLINE, NONREFRESHABLE PARM LIST   GP03041 00330000
+&LBL     SETC  'ZZ'.'&M'.'P'                                    GP03041 00340000
+         AGO   .HAVEDC                                          GP03041 00350000
+.NODC    ANOP  ,                                                GP03041 00360000
+&LBL     SETC  '&MF(2)'                                         GP03041 00370000
+.HAVEDC  MACPARM R1,&LBL     LOAD PARM LIST                     GP03041 00380000
+&I       SETA  0             JUST IN CASE                       GP03041 00390000
+         AIF   ((&N+1) EQ K'&PARM).GETADDR  PARM LIST IS NULL   GP03041 00400000
+&M       SETC  'R1'          ABNORMAL PARM LIST POINTER         GP03041 00410000
+&J       SETA  0             PARM OFFSET FOR NEXT ITEM          GP03041 00420000
+.PRMLOOP AIF   (&I GE &N).GETADDR    DONE                       GP03041 00430000
+&I       SETA  &I+1                                             GP03041 00440000
+         AIF   ('&PARM(&I)' EQ '').NOLST                        GP03041 00450000
+         AIF   ('&PARM(&I)'(1,1) NE '''').NOCHAR                GP03041 00460000
+         MACPARM R0,=C&PARM(&I)                                 GP03041 00470000
+         AGO   .HAVER0                                          GP03041 00480000
+.NOCHAR  MACPARM R0,&PARM(&I)  LOAD USER'S ADDRESS              GP03041 00490000
+.HAVER0  MACPARM R0,&J.(,&M),OP=ST   PLACE INTO PARAMETER LIST  GP03041 00500000
+.NOLST   AIF   (&I NE &N).PRMBUMP                               GP03041 00510000
+         AIF   ('&VL' NE 'VL').GETADDR                          GP03041 00520000
+         OI    &J.(&M),X'80'  END LIST BIT                      GP03041 00530000
+         AGO   .GETADDR                                         GP03041 00540000
+.PRMBUMP ANOP  ,                                                GP03041 00550000
+&J       SETA  &J+4          NEXT LIST OFFSET                   GP03041 00560000
+         AGO   .PRMLOOP                                         GP03041 00570000
+.*                                                              GP03041 00580000
+.LAPARM  MACPARM R1,&PARM,NULL=SKIP                             GP02241 00590000
+.*                                                                      00600000
+.*--------------------------------------------------------------------* 00610000
+.*  HAVE PARM ADDRESS IN R1; NOW GET ROUTINE ADDRESS IN R15 AND GO    * 00620000
+.*--------------------------------------------------------------------* 00630000
+.GETADDR AIF   ('&NAME' EQ '(15)' OR '&NAME' EQ '(R15)').BALR    88150  00640000
+         AIF   ('&NAME'(1,1) NE '(').GETPGM                      88150  00650000
+&MACPLAB LR    R15,&NAME(1)                                      88150  00660000
+         AGO   .BAL                                              88150  00670000
+.*--------------------------------------------------------------------* 00680000
+.*  SUBCALL INTERACTS WITH THE SERVLOAD MACRO.                        * 00690000
+.*  WHEN A MODULE LOADED BY SERVLOAD IS REFERENCED HERE, THE L =A()   * 00700000
+.*  IS REPLACED BY A LOAD FROM THE NAME USED BY SERVLOAD.             * 00710000
+.*                                                                    * 00720000
+.*--------------------------------------------------------------------* 00730000
+.GETPGM  AIF   ('&NAME'(1,1) NE '/' AND '&NAME'(1,1) NE '*').GETLOAD    00740000
+         MACPARM R15,&NAME                                      GP03264 00750000
+         AGO   .BAL                                             GP03264 00760000
+.GETLOAD ANOP  ,                                                 88150  00770000
+&I       SETA  0             SCAN THROUGH SERVLOAD MODULES      GP03150 00780000
+.LODLOOP AIF   (&I GE &SRVNMOD).SKIPLOD                         GP03150 00790000
+&I       SETA  &I+1                                             GP03150 00800000
+ AIF ('&SRVLMOD(&I)' NE '&NAME' AND '&SRVLDEL(&I)' NE '&NAME').LODLOOP  00810000
+         MACPARM R15,&SRVLMOD(&I),OP=L                          GP03150 00820000
+         AGO   .BALR                                            GP03150 00830000
+.SKIPLOD AIF   ('&MODE' NE 'LA').LOAD                           GP03150 00840000
+&MACPLAB LA    R15,&NAME     GET SUBROUTINE ADDRESS             GP03150 00850000
+.LOAD    ANOP  ,                                                 88150  00860000
+&MACPLAB L     R15,=A(&NAME)  GET SUBROUTINE ADDRESS             88150  00870000
+.BAL     ANOP  ,                                                 88150  00880000
+&MACPLAB SETC  ''                                                88150  00890000
+.BALR    AIF   ('&LOP' EQ 'BALR').OLDBAL                        GP12162 00900000
+         AIF   (NOT &MVSESA).OLDBAL                             GP12162 00910000
+&MACPLAB &LOP  R14,R15       INVOKE IT                          GP00020 00920000
+&MACPLAB SETC  ''                                               GP00020 00930000
+         MEXIT ,                                                GP03041 00940000
+.OLDBAL  ANOP  ,                                                GP12162 00950000
+&MACPLAB BALR  R14,R15       INVOKE IT                          GP12162 00960000
+&MACPLAB SETC  ''                                               GP12162 00970000
+         MEXIT ,                                                GP03041 00980000
+.MFL     AIF   ('&PARM' EQ '' AND '&NAME' NE '').OOPS           GP03041 00990000
+&NM      DC    A&PARM REMOTE PARM LIST FOR SUBCALL              GP03041 01000000
+         MEXIT ,                                                GP03041 01010000
+.OOPS    ANOP  ,                                                GP03041 01020000
+&NM      DC    A&NAME REMOTE PARM LIST FOR SUBCALL              GP03041 01030000
+.MEND    MEND  ,                                                 88150  01040000

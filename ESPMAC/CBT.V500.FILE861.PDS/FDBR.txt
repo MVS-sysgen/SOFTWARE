@@ -1,0 +1,43 @@
+         MACRO                                                          00010000
+&NM      FDBR  &STR,&BE=0,&BL=0,&BH=0,&BNE=0,&BM=0,&BO=0,&BZ=0   81133  00020000
+         GBLA  &FDCNTR                                                  00030000
+         LCLA  &T,&C                                                    00040000
+         LCLB  &NOP                                              81133  00050000
+         LCLC  &FDCHN,&FL,&FH,&FZ                                81133  00060000
+&FDCNTR  SETA  &FDCNTR+1                                                00070000
+&FDCHN   SETC  'ZFD'.'&FDCNTR'                                          00080000
+&C       SETA  &FDCNTR+1                                                00090000
+         AIF   ('&NM' EQ '').NONAME                                     00100000
+&NM      EQU   *                                                        00110000
+.NONAME  AIF   ('&STR' NE 'END' AND '&STR' NE '*END').PROCESS           00120000
+&FDCHN   DC    AL1(0)        END OF FD LIST                             00130000
+         MEXIT ,                                                        00140000
+.PROCESS AIF   ('&STR' NE 'NOP').PROCNOP                         81133  00150000
+&NOP     SETB  1                                                 81133  00160000
+.PROCNOP ANOP  ,                                                 81133  00170000
+&FZ      SETC  '&BE'                                             81133  00180000
+         AIF   ('&BZ' EQ '0').SETZ                               81133  00190000
+&FZ      SETC  '&BZ'                                             81133  00200000
+         AIF   ('&BE' EQ '0').SETZ                               81133  00210000
+         MNOTE 8,'*** MUTUALLY EXCLUSIVE BZ AND BE'              81133  00220000
+.SETZ    ANOP  ,                                                 81133  00230000
+&FL      SETC  '&BL'                                                    00240000
+         AIF   ('&BM' EQ '0').SETL                                      00250000
+&FL      SETC  '&BM'                                                    00260000
+         AIF   ('&BL' EQ '0').SETL                                      00270000
+         MNOTE 8,'*** MUTUALLY EXCLUSIVE BL AND BM'                     00280000
+.SETL    ANOP  ,                                                        00290000
+&FH      SETC  '&BH'                                                    00300000
+         AIF   ('&BO' EQ '0').SETH                                      00310000
+&FH      SETC  '&BO'                                                    00320000
+         AIF   ('&BH' EQ '0').SETH                                      00330000
+         MNOTE 8,'*** MUTUALLY EXCLUSIVE BH AND BO'                     00340000
+.SETH    AIF   ('&BNE' EQ '0').CHECK                                    00350000
+         AIF   ('&FL' NE '0' OR '&FH' NE '0').BHEX               81133  00360000
+&FL      SETC  '&BNE'                                                   00370000
+&FH      SETC  '&BNE'                                                   00380000
+.BHEX    MNOTE 8,'*** MUTUALLY EXCLUSIVE BNE AND BL/BH OR BM/BO' 81133  00390000
+.CHECK   ANOP  ,                                                        00400000
+&T       SETA  64*&NOP+18                                               00410000
+&FDCHN DC AL1(ZFD&C-*,&T),SL2(&FZ,&FL,&FH)                       81133  00420000
+         MEND  ,                                                        00430000

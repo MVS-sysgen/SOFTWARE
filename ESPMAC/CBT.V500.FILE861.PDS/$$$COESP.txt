@@ -1,0 +1,46 @@
+//* COPYRIGHT (C) 1979 - 1994  EXPERT SYSTEM PROGRAMMING, INC.          00010000
+//* COPYRIGHT (C) 1995 - 2000  GERHARD POSTPISCHIL                      00020000
+//* COPYRIGHT (C) 2001 -       EXPERT SYSTEM PROGRAMMING                00030000
+//* ALL RIGHTS RESERVED.                                                00040000
+//* NOTE TO U.S. GOVERNMENT USERS .. DOCUMENTATION RELATED TO           00050000
+//* RESTRICTED RIGHTS .. USE, DUPLICATION OR DISCLOSURE IS SUBJECT      00060000
+//* TO RESTRICTIONS SET FORTH IN GSA ADP SCHEDULE CONTRACT              00070000
+//*                                                                     00080000
+//* THE MATERIAL IN THIS FILE IS COPYRIGHTED.                           00090000
+//*                                                                     00100000
+//* *  UNLESS MARKED OTHERWISE WITHIN THE PROGRAM CODE, THE             00110000
+//*    MATERIAL IS COPYRIGHTED BY EXPERT SYSTEM PROGRAMMING             00120000
+//*                                                                     00130000
+//* *  SOME MEMBERS MAY BE THE PROPERTY OF OTHER COPYRIGHT HOLDERS,     00140000
+//*    AND ARE IDENTIFIED AS SUCH IN THEIR TEXT.                        00150000
+//*                                                                     00160000
+//* PERMISSION IS GRANTED TO:                                           00170000
+//*                                                                     00180000
+//* *  MEMBERS WITH EXH IN THEIR NAMES ARE RESTRICTED TO LICENSED       00190000
+//*    USERS OF THE EXHIBIT PACKAGE.                                    00200000
+//*                                                                     00210000
+//* *  MEMBERS NOT OTHERWISE RESTRICTED BY THEIR OWNERS ARE FREE-       00220000
+//*    WARE, AND MAY BE USED FREELY FOR NOT-FOR-PROFIT USE. THEY        00230000
+//*    MAY NOT BE SOLD, LICENSED, OR USED IN COMMERCIAL PRODUCTS.       00240000
+//*                                                                     00250000
+//* *  STORE THE COPYRIGHTED MATERIAL IN YOUR SYSTEM AND DISPLAY        00260000
+//*    IT ON TERMINALS.                                                 00270000
+//*                                                                     00280000
+//* *  PRINT ONLY THE NUMBER OF COPIES REQUIRED FOR USE BY THOSE        00290000
+//*    PERSONS RESPONSIBLE FOR INSTALLING THE ESP PROGRAMMING AND       00300000
+//*    LICENSED PROGRAMS FOR WHICH THIS MATERIAL HAS BEEN PROVIDED.     00310000
+//*                                                                     00320000
+//* *  MODIFY THE MATERIAL TO MEET SPECIFIC INSTALLATION REQUIREMENTS.  00330000
+//*                                                                     00340000
+//* THE ESP COPYRIGHT NOTICE MUST APPEAR ON ALL PRINTED VERSIONS OF     00350000
+//* THIS MATERIAL OR EXTRACTS THEREOF AND ON THE DISPLAY MEDIUM WHEN    00360000
+//* IT IS BEING DISPLAYED.  PERMISSION IS NOT GRANTED TO FURTHER        00370000
+//* REPRODUCE OR DISTRIBUTE THE MATERIAL, EXCEPT BY WRITTEN AGREEMENT.  00380000
+//*                                                                     00390000
+//* UNLESS PERMISSION IS RESCINDED, THE MATERIAL MAY BE STORED AND      00400000
+//* DISTRIBUTED BY THE HERCULES MVS PROJECTS, AND THE CBTTAPE.ORG SITE. 00410000
+//*                                                                     00420000
+//* LIB: $$$COESP                                                       00430000
+//* GDE: NONE                                                           00440000
+//* DOC: THIS MEMBER CONTAINS COPYRIGHT INFORMATION.                    00450000
+//*                                                                     00460000

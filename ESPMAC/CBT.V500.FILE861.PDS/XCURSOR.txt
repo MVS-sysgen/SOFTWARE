@@ -1,0 +1,61 @@
+         MACRO ,                                                        00010000
+&NM      XCURSOR &A,&B,&BASE=1,&SAVE=YES                    NEW GP12297 00020000
+         GBLC  &MACPLAB                                                 00030000
+         GBLB  &ZZXCUR2      GLOBAL USE FLAG FOR SCINIT                 00040000
+         LCLA  &K                                               GP12298 00050000
+.*                                                                    * 00060000
+.*   XCURSOR IS USED IN CONJUNCTION WITH EXHASCRN ROUTINES, INVOKED   * 00070000
+.*   BY SCxxxx MACROS OTHER THAN SCLINE.                              * 00080000
+.*                                                                    * 00090000
+.*   XCURSOR n          SET IT TO A BINARY OFFSET                     * 00100000
+.*   XCURSOR m,n        PLACES THE CURSOR INTO ROW m (1-max) AND      * 00110000
+.*                      COLUMN n (1-max)                              * 00120000
+.*          BASE=1      ACCEPTS COORDINATES RELATIVE TO 1 (1-24,1-80) * 00130000
+.*          BASE=0      ACCEPTS COORDINATES RELATIVE TO 0 (0-42,0-132)* 00140000
+.*                                                                    * 00150000
+&MACPLAB SETC  '&NM'                                                    00160000
+&ZZXCUR2 SETB  1             SHOW USER IS CONTROLLING THE CURSOR        00170000
+         AIF   ('&A' EQ 'RESET').DEFAULT                                00180000
+         AIF   ('&A' EQ 'RETAIN').PROP                                  00190000
+         AIF   ('&A' EQ 'PUSH').SAVEIC                                  00200000
+         AIF   ('&A' EQ 'POP').RESTIC                                   00210000
+         AIF   ('&SAVE' NE 'YES').NOSAVE                                00220000
+         MACPARM R14,R0,DB,OP=STM,MODE=THREE                            00230000
+.NOSAVE  AIF   (N'&SYSLIST LT 1 OR N'&SYSLIST GT 2).BADPARM             00240000
+         AIF   (N'&SYSLIST EQ 2).CALC                                   00250000
+&K       SETA  K'&A                                             GP12298 00260000
+         AIF   (&K LT 3).F1                                     GP12298 00270000
+         AIF   ('&A'(1,1) NE '(').F1                            GP12298 00280000
+         AIF   ('&A'(&K,1) NE ')').F1                           GP12298 00290000
+         AIF   ('&A'(2,1) EQ '(' OR '&A'(&K-1,1) EQ ')').F1     GP12298 00300000
+         MACPARM R0,&A,OP=LH GET BINARY POSITION (0-max)                00310000
+         MACPARM R0,FDWCUR,OP=STH   AND SET                             00320000
+         AGO   .COMOUT                                                  00330000
+.F1      MACPARM FDWCUR,&A,OP=MVC                               GP12298 00340000
+         AGO   .COMOUT                                          GP12298 00350000
+.CALC    MACPARM R14,&A      GET ROW                                    00360000
+         AIF   ('&BASE' EQ '0').NOSUB1                                  00370000
+         MACPARM R14,0,OP=BCTR,OPR=BCTR                                 00380000
+.NOSUB1  MACPARM R15,&B      GET COLUMN                                 00390000
+         AIF   ('&BASE' EQ '0').NOSUB2                                  00400000
+         MACPARM R15,0,OP=BCTR,OPR=BCTR                                 00410000
+.NOSUB2  MH    R14,LSIZE     GET OFFSET TO CORRECT ROW                  00420000
+         AR    R14,R15       GET TOTAL OFFSET                           00430000
+         STH   R14,FDWCUR    STASH IT                                   00440000
+.*                                                                      00450000
+.COMOUT  AIF   ('&SAVE' NE 'YES').NOREST                                00460000
+         MACPARM R14,R0,DB,OP=LM,MODE=THREE                             00470000
+.NOREST  OI    FDWPROFG,FDWPFCUR  USE IT                                00480000
+         MEXIT ,                                                        00490000
+.BADPARM MNOTE 8,'XCURSOR TAKES ONE OR TWO ARGUMENTS'                   00500000
+         MEXIT ,                                                        00510000
+.SAVEIC  MACPARM FDWSVCUR,FDWICUD,OP=MVC  SAVE WHERE USER LEFT IT       00520000
+         MEXIT ,                                                        00530000
+.RESTIC  MACPARM FDWCUR,FDWSVCUR,OP=MVC  RESTORE FROM SAVE              00540000
+         OI    FDWPROFG,FDWPFCUR  USE IT                                00550000
+         MEXIT ,                                                        00560000
+.PROP    MACPARM FDWCUR,FDWICUD,OP=MVC   SET WHERE USER LEFT IT         00570000
+         OI    FDWPROFG,FDWPFCUR  USE IT                                00580000
+         MEXIT ,                                                        00590000
+.DEFAULT MACPARM FDWCUR,=X'FFFF',OP=MVC  DEFAULTS TO 1ST INPUT FIELD    00600000
+         MEND  ,                                                        00610000

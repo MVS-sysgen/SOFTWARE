@@ -1,0 +1,21 @@
+         MACRO ,                                                        00010000
+&NM      MDEFEND ,                                                      00020000
+         COPY  MDEFGBL                                                  00030000
+         LCLA  &I,&J,&K,&N                                              00040000
+         LCLC  &CH,&CHIX,&STRING                                        00050000
+&CHIX    SETC  '00000'.'&ZZMSGIX'                                       00060000
+&J       SETA  K'&CHIX                                                  00070000
+&CHIX    SETC  '&CHIX'(&J-4,5)                                          00080000
+MPTLAST  EQU   MPT&CHIX,MPTSIZE,C'A'  DEFINE LAST MSG PTR FOR MDEFHEAD  00090000
+ MNOTE *,'************************************************************' 00100000
+ MNOTE *,'**                                                          ' 00110000
+ MNOTE *,'**  MESSAGE TABLE &ZZSECT CONTAINS &ZZMSGIX MESSAGES,       ' 00120000
+ MNOTE *,'**  AND USED &ZZDCTIX DICTIONARY ENTRIES.                  '  00130000
+ MNOTE *,'**                                                          ' 00140000
+ MNOTE *,'**  THE LOWEST MESSAGE IDENTIFIER WAS  &ZZMGLO              ' 00150000
+ MNOTE *,'**  THE HIGHEST MESSAGE IDENTIFIER WAS &ZZMGHI              ' 00160000
+ MNOTE *,'**                                                          ' 00170000
+ MNOTE *,'**  THE MESSAGE TABLE &ZZMGSRT IN SORT SEQUENCE.            ' 00180000
+ MNOTE *,'**                                                          ' 00190000
+ MNOTE *,'************************************************************' 00200000
+         MEND  ,                                                        00210000

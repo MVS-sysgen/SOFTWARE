@@ -1,0 +1,341 @@
+         MACRO                                                          00010000
+&L       WTBLD &DUM,&MSGSECT=,&PFX='---> ',&SFX=' <---',          78310*00020000
+               &CPU=370,                                          *GPP**00030000
+               &ROUTCDE=(2,13),&UCMID=,&DOM=,&SCON=NO,&WTOIN=NO,&ML=    00040000
+         GBLC  &WTOSECT                                           78310 00050000
+         LCLA  &I,&LPFX,&LSFX                                           00060000
+.*                                                                      00070000
+.*             THIS MACRO WAS WRITTEN BY:                               00080000
+.*                            SHMUEL (SEYMOUR J.) METZ                  00090000
+.*                            SIGMA DATA SERVICES CORPORATION     78310 00100000
+.*                            GODDARD SPACE FLIGHT CENTER         78310 00110000
+.*                            CODE 911                            78310 00120000
+.*                            GREENBELT ROAD                      78310 00130000
+.*                            GREENBELT, MARYLAND   20771         78310 00140000
+.*                                                                      00150000
+.*             IT MAY NOT BE DISTRIBUTED WITHOUT PERMISSION FROM ME:    00160000
+.*             ANYONE REQUESTING A COPY SHOULD BE REFERRED TO THE       00170000
+.*             SHARE MFT/MVT PROJECT, WHICH IS DISTRIBUTING IT          00180000
+.*             ON THE "MICHIGAN MODS TAPE", AKA NMDBT;                  00190000
+.*             ALTERNATIVELY, IT MAY BE OBTAINED BY ORDERING THE TDTR   00200000
+.*             (TECHNION DTR) FROM THE TECHNION.                        00210000
+.*                                                                      00220000
+.*             THIS RESTRICTION IS INTENDED TO PREVENT A PROLIFERATION  00230000
+.*             OF INCOMPATIBLE VERSIONS: ANY REASONABLE SUGGESTIONS     00240000
+.*             OR CONTRIBUTIONS WILL BE ADDED TO THE DISTRIBUTED COPY.  00250000
+.*                                                                78310 00260000
+         AIF   ('&WTOSECT' EQ '').SECTSET                         78310 00270000
+         AIF   ('&MSGSECT' EQ '&WTOSECT').SECTOK                  78310 00280000
+         AIF   ('&MSGSECT' EQ '').SECTOK                          78310 00290000
+         MNOTE 8,'MSGSECT=&MSGSECT INCONSISTENT'                  78310 00300000
+         MNOTE 8,'MSGSECT=&WTOSECT PREVIOUSLY SPECIFIED'          78310 00310000
+         AGO   .SECTOK                                            78310 00320000
+.SECTSET ANOP  ,                                                  78310 00330000
+&WTOSECT SETC  '&MSGSECT'                                         78310 00340000
+         AIF   ('&WTOSECT' NE '').SECTOK                          78310 00350000
+&WTOSECT SETC  'MSGCSECT'                                         78310 00360000
+.SECTOK  ANOP  ,                                                  78310 00370000
+         AIF   ('&PFX' EQ '').NOPFX                                     00380000
+         AIF   ('&PFX'(1,1) EQ '''' AND '&PFX'(K'&PFX,1) EQ '''').PFOK  00390000
+         MNOTE 12,'PFX INVALID - MUST BEGIN AND END WITH ''.'           00400000
+         MEXIT                                                          00410000
+.SPFX    MNOTE 12,'PFX INVALID - NO TEXT'                               00420000
+         MEXIT                                                          00430000
+.PFOK    AIF   ('&PFX' EQ '''' OR '&PFX' EQ '''''').SPFX                00440000
+&I       SETA  2                                                        00450000
+.PLOOP   AIF  ('&PFX'(&I,2) NE ''''''  AND                             *00460000
+               '&PFX'(&I,2) NE '&&&&').PSNGL                            00470000
+&I       SETA  &I+1                                                     00480000
+.PSNGL   ANOP                                                           00490000
+&I       SETA  &I+1                                                     00500000
+&LPFX    SETA  &LPFX+1                                                  00510000
+         AIF   (&I LT K'&PFX).PLOOP                                     00520000
+         AIF   (&I EQ K'&PFX).NOPFX                                     00530000
+         MNOTE 12,'PFX HAS UNMATCHED ''S.'                              00540000
+         MEXIT                                                          00550000
+.*                                                                      00560000
+.NOPFX   AIF   ('&SFX' EQ '').NOSFX1                                    00570000
+         AIF   ('&SFX'(1,1) EQ '''' AND '&SFX'(K'&SFX,1) EQ '''').SFOK  00580000
+         MNOTE 12,'SFX INVALID - MUST BEGIN AND END WITH ''.'           00590000
+         MEXIT                                                          00600000
+.SSFX    MNOTE 12,'SFX INVALID - NO TEXT'                               00610000
+         MEXIT                                                          00620000
+.SFOK    AIF   ('&SFX' EQ '''' OR '&SFX' EQ '''''').SSFX                00630000
+&I       SETA  2                                                        00640000
+.SLOOP   AIF  ('&SFX'(&I,2) NE '''''' AND                              *00650000
+               '&SFX'(&I,2) NE '&&&&').SSNGL                            00660000
+&I       SETA  &I+1                                                     00670000
+.SSNGL   ANOP                                                           00680000
+&I       SETA  &I+1                                                     00690000
+&LSFX    SETA  &LSFX+1                                                  00700000
+         AIF   (&I LT K'&SFX).SLOOP                                     00710000
+         AIF   (&I EQ K'&SFX).NOSFX1                                    00720000
+         MNOTE 12,'SFX HAS UNMATCHED ''S.'                              00730000
+         MEXIT                                                          00740000
+.*                                                                      00750000
+.NOSFX1  ANOP                                                           00760000
+&I       SETA   1                                                       00770000
+         SPACE 1                                                        00780000
+*        R0    PAD                                                      00790000
+*        R1    -> WTO/WTOR PARM LIST                                    00800000
+*        R2    LENGTH-1 FOR MVC                                         00810000
+*        R3    -> DESC (OR BYTE AFTER TEXT FOR MLWTO)                   00820000
+*        R4    -> WTO PARM LIST, ADJUSTED FOR PREFIX                    00830000
+*        R5    -> WTO PARM LIST (OR -> LENGTH FOR MLWTO)                00840000
+*        R6    -> MSG                                                   00850000
+*        R9    INTERNAL CALL REGISTER                                   00860000
+*        R14   PARM/RETURN                                              00870000
+*        +0    DESCRIPTOR                                               00880000
+*        +2    LENGTH-1 OF TEXT                                         00890000
+*        +3    FLAG BYTE                                                00900000
+*        +4    DISPLACEMENT TO TEXT                                     00910000
+*        +6    RETURN                                                   00920000
+         SPACE 1                                                        00930000
+*              FOR MULTI-LINE MESSAGES:                                 00940000
+*        +0    DESCRIPTOR                                               00950000
+*        +2    LENGTH-1                                                 00960000
+*        +3    FLAG BYTE                                                00970000
+*        +4    DISPLACEMENT TO TEXT                                     00980000
+*        +6    LINE TYPE                                                00990000
+*        +8    LENGTH-1 OF TEXT                                         01000000
+*        +9    FLAG                                                     01010000
+*        +10   DISPLACEMENT TO TEXT                                     01020000
+*        +12   LINE TYPE                                                01030000
+*        +14   LENGTH-1 OF TEXT                                         01040000
+*        ...                                                            01050000
+*              X'FFFF'                                                  01060000
+*        +2    RETURN                                                   01070000
+         SPACE 3                                                        01080000
+*              CONSTRUCTED WTO/WTOR IS OF FORM:                         01090000
+*        +0    L'REPLY                                                  01100000
+*        +1    AL3(REPLY)                                               01110000
+*        +4    A(ECB)                                                   01120000
+*        +8    0                                                        01130000
+*        +9    LENGTH                                                   01140000
+*        +10   MCSFLAGS                                                 01150000
+*        +12   TEXT                                                     01160000
+*        ---   DESCRIPTOR                                               01170000
+*        +2    ROUTCDE                                                  01180000
+*        +4    LINE TYPE (IF MLWTO)                                     01190000
+*        +6    AREA ID                                                  01200000
+*        +7    # OF LINES                                               01210000
+         SPACE 1                                                        01220000
+*        +8    LENGTH                                                   01230000
+*        +10   LINETYPE                                                 01240000
+*        +12   TEXT                                                     01250000
+*        ...                                                            01260000
+         SPACE 3                                                        01270000
+         USING WT1,R5                                                   01280000
+         USING WT2,R3                                                   01290000
+         USING WTPRM,R14                                                01300000
+         AIF   ('&ML' EQ 'NO').NOML1                                    01310000
+         SPACE 2                                                        01320000
+*              ENTRY POINT TO ADD LINES TO MLWTO                        01330000
+WTOEXTND XR    R0,R0                    DO NOT ALLOW FOR POSTFIX        01340000
+         BCTR  R14,0                    FOR COMPATIBILITY WITH BUILD    01350000
+         BCTR  R14,0                        R14=R14-2                   01360000
+         AIF   ('&SCON' NE 'NO').SCON1                                  01370000
+         STM   R14,R12,12(R13)                                          01380000
+         AGO   .NOSCON1                                                 01390000
+.SCON1   STM   R0,R15,WTOREGS                                           01400000
+.NOSCON1 LA    R1,WTOMSGL                                               01410000
+         L     R3,DESCPTR               R2 = # OF LINES ALREADY BUILT   01420000
+         XR    R2,R2                                                    01430000
+         IC    R2,WTNUMLIN                                              01440000
+         LA    R5,WTNUMLIN+1                                            01450000
+WTOE1    BCT   R2,*+8                                                   01460000
+         B     WTOB2                                                    01470000
+         AIF   ('&CPU' NE '360').SK370                            *TSM* 01480000
+         XR    R4,R4                    SKIP TO NEXT LINE               01490000
+         IC    R4,WTLENGTH+1                                            01500000
+         AGO   .SK360                                                   01510000
+.SK370   LH    R4,WTLENGTH              SKIP TO NEXT LINE               01520000
+.SK360   AR    R5,R4                                                    01530000
+         B     WTOE1                                                    01540000
+.NOML1   SPACE 2                                                        01550000
+*              ENTRY POINT TO CONSTRUCT WTO/WTOR                        01560000
+WTOBUILD XR    R0,R0                    DO NOT ALLOW FOR POSTFIX        01570000
+         AIF   ('&SCON' NE 'NO').SCON2                                  01580000
+         STM   R14,R12,12(R13)                                          01590000
+         AGO   .NOSCON2                                                 01600000
+.SCON2   STM   R0,R15,WTOREGS                                           01610000
+.NOSCON2 LA    R5,WTOMSGL               PTR FOR MSG BUILD               01620000
+         LR    R1,R5                    PTR FOR EXIT                    01630000
+         TM    WPFLAG,$WTOR             IS WTOR FLAG ON                 01640000
+         BZ    WTOB0                                                    01650000
+         LA    R1,REPLY                                                 01660000
+         ST    R1,WTORRPLY                                              01670000
+         MVI   WTORRPLY,L'REPLY                                         01680000
+         LA    R1,WTORECB                                               01690000
+         ST    R1,WTORECBA                                              01700000
+         MVI   WTORECB,0                                                01710000
+         LA    R1,WTOR                                                  01720000
+         LA    R5,WTORMSGL                                              01730000
+         USING WT1,R5                                                   01740000
+         USING WT2,R3                                                   01750000
+WTOB0    BALS  R9,WTOBLINE              SET UP 1ST OR ONLY LINE OF WTO  01760000
+         MVC   WTDESC,WPDESC            DESC FROM CALLING SEQUENCE      01770000
+         MVC   WTROUT,ROUTCDE           ROUTCDE=(2,13)                  01780000
+         MVC   WTFLAG,WFLAG             SET MCS FLAG                    01790000
+         AIF   ('&ML' EQ 'NO').NOML3                                    01800000
+         ST    R3,DESCPTR               SAVE FOR SUBSEQUENT LINES       01810000
+         TM    WPFLAG,$ML               ML WTO REQUESTED?               01820000
+         BZ    WTOBEXIT                  NO  - CLEAN UP AND GO          01830000
+         OI    WTFLAG+1,$MCMLWTO         YES - FLAG AS SUCH             01840000
+         MVC   WTLINTYP,WPLINTYP        MOVE IN 1ST LINE TYPE           01850000
+         WTPVT AREAID                   DEFAULT: MVI WTAREAID,0         01860000
+         MVI   WTNUMLIN,1               INDICATE 1 LINE                 01870000
+         LA    R5,WTNUMLIN+1            SETUP FOR NEXT LINE             01880000
+WTOB1    CLI   WPSTOPER,X'FF'           DAY IS DUN?                     01890000
+         BE    WTOBXTML                     YES - DEPART                01900000
+         LA    R14,WPSTOPER-WPTXLENG+WTPRM  NO  - TO NEXT ENTRY         01910000
+WTOB2    MVC   WTLINTP2,WPLINTYP        MOVE IN NEXT LINE TYPE          01920000
+         L     R3,DESCPTR               BUMP # OF LINES                 01930000
+         IC    R15,WTNUMLIN                                             01940000
+         LA    R15,1(,R15)                                              01950000
+         STC   R15,WTNUMLIN                                             01960000
+         BALS  R9,WTOBLINE              SET UP SUBSEQUENT LINE OF WTO   01970000
+         LR    R5,R3                    SET UP FOR NEXT LINE            01980000
+         B     WTOB1                    OD PA'AM                        01990000
+.NOML3   SPACE 2                                                        02000000
+WTOBLINE LH    R6,WPTXDISP                                              02010000
+         A     R6,=A(&WTOSECT)                                    78310 02020000
+         XR    R2,R2                    PICK UP LENGTH-1 FOR MVC        02030000
+         IC    R2,WPTXLENG                                              02040000
+         AIF   ('&SCON' EQ 'NO').NOSCON3                                02050000
+         TM    WPFLAG,$SCON             TEXT POINTER OR OFFSET?         02060000
+         BZ    NOSCON                    OFFSET                         02070000
+         MVC   WTOLA(2),=X'4160'        BUILD: LA R6,OFFSET(,R15)       02080000
+         MVC   WTOLA+2(2),WPTXDISP                                      02090000
+         OI    WTOLA+2,X'F0'                                            02100000
+         SR    R15,R15                  LOCATE REGISTER SAVE FOR R      02110000
+         IC    R15,WPTXDISP                                             02120000
+         SRL   R15,4                                                    02130000
+         SLL   R15,2                                                    02140000
+         L     R15,WTOREGS(R15)         LOAD FROM SAVED VALUE           02150000
+         EX    0,WTOLA                  R6->WTO (RECFM=V)               02160000
+         AIF   ('&CPU' NE '360').LH370                            *GPP* 02170000
+         SR    R2,R2         CLEAR FOR IC                         *GPP* 02180000
+         IC    R2,1(,R6)     LENGTH FROM WTO                      *GPP* 02190000
+         AGO   .LHCOM                                             *GPP* 02200000
+.LH370   LH    R2,0(,R6)     LENGTH FROM WTO                      *GPP* 02210000
+.LHCOM   SH    R2,=H'5'       - 5                                 *GPP* 02220000
+         LA    R6,4(,R6)                R6->TEXT                        02230000
+.NOSCON3 ANOP                                                           02240000
+NOSCON   LA    R3,WTTEXT+1(R2)          -> DESC IF NO PFX/SFX           02250000
+         AR    R3,R0                                                    02260000
+         XR    R0,R0                    CLEAR FOR NEXT LINE IF MLWTO    02270000
+         LR    R4,R5                                                    02280000
+         TM    WPFLAG,$PFX              IS PREFIX FLAG ON?              02290000
+         BZ    WTOBL1                                                   02300000
+         WTPVT CODE,PFX=&PFX,LPFX=&LPFX,SFX=&SFX,LSFX=&LSFX             02310000
+WTOBL1   EX    R2,WTOBMVC               MOVE IN CALLER'S MESSAGE        02320000
+         SR    R3,R5                    SET WTO/WTOR LENGTH             02330000
+         AIF   ('&CPU' NE '360').STH370                           *GPP* 02340000
+         STC   R3,WTLENGTH+1       STORE LENGTH                   *GPP* 02350000
+         MVI   WTLENGTH,0    FOLLOW CONVENTIONS                   *GPP* 02360000
+         AGO   .STHCOM                                            *GPP* 02370000
+.STH370  STH   R3,WTLENGTH     STORE LENGTH                       *GPP* 02380000
+.STHCOM  AR    R3,R5         RESTORE DESC PTR                     *GPP* 02390000
+         BR    R9                       BACK FOR NEXT LINE              02400000
+         DROP  R3                                                       02410000
+         DROP  R5                                                       02420000
+         SPACE 1                                                        02430000
+         USING WT1,R5                                                   02440000
+         USING WT2,R3                                                   02450000
+         AIF   ('&UCMID' EQ '').NOUCMID                                 02460000
+         AIF   ('&ML' EQ 'NO').NOML2A                                   02470000
+WTOBXTML LR    R5,R1                    RESTORE PFX POINTER IF MLWTO    02480000
+.NOML2A  ANOP                                                           02490000
+WTOBEXIT XR    R0,R0                    CLEAR FOR MLWTO IN KEY 0  *TSM* 02500000
+         TM    WPFLAG,$UCMID            WTO WITH UCMID IN R0 DESIRED?   02510000
+         BZ    NOUCMID                   NO                             02520000
+         IC    R0,UCMID                 GET UCMID FOR WTO         *TSM* 02530000
+         LTR   R0,R0                    IS UCMID PRESENT?               02540000
+         BZ    NOUCMID                   NO - CAN'T DO WITH REG0        02550000
+         OI    WTFLAG,$MCREG0           SET UCMID FLAG IN WTO           02560000
+NOUCMID  TM    WPFLAG,$IMM              IS IMMEDIATE WTO FLAG ON?       02570000
+         AGO   .UCMID                                                   02580000
+.NOUCMID ANOP                                                           02590000
+         AIF   ('&ML' EQ 'NO').NOML2B                                   02600000
+WTOBXTML EQU   *                        RESTORE PFX POINTER IF MLWTO    02610000
+*                                        NOT NEEDED SINCE NO UCMID      02620000
+.NOML2B  ANOP                                                           02630000
+WTOBEXIT TM    WPFLAG,$IMM              IS IMMEDIATE WTO FLAG ON?       02640000
+.UCMID   BZ    WTOBXIT1                  NO - LET CALLER MUCK UP WTO    02650000
+         WTO   MF=(E,(1))                                               02660000
+         AIF   ('&DOM' EQ 'NO').NODOM1                                  02670000
+         AIF   ('&ML' EQ 'NO').NOML4                                    02680000
+         L     R3,DESCPTR               RESTORE PTR IF MLWTO            02690000
+.NOML4   TM    WTDESC,$DSIMMAC          IS THIS DESC=2?                 02700000
+         BZ    WTOBXIT1                   NO - DON'T NEED DOM           02710000
+*              LEAVE DESC=1 FOR OPERATOR DELETE VIA K (CONTROL) CMD     02720000
+         BALS  R15,SAVEDOM                                              02730000
+.NODOM1  AIF   ('&SCON' NE 'NO').SCON4                                  02740000
+WTOBXIT1 LM    R2,R10,28(R13)                                           02750000
+         AGO   .NOSCON4                                                 02760000
+.SCON4   ANOP                                                           02770000
+WTOBXIT1 LM    R2,R10,WTOR2                                             02780000
+.NOSCON4 AIF   ('&ML' EQ 'NO').NOML5                                    02790000
+         TM    WPFLAG,$ML               WHERE IS THE RETURN POINT?      02800000
+         BO    WPRTRN2                   +10                            02810000
+.NOML5   B     WPRETRN                   +6                             02820000
+         DROP  R5,R3                                                    02830000
+         DROP  R14                                                      02840000
+         SPACE 1                                                        02850000
+         WTPVT DSECT,PFX=&PFX,LPFX=&LPFX,SFX=&SFX,LSFX=&LSFX            02860000
+         SPACE 1                                                        02870000
+WTOBMVC  MVC   4(0,R4),0(R6)            MOVE IN CALLER'S MESSAGE        02880000
+         AIF   ('&WTOIN' EQ 'NO').NOWTOIN                               02890000
+         SPACE 5                                                        02900000
+*              THIS ENTRY POINT IS USED TO COMPLETE A PARTIALLY         02910000
+*              CONSTRUCTED WTO.                                         02920000
+*              THE CALLER MUST SET THE TEXT INTO WTOMSG AND THE         02930000
+*              LENGTH INTO WTOMSGL(FIRST BYTE WILL BE ZEROED BY WTOIN). 02940000
+*              CALLING SEQUENCE IS:                                     02950000
+         SPACE 1                                                        02960000
+*        BALS  R14,WTOIN                                                02970000
+*        DC    XL2'DESCRIPTORS'                                         02980000
+         SPACE 1                                                        02990000
+WTOIN    MVI   WTOMSGL,0                                                03000000
+         LA    R1,WTOMSG-4                                              03010000
+         AH    R1,WTOMSGL                                               03020000
+         MVC   0(2,R1),0(R14)           DESC FROM CALLING SEQUENCE      03030000
+         MVC   2(2,R1),ROUTCDE          ROUTCDE=(2,13)                  03040000
+         MVC   WTOFLGS(2),WFLAG                                         03050000
+         LA    R1,WTOMSGL                                               03060000
+         B     2(R14)                                                   03070000
+.NOWTOIN AIF   ('&DOM' EQ 'NO').NODOM2                                  03080000
+         SPACE 1                                                        03090000
+         AIF   ('&DOM' EQ '1').ONEDOM1                                  03100000
+SAVEDOM  MVC   DOMTABST,DOMTABLE+4      MAKE ROOM FOR NEW ENTRY         03110000
+         AIF   ('&CPU' NE '360').SD370                            *TSM* 03120000
+         ST    R1,DOMLAST    SAVE NEW ENTRY                       *TSM* 03130000
+         MVI   DOMLAST,X'00'            BYTE0=00                  *TSM* 03140000
+         AGO   .ONEDOM2                                           *TSM* 03150000
+.SD370   STCM  R1,7,DOMLAST+1           SAVE NEW ENTRY (BYTE0=00)       03160000
+         AGO   .ONEDOM2                                                 03170000
+.ONEDOM1 ANOP                                                           03180000
+SAVEDOM  ST    R1,DOMTABLE              SAVE NEW ENTRY (BYTE0=00)       03190000
+.ONEDOM2 BR    R15                                                      03200000
+         SPACE 1                                                        03210000
+         AIF   ('&DOM' EQ '1').ONEDOM3                                  03220000
+DOMITALL LA    R15,DOMTABLE                                             03230000
+         LA    R0,4                                                     03240000
+         LA    R1,DOMLAST                                               03250000
+         OC    1(3,R15),1(R15)                                          03260000
+         BNZ   *+10                                                     03270000
+         BXLE  R15,R0,*-10                                              03280000
+         BR    R14                                                      03290000
+         MVI   DOMLAST,X'80'                                            03300000
+         DOM   MSGLIST=0(15)                                            03310000
+         AGO   .ONEDOM4                                                 03320000
+.ONEDOM3 ANOP                                                           03330000
+DOMITALL L     R1,DOMTABLE                                              03340000
+         DOM   MSG=(1)                                                  03350000
+.ONEDOM4 XC    DOMTABLE(DOMTABLN),DOMTABLE                              03360000
+         BR    R14                                                      03370000
+.NODOM2  SPACE 1                                                        03380000
+WFLAG    DC    AL1($MCRTDS,0)           MCSFLAG                         03390000
+ROUTCDE  WTLST &ROUTCDE,TYPE=ROUTCDE                                    03400000
+         MEND                                                           03410000

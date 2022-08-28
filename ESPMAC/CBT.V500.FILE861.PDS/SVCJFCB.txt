@@ -1,0 +1,25 @@
+         MACRO ,                                                        00010000
+&NM      SVCJFCB &PARM,&ERR=                            ADDED ON 84268  00020000
+         GBLA  &SVCJFCB                                                 00030000
+         GBLB  &ZZSJFCB                                         GP99053 00040000
+         GBLC  &MACPLAB                                                 00050000
+.********************************************************************** 00060000
+.*                                                                   ** 00070000
+.*   INVOKE JFCB MODIFICATION (VIA SVC).  USED IN ASMANY             ** 00080000
+.*                                                                   ** 00090000
+.********************************************************************** 00100000
+&MACPLAB SETC  '&NM'                                                    00110000
+         MACPARM R1,&PARM    LOAD R1 WITH LIST ADDRESS                  00120000
+         AIF   (&SVCJFCB EQ 0).NOSVC                            GP99053 00130000
+         MACPARM &SVCJFCB,MODE=ONE,OP=SVC  CALL SVC                     00140000
+         AGO   .ERRT                                                    00150000
+.NOSVC   AIF   (&ZZSJFCB).NOSVC2                                GP99053 00160000
+*HOPE?*  MNOTE 0,'GLOBAL VARIABLE &&SVCJFCB IS ZERO'                    00170000
+&ZZSJFCB SETB  1                                                GP99053 00180000
+.NOSVC2  ANOP  ,                                                GP99053 00190000
+&MACPLAB LINK  EPLOC=DCMJFCB        MUST BE AUTHORIZED TO CALL  GP99055 00200000
+&MACPLAB SETC  ''                                                       00210000
+.ERRT    AIF   ('&ERR' EQ '').MEND                                      00220000
+         LTR   R15,R15       TEST RETURN                                00230000
+         MACPARM &ERR,MODE=ONE,OP=BNZ,OPR=BNZR                          00240000
+.MEND    MEND  ,                                                        00250000

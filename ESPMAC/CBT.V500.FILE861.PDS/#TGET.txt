@@ -1,0 +1,35 @@
+         MACRO ,                                                        00010000
+&NM      #TGET &ADDR,&LEN,&NOTSO=WTOR                    NEW ON GP12313 00020000
+         GBLC  &MACPLAB                                                 00030000
+.*--------------------------------------------------------------------* 00040000
+.*   #TGET IS A SIMPLE TGET REPLACEMENT. IT INVOKES SUBTGET TO ISSUE  * 00050000
+.*     EITHER A GETLINE (FOR A TSO CALLER) OR A WTOR (BATCH).         * 00060000
+.*                                                                    * 00070000
+.*   USER PASSES BUFFER ADDRESS IN R1, AND MAX LENGTH IN R0           * 00080000
+.*   NOTSO= ACTION WHEN NOT UNDER TSO: WTOR or SKIP                   * 00090000
+.*--------------------------------------------------------------------* 00100000
+         LCLA  &I,&NOTS                                                 00110000
+         LCLC  &L,&C                                                    00120000
+&MACPLAB SETC  '&NM'                                                    00130000
+&L       SETC  'L'''                                                    00140000
+         AIF   (T'&ADDR NE 'O').HAVEAD                                  00150000
+         MNOTE 8,'#TGET: ADDRESS OPERAND REQUIRED'                      00160000
+         MEXIT ,                                                        00170000
+.HAVEAD  AIF   (T'&NOTSO EQ 'O').SKIPACT                                00180000
+&C       SETC  '&NOTSO'.'    '                                          00190000
+&C       SETC  '&C'(1,4)                                                00200000
+.LOOPACT AIF   ('&C' EQ 'WTORSKIP'(&I*4+1,4)).HAVEACT                   00210000
+&I       SETA  &I+1                                                     00220000
+         AIF   (&I LT 2).LOOPACT                                        00230000
+         MNOTE 4,'#TGET: UNSUPPORTED NOTSO &NOTSO'                      00240000
+         AGO   .SKIPACT                                                 00250000
+.HAVEACT ANOP  ,                                                        00260000
+&NOTS    SETA  &I                                                       00270000
+.*                                                                      00280000
+.SKIPACT MACPARM R0,&LEN,NULL=&L&LEN                                    00290000
+         MACPARM R1,&ADDR    LOAD ADDRESS REGISTER                      00300000
+.SUBCALL AIF   (&NOTS EQ 0).TGET                                        00310000
+         MACPARM R0,8,=AL1(&NOTS),OP=ICM,MODE=THREE   SET ACTION        00320000
+.TGET    ANOP  ,                                                GP12162 00330000
+         SUBCALL /SUBTGET                                       GP12162 00340000
+.MEND    MEND  ,                                                        00350000

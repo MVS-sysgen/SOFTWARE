@@ -1,0 +1,46 @@
+         MACRO ,                                                GP97332 00010000
+&NM      SUBHEAD &F,&L,&BASE=      START A SUBROUTINE           GP03034 00020008
+.*  SUBHEAD BEGINS A SUBROUTINE, USING A SAVE AREA STACK                00030001
+.*    THE MACRO MUST PHYSICALLY PRECEDE THE MATCHING SUBRET             00040001
+.*    MACRO FOR CORRECT REGISTER RESTORE.                               00050001
+.*  BY SPECIFYING &F AND &L APPROPRIATELY, (E.G., R2,R0),               00060001
+.*    ALTERED REGISTER VALUES (IN THIS CASE, R1) CAN BE RETURNED        00070001
+.*    TO THE CALLER                                                     00080001
+.*    FOR FUTURE COMPATIBILITY (BAKR/PR) USE R0,R15             GP03034 00090008
+.*                                                              GP03034 00100008
+.* WHEN BASE= IS SPECIFIED, APPROPRIATE USINGS ARE ISSUED, OTHERWISE    00110008
+.*    THE CALLER'S USINGS REMAIN IN EFFECT.                     GP03034 00120008
+.*                                                              GP03034 00130008
+.*                                                              GP03034 00140008
+.*                                                              GP03034 00150008
+         GBLC  &ZZSUBR1,&ZZSUBR2                                GP00020 00160001
+         LCLC  &EX,&CMU                                         GP03029 00170008
+         LCLA  &I,&K                                            GP03034 00180008
+&ZZSUBR1 SETC  '&F'                                             GP00020 00190001
+&ZZSUBR2 SETC  '&L'                                             GP00020 00200001
+         AIF   ('&F' NE '').HAVE1                               GP00020 00210001
+&ZZSUBR1 SETC  'R0'                                             GP00020 00220001
+.HAVE1   AIF   ('&L' NE '').HAVE2                               GP00020 00230002
+&ZZSUBR2 SETC  '((16+&ZZSUBR1-1)-(16+&ZZSUBR1-1)/16*16)'        GP03029 00240007
+.HAVE2   ANOP  ,                                                GP00020 00250001
+&NM      STM   &ZZSUBR1,&ZZSUBR2,8(R13) SAVE CALLER'S REGISTERS GP00020 00260001
+         ST    R13,LOCSAVE1-LOCSAVE+4(,R13)  MAKE BACK CHAIN    GP03034 00270008
+         LA    R13,LOCSAVE1-LOCSAVE(,R13)  PUSH THE STACK       GP97332 00280000
+.*--------------------------------------------------------------------* 00290008
+.*  LOAD AND DECLARE BASE REGISTERS                                   * 00300008
+.*--------------------------------------------------------------------* 00310008
+&K       SETA  N'&BASE      MAX NUMBER OF BASES SPECIFIED       GP03034 00320008
+         AIF   (&K LT 1).MEND  *** NONE *** USE CALLER'S        GP03034 00330008
+&CMU     SETC  '&BASE(1)'    SET THE FIRST ONE                  GP03034 00340008
+         MACPARM &BASE(1),(R15),OP=LA                           GP03034 00350008
+         AIF   (&K LT 2).DOUSE                                  GP03034 00360008
+&I       SETA  1                                                GP03034 00370008
+         LA    &BASE(&K),2048                                   GP03034 00380008
+.BASLOOP AIF   (&I GE &K).DOUSE                                 GP03034 00390008
+&I       SETA  &I+1                                             GP03034 00400008
+         AIF   ('&BASE(&I)' EQ '').BASLOOP                      GP03034 00410008
+         LA    &BASE(&I),2048(&BASE(&K),&BASE(&I-1))            GP03034 00420008
+&CMU     SETC  '&CMU'.','.'&BASE(&I)'                           GP03034 00430008
+         AGO   .BASLOOP                                         GP03034 00440008
+.DOUSE   USING &NM,&CMU                                         GP03034 00450008
+.MEND    MEND  ,                                                GP03034 00460008

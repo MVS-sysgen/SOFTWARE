@@ -1,0 +1,35 @@
+         MACRO ,                                         NEW ON GP12298 00010000
+&NM      XXHINT &LEN=R2,&WK=R3,&W2=R4,&MAXL=,&MAX=,&ERR=                00020000
+.*   THIS MACRO IS USED TO VALIDATE INTEGER FIELDS SPECIFIED ON AN      00030000
+.*     FDIN MACRO WITH EXIT=                                            00040000
+.*   IT IS NOT NEEDED EXCEPT TO VALIDATE SPECIAL CONDITIONS, SUCH AS    00050000
+.*     POSITIVE VALUE ONLY, OR A MAXIMUM SMALLER THAN POSSIBLE (E.G.,   00060000
+.*     255 IN A THREE-DIGIT FIELD)                                      00070000
+.*                                                                      00080000
+         GBLC  &ZZXXHNM                                                 00090000
+         LCLC  &LER,&LAB                                                00100000
+&LER     SETC  '&ERR'                                                   00110000
+         AIF   ('&LER' NE '').USERR                                     00120000
+&LER     SETC  '&ZZXXHNM'.'R'     NORMAL ERROR LABEL                    00130000
+.USERR   ANOP  ,                                                        00140000
+&LAB     SETC  'ZZX'.'&SYSNDX'                                          00150000
+&NM      MVC   DBWK,=8X'F0'  CLEAR OUTPUT                               00160000
+         AIF   ('&MAXL' EQ '').NOLL                                     00170000
+         CH    &LEN,=AL2(&MAXL)   VALID LENGTH ?                        00180000
+         MACPARM &LER,OP=BH,OPR=BHR,MODE=ONE                            00190000
+.NOLL    LR    &WK,&LEN      COPY LENGTH                                00200000
+         BCTR  &WK,0         MAKE EXECUTE LENGTH                        00210000
+         LA    &W2,DBWK+8                                               00220000
+         SR    &W2,&LEN      LOCATION TO MOVE TO                        00230000
+         EX    &WK,&LAB.Z    MOVE ZONES                                 00240000
+         CLC   DBWK,=8X'F0'  NUMERIC ZONES ?                            00250000
+         MACPARM &LER,OP=BNE,OPR=BNER,MODE=ONE                          00260000
+         EX    &WK,&LAB.M    MOVE TO WORK AREA                          00270000
+         CVB   R0,DBWK       CONVERT                                    00280000
+         AIF   ('&MAX' EQ '').NOMAX                                     00290000
+         CL    R0,=A(&MAX)   VALID ?                                    00300000
+         MACPARM &LER,OP=BH,OPR=BHR,MODE=ONE                            00310000
+.NOMAX   B     *+4+6+6         RETURN TO CALLER                         00320000
+&LAB.Z   MVZ   DBWK(0),FIWTEXT                                          00330000
+&LAB.M   PACK  DBWK,FIWTEXT(*-*)                                        00340000
+         MEND  ,                                                        00350000

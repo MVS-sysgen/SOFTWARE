@@ -1,0 +1,56 @@
+         MACRO ,                                                        00010000
+&NM      MAPPARST &DSECT=YES,&PFX=PRS                  NEW 2003.091 GYP 00020000
+.*--------------------------------------------------------------------* 00030000
+.*  THIS MACRO MAPS INDIVIDUAL RETURN ENTRIES FROM A @PARSER CALL     * 00040000
+.*--------------------------------------------------------------------* 00050000
+         LCLC  &P                                                       00060000
+&P       SETC  '&PFX'                                                   00070000
+         AIF   ('&DSECT' NE 'YES').ALTSECT                              00080000
+&PFX.DSECT DSECT ,                                                      00090000
+         AGO   .NODSECT ,                                               00100000
+.ALTSECT ANOP  ,                                                        00110000
+&PFX.DSECT  DS 0D            PLANT A LABEL                              00120000
+.NODSECT AIF   ('&NM' EQ '').NOLABEL                                    00130000
+&NM      DS    0F                                                       00140000
+.NOLABEL AIF   ('&NM' EQ '&PFX'.'TENT').NOLTENT                         00150000
+&PFX.TENT   DS 0F            DEFINE START OF TEXT ENTRY                 00160000
+.NOLTENT ANOP  ,                                                        00170000
+&P.LINK  DC    A(0)          LINK TO NEXT ENTRY OR ZERO                 00180000
+&P.@TEXT DC    A(0)          ADDRESS OF TEXT STRING (OR ONE BLANK)      00190000
+&P.#TEXT DC    F'0'          LENGTH OF TEXT                             00200000
+&P.@KEY  DC    A(0)          ADDRESS OF MATCHED KEYWORD ENTRY           00210000
+&P.#THEX DC    XL8'0'        IF VALID HEX, VALUE                        00220000
+&P.#TINT DC    XL8'0'        IF VALID INTEGER, VALUE                    00230000
+&P.TYPE  DC    X'00'         ENTRY TYPE                                 00240000
+&P.CHAR  DC    C' '          END CHARACTER                              00250000
+.*                                                                      00260000
+&P.PROF  DC    X'00'         PROCESSING FLAG                            00270000
+&P.PFKEY EQU   X'80'           MATCHED KEYWORD                          00280000
+&P.PFSDT EQU   X'40'           SELF-DEFINING KEYWORD                    00290000
+&P.PFPOS EQU   X'C0'           MATCHED POSITIONAL                       00300000
+&P.PFTUE EQU   X'20'           USER EXIT TAKEN                          00310000
+&P.PFFUE EQU   X'10'           FAILED BY USER EXIT                      00320000
+&P.PFFKY EQU   X'08'           UNMATCHED KEYWORD                        00330000
+&P.PFFPO EQU   X'04'           EXCESSIVE POSITIONAL                     00340000
+&P.PFFOT EQU   X'02'           OTHER ERROR                              00350000
+&P.PFPAS EQU   X'01'           TESTED AND PASSED                        00360000
+.*                                                                      00370000
+&P.STOP  DC    X'00'         END CHARACTER CODE                         00380000
+&P.STBLK EQU   X'01'           TEXT ENDED AT TERMINAL BLANK/ZERO        00390000
+&P.STEQU EQU   X'02'           TEXT ENDED AT = OR (                     00400000
+&P.STEPL EQU   X'04'           TEXT ENDED AT (                          00410000
+&P.STEPR EQU   X'08'           TEXT ENDED AT )                          00420000
+&P.STCOM EQU   X'10'           TEXT ENDED AT COMMA OR SEMI-COLON        00430000
+&P.STQUO EQU   X'20'           TEXT IS A QUOTED STRING                  00440000
+&P.STPAR EQU   X'40'           ONE LEVEL OF PARENTHESES STRIPPED        00450000
+&P.STSUB EQU   X'80'           TEXT IS PART OF A LIST                   00460000
+.*                                                                      00470000
+&P.FLAGS DC    X'00'         FLAGS                                      00480000
+&P.FGHEX EQU   X'80'           TEXT IS VALID HEX                        00490000
+&P.FGINT EQU   X'40'           TEXT IS VALID INTEGER (ALSO)             00500000
+&P.FGUNQ EQU   X'10'           TEXT IS STRIPPED QUOTED STRING           00510001
+&P.KEYWD DC    CL8' '        EDITED TEXT FRAGMENT - FIRST EIGHT BYTES   00520000
+&P.$TEXT DC    CL64' '       EDITED TEXT FRAGMENT                       00530000
+         DS    0A              ALIGNMENT FOR NEXT ENTRY                 00540000
+&PFX.SIZE  EQU  *-&PFX.TENT   AREA SIZE                                 00550000
+         MEND  ,                                                        00560000

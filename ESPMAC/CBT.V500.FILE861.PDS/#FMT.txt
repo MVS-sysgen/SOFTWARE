@@ -1,0 +1,139 @@
+         MACRO ,                                                        00010000
+&NM      #FMT  &VALUE,&OLN,&SIGN=,&CENT=N,&GROUP=N,                    *00020000
+               &FILL=N,&LJUST=N,&SPACE=N,&TRUNC=N,&TYPE=DEC,           *00030000
+               &OPT=,&CALL=CALL,&MF=S                           GP04118 00040000
+.*--------------------------------------------------------------------* 00050000
+.*  THIS MACRO INVOKES NUMERIC FORMATTING SERVICES (VIA @FORMATS)     * 00060000
+.*                                                                    * 00070000
+.*  FIRST POSITIONAL IS ADDRESS/NAME OF VALUE                         * 00080000
+.*  SECOND POSITIONAL USED TO SPECIFY (FORCED) OUTPUT LENGTH          * 00090000
+.*                                                                    * 00100000
+.*  OTHER SERVICES:    SIGN=Y - NEGATIVE # PREFIXED BY MINUS(DEFAULT) * 00110000
+.*     CENT=Y  - FORMAT A DECIMAL NUMBER WITH TWO PLACES WWW.PP       * 00120000
+.*     GROUP=Y - FORMAT IN GROUPS OF THREE 123,456                    * 00130000
+.*     FILL=Y  - FILL WITH LEADING ZEROES  00012300                   * 00140000
+.*     LJUST=Y - LEFT JUSTIFY THE NUMBER, THEN ABUT TEXT              * 00150000
+.*     SPACE=Y - ONE SPACE BETWEEN NUMBER AND TEXT                    * 00160000
+.*     TRUNC=N - OVERFLOW (***) WHEN SIGNIFICANT DIGITS LOST (CC=4)   * 00170000
+.*                                                                    * 00180000
+.*  TYPE=TEXT ADDED. WHEN INPUT=OUTPUT LENGTH, MOVED AND TRANSLATED   * 00190000
+.*     OTHERWISE RIGHT JUSTIFIED EXCEPT WHEN LJUST=Y OR CENT=Y        * 00200000
+.*  FOR MF NOT =L, VALUE MAY NOW BE A LITERAL                         * 00210000
+.*                                                                    * 00220000
+.*     CLOSE=YES - FREE THEE DYNAMICALLY ACQUIRED WORK AREA           * 00230000
+.*                                                                    * 00240000
+.*  EXCEPT FOR LJUST=Y, ALL OUTPUT FIELDS WILL BE THE MAXIMUM LENGTH  * 00250000
+.*  POSSIBLE (TO MAINTAIN COMMON ALIGNMENT) DEPENDING ON THE INPUT    * 00260000
+.*  LENGTH.  OUTPUT LENGTH INCLUDES SIGN (UNLESS SIGN=N) AND COMMAS   * 00270000
+.*  AND PERIODS.  OR SPECIFY EXPLICIT OUTPUT LENGTH (NUM,LEN)         * 00280000
+.*  LJUST=Y WITH SHORT LENGTH TRUNCATES ON RIGHT, ELSE LEFT.          * 00290000
+.*                                                                    * 00300000
+.* INVOCATION WITH #FMT *END OR #FMT OPT=CLOSE RELEASES THE WORK AREA * 00310000
+.*                                                                    * 00320000
+.* MF=L EXPANDS A FOUR BYTE DEFINITION; REQUIRES ABSOLUTE OR SELF-    * 00330000
+.*  DEFINING TERMS FOR THE LENGTHS (USED WITH #OPMSG/SUBWTO)          * 00340000
+.*--------------------------------------------------------------------* 00350000
+.*  MAINTENANCE  2012-11-15  CHANGED DEFAULTS FOR SIGN TO DEPEND ON   * 00360000
+.*                           TYPE (N FOR ABS, HEX, AND TEXT; Y OTHER) * 00370000
+.*                                                                    * 00380000
+.*                                                                    * 00390000
+.*                                                                    * 00400000
+.*                                                                    * 00410000
+.*--------------------------------------------------------------------* 00420000
+         GBLC  &MACPLAB                                                 00430000
+&MACPLAB SETC  '&NM'                                                    00440000
+         LCLA  &EPYT,&OPTS                                              00450000
+         LCLA  &K,&I,&J,&N                                      GP04118 00460000
+         LCLB  &O01,&O02,&O04,&O08,&O10,&O20,&O40,&O80                  00470000
+         LCLC  &L,&LOL,&LIN,&LON                                GP04118 00480000
+&L       SETC  'L'''                                                    00490000
+         AIF   ('&VALUE' EQ '*END').QUIT                                00500000
+&N       SETA  N'&VALUE                                         GP04118 00510000
+         AIF   ('&OPT' EQ 'CLOSE' OR '&OPT' EQ 'END').QUIT              00520000
+&O80     SETB  ('&SIGN' EQ 'Y' OR '&SIGN' EQ 'YES')                     00530000
+&O40     SETB  ('&LJUST' EQ 'Y' OR '&LJUST' EQ 'YES')                   00540000
+&O20     SETB  ('&SPACE' EQ 'Y' OR '&SPACE' EQ 'YES')                   00550000
+&O10     SETB  ('&FILL' EQ 'Y' OR '&FILL' EQ 'YES')                     00560000
+&O08     SETB  ('&TRUNC' EQ 'Y' OR '&TRUNC' EQ 'YES')                   00570000
+.*&O04     SETB  ('&O04' EQ 'Y' OR '&O04' EQ 'YES')                     00580000
+&O02     SETB  ('&GROUP' EQ 'Y' OR '&GROUP' EQ 'YES')                   00590000
+&O01     SETB  ('&CENT' EQ 'Y' OR '&CENT' EQ 'YES')                     00600000
+&EPYT    SETA  1                                                GP04118 00610000
+         AIF   ('&VALUE'(1,1) EQ '''').LITT                     GP12319 00620000
+         AIF   ('&TYPE' EQ 'TXT' OR '&TYPE' EQ 'TEXT').LADD     GP04118 00630000
+&EPYT    SETA  2                                                        00640000
+         AIF   ('&TYPE' EQ 'DEC' OR '&TYPE' EQ 'PACKED').LADD           00650000
+&EPYT    SETA  3                                                        00660000
+         AIF   ('&TYPE' EQ 'ADEC' OR '&TYPE' EQ 'ABSDEC').LADD          00670000
+&EPYT    SETA  4                                                        00680000
+         AIF   ('&TYPE' EQ 'INT' OR '&TYPE' EQ 'INTEGER').LADD          00690000
+&EPYT    SETA  5                                                        00700000
+         AIF   ('&TYPE' EQ 'AINT' OR '&TYPE' EQ 'ABSINT').LADD          00710000
+&EPYT    SETA  6                                                        00720000
+         AIF   ('&TYPE' EQ 'SHEX').LADD                                 00730000
+&EPYT    SETA  7                                                        00740000
+         AIF   ('&TYPE' EQ 'HEX' OR '&TYPE' EQ 'X').LADD        GP12319 00750000
+&EPYT    SETA  8                                                        00760000
+         AIF   ('&TYPE' EQ 'SBIN' OR '&TYPE' EQ 'SBIT').LADD            00770000
+&EPYT    SETA  9                                                        00780000
+         AIF   ('&TYPE' EQ 'BIN' OR '&TYPE' EQ 'BINARY').LADD           00790000
+         MNOTE 8,'#FMT: INVALID DATA TYPE &TYPE '               GP12319 00800000
+&EPYT    SETA  7             DO AS HEX                                  00810000
+         AGO   .LADD                                            GP12319 00820000
+.LITT    AIF   ('&TYPE' EQ '' OR '&TYPE' EQ 'TEXT' OR '&TYPE' EQ 'TXT')*00830000
+               .LADD                                                    00840000
+         MNOTE 4,'#FMT: QUOTED STRING INVALID WITH TYPE &TYPE'  GP12319 00850000
+.LADD    AIF   (T'&SIGN NE 'O').LADDLE   HAVE SIGN PREFERENCE   GP12319 00860000
+&O80     SETB  (&O80 OR ('010101010'(1,&EPYT) EQ '1'))          GP12319 00870000
+.LADDLE  ANOP  ,                                                GP12319 00880000
+&OPTS    SETA  &O80*128+&O40*64+&O20*32+&O10*16                         00890000
+&OPTS    SETA  &OPTS+&O08*8+&O04*4+&O02*2+&O01                          00900000
+         AIF   ('&MF' EQ 'L').DCONLY                            GP04118 00910000
+         AIF   ('&VALUE'(1,1) NE '''').NOLIT                    GP04118 00920000
+&EPYT    SETA  K'&VALUE-2    BORROW VARIABLE                    GP04118 00930000
+&LIN     SETC  '&EPYT'       SET INPUT LENGTH DEFAULT           GP04118 00940000
+&EPYT    SETA  1             FORCE TEXT MODE FOR LITERAL        GP04118 00950000
+         AIF   (&N LT 2).LITLEN                                 GP04118 00960000
+&LIN     SETC  '&VALUE(2)'                                      GP04118 00970000
+.LITLEN  MACPARM R0,=AL1(&OLN,&LIN,&EPYT,&OPTS),OP=L            GP04118 00980000
+         MACPARM R1,=C&VALUE(1)                                 GP04118 00990000
+         AGO   .CMNUML                                          GP04118 01000000
+.NOLIT   AIF   ('&OLN' EQ '').NOLOAD                            GP04118 01010000
+         MACPARM R0,12,=Y(&OLN*256),OP=ICM,MODE=THREE USER'S LENGTH     01020000
+         MACPARM R0,3,=Y(&EPYT*256+&OPTS),OP=ICM,MODE=THREE TYPE        01030000
+         AGO   .TESTCC                                                  01040000
+.NOLOAD  MACPARM R0,&EPYT*256+&OPTS,OP=LA   LOAD FORMATTING SELECTION   01050000
+.TESTCC  AIF   (&N LT 2).NONUML                                 GP04118 01060000
+         MACPARM R1,&VALUE(1),OP=LA LOAD ADDRESS OF PACKED COUNTER      01070000
+         MACPARM R0,4,=AL1(&VALUE(2)),OP=ICM,MODE=THREE                 01080000
+         AGO   .CMNUML                                                  01090000
+.NONUML  MACPARM R1,&VALUE,OP=LA LOAD ADDRESS OF PACKED COUNTER         01100000
+         MACPARM R0,4,=AL1(&L&VALUE),OP=ICM,MODE=THREE                  01110000
+         AGO   .CMNUML                                                  01120000
+.QUIT    MACPARM R0,(R0),OP=SR,OPR=SR,MODE=EVEN SET THE SHUTDOWN SIGNAL 01130000
+         MACPARM R1,(R1),OP=SR,OPR=SR,MODE=EVEN   R0=R1=0       GP03122 01140000
+.CMNUML  AIF   ('&CALL' EQ 'CALL').LOAD@                        GP03287 01150000
+         AIF   ('&CALL' EQ 'CALLA').LOADA                       GP03287 01160000
+         AIF   ('&CALL' EQ 'CALLV').LOADV                       GP03287 01170000
+         MNOTE 4,'#CNVRT: UNRECOGNIZED CALL=&CALL '             GP03287 01180000
+.LOADV   MACPARM R15,=V(@FORMATS),OP=L                          GP03287 01190000
+         AGO   .LOADCOM                                         GP03287 01200000
+.LOADA   MACPARM R15,=A(@FORMATS),OP=L                          GP03287 01210000
+         AGO   .LOADCOM                                         GP03287 01220000
+.LOAD@   MACPARM R15,@FORMATS,OP=L   LOAD CONVERSION ROUTINE ADDRESS    01230000
+.LOADCOM ANOP  ,                                                GP03287 01240000
+         BASR  R14,R15       CALL FORMATTING SERVICES                   01250000
+         MEXIT ,                                                        01260000
+.DCONLY  AIF   (&N LT 2).DCNUML                                 GP04118 01270000
+&LIN     SETC  '&VALUE(2)'                                      GP04118 01280000
+         AGO   .QUOUT                                           GP04118 01290000
+.DCNUML  ANOP  ,                                                GP04118 01300000
+&LIN     SETC  '&L'.'&VALUE'                                    GP04118 01310000
+.QUOUT   AIF   ('&OLN' EQ '').QUODEF                            GP04118 01320000
+&LON     SETC  '&OLN'                                           GP04118 01330000
+         AGO   .DCDC                                            GP04118 01340000
+.QUODEF  ANOP  ,                                                GP04118 01350000
+&LON     SETC  '0'                                              GP04118 01360000
+.*                                                              GP04118 01370000
+.DCDC    MACPARM AL1(&LON,&LIN,&EPYT,&OPTS),MODE=ONE,OP=DC      GP04118 01380000
+         MEND  ,                                                        01390000

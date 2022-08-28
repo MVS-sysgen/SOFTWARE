@@ -1,0 +1,73 @@
+         MACRO ,                                                        00010000
+&NM      SERVCALL &CODE,&ADDR,&REG2,&ERR=,&CC0=,&CC4=,&CC8=,&LEN=,     *00020000
+               &MODE=BAL,&OPT=                                  GP06287 00030000
+         GBLC  &SRVCM@R,&MACPLAB                                 81148  00040000
+         GBLB  &MVSXA                                           GP04234 00050000
+         LCLA  &I,&J,&K,&OPA                                    GP06287 00060000
+         LCLB  &F0,&F1,&F2,&F3,&F4,&F5,&F6,&F7                  GP06287 00070000
+         LCLC  &LERR,&DC                                         81148  00080000
+         AIF   ('&MACPLAB' NE '' AND '&NM' NE '').LABTWO        GP12043 00090000
+         AIF   ('&MACPLAB' NE '').LABCOM                        GP12043 00100000
+         AGO   .LABSET                                          GP12043 00110000
+.LABTWO  MACPARM MODE=LBL    EXPAND LABEL FOR MACPLAB           GP12043 00120000
+.LABSET  ANOP  ,                                                GP12043 00130000
+&MACPLAB SETC  '&NM'                                            GP12043 00140000
+.LABCOM  MACPARM R2,&REG2,NULL=SKIP                              85070  00150000
+         MACPARM R1,&ADDR,NULL=SKIP                                     00160000
+         AIF   ('&CODE' EQ '').NOR0                                     00170000
+         AIF   ('&CODE'(1,1) EQ '(').REG0                               00180000
+         MACPARM R0,VEN&CODE                                            00190000
+         AIF   ('&LEN' EQ '').NOR0                               81148  00200000
+         MACPARM R0,8,=AL1(&LEN),OP=ICM,MODE=THREE               81148  00210000
+         AGO   .NOR0                                                    00220000
+.REG0    MACPARM R0,&CODE                                               00230000
+.NOR0    AIF   (T'&OPT EQ 'O').NOOPT   NO OPTIONS               GP06287 00240000
+&K       SETA  N'&OPT                                           GP06287 00250000
+&J       SETA  0             COUNT OF PROCESSED OPERANDS        GP06287 00260000
+&I       SETA  0             CLEAR INDEX                        GP06287 00270000
+.ITMLOOP AIF   (&I GE &K).ITMTEST                               GP06287 00280000
+&I       SETA  &I+1                                             GP06287 00290000
+&DC      SETC  '&OPT(&I)'                                       GP06287 00300000
+         AIF   ('&DC' EQ '').ITMLOOP  IGNORE REAL NULL          GP06287 00310000
+         AIF   ('&DC' EQ 'NONE').ITMLOOP  IGNORE SEMANTIC NULL  GP06287 00320000
+&J       SETA  &J+1                                             GP06287 00330000
+&F0      SETB  (&F0  OR '&DC' EQ 'LIST')                        GP06287 00340000
+&F0      SETB  (&F0  OR '&DC' EQ 'TEXT')                        GP06287 00350000
+&F6      SETB  (&F6  OR '&DC' EQ '2'  OR '&DC' EQ '3')          GP06287 00360000
+&F7      SETB  (&F7  OR '&DC' EQ '1'  OR '&DC' EQ '3')          GP06287 00370000
+         AGO   .ITMLOOP                                         GP06287 00380000
+.ITMTEST ANOP  ,                                                GP06287 00390000
+&OPA     SETA  &F0+&F1+&F2+&F3+&F4+&F5+&F6+&F7                  GP06287 00400000
+         AIF   (&OPA EQ &J).DONOPT  EACH OPERAND VALID ?        GP06287 00410000
+.BADOPT  MNOTE 4,'SERVCALL: ERROR - OPT PARAMETER BAD: &OPT'    GP06287 00420000
+.DONOPT  AIF   (&J EQ 0).NOOPT    SKIP IF ONLY NULLS            GP06287 00430000
+         MACPARM R0,4,=AL1(&OPA),OP=ICM,MODE=THREE              GP06287 00440000
+.NOOPT   MACPARM R15,@SERVICE,OP=L  GET MODULE ADDRESS                  00450000
+         AIF   ('&MODE' EQ 'BAL' OR '&MODE' EQ '').BALMODE       90337  00460000
+         AIF   ('&MODE' EQ 'SYNCH').SYNMODE                      90337  00470000
+         MNOTE 8,'INVALID MODE=&MODE'                            90337  00480000
+.SYNMODE ANOP  ,                                                 90337  00490000
+&MACPLAB SYNCH (15),RESTORE=YES  INVOKE AND SAVE MODE            90337  00500000
+         AGO   .COMMODE                                          90337  00510000
+.BALMODE AIF   (&MVSXA).BASMODE                                 GP04234 00520000
+&MACPLAB BALR  R14,R15       CALL THE @SERVICE ROUTINE          GP04234 00530000
+         AGO   .COMMODE                                         GP04234 00540000
+.BASMODE ANOP  ,                                                 90337  00550000
+&MACPLAB BASSM R14,R15       CALL THE @SERVICE ROUTINE                  00560000
+.COMMODE AIF   ('&CC0' EQ '' AND '&CC4' EQ '' AND '&CC8' EQ '').NOCC    00570000
+         AIF   ('&ERR' EQ '' OR '&ERR' EQ 'NO').NODUPE           81148  00580000
+         MNOTE 4,'CC= AND ERR= ARE MUTUALLY EXCLUSIVE'           81148  00590000
+.NODUPE  ANOP  ,                                                 81148  00600000
+&MACPLAB SETC  ''                                                81148  00610000
+         CH    R15,=H'4'     TEST RETURN                         81148  00620000
+         MACPARM &CC0,OP=BL,OPR=BLR,MODE=ONE,NULL=SKIP          GP02241 00630000
+         MACPARM &CC4,OP=BE,OPR=BER,MODE=ONE,NULL=SKIP          GP02241 00640000
+         MACPARM &CC8,OP=BH,OPR=BHR,MODE=ONE,NULL=SKIP          GP02241 00650000
+         AGO   .MEND                                             81148  00660000
+.NOCC    AIF   ('&ERR' EQ 'NO').MEND                             81148  00670000
+&LERR    SETC  '&ERR'                                            81148  00680000
+         AIF   ('&LERR' NE '').DOERR                             81148  00690000
+&LERR    SETC  '&SRVCM@R'                                        81148  00700000
+         AIF   ('&LERR' EQ '').MEND                              81148  00710000
+.DOERR   BXH   R15,R15,&LERR  GO TO SET ERROR MESSAGE            81148  00720000
+.MEND    MEND  ,                                                        00730000

@@ -1,0 +1,105 @@
+         MACRO ,                                                        00010000
+         MAPJOBWK &DOC=NO    COMMON I/O WORK AREA       ADDED ON 88094  00020000
+         COPY  OPTIONS                                                  00030000
+         GBLC  &VERSION,&JQENUML                                        00040000
+&JQENUML SETC  '5'                                                      00050000
+         AIF   ('&HASP' EQ 'JES2').LAB5                                 00060000
+   AIF ('&VERSION'(1,1) LT '4' AND '&VERSION'(1,1) GE '0').LAB3         00070000
+&JQENUML SETC  '4'           FOUR BYTE JOB NUMBER                       00080000
+         AGO   .LAB5                                                    00090000
+.LAB3    ANOP  ,                                                        00100000
+&JQENUML SETC  '3'           THREE BYTE JOB NUMBER                      00110000
+.LAB5    ANOP  ,                                                        00120000
+IOWORK   DSECT ,                                                        00130000
+         MAPIOWK ,           DEFINE $JCL WORK SPACE                     00140000
+         PUSH  PRINT                                             88094  00150000
+         AIF   ('&DOC' EQ 'NO').NODOC                            88094  00160000
+         PRINT ON,GEN                                            88094  00170000
+.NODOC   SPACE 1                                                        00180000
+         ORG   DRBUF         RE-USE BUFFER SPACE FOR DATA               00190000
+LOCDB    DC    2D'0'                                                    00200000
+SAVE29   DC    8F'0'         SAVE AREA                                  00210000
+SAFE6    DC    9F'0'         SECOND SAVE AREA                           00220000
+JAWWORK  DS    0A            POINTERS AND STUFF                         00230000
+JTIOT    DC    F'0'          CURRENT IOT ADDRESS                        00240000
+JTIOTOF  DC    F'0'          CURRENT IOT OFFSET                         00250000
+JTIOT1   DC    F'0'          FIRST IOT ADDRESS                          00260000
+JTBUFAD  DC    F'0'          NEXT AVAILABLE DSIPLAY BUFFER LINE         00270000
+JTDSKEY  DC    F'0'          DATABLOCK ID WORD                          00280000
+OFFSDDB  DC    F'0'          IOT OFFSET TO FIRST PDDB (VAR. IN 1.6)     00290000
+JSPIOT   DC    F'0'          CURRENT SPIN IOT ADDRESS                   00300000
+JSPIOTOF DC    F'0'          CURRENT SPIN IOT OFFSET                    00310000
+JSPIOT1  DC    F'0'          FIRST SPIN IOT ADDRESS                     00320000
+JSPACCT  DC    CL4' ',CL8' ' CCSI ACCOUNT NUMBER (+PAD)                 00330000
+PTRBASE  DC    A(0)          ADDRESS OF FIRST RECORD POINTER            00340000
+PTRLAST  DC    A(0)          LAST AVAILABLE ENTRY                       00350000
+PTRINT   DC    F'0'          ENTRY INTERVAL                             00360000
+MAXLEN   DS    F'0'          CURRENT BUFFER SIZE                GP08362 00370000
+RECFOUND DC    F'0'          LAST RECORD FOUND BY FIND                  00380000
+HOROFF   DC    H'0'          HORIZONTAL INDENT (WINDOWING OPTION)       00390000
+FNDLEN   DC    H'0'          LENGTH OF FIND TEXT                        00400000
+FNDLEN2  DC    H'0'          LENGTH OF FIND TEXT2                88284  00410000
+FNDTEXT  DC    CL40' '       COMPARE TEXT                               00420000
+FNDTEXT2 EQU   FNDTEXT+20,20,C'C'  SUB-ALLOCATED SECOND STRING   88284  00430000
+FNDDESC  DC    X'0000'       SYSLOG - DESCRIPTORS                88284  00440000
+FNDTIME  DC    2CL6' '       SYSLOG - TIME RANGE                 88284  00450000
+FNDFG    DC    X'00'         SYSLOG - CONTROL FLAG               88284  00460000
+FFGDESC  EQU   X'80'           MATCH ON DESCRIPTOR CODE(S)       88284  00470000
+FFGTIME  EQU   X'40'           MATCH ON TIME                     88284  00480000
+FFGTIMED EQU   X'20'           TIME MATCHED                      88284  00490000
+MODEFG   DC    X'0'          PROCESSING OPTIONS                         00500000
+MFSCALE  EQU   X'80'           SHOW COLUMN SCALE                        00510000
+MFNUM    EQU   X'40'           SHOW RCD NUMBERS ON EACH LINE            00520000
+MFCC     EQU   X'20'           SHOW MACHINE OR ANSI CARR. CONTROL       00530000
+MFWRAP   EQU   X'10'           DISPLAY FULL (WRAPPED) TEXT (NO WINDOW)  00540000
+MFUPP    EQU   X'08'           FOLD UPPER CASE ON FIND                  00550000
+MFHEX    EQU   X'04'           HEX TEXT                                 00560000
+MFFIND   EQU   X'01'           FIND REQUEST MADE                        00570000
+JSVFLAGS DC    X'00'         PRINT/SAVE FLAGS                           00580000
+JFFAIL   EQU   X'80'           REQUEST IN ERROR                         00590000
+JFERR    EQU   X'40'           ERROR DURING PROCESSING                  00600000
+JFNULL   EQU   X'20'           NO DATA PROCESSED                        00610000
+JFABE    EQU   X'01'           DCB ABEND ENTERED                        00620000
+JSVCOUNT DC    F'0'          DATA SET RECORD COUNT                      00630000
+JSVMTTR  DC    XL4'0'        DATA SET MTTR                              00640000
+JSVRET   DC    XL4'0'        #RECS COPIED / SYS ABEND CODE / ERROR CODE 00650000
+JSVCLEAR EQU   JSVFLAGS,*-JSVFLAGS,C'X'  AREA TO CLEAR IN $JC           00660000
+         SPACE 1                                                        00670000
+JADWORK  DS    0F            FUNCTION WORK AREA                         00680000
+RECMAX   DC    F'0'          HIGHEST RECORD EVER READ                   00690000
+CURTTR   DC    F'0'          TTR OF CURRENT BLOCK                       00700000
+REQTTR   DC    F'0'          REQUESTED TTR                              00710000
+CURREC   DC    F'0'          CURRENT RECORD NUMBER                      00720000
+REQREC   DC    F'0'          REQUESTED RECORD NUMBER                    00730000
+TOPREC   DC    F'0'          RECORD ON TOP OF PAGE                      00740000
+CURROF   DC    F'0'          OFFSET TO CURRENT RECORD IN BLOCK  GP08362 00750000
+TOPTTR   DC    F'0'          BLOCK OF TOP LINE                  GP08362 00760000
+TOPOFF   DC    F'0'          OFFSET OF TOP LINE                 GP08362 00770000
+TOPFG    DC    X'00'         EXT. FUNCTION FLAG                 GP08362 00780000
+TFSET    EQU   X'80'           TOP TTR/OFF SET                  GP08362 00790000
+TFRET    EQU   X'40'           RETURN - RESET TO TOP            GP08362 00800000
+TFERR    EQU   X'20'           ERROR DURING SAVE/PRINT          GP08362 00810000
+PROFG    DC    X'00'         PROCESSING FLAG                            00820000
+PFEOF    EQU   X'80'           END-FILE PROCESSED                       00830000
+PFMSG    EQU   X'01'           EOF MSG ON SCREEN                        00840000
+SAVECC   DS    C             CARRIAGE CONTROL FOR CURRENT RECORD        00850000
+SAVFLAG1 DS    X             COPY OF LRCFLAG1                           00860000
+TOPMSG   DC    CL20' '       ERROR MESSAGE FROM SAVE/PRINT/FIND GP08362 00870000
+JAWCLEAR EQU   JAWWORK,*-JAWWORK,C'A'  GLOBAL CLEAR                     00880000
+JADCLEAR EQU   JADWORK,*-JADWORK,C'A'  FUNCTION CLEAR                   00890000
+         SPACE 1                                                        00900000
+JTPROC   DS    CL8,C         PROC STEP                                  00910000
+JTSTEP   DS    CL8,C         STEP NAME                                  00920000
+JTDDN    DS    0CL8,C        DDNAME                                     00930000
+JTITLE   DS    CL7,C         TITLE - JCT/LOG/JCL/MSG/DSN=NNN            00940000
+JQUE     DS    CL4,C         QUEUE                                      00950000
+JNAME    DS    CL8,C         JOB NAME                                   00960000
+JCTLPA1  DS    C'('                                                     00970000
+JNUM     DS    CL&JQENUML    JOB NUMBER                                 00980000
+JCTLPA2  DS    C') '                                                    00990000
+JCTTRA   DS    CL8           TTR OF JCT OR CURRENT MTTR                 01000000
+JTSHORT  EQU   JTDDN,*-JTDDN,C'C'  NARROW TITLE                         01010000
+JTWIDE   EQU   JTPROC,*-JTPROC,C'C'  WIDE TITLE                         01020000
+IOBUF    DS    0D ,          INPUT BUFFER FOR JCT/IOT/BUFFER            01030000
+         POP   PRINT                                             88094  01040000
+         MEND  ,                                                        01050000

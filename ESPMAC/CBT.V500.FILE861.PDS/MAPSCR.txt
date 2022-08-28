@@ -1,0 +1,54 @@
+         MACRO ,                                        ADDED ON 88211  00010000
+&NM      MAPSCR &PREFIX=SU,&DSECT=YES,&EXPARM=NO SCRWORK MAPPING        00020000
+         LCLC  &DS,&P                                                   00030000
+&P       SETC  '&PREFIX'                                                00040000
+&DS      SETC  '&P'.'PARM'                                              00050000
+         AIF   ('&NM' EQ '').HAVEDS                                     00060000
+&DS      SETC  '&NM'                                                    00070000
+.HAVEDS  AIF   ('&DSECT' NE 'YES').NODSECT                              00080000
+&DS      DSECT ,             MAPPING OF SCRWORK EXPANSION               00090000
+         AGO   .COMDS                                                   00100000
+.NODSECT ANOP  ,                                                        00110000
+&DS      DS    0H            MAPPING OF SCRWORK EXPANSION               00120000
+.COMDS   ANOP  ,                                                        00130000
+&P.DDNAM  DC   CL8' '        DDNAME (BTAM OR VTAM)                      00140000
+&P.DDALT  DC   CL8' '        ALTERNATE DDNAME (BTAM) OR LU ID (VTAM)    00150000
+&P.HIL    DC    X'07'        MASK FOR EXTENDED HIGH-LIGHTING            00160000
+&P.LPP    DC   X'0'          PREFERRED LINES PER PAGE                   00170000
+&P.FILL   DC   X'0'          TRANSLATE TABLE UNPRINTABLE CHARACTER      00180000
+&P.WIDTH  DC   X'0'          MAXIMUM WIDTH TO USE (0, 80 OR 132)        00190000
+&P.TIT#   DC   X'00'         NUMBER OF TITLES                           00200000
+&P.FOOT#  DC   X'00'         NUMBER OF FOOTERS                          00210000
+&P.COL    DC   X'07'         MASK FOR EXTENDED COLOR                    00220000
+&P.PRFG   DC   X'00'         OPTION FLAGS                               00230000
+&P.FVTAM  EQU  X'80'           USE VTAM RATHER THAN BTAM                00240000
+&P.PGXLST EQU  X'04'           EXIT LIST SUPPLIED                84169  00250000
+&P.PUPAGE EQU  X'02'           PAGE NUMBERS MAINTAINED IN USER AREA     00260000
+&P.PGPAGE EQU  X'01'           PAGE NUMBER FEED-BACK                    00270000
+*        PAGE NUMBERS PRESENT ONLY IF USER REQUESTED FEED-BACK          00280000
+*        OR USER UPDATING.  EXIT LIST (IF PRESENT) FOLLOWS PAGE #S.     00290000
+&P.PAGE   DC   H'0'          CURRENT PAGE NUMBER                        00300000
+&P.SPAGE  DC   H'0'          PAGE NUMBER SINCE LAST TITLE REQUEST       00310000
+&P.EXLST DC    F'0'          OPTIONAL EXIT LIST                  84169  00320000
+*        EXIT LIST FORMAT : 6 BYTES PER ENTRY                    84169  00330000
+*          FIRST BYTE: TYPE FLAGS AND END OF LIST X'80'          84169  00340000
+*          SECOND BYTE: TITLE, FOOTER OR LINE NUMBER             84169  00350000
+*          FOUR BYTES: 0 OR EXIT ADDRESS                         84169  00360000
+&P.XOTYPE EQU   0,1,C'B'     EXIT LIST - TYPE FIELD              84171  00370000
+&P.XFEND EQU   X'80'           END OF LIST                       84169  00380000
+&P.XFOOT EQU   X'04'           FOOTER EXIT                       84169  00390000
+&P.XFTIT EQU   X'02'           TITLE EXIT                        84169  00400000
+&P.XFLIN EQU   X'01'           LINE EXIT                         84169  00410000
+         AIF   ('&EXPARM' EQ 'NO').MEND                          84171  00420000
+&P.XONUM EQU   1,1,C'F'      OFFSET TO LINE NUMBER               84171  00430000
+&P.XOADDR EQU  2,4,C'A'      OFFSET TO EXIT ADDRESS              84171  00440000
+&P.XOLEN EQU   6               LENGTH OF ONE EXIT ENTRY          84171  00450000
+&P.XPLIST DSECT ,                                                84171  00460000
+&P.XPTYPE DS   X             EXIT TYPE                           84171  00470000
+&P.XPNUM  DS   X             LINE NUMBER OR MAXIMUM # OF HDR/FTR 84171  00480000
+&P.XPSIZE DS   H             MAXIMUM LINE WIDTH, INCL. RDW+CC    84171  00490000
+&P.XPPWAD DS   A             ADDRESS OF PRINTER WORK AREA        84171  00500000
+&P.XPSAVE DS   A             ORIGINAL SAVE AREA                  84171  00510000
+&P.XPLINE DS   A             ADDRESS OF PRINT LINE(S)            84171  00520000
+         DS    A               RESERVED                          84171  00530000
+.MEND    MEND  ,                                                        00540000

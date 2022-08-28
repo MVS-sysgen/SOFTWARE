@@ -1,0 +1,32 @@
+         MACRO ,                                                        00010000
+&NM      GETJESID &ASCBREG=R15,&HCTREG=R15,&SVT=,&HCT=ADDRHCT,&SVTREG=R*00020000
+               1,&ERR=EXCXCB                                            00030000
+.********************************************************************** 00040000
+.*                                                                   ** 00050000
+.*   EXHIBIT SUBROUTINE TO FIND JES2 INFORMATION                     ** 00060000
+.*                                                                   ** 00070000
+.********************************************************************** 00080000
+&NM      MVC   INVOKE(8),=CL8'* JES2 *'                                 00090000
+         SLR   R0,R0         SET FUNCTION = GET SUBSYSTEM        87268  00100000
+         BALS  R14,EXWMVS    GET EXTENDED FUNCTION               87268  00110000
+         MVC   INVOKE+2(4),EXWJ2NAM  GET CURRENT SUBSYSTEM NAME         00120000
+         MACPARM R15,R15,&ERR,OP=BXH,MODE=THREE                 GP08225 00130000
+         L     R0,EXWJ2AID   GET JES ASID                               00140000
+         BALS  R14,EXWGETAS  CHECK STATUS                               00150000
+         AIF   ('&ASCBREG' EQ '').SKPASCB                       GP08225 00160000
+         LTR   &ASCBREG,R15  TEST ASCB ADDRESS                  GP08225 00170000
+         MACPARM &ERR,OP=BZ,OPR=BZR,MODE=ONE     JES GONE ?     GP08225 00180000
+.SKPASCB ICM   &SVTREG,15,HASPHCT  TEST SVT ADDRESS             GP08225 00190000
+         MACPARM &ERR,OP=BZ,OPR=BZR,MODE=ONE     JES GONE ?     GP08225 00200000
+         USING SSVT,&SVTREG                                     GP08225 00210000
+         MACPARM &SVTREG,&SVT,OP=ST,OPR=LR,NULL=SKIP            GP08225 00220000
+         CLC   $SVQLOKE,EXWJ2NAM  NOT CLOBBERED ?                       00230000
+         MACPARM &ERR,OP=BNE,OPR=BNER,MODE=ONE   JES GONE ?     GP08225 00240000
+         MVC   EXWCRMID,EXWJ2AID  SET ASID                              00250000
+         AIF   ('&HCTREG' EQ '').SKIPHCT                        GP08225 00260000
+         MACPARM &HCTREG,15,$SVHCT,OP=ICM,MODE=THREE,NULL=SKIP  GP08225 00270000
+         AIF   ('&HCT' EQ '').SKIPHCT                                   00280000
+         ST    &HCTREG,&HCT  STASH $HCT ADDRESS                 GP08225 00290000
+.SKIPHCT NEED  $HCT          FORCE HCT AND SVT                          00300000
+         DROP  &SVTREG                                                  00310000
+         MEND  ,                                                        00320000

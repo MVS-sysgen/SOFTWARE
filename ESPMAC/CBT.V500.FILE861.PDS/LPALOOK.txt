@@ -1,0 +1,51 @@
+         MACRO ,                                                        00010000
+&NM      LPALOOK &EP=,&EPLOC=,&DCB=,&MEMBER=,&ALIAS=,&ERR=              00020000
+.*--------------------------------------------------------------------* 00030000
+.*  LPALOOK INVOKES SUBROUTINE SUBLPALK, WHICH USES CSVQUERY TO LOOK  * 00040000
+.*    FOR THE MODULE REQUESTED BY EITHER EP=, OR NAMED IN EPLOC.      * 00050000
+.*  WHEN THE DCB IS NON-ZERO, THE MODULE IS LOADED IF NOT IN AN LPA   * 00060000
+.*    LIST. LOAD USES DCB=0 WHEN DCB PARAMETER<256                    * 00070000
+.*                                                                    * 00080000
+.*  AN EXTRN IS ISSUED UNLESS THE MODULE WAS NAMED IN A SERVLOAD REQ. * 00090000
+.*--------------------------------------------------------------------* 00100000
+         GBLC  &MACPLAB                                                 00110000
+         GBLC  &SRVLMOD(20),&SRVLDEL(20)                                00120000
+         GBLB  &MVSXA                                           GP04234 00130000
+         GBLB  &SRVBMOD(20)                                             00140000
+         GBLA  &SRVNMOD                                                 00150000
+         GBLB  &ZLPAKFG                                                 00160000
+         LCLA  &I                                                       00170000
+         LCLC  &CALLMOD                                                 00180000
+&CALLMOD SETC  '=A(SUBLPALK)'    LPA LOOKUP/LOAD MODULE                 00190000
+&MACPLAB SETC  '&NM'                                                    00200000
+.LOOKLUK AIF   (&I GE &SRVNMOD).SKIPLUK  NOT IN SERVLOAD LIST           00210000
+&I       SETA  &I+1                                                     00220000
+         AIF   ('&SRVLDEL(&I)' NE 'SUBLPALK').LOOKLUK                   00230000
+&CALLMOD SETC  '&SRVLMOD(&I)'  USE SERVLOAD ADDRESS                     00240000
+         AGO   .COMMLUK                                                 00250000
+.SKIPLUK AIF   (&ZLPAKFG).COMMLUK                                       00260000
+         EXTRN SUBLPALK                                                 00270000
+&ZLPAKFG SETB  1                                                        00280000
+.COMMLUK AIF   ('&EP' EQ '' AND '&EPLOC' EQ '').OMIT                    00290000
+         AIF   ('&EP' NE '' AND '&EPLOC' NE '').DUPE                    00300000
+         MACPARM R0,&DCB,NULL=0                                         00310000
+         AIF   ('&EP' EQ '').NOEP                                       00320000
+         MACPARM R1,=CL8'&EP '                                          00330000
+         AGO   .COMMON                                                  00340000
+.NOEP    MACPARM R1,&EPLOC                                              00350000
+.COMMON  MACPARM R15,&CALLMOD,OP=L                                      00360000
+         AIF   (&MVSXA).DOBAS                                   GP04234 00370000
+         MACPARM R14,(R15),OP=BAL,OPR=BALR                              00380000
+         AGO   .NOBAS                                                   00390000
+.DOBAS   MACPARM R14,(R15),OP=BAS,OPR=BASR                              00400000
+.NOBAS   AIF ('&MEMBER' EQ '' AND '&ALIAS' EQ '' AND '&ERR' EQ '').MEND 00410000
+         MACPARM R15,=H'4',OP=CH  CHECK RETURN CODE                     00420000
+         MACPARM &MEMBER,OP=BL,OPR=BLR,MODE=ONE,NULL=SKIP               00430000
+         MACPARM &ALIAS,OP=BE,OPR=BER,MODE=ONE,NULL=SKIP                00440000
+         MACPARM &ERR,OP=BH,OPR=BHR,MODE=ONE,NULL=SKIP                  00450000
+         MEXIT ,                                                 81169  00460000
+.OMIT    MNOTE 8,'NEITHER EP= NOR EPLOC= SUPPLIED'               81169  00470000
+         AGO   .DEFLAB                                           81169  00480000
+.DUPE    MNOTE 8,'EP= AND EPLOC= ARE MUTUALLY EXCLUSIVE'         81169  00490000
+.DEFLAB  MACPARM MODE=LBL    EXPAND LABEL ONLY                          00500000
+.MEND    MEND  ,                                                        00510000

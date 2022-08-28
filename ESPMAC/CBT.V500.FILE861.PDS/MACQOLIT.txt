@@ -1,0 +1,92 @@
+         MACRO ,                                                        00010000
+       MACQOLIT &STR,&LEN=   DETERMINE LENGTH OF STRING; MAKE QUOTED    00020000
+.*                                                                      00030000
+.*   INNER MACRO FOR MACRO PROCESSING                                   00040000
+.*       MACQOLIT &STR  WHERE &STR IS UNQUOTED, QUOTED, OR CONSTANT     00050000
+.*                 FORMAT (E.G.,  XYZ, 'text', X'12AB', CL8'HI', =C'A') 00060000
+.*   RETURNS:                                                           00070000
+.*       MACPNUL   FOR OMITTED PARAMETER OR EMPTY STRING ('')           00080000
+.*       MACQUOT=0  IF UNQUOTED; &STR IN MACQSTR, K'&STR IN MACPLEN     00090000
+.*       MACQUOT=1  =CLnn'text' OR =X'hex' - LITERAL FORMAT             00100000
+.*                                                                      00110000
+         GBLA  &MACPLEN      RETURN SIGNIFICANT LENGTH OF STRING        00120000
+         GBLB  &MACPNUL      TRUE IF NULL STRING                        00130000
+         GBLB  &MACQUOT      TRUE IF ORIGINAL WAS QUOTED                00140000
+         GBLB  &MACPERR      TRUE IF ERROR                              00150000
+         GBLC  &MACQSTR      RETURN QUOTED STRING                       00160000
+         LCLA  &I,&J,&K,&L                                              00170000
+         LCLC  &C,&D,&TYPE                                              00180000
+.*                                                                      00190000
+&MACQUOT SETB  0             SET UNQUOTED                               00200000
+&MACPERR SETB  0             SET NOT IN ERROR                           00210000
+&MACPLEN SETA  K'&STR        SET PROVISIONAL LENGTH                     00220000
+&MACQSTR SETC  '&STR'        DEFAULT - RETURN AS IS                     00230000
+&TYPE    SETC  'C'           SET STRING TYPE (C OR X) DEFAULT           00240000
+.*  RETURN IF STRING IS NULL                                            00250000
+&MACPNUL SETB  (T'&STR EQ 'O')                                          00260000
+&MACPNUL SETB  (&MACPNUL OR ('&STR' EQ ''''''))                         00270000
+         AIF   (&MACPNUL).MEND   DONE IF NULL STRING                    00280000
+.*  RETURN IF STRING IS UNQUOTED                                        00290000
+         AIF   (&MACPLEN LT 2).SHORT                                    00300000
+&MACQUOT SETB  ('&STR'(1,1) EQ '''' OR '&STR'(&MACPLEN,1) EQ '''')      00310000
+.SHORT   AIF   (NOT &MACQUOT).MEND                                      00320000
+.*  DELETE LITERAL'S EQUAL SIGN IF PRESENT                              00330000
+         AIF   ('&STR'(1,1) NE '=').NOTEQU                              00340000
+&MACQSTR SETC  '&MACQSTR'(2,&MACPLEN)  STRIP EQUAL                      00350000
+&MACPLEN SETA  K'&MACQSTR              UPDATE LENGTH                    00360000
+.*  LOOK FOR LEADING QUOTE, C OR X - FAIL REST                          00370000
+.NOTEQU  ANOP  ,                                                        00380000
+&C       SETC  '&MACQSTR'(1,1)         ISOLATE FIRST BYTE               00390000
+&MACPERR SETB  ('&C' NE '''' AND '&C' NE 'C' AND '&C' NE 'X')           00400000
+         AIF   (&MACPERR).ERROR                                         00410000
+.*  LOOK FOR LEADING QUOTE, C OR X - FAIL REST                          00420000
+.STRING  AIF   ('&C' EQ '''').COUNT                                     00430000
+&TYPE    SETC  '&C'                    REMEMBER THE TYPE                00440000
+&MACQSTR SETC  '&MACQSTR'(2,K'&MACQSTR)  STRIP TYPE                     00450000
+&MACPLEN SETA  K'&MACQSTR              UPDATE LENGTH                    00460000
+&C       SETC  '&MACQSTR'(1,1)         ISOLATE FIRST BYTE               00470000
+&MACPERR SETB  ('&C' NE '''' AND '&C' NE 'L')                           00480000
+         AIF   (&MACPERR).ERROR                                         00490000
+.*  LOOK FOR LEADING QUOTE OR L  (I.E., WE WANT 'text' OR CLn'text')    00500000
+         AIF   ('&C' EQ '''').COUNT    COUNT LENGTH                     00510000
+&L       SETA  0                       NO LENGTH YET                    00520000
+.EXPLOOP ANOP  ,                                                        00530000
+&MACQSTR SETC  '&MACQSTR'(2,K'&MACQSTR)  STRIP TYPE                     00540000
+&MACPLEN SETA  K'&MACQSTR              UPDATE LENGTH                    00550000
+&C       SETC  '&MACQSTR'(1,1)         ISOLATE FIRST BYTE               00560000
+         AIF   ('&C' EQ '''').HAVEXPL  DONE WITH EXPLICIT LENGTH        00570000
+         AIF   ('&C' LT '0' OR '&C' GT '9').ERROR                       00580000
+&L       SETA  &L*10+&C                UPDATE LENGTH                    00590000
+         AGO   .EXPLOOP                TRY ONE MORE                     00600000
+.*   MACQSTR NOW HAS QUOTED STRING, AND L HAS THE LENGTH                00610000
+.HAVEXPL ANOP  ,                                                        00620000
+&MACPLEN SETA  &L                      RETURN THE LENGTH                00630000
+&MACQSTR SETC  '='.'&TYPE'.'L'.'&L'.'&MACQSTR'                          00640000
+         MEXIT ,                                                        00650000
+.ERROR   ANOP  ,                                                        00660000
+&MACPERR SETB  1                       RETURN AN ERROR                  00670000
+         MEXIT ,                                                        00680000
+.*   MACQSTR IS A QUOTED STRING WHOSE LENGTH WE NEED                    00690000
+.*     NOTE THAT APOSTROPHES AND AMPERSANDS ARE DOUBLED (ELSE ERROR)    00700000
+.COUNT   ANOP  ,                                                        00710000
+&MACPLEN SETA  K'&MACQSTR              UPDATE LENGTH                    00720000
+&I       SETA  1                       LOOP INDEX (2 TO K'-2)           00730000
+&L       SETA  0                       SIGNIFICANT LENGTH               00740000
+.CNTLOOP  ANOP ,                                                        00750000
+&I       SETA  &I+1                                                     00760000
+&C       SETC  '&MACQSTR'(&I,1)                                         00770000
+         AIF   ('&C' NE '''' AND '&C' NE '&&').CNTONE                   00780000
+         AIF   (&I GE &MACPLEN-1).ERROR                                 00790000
+         AIF   ('&MACQSTR'(&I+1,1) NE '&C').ERROR    ERROR?             00800000
+&I       SETA  &I+1          SKIP DOUBLED CARACTER                      00810000
+.CNTONE  ANOP  ,                                                        00820000
+&L       SETA  &L+1                                                     00830000
+         AIF   (&I LE &MACPLEN-2).CNTLOOP                               00840000
+&MACPLEN SETA  &L            SET STRIPPED LENGTH                        00850000
+         AIF   ('&LEN' EQ '').DEFLN                             GP08090 00860000
+&MACQSTR SETC  '='.'&TYPE'.'L('.'&LEN'.')'.'&MACQSTR'           GP08090 00870000
+&MACPLEN SETA  &LEN                                             GP08090 00880000
+         AGO   .MEND                                            GP08090 00890000
+.DEFLN   ANOP  ,                                                GP08090 00900000
+&MACQSTR SETC  '='.'&TYPE'.'&MACQSTR'                                   00910000
+.MEND    MEND  ,                                                        00920000

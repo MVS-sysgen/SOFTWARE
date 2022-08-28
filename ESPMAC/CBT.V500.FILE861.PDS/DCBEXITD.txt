@@ -1,0 +1,102 @@
+         MACRO ,                                                        00010000
+&L    DCBEXITD &DSECT=NO,&PREFIX=DX,&LEVEL2=,                          *00020000
+               &USER=0,&FLAG1=0,&FLAG2=0,&FLAG3=0,&FLAG4=0,&DRECFM=0,  *00030000
+               &BLOCKF=0,&LRECLF=0,&LRECLV=0,&LRECLD=0,&LRECLU=0 82178  00040000
+         LCLC  &NM                                                      00050000
+         LCLC  &P                                                       00060000
+&P       SETC  '&PREFIX'                                                00070000
+         AIF   (T'&PREFIX EQ 'O').NOPFX                                 00080000
+         AIF   (K'&PREFIX LE 2).COMPFX                                  00090000
+         MNOTE 8,'PREFIX=&PREFIX EXCESSIVE LENGTH'                      00100000
+         AGO   .DEFPFX                                                  00110000
+.NOPFX   MNOTE 8,'PREFIX= KEYWORD NOT ALLOWED TO BE NULLIFIED'          00120000
+.DEFPFX  MNOTE 8,'PREFIX=DX' ASSUMED'                                   00130000
+&P       SETC  'DX'                                                     00140000
+.COMPFX  ANOP  ,                                                        00150000
+&NM      SETC  '&L'                                                     00160000
+         AIF   ('&L' NE '' OR '&DSECT' NE 'YES').NAMEOK                 00170000
+&NM      SETC  'DCBEXITD'                                               00180000
+*              AREA POINTED TO BY NOP (00 OR 80) IN DCB EXIT LIST:      00190000
+.NAMEOK  AIF   ('&DSECT' NE 'YES').NODSECT                       81154  00200000
+&NM      DSECT ,                                                        00210000
+         AGO   .ID                                                      00220000
+.NODSECT ANOP  ,                                                        00230000
+&NM       DS   0D                                                       00240000
+         SPACE 1                                                        00250000
+.ID      ANOP  ,                                                        00260000
+&P.DCBXID DC   CL8'DCBEXITP'           VALIDITY CHECK                   00270000
+&P.DCBPTR DC   A(0)                    SET TO DCB ADDRESS               00280000
+&P.USER   DC   A(&USER)                AVAILABLE TO USER         82178  00290000
+&P.DOUBLE DC   D'0'                    DOUBLE WORD WORK AREA            00300000
+&P.FLAG1  DC   AL1(&FLAG1)                                       82178  00310000
+&P.1RCINT EQU  128                     RECORD INTERFACE (BFTEK=A) IF:   00320000
+*                                      RECFM=VS | VBS                   00330000
+*                                      QSAM                             00340000
+*                                      LRECL¬=X, IE LRECL>=0            00350000
+*                                      LRECL¬=0                         00360000
+*                                      ELSE TURN OFF                    00370000
+&P.1BLOCK EQU  64                      ERROR IF BAD BLOCK SIZE, I.E.    00380000
+*                                      MOD(BLKSIZE,LRECL)¬=0            00390000
+&P.1NOFBS EQU  32                      TURN OFF STANDARD IF RECFM=FBS   00400000
+&P.1NOPCI EQU  16                      TURN OFF OPTCD=C                 00410000
+&P.1NOSD  EQU  08                      TURN OFF OPTCD=Z  IF DA          00420000
+&P.1FULLT EQU  04                      DEFAULT  BLKSIZE TO FULL TRACK   00430000
+*                                                         (EQUIVALENT)  00440000
+&P.1TRUNC EQU  02                      TRUNCATE BLKSIZE TO FULL TRACK   00450000
+*                                      TRUNCATE BLKSIZE TO N*LRECL      00460000
+*                                                          IF RECFM=FB  00470000
+&P.FLAG2  DC   AL1(&FLAG2)                                       82178  00480000
+&P.2CONCT EQU  128                     CONCAT. OF UNLIKE ATTRIBUTES     00490000
+&P.2REGET EQU  64                      READ/GET MUST BE REISSUED        00500000
+&P.2CCERR EQU  4                       FAIL CONTROL CHARACTER/NOCC      00510000
+&P.2CCADJ EQU  2                       ADJUST DFLT LEN IF CC/NOCC V.V.  00520000
+&P.2TARER EQU  1                       KEEP OPTCD=Z FOR TAPE (R.E.R.)   00530000
+&P.FLAG3  DC   AL1(&FLAG3)                                       82178  00540000
+&P.3BLKTB EQU  08                      USE CANNED DEVICE/BLKSI TABLE    00550000
+&P.3BLKWY EQU  04                      USE WYLBUR BLKSIZE/LIMIT TABLE   00560000
+&P.3ISWYL EQU  02                      IF IT LOOKS LIKE WYLBUR   81210  00570000
+&P.3DFWYL EQU  01                      DEFAULT RECFM TO U (WYLBUR)      00580000
+&P.FLAG4  DC   AL1(&FLAG4)                                       82178  00590000
+&P.RETCOD DC   X'00'                   RETURN CODE FROM DCBEXIT         00600000
+&P.DRECFM DC   AL1(&DRECFM)            DEFAULT RECFM             82178  00610000
+&P.BLOCKF DC   Y(&BLOCKF)              DEFAULT BLOCKING FACTOR   82178  00620000
+&P.LRECLF DC   Y(&LRECLF)              DEFAULT LRECL FOR RECFM=F..      00630000
+&P.LRECLV DC   Y(&LRECLV)              DEFAULT LRECL FOR RECFM=V..      00640000
+&P.LRECLD DC   Y(&LRECLD)              DEFAULT LRECL FOR RECFM=D..      00650000
+&P.LRECLU DC   Y(&LRECLU)              DEFAULT LRECL FOR RECFM=U..      00660000
+          DS   0A                                                       00670000
+&P.OPLIST DC   AL.1(1),AL.7(0),AL3(0)  ONE PER ENTRY:                   00680000
+*        DS    AL.1                    1 IF LAST                        00690000
+*        DS    AL.7                    TYPE                             00700000
+*        DS    AL3                     PARAMETERS FOR TYPE              00710000
+&P.TNOP   EQU  0                       NULL ENTRY                       00720000
+&P.TEXIT  EQU  1                       2ND LEVEL EXIT                   00730000
+&P.TBLOCK EQU  2                       BLKSIZE BY DEVICE TYPE           00740000
+&P.TWYLBK EQU  3                       WYLBUR BLOCKSIZE LIMIT TABLE     00750000
+&P.TPREX  EQU  4                       PRE-DCBEXIT EXIT          82308  00760000
+&P.TMAXBK EQU  5                       BLOCKSIZE LIMIT TABLE     82308  00770000
+&P.TEXITF EQU  6                       POST-DCBEXIT EXIT         83275  00780000
+         AIF   (T'&LEVEL2 EQ 'O').NOLVL                          81154  00790000
+         AIF   (&LEVEL2 LT 2).NOLVL                              81154  00800000
+         DC    (&LEVEL2-1)X'80000000'  LEVEL 2 FIELDS            81154  00810000
+.NOLVL   SPACE 1                                                        00820000
+*        DS    0F                                                       00830000
+*              BLOCKSIZE TABLE FOR CODE DXTBLOCK                        00840000
+*        DC    AL1(CLASS,TYPE)         UCBTBYT3,4                       00850000
+*        DC    AL2(BLKSIZE)            DEFAULT FOR THIS TYPE            00860000
+*                  CLASS     TYPE      CONDITION                        00870000
+*                  CLASS     TYPE      CLASS=UCBTBYT3 & TYPE=UCBTBYT4   00880000
+*                  CLASS     X'FF'     CLASS=UCBTBYT3                   00890000
+*                  X'FF'     TYPE      TYPE =DCBDEVT                    00900000
+*                  X'FF'     X'FF'     DEFAULT - END OF LIST            00910000
+         SPACE 1                                                        00920000
+*              BLOCKSIZE TABLE FOR DXTWYLBK (WYLBUR EDIT)               00930000
+*                                  DXTMAXBK (ANY)                82308  00940000
+*        DC    AL1(CLASS,TYPE)         UCBTBYT3,4                       00950000
+*        DC    AL2(DEFAULT,MIN,MAX)    VALUES FOR THIS TYPE      81154  00960000
+*                  CLASS     TYPE      CONDITION                        00970000
+*                  CLASS     TYPE      CLASS=UCBTBYT3 & TYPE=UCBTBYT4   00980000
+*                  CLASS     X'FF'     CLASS=UCBTBYT3                   00990000
+*                  X'FF'     TYPE      TYPE =DCBDEVT                    01000000
+*                  X'FF'     X'FF'     DEFAULT - END OF LIST            01010000
+.END     MEND  ,                                                        01020000

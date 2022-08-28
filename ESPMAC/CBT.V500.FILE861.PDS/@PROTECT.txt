@@ -1,0 +1,21 @@
+         MACRO                                                          00010000
+&NM      @PROTECT &PARM                                                 00020000
+         GBLB  &WX@PRO                                                  00030000
+         GBLC  &MACPLAB                                                 00040000
+.********************************************************************** 00050000
+.*                                                                   ** 00060000
+.*   REPLACEMENT FOR IBM PROTECT MACRO/SERVICE. SEE MY SOURCE FOR    ** 00070000
+.*     @PROTECS FOR DETAILS.                                         ** 00080000
+.*                                                                   ** 00090000
+.********************************************************************** 00100000
+&NM      MACPARM R1,&PARM                                               00110000
+         MACPARM R14,7,PRO0001A+1,MODE=3                                00120000
+         BZ    PRO&SYSNDX.S   NOT LINKED; ISSUE SVC                     00130000
+         AIF   (&WX@PRO).SECOND                                         00140000
+         B     PRO&SYSNDX.S-2 .  ELSE USE QUICKY                        00150000
+PRO0001A DC    V(@PROTECT)   ADDRESS OF @PROTECT ROUTINE                00160000
+         WXTRN @PROTECT                                                 00170000
+&WX@PRO  SETB  1                                                        00180000
+.SECOND  BALR  R14,R14 .     INVOKE @PROTECT                            00190000
+PRO&SYSNDX.S SVC 98 .        INVOKE PROTECT SVC                         00200000
+         MEND                                                           00210000

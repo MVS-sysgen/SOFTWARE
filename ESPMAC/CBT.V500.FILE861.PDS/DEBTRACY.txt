@@ -1,0 +1,90 @@
+         MACRO ,             EXPAND PARSER                              00010000
+&NM      DEBTRACY &VA,&VL,&VT,&VKO,&VKL,&DT,&LABEL=N,&VL80=0            00020000
+.*  DEBTRACY IS USED AS AN INNER MACRO TO EXPAND ONE OPERAND, OR TO     00030000
+.*    CHANGE THE DEFAULT VARIABLE TYPE, FOR THE DBT MACRO               00040000
+         GBLA  &ZZZDBA#,&ZZZDBAN                                        00050000
+         GBLB  &ZZZDBTF      (FIRST TIME FLAG)                          00060000
+         GBLB  &ZZZ80FG      SET WHEN END OF LIST GENERATED             00070000
+         GBLC  &ZZZDBTV,&ZZZDBTT,&ZZZDBAT(40),&ZZZDBAI(40),&ZZZDBAL(40) 00080000
+         LCLA  &LN,&I,&EN,&EM,&EO                                       00090000
+         LCLC  &L,&ET,&EL,&EK,&DFT,&EKO,&EKL                            00100000
+&EK      SETC  '&VA'                                                    00110000
+&EM      SETA  K'&EK         LENGTH OF FIRST OPERAND                    00120000
+&DFT     SETC  '&DT'         SET TYPE OVERRIDE                          00130000
+&EKO     SETC  '0'           DEFAULT CHAIN POINTER OFFSET               00140000
+&EKL     SETC  '4'           DEFAULT CHAIN POINTER LENGTH               00150000
+.*  SEE WHETHER THE CURRENT VARIABLE NAME IS ONE OR TWO CHARACTERS,     00160000
+.*  HAS NO LENGTH OR TYPE SPECIFICATIONS, AND APPEARS IN TYPE TABLE.    00170000
+.*  IF SO, JUST RESET GLOBAL TYPE TO SPECIFIED ONE.                     00180000
+         AIF   (&EM GT 2).NOLOOPT                                       00190000
+         AIF   (&EM LE 0).MEND                                          00200000
+         AIF   ('&VL' NE '' OR  '&VT' NE '').NOLOOPT                    00210000
+.LOOPTYP AIF   (&I GE &ZZZDBA#).NOLOOPT  NOT A REDEFINITION             00220000
+&I       SETA  &I+1                                                     00230000
+         AIF   ('&VA' NE '&ZZZDBAT(&I)').LOOPTYP                GP02365 00240000
+&ZZZDBTT SETC  '&ZZZDBAI(&I)'  SET NEW DEFAULT                          00250000
+         MEXIT ,                                                        00260000
+.*  FIRST CHECK THE DEFAULT TYPE - IF NULL, ASSIGN THE GLOBAL ONE.      00270000
+.*  IF GLOBAL IS NULL, SET GLOBAL AND LOCAL TO HEX (03)                 00280000
+.NOLOOPT AIF   ('&DFT' NE '').NONUTYP                                   00290000
+&DFT     SETC  '&ZZZDBTT'    COPY GLOBAL TYPE                           00300000
+         AIF   ('&DFT' NE '').NONUTYP                                   00310000
+&DFT     SETC  '10'          DEFAULT IS HEX                             00320000
+&ZZZDBTT SETC  '10'          DEFAULT IS HEX                             00330000
+.NONUTYP AIF   ('&VKO' EQ '').NONVKO                                    00340000
+&EKO     SETC  '&VKO'                                                   00350000
+.NONVKO  AIF   ('&VKL' EQ '').NONVKL                                    00360000
+&EKL     SETC  '&VKL'                                                   00370000
+.NONVKL  ANOP  ,                                                        00380000
+&L       SETC  'L'''                                                    00390000
+&EL      SETC  '&VL'                                                    00400000
+&EO      SETA  0             PRESET FOR NORMAL ADDRESSING MODE          00410000
+&ET      SETC  '&DFT'        PRESET FOR DEFAULT                         00420000
+         AIF   ('&EK'(1,1) NE '/' AND '&EK'(1,1) NE '*').NOTIND GP03128 00430001
+&EO      SETA  &EO+1         REQUEST INDIRECT ADDRESSING                00440000
+&EK      SETC  '&EK'(2,&EM-1)  DELETE LEADING CONTROL BYTE              00450000
+&EM      SETA  K'&EK         LENGTH OF FIRST OPERAND                    00460000
+.NOTIND  AIF   (&EM LE 0).MEND                                          00470000
+         AIF   ('&EK'(&EM,1) NE '%').NOTA24                             00480000
+&EO      SETA  &EO+2         REQUEST FORCED 24-BIT ADDRESSING           00490000
+&EK      SETC  '&EK'(1,&EM-1)  DELETE TRAILING CONTROL BYTE             00500000
+&EM      SETA  K'&EK         LENGTH OF FIRST OPERAND                    00510000
+.NOTA24  AIF   (&EM LE 0).MEND                                          00520000
+         AIF   ('&EK'(&EM,1) NE '?').NOTA31                             00530000
+&EO      SETA  &EO+4         REQUEST FORCED 31-BIT ADDRESSING           00540000
+&EK      SETC  '&EK'(1,&EM-1)  DELETE TRAILING CONTROL BYTE             00550000
+&EM      SETA  K'&EK         LENGTH OF FIRST OPERAND                    00560000
+.NOTA31  AIF   (&EM LE 0).MEND                                          00570000
+&I       SETA  0                                                        00580000
+.TESTTYP AIF   (&I GE &ZZZDBAN).NOTYPED  NOT A VALID ENTRY              00590000
+&I       SETA  &I+1                                                     00600000
+         AIF   ('&VT' NE '&ZZZDBAT(&I)').TESTTYP                        00610000
+&ET      SETC  '&ZZZDBAI(&I)'   SET NEW TYPE                            00620000
+         AGO   .EXPAND                                                  00630000
+.NOTYPED AIF   ('&VT' NE '').NOTYPO                                     00640000
+&ET      SETC  '&DFT'           ESLE SET DEFAULT                        00650000
+         AGO   .EXPAND                                                  00660000
+.NOTYPO  MNOTE 4,'DEBTRACY: VARIABLE/REQUEST TYPE INVALID: &VT'         00670000
+.*  NOW WE HAVE THE VARIABLE NAME AND THE TYPE. CHECK LENGTH            00680000
+.EXPAND  AIF   ('&EL' NE '').HLEN                                       00690000
+&EL      SETC  '&L'.'&EK'                                               00700000
+.HLEN    AIF   ('&LABEL' EQ 'N').NOLABEL                                00710000
+         DC    X'0100',CL8'&VA '  ITEM LABEL                            00720000
+.NOLABEL ANOP  ,                                                        00730000
+&ZZZ80FG SETB  (&ZZZ80FG OR &VL80)                                      00740000
+         AIF   ('&ZZZDBAL(&I)' EQ '6' OR '&ZZZDBAL(&I)' EQ '').LEN6     00750000
+         AIF   ('&ZZZDBAL(&I)' EQ '2').LEN2                             00760000
+         AIF   ('&ZZZDBAL(&I)' EQ '4').LEN4                             00770000
+         AIF   ('&ZZZDBAL(&I)' EQ '8').LEN8                             00780000
+         MNOTE 'DEBTRACY: INVALID ENTRY PASSED: &VA,&VL,&VT,&VKO,&VKL'  00790000
+.LEN8    AIF   ('&ZZZDBAI(&I)' NE '16').LEN811   NOT FLAG               00800000
+.LEN820  DC    AL1(X'80'*&VL80+&ET,&EO),SL2(&EK,&EL,&EKO)               00810000
+         MEXIT ,                                                        00820000
+.LEN811  DC    AL1(X'80'*&VL80+&ET,&EO),SL2(&EK,&EL),AL1(&EKO,&EKL)     00830000
+         MEXIT ,                                                        00840000
+.LEN6    DC    AL1(X'80'*&VL80+&ET,&EO),SL2(&EK,&EL)            GP02365 00850000
+         MEXIT ,                                                        00860000
+.LEN4    DC    AL1(X'80'*&VL80+&ET,&EO),SL2(&EK)                        00870000
+         MEXIT ,                                                        00880000
+.LEN2    DC    AL1(X'80'*&VL80+&ET,&EO)                                 00890000
+.MEND    MEND  ,                                                        00900000

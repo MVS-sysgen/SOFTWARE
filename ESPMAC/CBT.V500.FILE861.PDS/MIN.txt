@@ -1,0 +1,13 @@
+         MACRO ,                                                        00010000
+&NM      MIN   &R,&A,&TYPE=                                      85195  00020000
+         LCLA  &I                                                       00030000
+         LCLC  &SUF                                             GP04234 00040000
+         AIF   ('&TYPE' EQ 'F' OR '&TYPE' EQ 'A').NOSUF         GP04234 00050000
+&SUF     SETC  '&TYPE'                                          GP04234 00060000
+.NOSUF   ANOP  ,                                                GP04234 00070000
+&I       SETA  &SYSNDX                                                  00080000
+&NM      MACPARM &R,&A,OP=C&SUF,OPR=C&SUF.R,MODE=EQU                    00090000
+         MACPARM ZZZZ&I,OP=BNH,MODE=ONE                                 00100000
+         MACPARM &R,&A,OP=L&SUF,OPR=L&SUF.R,MODE=EQU                    00110000
+ZZZZ&I   DS    0H                                                       00120000
+.MEND    MEND  ,                                                        00130000

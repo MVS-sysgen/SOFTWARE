@@ -1,0 +1,8 @@
+         MACRO ,                                       ADDED ON GP05355 00010000
+&NM      ZI    &ADDRESS,&FLAGS                                          00020000
+.*   ADDED IN RESPONSE TO A THREAD ON IBM-MAIN ABOUT RESETTING FLAGS    00030000
+.*     THIS MACRO ALLOWS SPECIFICATION OF THE FLAGS TO BE RESET,        00040000
+.*     INSTEAD OF THE NI CONVENTION OF ALL BUT                          00050000
+.*                                                                      00060000
+&NM      NI    &ADDRESS,255-(&FLAGS)                                    00070000
+         MEND  ,                                                        00080000

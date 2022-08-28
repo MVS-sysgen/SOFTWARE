@@ -1,0 +1,31 @@
+         MACRO ,                                       ADDED ON GP05020 00010000
+         MAPJOBDY ,    MAP DYNWORK FOR EXHC$JCL AND EXHCX$J- OVERLAYS   00020000
+.*    MUST BE PLACED AFTER MSECT ,                                      00030000
+.*                                                                      00040000
+EXHBSQSP DSECT ,                                                        00050000
+         ORG   DYNWORK                                                  00060000
+HAJCTTTR DS    F             JCT MTTR                                   00070000
+HANUM    DS    H             JES2 JOB NUMBER                            00080000
+HADSN    DS    H             DATASET COUNT                              00090000
+HAQUE    DS    H             (MY) RELATIVE QUEUE NUMBER          78090  00100000
+         SPACE 1                                                        00110000
+HAFG     DS    X                                                        00120000
+HAFJCT   EQU   X'80'           DISPLAY JCT INFORMATION           88284  00130000
+HAFLOG   EQU   X'40'           DISPLAY JOB LOG                   88284  00140000
+HAFJCL   EQU   X'30'           DISPLAY JCL DSN(S)                88284  00150000
+HAFJCLI  EQU   X'20'           DISPLAY INPUT JCL (PRE-INP ONLY)  88284  00160000
+HAFJCLO  EQU   X'10'           DISPLAY OUTPUT JCL                88284  00170000
+HAFMSG   EQU   X'08'           DISPLAY MESSAGE DSN               88284  00180000
+HAFTXT   EQU   X'04'           CONVERTER/INTERPRETER TEXT       GP05020 00190000
+HAFQUE   EQU   X'02'           JOB QUEUE                        GP05020 00200000
+HAFDSN   EQU   X'01'           DISPLAY DATA                      88284  00210000
+HAFJOB   EQU   HAFDSN+HAFJCT+HAFLOG+HAFJCL+HAFMSG                88284  00220000
+         SPACE 1                                                        00230000
+HAFG2    DS    X                                                        00240000
+HAFSLOG  EQU   X'80'           SYSLOG DISPLAY FUNCTION           88284  00250000
+HAFSUM   EQU   X'40'           SUMMARY DISPLAY ONLY (WAS HAFMSG) 88284  00260000
+HAFUSER  EQU   X'20'           USER SET OVERRIDING DSN #        GP05050 00270000
+HAFSPIN  EQU   X'01'           SPIN PROCESSING FLAG              88284  00280000
+HAADD    DS    H             ADD CONSTANT FOR S= AND T=          82353  00290000
+         SPACE 1                                                        00300000
+         MEND  ,                                                        00310000

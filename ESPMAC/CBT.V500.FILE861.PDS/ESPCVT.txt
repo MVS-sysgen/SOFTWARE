@@ -1,0 +1,101 @@
+         MACRO ,                                                        00010000
+&NM      ESPCVT &SECT=D,&OPT=                                           00020000
+         GBLC  &HOOKCVT                                         GP11214 00030000
+         LCLC  &NAME,&USECT                                             00040000
+         LCLB  &D                                               GP11214 00050000
+&USECT   SETC  '&SYSECT'     SAVE USER'S CSECT NAME             GP11214 00060000
+&D       SETB  ('&OPT' EQ 'LIST')                               GP11214 00070000
+&NAME    SETC  '&NM'                                                    00080000
+.*                                                                      00090000
+.*   THIS MACRO MAPS THE 'ESP' CVT EXTENSION                    GP11214 00100000
+.*   THAT IS POINTED TO BY 'CVTJOB'. BUILT BY 'ESPINIT'         GP11214 00110000
+&HOOKCVT SETC  'CVTLINK+4'   POINTER TO THIS TABLE              GP11214 00120000
+.*                                                              GP11214 00130000
+.*   WHEN OPT=LIST IS SPECIFIED, THIS MACRO ALSO EXPANDS A LIST OF DC   00140000
+.*       CONSTANTS FOR LOADING AND SETTING THE CONTENTS OF ADDRESSES.   00150000
+.*                                                                      00160000
+         AIF   ('&SECT' EQ 'NO').NOSECT                                 00170000
+         AIF   ('&NM' NE '').OK                                         00180000
+         MNOTE 4,'CSECT/DSECT NAME MISSING, ''ESPCVT'' ASSUMED.'        00190000
+&NAME    SETC  'ESPCVT'                                                 00200000
+.OK      AIF   ('&SECT' NE 'C').DSECT                                   00210000
+&NAME    CSECT ,                                                        00220000
+         AGO   .BLNM                                                    00230000
+.DSECT   ANOP                                                           00240000
+&NAME    DSECT ,                                                        00250000
+         AGO   .BLNM                                                    00260000
+.NOSECT  AIF   ('&NM' EQ '').BLNM                                       00270000
+&NAME    DS    0F .          START OF USER CVT MAPPING                  00280000
+.BLNM    ANOP                                                           00290000
+.*                                                                      00300000
+UCFLAGS  DC    X'1' .        FLAG BYTE                                  00310000
+UCIPL    EQU   X'80' .       IPL AUTO STARTS PENDING                    00320000
+UCRJE    EQU   X'40' .       RJE RUN AT LEAST ONCE SINCE LAST IPL       00330000
+UCAUTO   EQU   X'20' .       AT LEAST ONE 'AUTO' COMMAND ACTIVE         00340000
+UCAPEN   EQU   X'10' .       AT LEAST ONE AUTO START PENDING            00350000
+UCASCRCH EQU   X'04'         ON IF IPL TIME SYSDA SCRATCHED      91049  00360000
+UCACCBAD EQU   X'02'           A$GINIT OPEN FAILED               84317  00370000
+UCCONLT  EQU   1 .           ON IF LOTS OF MESSAGES WITH CONID          00380000
+.*                                                                      00390000
+         SPACE                                                          00400000
+UCCONID  DC    X'1' .        NON-ZERO IF SPECIAL MESSAGES ARE TO BE WTO 00410000
+*        CONTENTS IS UCMID OF DESTINATION CONSOLE                       00420000
+.*                                                                      00430000
+         SPACE                                                          00440000
+UCIPLCNT DC    X'0' .        NO. OF IPL AUTO STARTS STILL PENDING       00450000
+UCSMFNM  DC    C'H' .   BYTE TO COMPLETE SMF PARM NAME 'SMFDEFL_'       00460000
+*        U IS STANDARD SMF; T GIVES OPI; N CANCELS SMF SUPPORT          00470000
+.*       H (DEFAULT) PROVIDES HASP SUPPORT                              00480000
+UCAUTCHN DC    A(0)          AUTORDR COMMAND CHAIN              GP11214 00490000
+UCAUTCNT DC    F'0'          AUTORDR ACTIVE COUNT               GP11214 00500000
+UCRSV01  DC    A(0)                                              92292  00510000
+UCRSV02  DC    A(0)                                              92292  00520000
+.*                                                                      00530000
+         SPACE                                                          00540000
+UCIPLTIM DC    F'0' .        IPL OR LAST MODIFIED TIME (BIN)            00550000
+UCIPLDAT DC    F'0' .        IPL OR LAST MODIFIED DATE                  00560000
+UCRSV03  DC    XL2'0'                                            92292  00570000
+UCRSV04  DC    XL2'0'                                            92292  00580000
+UCRSV05  DC    3A(0)                                             92292  00590000
+UCA$ANCR DS    0D      1/3   ACCOUNTING ANCHOR WORDS (DB FOR CDS)       00600000
+UCA$USCT DC    F'0'    2/3   USE COUNT                           83142  00610000
+UCA$GDA  DC    A(0)    3/3   GLOBAL ACCOUNTING DATA AREA         83142  00620000
+UCLINDX  DC    A(0)          => (BXLE) INDEX TABLE               92292  00630000
+UCLUADS  DC    A(0)          => (BXLE) UADS/ACCOUNT TABLE        85182  00640000
+UCLACCT  DC    A(0)          LPA/CSA ADDRESS OF ACCOUNT TABLE    92292  00650000
+UCLVOLT  DC    A(0)          LPA ADDRESS OF LEXVOLT SUBROUTINES         00660000
+UCLSERV  DC    A(0)          LPA ADDRESS OF @SERVICE             83044  00670000
+UCLSERV2 DC    A(0)            @SRVJES2 - PRIMARY SUBSYSTEM I/F  92292  00680000
+UCLPRINT DC    A(0)          @PRINTER ROUTINE                    83044  00690000
+UCLINPUT DC    A(0)          @INPREAD ROUTINE                    83044  00700000
+UCLVOLRD DC    A(0)          @VOLREAD ROUTINE                    83044  00710000
+UCLSCRNS DC    A(0)          @SCREENS ROUTINE                    87308  00720000
+UCLFORMS DC    A(0)          @FORMATS CONVERSIONS               GP11219 00730000
+UCLPARSE DC    A(0)          @PARSER                            GP11219 00740000
+         DC    4A(0)         LPA ADDRESSES (OR 0) OF SPECIAL MODULES    00750000
+UCXSVC99 DC    A(0)          SVC 99 USER EXIT ADDRESS            83142  00760000
+UCXACTEX DC    A(0)          ACCOUNTING - EXIT ROUTINE           83142  00770000
+UCXLOGON DC    A(0)          TSO - PRE-LOGON EXIT ROUTINE        86143  00780000
+UCHARRIS DC    A(0)          HARRIS MOUNT MESSAGE POINTER        92288  00790000
+         DC    A(0)            RESERVED                          89009  00800000
+UCLVOLS  DC    A(0)          => (BXLE) VOLUME/SERIAL TABLE       89009  00810000
+UCLOUD   DC    A(0)          CHAIN OF LOCAL ONLINE USER DATA     87277  00820000
+UCLWYL   DC    A(0)          LPA ADDRESS OF WYLBUR VTOC TABLE    85200  00830000
+.*                                                                      00840000
+ESPGMLEN EQU   *-&NAME         GETMAIN LENGTH                    83044  00850000
+         AIF   (NOT &D).MEND                                    GP11214 00860000
+&USECT   CSECT ,             RESTORE USER'S CSECT (IT HAD BETTER BE)    00870000
+PATULIST DC    A(UCLVOLT-&NAME),CL8'LEXVOLT'  RESIDENT SUBROUTINES      00880000
+PATULENG EQU   *-PATULIST,4,C'A'  LENGTH OF ONE ENTRY           GP11214 00890000
+         DC    A(UCLSERV-&NAME),CL8'@SERVICE'  COMMON SERVICES  GP11214 00900000
+         DC    A(UCLSERV2-&NAME),CL8'@SRVJES2'  SUBSYSTEM SERVICES      00910000
+         DC    A(UCLPRINT-&NAME),CL8'@PRINTER'  PRINTING        GP11214 00920000
+         DC    A(UCLINPUT-&NAME),CL8'@INPREAD'  READING         GP11214 00930000
+         DC    A(UCLVOLRD-&NAME),CL8'@VOLREAD'  VTOC/DSCB INTERFACE     00940000
+         DC    A(UCLSCRNS-&NAME),CL8'@SCREENS'  3270 SCREEN HANDLING    00950000
+         DC    A(UCLFORMS-&NAME),CL8'@FORMATS'  CONVERSION SUBROUTINES  00960000
+         DC    A(UCLPARSE-&NAME),CL8'@PARSER '  PARSING    SUBROUTINES  00970000
+         DC    A(UCXSVC99-&NAME),CL8'LEXSVC99'  ALLOCATION EXIT GP11214 00980000
+         DC    A(UCXACTEX-&NAME),CL8'TMSACTRT'  CA-1 TMS ACCOUNTING     00990000
+PATULEND DC    A(UCXLOGON-&NAME),CL8'LEXLOGON'  TSO PRE-LOGON EXIT      01000000
+.MEND    MEND                                                           01010000

@@ -1,0 +1,23 @@
+         MACRO                                                          00010000
+&NM      CVH   &R,&AD,&LEN                                              00020000
+         GBLB  &INLINE(50)                                              00030000
+         GBLB  &MVS,&MVSXA,&MVSESA,&OS390,&Z900                 GP04234 00040000
+         GBLC  &MACPLAB                                                 00050000
+         LCLC  &L                                                       00060000
+&INLINE(6) SETB 1                                                       00070000
+&L       SETC  'L'''                                                    00080000
+&MACPLAB SETC  '&NM'                                                    00090000
+         AIF   (T'&R NE 'F' AND T'&R NE 'V' AND T'&R NE 'A').LH         00100000
+         MACPARM R0,&R,OP=L                                             00110000
+         AGO   .COM                                                     00120000
+.LH      MACPARM R0,&R,OP=LH                                            00130000
+.COM     MACPARM R1,&AD .    GET OUTPUT ADDRESS                         00140000
+         AIF   ('&LEN' NE '').LEN                                       00150000
+         AIF   ('&AD'(1,1) EQ '(').TLEN                                 00160000
+         MACPARM R15,&L&AD   USE IMPLICIT OUTPUT LENGTH                 00170000
+         AGO   .BAL                                                     00180000
+.TLEN    AIF   ('&LEN' NE '').LEN                                       00190000
+         MNOTE 4,'CVH: LENGTH REQUIRED'                                 00200000
+.LEN     MACPARM R15,&LEN .    GET OUTPUT LENGTH                        00210000
+.BAL     MACPARM R14,DCONVERT,OP=BAL                                    00220000
+         MEND                                                           00230000

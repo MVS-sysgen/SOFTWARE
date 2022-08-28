@@ -1,0 +1,27 @@
+         MACRO ,                                                        00010000
+&L       DUMP  &TYPE                                                    00020000
+.********************************************************************** 00030000
+.*                                                                   ** 00040000
+.*  EXHIBIT MACRO TO CONTROL STORAGE FORMATTING                      ** 00050000
+.*                                                                   ** 00060000
+.********************************************************************** 00070000
+         LCLA  &DISP                                                    00080000
+         AIF   ('&TYPE' EQ 'EBCDIC').EBC                                00090000
+         AIF   ('&TYPE' EQ 'HEX').HEX                                   00100000
+         AIF   ('&TYPE' EQ 'LABEL').LAB                                 00110000
+         AIF   ('&TYPE' EQ 'VAR').VAR                                   00120000
+&L       MOTE  'TYPE MUST BE EBCDIC, HEX, LABEL, OR VAR'                00130000
+         MEXIT                                                          00140000
+.VAR     ANOP                                                           00150000
+&DISP    SETA  4                                                        00160000
+.LAB     ANOP                                                           00170000
+&DISP    SETA  &DISP+4                                                  00180000
+.HEX     ANOP                                                           00190000
+&DISP    SETA  &DISP+4                                                  00200000
+.EBC     ANOP                                                           00210000
+.CALLIT  ANOP                                                           00220000
+&L       LA    R1,DUMPLIST                                              00230000
+         L     R15,DUMP                                                 00240000
+         L     R2,&DISP.(R15)                                           00250000
+         BALS  R14,0(R2,R15)                                            00260000
+         MEND  ,                                                        00270000

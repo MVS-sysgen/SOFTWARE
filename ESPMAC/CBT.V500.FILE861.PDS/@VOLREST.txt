@@ -1,0 +1,27 @@
+         MACRO ,                                                GP10187 00010000
+         @VOLREST ,                                             GP10187 00020000
+.*  DATA AREAS FOR VOLFAKE ROUTINE (MACRO @VOLRESB)             GP10187 00030000
+FAKESAVE DS    18F           VOLFAKE SAVE AREA                   90260  00040000
+VFDB     DS    D                                                GP10187 00050000
+@OBTAIN  DC    A(0)          OPTIONAL @OBTAINS ROUTINE           90260  00060000
+@INPREAD DC    A(0)          NON-OPTIONAL INPUT READER           90260  00070000
+VFREG0   DC    A(0)    1/2                                       90260  00080000
+VFREG1   DC    A(0)    2/2                                       90260  00090000
+VFRET    DC    A(0)    1/3                                       90260  00100000
+VFRETCC  EQU   VFRET+3,1,C'X'  RETURN CODE                       90260  00110000
+VFRET0   DC    A(0)    2/3                                       90260  00120000
+VFRET1   DC    A(0)    3/3                                       90260  00130000
+VFWORK   DS    XL(VFPATWN-VFPATWK)  @INPREAD WORK AREA           90260  00140000
+VF@WORK  DS    A             ADDRESS OF @INPREAD DSECT           90260  00150000
+GTDSCB4  CAMLST SEARCH,DS1DSNAM,VOLSER,DS4IDFMT                  81340  00160000
+GTDSCB1  CAMLST SEEK,CCHHR,VOLSER,DS1DSNAM                       81340  00170000
+GTDSCB3  CAMLST SEEK,3,VOLSER,IECSDSL3                          GP99034 00180000
+CCHHR    DS    CL5' '        CCHHR OF THIS/NEXT DSCB             81340  00190000
+CC       EQU   CCHHR,2         CYLINDER                         GP99033 00200000
+HH       EQU   CCHHR+2,2         TRACK                          GP99033 00210000
+R        EQU   CCHHR+4,1            RECORD                       81340  00220000
+VFFLAG   DC    X'00'         VOLFAKE PROCESSING FLAG             90260  00230000
+VFGOPEN  EQU   X'80'           OPEN WAS CALLED                   90260  00240000
+VFGDSN   EQU   X'40'           DATASET OPEN                      90260  00250000
+VFGMEM   EQU   X'20'           GETDE WAS CALLED ON MEMBER TRANSITION    00260000
+         MEND  ,                                                GP10187 00270000

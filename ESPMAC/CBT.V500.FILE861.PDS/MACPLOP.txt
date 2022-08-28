@@ -1,0 +1,40 @@
+         MACRO ,                                                        00010000
+&NM      MACPLOP &FROM,&TO,&NULL=,&OP=ST                                00020000
+.********************************************************************** 00030000
+.*                                                                    * 00040000
+.*  MACPLOP IS AN INNER MACRO (PART OF THE MACPARM GROUP) FOR         * 00050000
+.*  PROCESSING USER SUPPLIED VALUES FOR AN MF=E/S PARAMETER LIST.     * 00060000
+.*                                                                    * 00070000
+.*  1) &FROM IS (R) - GENERATE SIMPLE STORE                           * 00080000
+.*  2) &FROM IS QUOTED STRING - GENERATE LA/ST                        * 00090000
+.*  3) OTHER - LA/ST                                                  * 00100000
+.*                                                                    * 00110000
+.********************************************************************** 00120000
+         LCLC  &V                                                       00130000
+         LCLA  &K                                                       00140000
+&V       SETC  '&FROM'                                                  00150000
+         AIF   ('&V' NE '').TEST                                        00160000
+&V       SETC  '&NULL'                                                  00170000
+         AIF   ('&V' NE 'YES').FSKIP                                    00180000
+&V       SETC  '0'                                                      00190000
+.FSKIP   AIF   ('&V' EQ 'SKIP').MEND   SKIP IF OMITTED OK               00200000
+         AIF   ('&V' NE '').TEST                                        00210000
+ MNOTE 8,'MACPLOP: SOURCE ADDRESS REQUIRED'                             00220000
+         MEXIT ,                                                        00230000
+.TEST    AIF   ('&TO' NE '').BOTH                                       00250000
+ MNOTE 8,'MACPLOP: DESTINATION ADDRESS REQUIRED'                        00260000
+         MEXIT ,                                                        00270000
+.BOTH    AIF   ('&V'(1,1) EQ '''').QUOTE                                00280000
+&K       SETA  K'&V                                                     00290000
+         AIF   (&K LT 3).NORMAL                                         00300000
+         AIF   ('&V'(1,1) NE '(' OR '&V'(2,1) EQ '(').NORMAL            00310000
+         AIF   ('&V'(&K,1) NE ')' OR '&V'(&K-1,1) EQ ')').NORMAL        00320000
+&NM      MACPARM &V,&TO,OP=ST,OPR=ST,MODE=EVEN                          00330000
+         MEXIT ,                                                        00340000
+.NORMAL  ANOP  ,                                                        00350000
+&NM      MACPARM R0,&V,OP=LA                                            00360000
+         AGO   .ST                                                      00370000
+.QUOTE   ANOP  ,                                                        00380000
+&NM      MACPARM R0,=C&V                                                00390000
+.ST      MACPARM R0,&TO,OP=&OP                                          00400000
+.MEND    MEND  ,                                                        00410000

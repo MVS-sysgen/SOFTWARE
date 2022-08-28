@@ -1,0 +1,74 @@
+         MACRO ,                                                        00010000
+&NM      #TPUT &ADDR,&LEN,&TYPE=,&NOTSO=WTO,&MF=                        00020000
+         GBLC  &MACPLAB                                                 00030000
+.*--------------------------------------------------------------------* 00040000
+.*   #TPUT IS A SIMPLE TPUT REPLACEMENT. IT INVOKES SUBTPUT TO ISSUE  * 00050000
+.*     EITHER A PUTLINE (FOR A TSO CALLER) OR A WTO (BATCH).          * 00060000
+.*                                                                    * 00070000
+.*   TYPE=  CON, BCON, HCON, VCON, DCS - LEN NOT REQUIRED, BECAUSE    * 00080000
+.*     ADDR POINTS TO A SELF-DEFINING OBJECT (L/TEXT OR TEXT/X'0')    * 00090000
+.*                                                                    * 00100000
+.*   NOTSO= ACTION WHEN NOT UNDER TSO: WTO, WTL, SKIP {PRT}           * 00110000
+.*--------------------------------------------------------------------* 00120000
+         LCLA  &I,&NOTS                                                 00130000
+         LCLB  &SDO                                                     00140000
+         LCLC  &L                                                       00150000
+         LCLC  &R0                                                      00160000
+         LCLC  &C                                                       00170000
+&MACPLAB SETC  '&NM'                                                    00180000
+&R0      SETC  '&LEN'                                                   00190000
+&L       SETC  'L'''                                                    00200000
+         AIF   (T'&ADDR NE 'O').HAVEAD                                  00210000
+         MNOTE 8,'#TPUT: ADDRESS OPERAND REQUIRED'                      00220000
+         MEXIT ,                                                        00230000
+.HAVEAD  ANOP  ,                                                        00240000
+&SDO     SETB  ('&TYPE' EQ 'CON')                                       00250000
+&SDO     SETB  (('&TYPE' EQ 'DCS') OR &SDO)                             00260000
+&SDO     SETB  (('&TYPE' EQ 'BCON') OR &SDO)                            00270000
+&SDO     SETB  (('&TYPE' EQ 'HCON') OR &SDO)                            00280000
+&SDO     SETB  (('&TYPE' EQ 'VCON') OR &SDO)                            00290000
+         AIF   (NOT &SDO).NEEDLEN                                       00300000
+         AIF   (T'&LEN EQ 'O').SKIPLN                                   00310000
+       MNOTE 4,'#TPUT:  LENGTH &LEN AND TYPE &TYPE MUTUALLY EXCLUSIVE'  00320000
+&SDO     SETB  0                                                        00330000
+.SKIPLN  AIF   ('&ADDR'(1,1) NE '''' AND '&ADDR'(1,1) NE '(').ZEROR0    00340000
+         MNOTE 4,'#TPUT: TYPE &TYPE INVALID WITH LITERAL TEXT'          00350000
+&SDO     SETB  0                                                        00360000
+.ZEROR0  ANOP  ,                                                        00370000
+&R0      SETC  '0'                                                      00380000
+.NEEDLEN AIF   (T'&NOTSO EQ 'O').SKIPACT                                00390000
+&C       SETC  '&NOTSO'.'    '                                          00400000
+&C       SETC  '&C'(1,4)                                                00410000
+.LOOPACT AIF   ('&C' EQ 'WTO WTL PRT SKIP'(&I*4+1,4)).HAVEACT           00420000
+&I       SETA  &I+1                                                     00430000
+         AIF   (&I LT 4).LOOPACT                                        00440000
+         MNOTE 4,'#TPUT: UNSUPPORTED NOTSO &NOTSO'                      00450000
+         AGO   .SKIPACT                                                 00460000
+.HAVEACT ANOP  ,                                                        00470000
+&NOTS    SETA  &I                                                       00480000
+.SKIPACT AIF   ('&ADDR'(1,1) EQ '=').LIT                                00490000
+         AIF   ('&ADDR'(1,1) NE '''').EXPLIC                            00500000
+&I       SETA  K'&ADDR-2                                                00510000
+         MACPARM R0,&I                                                  00520000
+         MACPARM R1,=CL(&I)&ADDR                                        00530000
+         AGO   .SUBCALL                                                 00540000
+.*                                                                      00550000
+.LIT     AIF   ('&ADDR'(2,2) EQ 'C''').CLIT                             00560000
+         MNOTE 8,'#TPUT: ADDRESS OPERAND NOT SUPPORTED'                 00570000
+.*                                                                      00580000
+.CLIT    ANOP  ,                                                        00590000
+&I       SETA  K'&ADDR-4                                                00600000
+&R0      SETC   '&I'                                                    00610000
+.*                                                                      00620000
+.EXPLIC  AIF   ('&R0' NE '').HAVELEN                                    00630000
+&R0      SETC  '&L'.'&ADDR'                                             00640000
+         AIF   ('&ADDR'(1,1) NE '(').HAVELEN                            00650000
+         MNOTE 8,'#TPUT: LENGTH OPERAND REQUIRED'                       00660000
+.*                                                                      00670000
+.HAVELEN MACPARM R0,&R0      LOAD LENGTH REGISTER                       00680000
+         MACPARM R1,&ADDR    LOAD ADDRESS REGISTER                      00690000
+.SUBCALL AIF   (&NOTS EQ 0).TPUT                                        00700000
+         MACPARM R0,8,=AL1(&NOTS),OP=ICM,MODE=THREE   SET ACTION        00710000
+.TPUT    AIF   ('&MF' EQ 'B').MEND                              GP12313 00720000
+         SUBCALL /SUBTPUT                                       GP12162 00730000
+.MEND    MEND  ,                                                        00740000

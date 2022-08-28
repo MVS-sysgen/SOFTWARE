@@ -1,0 +1,31 @@
+         MACRO ,                                                        00010000
+         MYLVL ,                                                        00020000
+         GBLA  &MYLVL,&REL                                              00030000
+         GBLB  &MFT,&MVT,&SVS,&MVS,&MVSSP,&MVSXA,&MVSESA,&OS390,&Z900   00040000
+*   ASSIGN AN (ARBITRARY, BUT CONSISTENT VALUE TO THE GENERATING        00050000
+*   SYSTEM:   1-MFT   2-MVT   3-SVS   4-MVT   5-SE    6-SP1   7-SP3     00060000
+*             8-SP6   9-XA   10-ESA  11-S390 12-Z900                    00070000
+&MYLVL   SETA  12                                                       00080000
+         AIF   (&Z900).LVLSET                                           00090000
+&MYLVL   SETA  11                                                       00100000
+         AIF   (&OS390).LVLSET                                          00110000
+&MYLVL   SETA  10                                                       00120000
+         AIF   (&MVSESA).LVLSET                                         00130000
+&MYLVL   SETA  9                                                        00140000
+         AIF   (&MVSXA).LVLSET                                          00150000
+&MYLVL   SETA  8                                                        00160000
+         AIF   (&MVSSP AND &REL GE 106).LVLSET                          00170000
+&MYLVL   SETA  7                                                        00180000
+         AIF   (&MVSSP AND &REL GE 103).LVLSET                          00190000
+&MYLVL   SETA  6                                                        00200000
+         AIF   (&MVSSP).LVLSET                                          00210000
+&MYLVL   SETA  5                                                        00220000
+         AIF   (&MVS AND &REL GT 41).LVLSET                             00230000
+&MYLVL   SETA  4                                                        00240000
+         AIF   (&MVS).LVLSET                                            00250000
+&MYLVL   SETA  3                                                        00260000
+         AIF   (&SVS).LVLSET                                            00270000
+&MYLVL   SETA  2                                                        00280000
+         AIF   (&MVT).LVLSET                                            00290000
+&MYLVL   SETA  1                                                        00300000
+.LVLSET  MEND  ,                                                        00310000

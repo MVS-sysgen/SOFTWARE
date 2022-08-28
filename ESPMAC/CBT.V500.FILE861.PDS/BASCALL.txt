@@ -1,0 +1,8 @@
+         MACRO ,                                                GP97349 04370000
+&NM      BASCALL &MD,&AM                                        GP97349 04380000
+         AIF   ('&AM' EQ '').DEF31                              GP97349 04390000
+&NM      TSX   R9,/&MD,AMODE=&AM                                GP97349 04400000
+         MEXIT ,                                                GP97349 04410000
+.DEF31   ANOP  ,                                                GP97349 04420000
+&NM      TSX   R9,/&MD,AMODE=AM31                               GP97349 04430000
+         MEND  ,                                                GP97349 04440000

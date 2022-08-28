@@ -1,0 +1,32 @@
+         MACRO ,                                                        00010000
+&NM      DELETEST &EP=,&EPLOC=,&LEN=4                   ADDED ON 81194  00020000
+.*--------------------------------------------------------------------* 00030000
+.*   DELETE A MODULE IF IT HAS PREVIOUSLY BEEN LOADED.                * 00040000
+.*   NOTE:  ASSUMES VARIABLE WITH MODULE ADDRESS (OR 0) TO HAVE THE   * 00050000
+.*     SAME NAME AS THE MODULE                                        * 00060000
+.*--------------------------------------------------------------------* 00070000
+         LCLC  &MOD                                                     00080000
+         LCLA  &NDX,&I,&J                                       GP04118 00090000
+&NDX     SETA  &SYSNDX                                                  00100000
+&MOD     SETC  '&EP'                                                    00110000
+         AIF   (T'&EPLOC EQ 'O').EP                                     00120000
+&MOD     SETC  '&EPLOC'                                                 00130000
+&J       SETA  K'&EPLOC                                         GP04118 00140003
+         AIF   (&J LT 5).EP                                     GP04118 00150001
+         AIF   ('&EPLOC'(1,1) NE '=').EP                        GP04118 00160000
+&I       SETA  4             SKIP =C'                           GP04118 00170000
+         AIF   ('&EPLOC'(1,3) EQ '=C''').LOCLIT                 GP04118 00180000
+&I       SETA  6             SKIP =C'                           GP04118 00190000
+         AIF   ('&EPLOC'(1,5) NE '=CL8''').EP  LET IT FAIL      GP04118 00200000
+.LOCLIT  ANOP  ,                                                GP04118 00210000
+&MOD     SETC  '&EPLOC'(&I,&J-&I)                               GP04118 00220004
+.EP      AIF   ('&LEN' EQ '3').LOWAD                             81284  00230000
+&NM      ICM   R0,15,&MOD                                               00240000
+         BNP   ZZZZ&NDX                                                 00250000
+         AGO   .COMDEL                                           81284  00260000
+.LOWAD   ANOP  ,                                                 81284  00270000
+&NM      ICM   R0,7,1+&MOD                                              00280000
+         BZ    ZZZZ&NDX                                                 00290000
+.COMDEL  DELETE EP=&EP,EPLOC=&EPLOC                                     00300000
+ZZZZ&NDX XC    &MOD.(4),&MOD                                            00310000
+         MEND  ,                                                        00320000

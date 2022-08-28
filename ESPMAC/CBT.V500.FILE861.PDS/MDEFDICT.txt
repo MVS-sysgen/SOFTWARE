@@ -1,0 +1,36 @@
+         MACRO ,                                                        00010000
+         MDEFDICT &WORD,&TYPE=C                                         00020000
+         COPY  MDEFGBL                                                  00030000
+         LCLA  &I,&J,&K                                                 00040000
+         LCLC  &LQ,&CHIX                                                00050000
+.*  FIND WORD IN DICTIONARY                                             00060000
+.LOOP    AIF   (&I GE &ZZDCTIX).ADDWORD                                 00070000
+&I       SETA  &I+1                                                     00080000
+         AIF   ('&WORD' NE '&ZZDCT(&I)').LOOP                           00090000
+.*  FOUND. RETURN INDEX                                                 00100000
+&ZZDCTRT SETA &I                                                        00110000
+         MEXIT ,                                                        00120000
+.*  NOT FOUND. ERROR IF DICTIONARY FULL; OTHERWISE BUILD ENTRY.         00130000
+.*  RETURN INDEX IN ZZDCTRT                                             00140000
+.ADDWORD AIF   (&ZZDCTIX GE &ZZDICMX).MUCH2                             00150000
+&ZZDCTIX SETA &ZZDCTIX+1                                                00160000
+&ZZDCT(&ZZDCTIX) SETC '&WORD'                                           00170000
+&ZZDCTRT SETA &ZZDCTIX                                                  00180000
+MSGDSCT  CSECT ,                                                        00190000
+&LQ      SETC  'L'''                                                    00200000
+&CHIX    SETC  '00000'.'&ZZDCTIX'                                       00210000
+&J       SETA  K'&CHIX                                                  00220000
+&CHIX    SETC  '&CHIX'(&J-4,5)                                          00230000
+DWD&CHIX DC    AL1(&LQ.DWT&CHIX,&LQ.DWT&CHIX,C'&TYPE')                  00240000
+&K       SETA  K'&WORD                                                  00250000
+         AIF   (&K LT 4).NOSPEC                                         00260000
+         AIF   ('&WORD'(1,1) EQ '''' OR '&WORD'(2,1) NE '''').NOSPEC    00270000
+DWT&CHIX DC    &WORD         EXPAND SELF-DEFINING TERM                  00280000
+         AGO   .USECT                                                   00290000
+.NOSPEC  ANOP  ,                                                        00300000
+DWT&CHIX DC    &TYPE.&WORD                                              00310000
+.USECT   ANOP  ,                                                        00320000
+&ZZSECT  CSECT ,                                                        00330000
+         MEXIT ,                                                        00340000
+.MUCH2 MNOTE 12,'DESIGN LIMIT OF &ZZDICMX DICTIONARY ENTRIES EXCEEDED.' 00350000
+         MEND  ,                                                        00360000

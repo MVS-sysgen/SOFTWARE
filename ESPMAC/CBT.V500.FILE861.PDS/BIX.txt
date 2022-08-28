@@ -1,0 +1,88 @@
+         MACRO ,                                                        00010000
+&NM      BIX   &VAL=(R0),&WK=R15,&W2=R0,&SRL=0,&BHI=,  UPDATED GP03020 *00020000
+               &BASE=,&LOC=,&ERR=,&PFX=                    ADDED 81193  00030000
+.*--------------------------------------------------------------------* 00040000
+.*                                                                    * 00050000
+.*  BIX PERFORMS AN INDEXED BRANCH WITH UP TO 256 TARGETS.            * 00060000
+.*                                                                    * 00070000
+.*  &VAL (R0) SPECIFIES THE REGISTER CONTAINING THE BRANCH VALUE      * 00080000
+.*  &SRL (0)  SPECIFIES A NUMERIC RIGHT SHIFT COUNT                   * 00090000
+.*  &BHI      LABEL TO GO TO WHEN THE VALUE MATCHES THE MASK          * 00100000
+.*   MASK (BHI(2)   MASK APPLIED AFTER SHIFTING                       * 00110000
+.*     { N'&LOC USED TO COMPUTE WHEN NOT SUPPLIED }                   * 00120000
+.*  &ERR      LABEL TO GO TO ON AN INVALID VALUE AFTER SHIFT/MASK, OR * 00130000
+.*              AN EMPTY TARGET LOCATION                              * 00140000
+.*  &BASE     VALUE SUBTRACTED FROM TARGET LOCATION. CURRENT CSECT IS * 00150000
+.*              THE DEFAULT                                           * 00160000
+.*  &LOC      LIST OF TARGET LOCATIONS, IN ORDER CORRESPONDING TO THE * 00170000
+.*              VALUE; I.E. FIRST ENTRY FOR 0, SECOND FOR 1, ETC.     * 00180000
+.*              OMITTED ENTRIES CAUSE A BRANCH TO &ERR                * 00190000
+.*  &PFX      PREFIX TO PREPEND TO THE LOC LABELS FOR A SHORTER LIST. * 00200000
+.*              THE PREFIX IS *NOT* APPLIED TO BHI OR ERR NAMES.      * 00210000
+.*  &WK  (R15)  A WORK REGISTER (ANY BUT 0)                           * 00220000
+.*  &W2  (R0)   A WORK REGISTER (ANY BUT WORK)                        * 00230000
+.*                                                                    * 00240000
+.*  SAMPLE USE:                                                       * 00250000
+.*                                                                    * 00260000
+.*       IBMMACRO THAT RETURNS 0, 4, 8, ETC., OR SUBROUTINE CALL      * 00270000
+.*         LR   R15,R0        COPY VALUE TO WORK REGISTER             * 00280000
+.*         BIX  VAL=(R15),SRL=2,LOC=(RET0,RET4),ERR=MACFAIL           * 00290000
+.*                                                                    * 00300000
+.*  NOTE THAT BITS SHIFTED OUT, AND BITS LEFT OF THE MASK ARE NOT     * 00310000
+.*  TESTED FOR ZERO. THIS IS INTENTIONAL TO PERMIT USE OF LOW FLAG    * 00320000
+.*  BITS AND OTHER USE OF UNREFERENCED DATA.                          * 00330000
+.*                                                                    * 00340000
+.*--------------------------------------------------------------------* 00350000
+         LCLA  &I,&J,&N                                                 00360000
+         LCLC  &LB           TABLE BASE                                 00370000
+         LCLC  &BH1,&BH2     BHI OPERANDS                               00380000
+         LCLC  &SPACES                                                  00390000
+&LB      SETC  '&SYSECT'                                                00400000
+&SPACES  SETC  '    '                                                   00410000
+         AIF   ('&BASE' EQ '' OR '&BASE' EQ '*').DEFBASE                00420000
+&LB      SETC  '&BASE'                                                  00430000
+.DEFBASE AIF   (N'&BHI NE 2).NOTBHI                                     00440000
+&BH1     SETC  '&BHI(1)'     FIRST OF TWO ARGUMENTS                     00450000
+&BH2     SETC  '&BHI(2)'     SECOND OF TWO ARGUMENTS                    00460000
+.NOTBHI  AIF   (N'&BHI NE 1).DONBHI                                     00470000
+&BH1     SETC  '&BHI'        ONE OF ONE, WITH PARENTHESES               00480000
+.DONBHI  ANOP  ,                                                        00490000
+.*--------------------------------------------------------------------* 00500000
+.*  DETERMINE NUMBER OF ADDRESSES, AND CORRESPONDING MASK             * 00510000
+.*--------------------------------------------------------------------* 00520000
+&N       SETA  N'&LOC                                                   00530000
+&J       SETA  2             SET SMALLEST MASK + 1 (=1 FAILS)           00540000
+&I       SETA  &N            FOR NON-NUM SIZE, USE COUNT                00550000
+         AIF   (&N NE 0 AND &N LE 256).GOTSIZE                          00560000
+.BADSIZE MNOTE 8,'BIX: LOC LIST BAD - NEED 1 TO 256 TARGET LABELS'      00570000
+.GOTSIZE AIF   (&J GE &I).GOTMASK                                       00580000
+&J       SETA  &J*&J                                                    00590000
+         AGO   .GOTSIZE                                                 00600000
+.GOTMASK ANOP  ,                                                        00610000
+&I       SETA  &J-1          CONVERT POWER OF TWO TO MASK               00620000
+.USEMASK ANOP  ,                                                        00630000
+&NM      MACPARM &WK(1),&VAL,OP=IC,OPR=LR  LOAD INDEX VALUE             00640000
+         AIF   ('&SRL' EQ '0').NOSHFT                                   00650000
+         MACPARM &WK(1),&SRL,OP=SRL,OPR=SRL,MODE=EVEN,NULL=SKIP         00660000
+.NOSHFT  MACPARM &W2(1),&I,OP=LA,MODE=EVEN LOAD MASK VALUE              00670000
+         NR    &WK(1),&W2(1) ISOLATE SIGNIFICANT PORTION                00680000
+         AIF   ('&BH1' EQ '').DOWK2                                     00690000
+         MACPARM &W2(1),&BH2,OP=LA,NULL=SKIP  ALLOW OVERRIDE            00700000
+         CR    &WK(1),&W2(1) EXACTLY MASK MAXIMUM ?                     00710000
+         MACPARM &BH1,OP=BE,OPR=BER,MODE=ONE                            00720000
+.DOWK2   AIF   (T'&ERR EQ 'O').NOLIM                                    00730000
+         AIF   ('&N' EQ '&BH2').TOOMASK  LIST HIGH SAME AS MAX ?        00740000
+         CH    &WK(1),=Y(&N) VALID INDEX ?                              00750000
+.TOOMASK BNL   &ERR          NO; TOO HIGH                               00760000
+.NOLIM   SLL   &WK(1),1      CONVERT INDEX TO OFFSET                    00770000
+         LH    &WK(1),*+8(&WK(1)) LOAD LABEL OFFSET FROM BASE           00780000
+         B     &LB.(&WK(1))  ENTER ROUTINE                              00790000
+&J       SETA  0                                                        00800000
+.INC     AIF   (&J GE &N).DONE                                          00810000
+&J       SETA  &J+1                                                     00820000
+         AIF   ('&LOC(&J)' EQ '').DFLT                                  00830000
+         DC    AL2(&PFX.&LOC(&J)-&LB)&SPACES.&J  BRANCH                 00840000
+         AGO   .INC                                                     00850000
+.DFLT    DC    AL2(&ERR-&LB)&SPACES.&J  ERROR                           00860000
+         AGO   .INC                                                     00870000
+.DONE    MEND  ,                                                        00880000

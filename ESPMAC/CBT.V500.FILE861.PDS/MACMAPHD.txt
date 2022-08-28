@@ -1,0 +1,56 @@
+         MACRO                                                          00010000
+&NM    MACMAPHD &OP1,&DSECT=,&PFX=,&SFX=,&DFLT=,&NULL=SKIP      GP03144 00020000
+         LCLC  &FOOF                                                    00030000
+.*--------------------------------------------------------------------* 00040000
+.*  MACMAPHD IS USED AS AN INNER MACRO TO DEFINE DS/DSECT/CSECT       * 00050000
+.*  FOR CONTROL BLOCK MAPPINGS                                        * 00060000
+.*                                                                    * 00070000
+.*  &NM IS THE (OPTIONAL) BLOCK NAME                                  * 00080000
+.*  &OP1 IS AN ALTERNATE NAME WHEN &NM IS VOID                        * 00090000
+.*  &DFLT IS A DEFAULT NAME WHEN BOTH &NM AND &OP1 ARE OMITTED        * 00100000
+.*    WHEN BOTH ARE VOID, AND DSECT= IS VOID, AND NULL=SKIP, THEN     * 00110000
+.*    NOTHING IS EXPANDED                                             * 00120000
+.*                                                                    * 00130000
+.*  &PFX AND &SFX DEFINE AN OPTIONAL PREFIX AND SUFFIX THAT WILL BE   * 00140000
+.*    APPLIED TO ALL NAMES EXCEPT &NM                                 * 00150000
+.*                                                                    * 00160000
+.*  &DSECT - WHEN VOID OR =YES, GENERATES DSECT                       * 00170000
+.*    WHEN =NO, EXPANDS DS 0D (UNLESS ALL LABELS VOID AND NULL-SKIP)  * 00180000
+.*    OTHERWISE USED AS IS (FOR RSECT AND CSECT)                      * 00190000
+.*--------------------------------------------------------------------* 00200000
+         LCLC  &LBL          EXPANDED NAME FIELD                        00210000
+         LCLB  &DS,&LBF                                                 00220000
+         LCLC  &OPCD         DSECT, DS, OR ?                            00230000
+         LCLC  &OPER         MATCHING OPERAND (, OR 0D)                 00240000
+         AIF   ('&NM' EQ '').NONAME                                     00250000
+&LBF     SETB  1             USER SUPPLIED LABEL                        00260000
+&LBL     SETC  '&NM'                                                    00270000
+         AGO   .TYPETST                                                 00280000
+.NONAME  AIF   ('&OP1' EQ '').NOALTNM                                   00290000
+&LBF     SETB  1             USER SUPPLIED LABEL                        00300000
+&LBL     SETC  '&PFX'.'&OP1'.'&SFX'                                     00310000
+         AGO   .TYPETST                                                 00320000
+.NOALTNM AIF   ('&DFLT' NE '').GOODFLT                                  00330000
+&FOOF    SETC  '&SYSNDX'                                                00340000
+&LBL     SETC  '&PFX'.'MAP'.'&FOOF'.'&SFX'                              00350000
+         AIF   ('&DSECT' NE 'NO' AND '&DSECT' NE 'DS').NODFLT           00360000
+         AIF   (NOT &LBF AND '&NULL' EQ 'SKIP').MEND                    00370000
+.NODFLT  MNOTE 4,'MACMAPHD: LABEL, OPERAND, AND DFLT ALL VOID'          00380000
+         AGO   .TYPETST                                                 00390000
+.GOODFLT ANOP  ,                                                        00400000
+&LBL     SETC  '&PFX'.'&DFLT'.'&SFX'                                    00410000
+.TYPETST AIF   ('&DSECT' NE 'NO' AND '&DSECT' NE 'DS').NOTDS            00420000
+         AIF   (NOT &LBF AND '&NULL' EQ 'SKIP').MEND                    00430000
+&OPCD    SETC  'DS'                                                     00440000
+&OPER    SETC  '0D'                                                     00450000
+         AGO   .EXPAND                                                  00460000
+.NOTDS   AIF   ('&DSECT' NE ''   AND '&DSECT' NE 'YES').NOTDSY          00470000
+&OPCD    SETC  'DSECT'                                                  00480000
+&OPER    SETC  ','                                                      00490000
+         AGO   .EXPAND                                                  00500000
+.NOTDSY  ANOP  ,                                                        00510000
+&OPCD    SETC  '&DSECT'                                                 00520000
+&OPER    SETC  ','                                                      00530000
+.EXPAND  ANOP  ,                                                        00540000
+&LBL     &OPCD &OPER                                                    00550000
+.MEND    MEND  ,                                                        00560000

@@ -1,0 +1,641 @@
+         MACRO ,                                                        00020000
+        $HEAD  &STRING,           STRING IS EXPANDED                   *00040000
+               &BLOCK=YES,        STRING IS TO BE BLOCKED              *00060000
+               &PRINT=GEN,        OPTIONAL OUTPUT SUPPRESSION          *00070000
+               &TITLE=            (A,'B') -GEN TITLE STATEMENT WITH    *00080000
+                                  NAME FIELD A, AND TITLE 'B'           00100000
+.*                                                                      00120000
+.*  THIS MACRO COPIED & ALTERED FROM 'MIM#3' WRITTEN BY C. J. GOELZ     00140000
+.*                                                                      00160000
+         LCLB  &HEADB                                                   00180000
+         LCLC  &HEADC(497)                                              00200000
+         LCLA  &I                                                       00220000
+         LCLA  &J                                                       00240000
+         LCLA  &K                                                       00260000
+         LCLA  &L                                                       00280000
+         LCLA  &M                                                       00300000
+         LCLA  &N                                                       00320000
+         LCLC  &F(64)                                                   00340000
+         LCLC  &STR(64)                                                 00360000
+         LCLC  &B                                                       00380000
+         LCLC  &W                                                       00400000
+.*                                                                      00420000
+.*                                                                      00440000
+         AIF   (&HEADB).PROC                                            00460000
+&HEADB   SETB  (1)                                                      00480000
+&HEADC(1)    SETC  ' '                                                  00500000
+&HEADC(2)    SETC  '        '                                           00520000
+&HEADC(3)    SETC  '        '                                           00540000
+&HEADC(4)    SETC  '        '                                           00560000
+&HEADC(5)    SETC  '        '                                           00580000
+&HEADC(6)    SETC  '        '                                           00600000
+&HEADC(7)    SETC  '        '                                           00620000
+&HEADC(8)    SETC  '        '                                           00640000
+&HEADC(9)    SETC  '        '                                           00660000
+&HEADC(10)   SETC  'A'                                                  00680000
+&HEADC(11)   SETC  '    A   '                                           00700000
+&HEADC(12)   SETC  '   AAA  '                                           00720000
+&HEADC(13)   SETC  '  AA AA '                                           00740000
+&HEADC(14)   SETC  ' AA   AA'                                           00760000
+&HEADC(15)   SETC  ' AA   AA'                                           00780000
+&HEADC(16)   SETC  ' AAAAAAA'                                           00800000
+&HEADC(17)   SETC  ' AA   AA'                                           00820000
+&HEADC(18)   SETC  ' AA   AA'                                           00840000
+&HEADC(19)   SETC  'B'                                                  00860000
+&HEADC(20)   SETC  ' BBBBBB '                                           00880000
+&HEADC(21)   SETC  ' BB   BB'                                           00900000
+&HEADC(22)   SETC  ' BB   BB'                                           00920000
+&HEADC(23)   SETC  ' BBBBBB '                                           00940000
+&HEADC(24)   SETC  ' BB   BB'                                           00960000
+&HEADC(25)   SETC  ' BB   BB'                                           00980000
+&HEADC(26)   SETC  ' BB   BB'                                           01000000
+&HEADC(27)   SETC  ' BBBBBB '                                           01020000
+&HEADC(28)   SETC  'C'                                                  01040000
+&HEADC(29)   SETC  '  CCCCC '                                           01060000
+&HEADC(30)   SETC  ' CC   CC'                                           01080000
+&HEADC(31)   SETC  ' CC   CC'                                           01100000
+&HEADC(32)   SETC  ' CC     '                                           01120000
+&HEADC(33)   SETC  ' CC     '                                           01140000
+&HEADC(34)   SETC  ' CC   CC'                                           01160000
+&HEADC(35)   SETC  ' CC   CC'                                           01180000
+&HEADC(36)   SETC  '  CCCCC '                                           01200000
+&HEADC(37)   SETC  'D'                                                  01220000
+&HEADC(38)   SETC  ' DDDDDD '                                           01240000
+&HEADC(39)   SETC  ' DD   DD'                                           01260000
+&HEADC(40)   SETC  ' DD   DD'                                           01280000
+&HEADC(41)   SETC  ' DD   DD'                                           01300000
+&HEADC(42)   SETC  ' DD   DD'                                           01320000
+&HEADC(43)   SETC  ' DD   DD'                                           01340000
+&HEADC(44)   SETC  ' DD   DD'                                           01360000
+&HEADC(45)   SETC  ' DDDDDD '                                           01380000
+&HEADC(46)   SETC  'E'                                                  01400000
+&HEADC(47)   SETC  ' EEEEEE '                                           01420000
+&HEADC(48)   SETC  ' EE     '                                           01440000
+&HEADC(49)   SETC  ' EE     '                                           01460000
+&HEADC(50)   SETC  ' EEEE   '                                           01480000
+&HEADC(51)   SETC  ' EE     '                                           01500000
+&HEADC(52)   SETC  ' EE     '                                           01520000
+&HEADC(53)   SETC  ' EE     '                                           01540000
+&HEADC(54)   SETC  ' EEEEEEE'                                           01560000
+&HEADC(55)   SETC  'F'                                                  01580000
+&HEADC(56)   SETC  ' FFFFFFF'                                           01600000
+&HEADC(57)   SETC  ' FF     '                                           01620000
+&HEADC(58)   SETC  ' FF     '                                           01640000
+&HEADC(59)   SETC  ' FFFFF  '                                           01660000
+&HEADC(60)   SETC  ' FF     '                                           01680000
+&HEADC(61)   SETC  ' FF     '                                           01700000
+&HEADC(62)   SETC  ' FF     '                                           01720000
+&HEADC(63)   SETC  ' FF     '                                           01740000
+&HEADC(64)   SETC  'G'                                                  01760000
+&HEADC(65)   SETC  '  GGGGG '                                           01780000
+&HEADC(66)   SETC  ' GG   GG'                                           01800000
+&HEADC(67)   SETC  ' GG   GG'                                           01820000
+&HEADC(68)   SETC  ' GG     '                                           01840000
+&HEADC(69)   SETC  ' GG  GGG'                                           01860000
+&HEADC(70)   SETC  ' GG   GG'                                           01880000
+&HEADC(71)   SETC  ' GG   GG'                                           01900000
+&HEADC(72)   SETC  '  GGGGG '                                           01920000
+&HEADC(73)   SETC  'H'                                                  01940000
+&HEADC(74)   SETC  ' HH   HH'                                           01960000
+&HEADC(75)   SETC  ' HH   HH'                                           01980000
+&HEADC(76)   SETC  ' HH   HH'                                           02000000
+&HEADC(77)   SETC  ' HHHHHHH'                                           02020000
+&HEADC(78)   SETC  ' HH   HH'                                           02040000
+&HEADC(79)   SETC  ' HH   HH'                                           02060000
+&HEADC(80)   SETC  ' HH   HH'                                           02080000
+&HEADC(81)   SETC  ' HH   HH'                                           02100000
+&HEADC(82)   SETC  'I'                                                  02120000
+&HEADC(83)   SETC  '  IIII  '                                           02140000
+&HEADC(84)   SETC  '   II   '                                           02160000
+&HEADC(85)   SETC  '   II   '                                           02180000
+&HEADC(86)   SETC  '   II   '                                           02200000
+&HEADC(87)   SETC  '   II   '                                           02220000
+&HEADC(88)   SETC  '   II   '                                           02240000
+&HEADC(89)   SETC  '   II   '                                           02260000
+&HEADC(90)   SETC  '  IIII  '                                           02280000
+&HEADC(91)   SETC  'J'                                                  02300000
+&HEADC(92)   SETC  '      JJ'                                           02320000
+&HEADC(93)   SETC  '      JJ'                                           02340000
+&HEADC(94)   SETC  '      JJ'                                           02360000
+&HEADC(95)   SETC  '      JJ'                                           02380000
+&HEADC(96)   SETC  '      JJ'                                           02400000
+&HEADC(97)   SETC  ' JJ   JJ'                                           02420000
+&HEADC(98)   SETC  ' JJ   JJ'                                           02440000
+&HEADC(99)   SETC  '  JJJJJ '                                           02460000
+&HEADC(100)  SETC  'K'                                                  02480000
+&HEADC(101)  SETC  ' KK   KK'                                           02500000
+&HEADC(102)  SETC  ' KK  KK '                                           02520000
+&HEADC(103)  SETC  ' KK KK  '                                           02540000
+&HEADC(104)  SETC  ' KKKK   '                                           02560000
+&HEADC(105)  SETC  ' KKKK   '                                           02580000
+&HEADC(106)  SETC  ' KK KK  '                                           02600000
+&HEADC(107)  SETC  ' KK  KK '                                           02620000
+&HEADC(108)  SETC  ' KK   KK'                                           02640000
+&HEADC(109)  SETC  'L'                                                  02660000
+&HEADC(110)  SETC  ' LL     '                                           02680000
+&HEADC(111)  SETC  ' LL     '                                           02700000
+&HEADC(112)  SETC  ' LL     '                                           02720000
+&HEADC(113)  SETC  ' LL     '                                           02740000
+&HEADC(114)  SETC  ' LL     '                                           02760000
+&HEADC(115)  SETC  ' LL     '                                           02780000
+&HEADC(116)  SETC  ' LL     '                                           02800000
+&HEADC(117)  SETC  ' LLLLLLL'                                           02820000
+&HEADC(118)  SETC  'M'                                                  02840000
+&HEADC(119)  SETC  ' M     M'                                           02860000
+&HEADC(120)  SETC  ' MM   MM'                                           02880000
+&HEADC(121)  SETC  ' MMM MMM'                                           02900000
+&HEADC(122)  SETC  ' MMMMMMM'                                           02920000
+&HEADC(123)  SETC  ' MM M MM'                                           02940000
+&HEADC(124)  SETC  ' MM   MM'                                           02960000
+&HEADC(125)  SETC  ' MM   MM'                                           02980000
+&HEADC(126)  SETC  ' MM   MM'                                           03000000
+&HEADC(127)  SETC  'N'                                                  03020000
+&HEADC(128)  SETC  ' NN   NN'                                           03040000
+&HEADC(129)  SETC  ' NNN  NN'                                           03060000
+&HEADC(130)  SETC  ' NNN  NN'                                           03080000
+&HEADC(131)  SETC  ' NNNN NN'                                           03100000
+&HEADC(132)  SETC  ' NN NNNN'                                           03120000
+&HEADC(133)  SETC  ' NN  NNN'                                           03140000
+&HEADC(134)  SETC  ' NN  NNN'                                           03160000
+&HEADC(135)  SETC  ' NN   NN'                                           03180000
+&HEADC(136)  SETC  'O'                                                  03200000
+&HEADC(137)  SETC  '  OOOOO '                                           03220000
+&HEADC(138)  SETC  ' OO   OO'                                           03240000
+&HEADC(139)  SETC  ' OO   OO'                                           03260000
+&HEADC(140)  SETC  ' OO   OO'                                           03280000
+&HEADC(141)  SETC  ' OO   OO'                                           03300000
+&HEADC(142)  SETC  ' OO   OO'                                           03320000
+&HEADC(143)  SETC  ' OO   OO'                                           03340000
+&HEADC(144)  SETC  '  OOOOO '                                           03360000
+&HEADC(145)  SETC  'P'                                                  03380000
+&HEADC(146)  SETC  ' PPPPPP '                                           03400000
+&HEADC(147)  SETC  ' PP   PP'                                           03420000
+&HEADC(148)  SETC  ' PP   PP'                                           03440000
+&HEADC(149)  SETC  ' PP   PP'                                           03460000
+&HEADC(150)  SETC  ' PPPPPP '                                           03480000
+&HEADC(151)  SETC  ' PP     '                                           03500000
+&HEADC(152)  SETC  ' PP     '                                           03520000
+&HEADC(153)  SETC  ' PP     '                                           03540000
+&HEADC(154)  SETC  'Q'                                                  03560000
+&HEADC(155)  SETC  '  QQQQQ '                                           03580000
+&HEADC(156)  SETC  ' QQ   QQ'                                           03600000
+&HEADC(157)  SETC  ' QQ   QQ'                                           03620000
+&HEADC(158)  SETC  ' QQ   QQ'                                           03640000
+&HEADC(159)  SETC  ' QQ Q QQ'                                           03660000
+&HEADC(160)  SETC  ' QQ  QQQ'                                           03680000
+&HEADC(161)  SETC  ' QQ   QQ'                                           03700000
+&HEADC(162)  SETC  '  QQQQQQ'                                           03720000
+&HEADC(163)  SETC  'R'                                                  03740000
+&HEADC(164)  SETC  ' RRRRRR '                                           03760000
+&HEADC(165)  SETC  ' RR   RR'                                           03780000
+&HEADC(166)  SETC  ' RR   RR'                                           03800000
+&HEADC(167)  SETC  ' RR   RR'                                           03820000
+&HEADC(168)  SETC  ' RRRRRR '                                           03840000
+&HEADC(169)  SETC  ' RR RR  '                                           03860000
+&HEADC(170)  SETC  ' RR  RR '                                           03880000
+&HEADC(171)  SETC  ' RR   RR'                                           03900000
+&HEADC(172)  SETC  'S'                                                  03920000
+&HEADC(173)  SETC  '  SSSSS '                                           03940000
+&HEADC(174)  SETC  ' SS   SS'                                           03960000
+&HEADC(175)  SETC  ' SS     '                                           03980000
+&HEADC(176)  SETC  '  SSSSS '                                           04000000
+&HEADC(177)  SETC  '      SS'                                           04020000
+&HEADC(178)  SETC  ' SS   SS'                                           04040000
+&HEADC(179)  SETC  ' SS   SS'                                           04060000
+&HEADC(180)  SETC  '  SSSSS '                                           04080000
+&HEADC(181)  SETC  'T'                                                  04100000
+&HEADC(182)  SETC  'TTTTTTTT'                                           04120000
+&HEADC(183)  SETC  '   TT   '                                           04140000
+&HEADC(184)  SETC  '   TT   '                                           04160000
+&HEADC(185)  SETC  '   TT   '                                           04180000
+&HEADC(186)  SETC  '   TT   '                                           04200000
+&HEADC(187)  SETC  '   TT   '                                           04220000
+&HEADC(188)  SETC  '   TT   '                                           04240000
+&HEADC(189)  SETC  '   TT   '                                           04260000
+&HEADC(190)  SETC  'U'                                                  04280000
+&HEADC(191)  SETC  ' UU   UU'                                           04300000
+&HEADC(192)  SETC  ' UU   UU'                                           04320000
+&HEADC(193)  SETC  ' UU   UU'                                           04340000
+&HEADC(194)  SETC  ' UU   UU'                                           04360000
+&HEADC(195)  SETC  ' UU   UU'                                           04380000
+&HEADC(196)  SETC  ' UU   UU'                                           04400000
+&HEADC(197)  SETC  ' UU   UU'                                           04420000
+&HEADC(198)  SETC  '  UUUUU '                                           04440000
+&HEADC(199)  SETC  'V'                                                  04460000
+&HEADC(200)  SETC  ' VV   VV'                                           04480000
+&HEADC(201)  SETC  ' VV   VV'                                           04500000
+&HEADC(202)  SETC  ' VV   VV'                                           04520000
+&HEADC(203)  SETC  ' VV   VV'                                           04540000
+&HEADC(204)  SETC  ' VV   VV'                                           04560000
+&HEADC(205)  SETC  '  VV VV '                                           04580000
+&HEADC(206)  SETC  '   VVV  '                                           04600000
+&HEADC(207)  SETC  '    V   '                                           04620000
+&HEADC(208)  SETC  'W'                                                  04640000
+&HEADC(209)  SETC  ' WW   WW'                                           04660000
+&HEADC(210)  SETC  ' WW   WW'                                           04680000
+&HEADC(211)  SETC  ' WW   WW'                                           04700000
+&HEADC(212)  SETC  ' WW   WW'                                           04720000
+&HEADC(213)  SETC  ' WW W WW'                                           04740000
+&HEADC(214)  SETC  ' WWWWWWW'                                           04760000
+&HEADC(215)  SETC  ' WWW WWW'                                           04780000
+&HEADC(216)  SETC  '  W   W '                                           04800000
+&HEADC(217)  SETC  'X'                                                  04820000
+&HEADC(218)  SETC  ' XX   XX'                                           04840000
+&HEADC(219)  SETC  ' XX   XX'                                           04860000
+&HEADC(220)  SETC  '  XX XX '                                           04880000
+&HEADC(221)  SETC  '   XXX  '                                           04900000
+&HEADC(222)  SETC  '   XXX  '                                           04920000
+&HEADC(223)  SETC  '  XX XX '                                           04940000
+&HEADC(224)  SETC  ' XX   XX'                                           04960000
+&HEADC(225)  SETC  ' XX   XX'                                           04980000
+&HEADC(226)  SETC  'Y'                                                  05000000
+&HEADC(227)  SETC  ' YY   YY'                                           05020000
+&HEADC(228)  SETC  ' YY   YY'                                           05040000
+&HEADC(229)  SETC  ' YY   YY'                                           05060000
+&HEADC(230)  SETC  '  YY YY '                                           05080000
+&HEADC(231)  SETC  '   YYY  '                                           05100000
+&HEADC(232)  SETC  '   YY   '                                           05120000
+&HEADC(233)  SETC  '   YY   '                                           05140000
+&HEADC(234)  SETC  '   YY   '                                           05160000
+&HEADC(235)  SETC  'Z'                                                  05180000
+&HEADC(236)  SETC  ' ZZZZZZZ'                                           05200000
+&HEADC(237)  SETC  '      ZZ'                                           05220000
+&HEADC(238)  SETC  '     ZZ '                                           05240000
+&HEADC(239)  SETC  '    ZZ  '                                           05260000
+&HEADC(240)  SETC  '   ZZ   '                                           05280000
+&HEADC(241)  SETC  '  ZZ    '                                           05300000
+&HEADC(242)  SETC  ' ZZ     '                                           05320000
+&HEADC(243)  SETC  ' ZZZZZZZ'                                           05340000
+&HEADC(244)  SETC  '1'                                                  05360000
+&HEADC(245)  SETC  '    1   '                                           05380000
+&HEADC(246)  SETC  '   11   '                                           05400000
+&HEADC(247)  SETC  '    1   '                                           05420000
+&HEADC(248)  SETC  '    1   '                                           05440000
+&HEADC(249)  SETC  '    1   '                                           05460000
+&HEADC(250)  SETC  '    1   '                                           05480000
+&HEADC(251)  SETC  '    1   '                                           05500000
+&HEADC(252)  SETC  '   111  '                                           05520000
+&HEADC(253)  SETC  '2'                                                  05540000
+&HEADC(254)  SETC  '   222  '                                           05560000
+&HEADC(255)  SETC  '  2   2 '                                           05580000
+&HEADC(256)  SETC  '      2 '                                           05600000
+&HEADC(257)  SETC  '      2 '                                           05620000
+&HEADC(258)  SETC  '   222  '                                           05640000
+&HEADC(259)  SETC  '  2     '                                           05660000
+&HEADC(260)  SETC  '  2     '                                           05680000
+&HEADC(261)  SETC  '  22222 '                                           05700000
+&HEADC(262)  SETC  '3'                                                  05720000
+&HEADC(263)  SETC  '   333  '                                           05740000
+&HEADC(264)  SETC  '  3   3 '                                           05760000
+&HEADC(265)  SETC  '      3 '                                           05780000
+&HEADC(266)  SETC  '    33  '                                           05800000
+&HEADC(267)  SETC  '      3 '                                           05820000
+&HEADC(268)  SETC  '  3   3 '                                           05840000
+&HEADC(269)  SETC  '  3   3 '                                           05860000
+&HEADC(270)  SETC  '   333  '                                           05880000
+&HEADC(271)  SETC  '4'                                                  05900000
+&HEADC(272)  SETC  '     4  '                                           05920000
+&HEADC(273)  SETC  '    44  '                                           05940000
+&HEADC(274)  SETC  '   4 4  '                                           05960000
+&HEADC(275)  SETC  '  4  4  '                                           05980000
+&HEADC(276)  SETC  ' 444444 '                                           06000000
+&HEADC(277)  SETC  '     4  '                                           06020000
+&HEADC(278)  SETC  '     4  '                                           06040000
+&HEADC(279)  SETC  '     4  '                                           06060000
+&HEADC(280)  SETC  '5'                                                  06080000
+&HEADC(281)  SETC  '  55555 '                                           06100000
+&HEADC(282)  SETC  '  5     '                                           06120000
+&HEADC(283)  SETC  '  5     '                                           06140000
+&HEADC(284)  SETC  '  5555  '                                           06160000
+&HEADC(285)  SETC  '      5 '                                           06180000
+&HEADC(286)  SETC  '  5   5 '                                           06200000
+&HEADC(287)  SETC  '  5   5 '                                           06220000
+&HEADC(288)  SETC  '   555  '                                           06240000
+&HEADC(289)  SETC  '6'                                                  06260000
+&HEADC(290)  SETC  '   666  '                                           06280000
+&HEADC(291)  SETC  '  6   6 '                                           06300000
+&HEADC(292)  SETC  '  6     '                                           06320000
+&HEADC(293)  SETC  '  6666  '                                           06340000
+&HEADC(294)  SETC  '  6   6 '                                           06360000
+&HEADC(295)  SETC  '  6   6 '                                           06380000
+&HEADC(296)  SETC  '  6   6 '                                           06400000
+&HEADC(297)  SETC  '   666  '                                           06420000
+&HEADC(298)  SETC  '7'                                                  06440000
+&HEADC(299)  SETC  '  77777 '                                           06460000
+&HEADC(300)  SETC  '      7 '                                           06480000
+&HEADC(301)  SETC  '      7 '                                           06500000
+&HEADC(302)  SETC  '     7  '                                           06520000
+&HEADC(303)  SETC  '    7   '                                           06540000
+&HEADC(304)  SETC  '   7    '                                           06560000
+&HEADC(305)  SETC  '   7    '                                           06580000
+&HEADC(306)  SETC  '   7    '                                           06600000
+&HEADC(307)  SETC  '8'                                                  06620000
+&HEADC(308)  SETC  '   888  '                                           06640000
+&HEADC(309)  SETC  '  8   8 '                                           06660000
+&HEADC(310)  SETC  '  8   8 '                                           06680000
+&HEADC(311)  SETC  '   888  '                                           06700000
+&HEADC(312)  SETC  '  8   8 '                                           06720000
+&HEADC(313)  SETC  '  8   8 '                                           06740000
+&HEADC(314)  SETC  '  8   8 '                                           06760000
+&HEADC(315)  SETC  '   888  '                                           06780000
+&HEADC(316)  SETC  '9'                                                  06800000
+&HEADC(317)  SETC  '   999  '                                           06820000
+&HEADC(318)  SETC  '  9   9 '                                           06840000
+&HEADC(319)  SETC  '  9   9 '                                           06860000
+&HEADC(320)  SETC  '  9   9 '                                           06880000
+&HEADC(321)  SETC  '   9999 '                                           06900000
+&HEADC(322)  SETC  '      9 '                                           06920000
+&HEADC(323)  SETC  '  9   9 '                                           06940000
+&HEADC(324)  SETC  '   999  '                                           06960000
+&HEADC(325)  SETC  '0'                                                  06980000
+&HEADC(326)  SETC  '   000  '                                           07000000
+&HEADC(327)  SETC  '  0   0 '                                           07020000
+&HEADC(328)  SETC  '  0   0 '                                           07040000
+&HEADC(329)  SETC  '  0   0 '                                           07060000
+&HEADC(330)  SETC  '  0   0 '                                           07080000
+&HEADC(331)  SETC  '  0   0 '                                           07100000
+&HEADC(332)  SETC  '  0   0 '                                           07120000
+&HEADC(333)  SETC  '   000  '                                           07140000
+&HEADC(334)  SETC  '$'                                                  07160000
+&HEADC(335)  SETC  '    $   '                                           07180000
+&HEADC(336)  SETC  '  $$$$$ '                                           07200000
+&HEADC(337)  SETC  ' $$ $ $$'                                           07220000
+&HEADC(338)  SETC  ' $$ $   '                                           07240000
+&HEADC(339)  SETC  '  $$$$$ '                                           07260000
+&HEADC(340)  SETC  '    $ $$'                                           07280000
+&HEADC(341)  SETC  ' $$ $ $$'                                           07300000
+&HEADC(342)  SETC  '  $$$$$ '                                           07320000
+&HEADC(343)  SETC  '#'                                                  07340000
+&HEADC(344)  SETC  '  ## ## '                                           07360000
+&HEADC(345)  SETC  '  ## ## '                                           07380000
+&HEADC(346)  SETC  ' #######'                                           07400000
+&HEADC(347)  SETC  '  ## ## '                                           07420000
+&HEADC(348)  SETC  '  ## ## '                                           07440000
+&HEADC(349)  SETC  ' #######'                                           07460000
+&HEADC(350)  SETC  '  ## ## '                                           07480000
+&HEADC(351)  SETC  '  ## ## '                                           07500000
+&HEADC(352)  SETC  '@'                                                  07520000
+&HEADC(353)  SETC  '  @@@@@ '                                           07540000
+&HEADC(354)  SETC  ' @     @'                                           07560000
+&HEADC(355)  SETC  ' @  @@ @'                                           07580000
+&HEADC(356)  SETC  ' @ @ @ @'                                           07600000
+&HEADC(357)  SETC  '  @  @ @'                                           07620000
+&HEADC(358)  SETC  ' @   @ @'                                           07640000
+&HEADC(359)  SETC  ' @   @ @'                                           07660000
+&HEADC(360)  SETC  '  @@@ @ '                                           07680000
+&HEADC(361)  SETC  ','                                                  07700000
+&HEADC(362)  SETC  '        '                                           07720000
+&HEADC(363)  SETC  '        '                                           07740000
+&HEADC(364)  SETC  '        '                                           07760000
+&HEADC(365)  SETC  '        '                                           07780000
+&HEADC(366)  SETC  '   ,,   '                                           07800000
+&HEADC(367)  SETC  '   ,,   '                                           07820000
+&HEADC(368)  SETC  '    ,   '                                           07840000
+&HEADC(369)  SETC  '   ,    '                                           07860000
+&HEADC(370)  SETC  '.'                                                  07880000
+&HEADC(371)  SETC  '        '                                           07900000
+&HEADC(372)  SETC  '        '                                           07920000
+&HEADC(373)  SETC  '        '                                           07940000
+&HEADC(374)  SETC  '        '                                           07960000
+&HEADC(375)  SETC  '        '                                           07980000
+&HEADC(376)  SETC  '   ..   '                                           08000000
+&HEADC(377)  SETC  '   ..   '                                           08020000
+&HEADC(378)  SETC  '        '                                           08040000
+&HEADC(379)  SETC  '('                                                  08060000
+&HEADC(380)  SETC  '    (   '                                           08080000
+&HEADC(381)  SETC  '   (    '                                           08100000
+&HEADC(382)  SETC  '  (     '                                           08120000
+&HEADC(383)  SETC  '  (     '                                           08140000
+&HEADC(384)  SETC  '  (     '                                           08160000
+&HEADC(385)  SETC  '  (     '                                           08180000
+&HEADC(386)  SETC  '   (    '                                           08200000
+&HEADC(387)  SETC  '    (   '                                           08220000
+&HEADC(388)  SETC  ')'                                                  08240000
+&HEADC(389)  SETC  '   )    '                                           08260000
+&HEADC(390)  SETC  '    )   '                                           08280000
+&HEADC(391)  SETC  '     )  '                                           08300000
+&HEADC(392)  SETC  '     )  '                                           08320000
+&HEADC(393)  SETC  '     )  '                                           08340000
+&HEADC(394)  SETC  '     )  '                                           08360000
+&HEADC(395)  SETC  '    )   '                                           08380000
+&HEADC(396)  SETC  '   )    '                                           08400000
+&HEADC(397)  SETC  '+'                                                  08420000
+&HEADC(398)  SETC  '        '                                           08440000
+&HEADC(399)  SETC  '    +   '                                           08460000
+&HEADC(400)  SETC  '    +   '                                           08480000
+&HEADC(401)  SETC  '    +   '                                           08500000
+&HEADC(402)  SETC  ' +++++++'                                           08520000
+&HEADC(403)  SETC  '    +   '                                           08540000
+&HEADC(404)  SETC  '    +   '                                           08560000
+&HEADC(405)  SETC  '    +   '                                           08580000
+&HEADC(406)  SETC  '/'                                                  08600000
+&HEADC(407)  SETC  '       /'                                           08620000
+&HEADC(408)  SETC  '      / '                                           08640000
+&HEADC(409)  SETC  '     /  '                                           08660000
+&HEADC(410)  SETC  '    /   '                                           08680000
+&HEADC(411)  SETC  '   /    '                                           08700000
+&HEADC(412)  SETC  '  /     '                                           08720000
+&HEADC(413)  SETC  ' /      '                                           08740000
+&HEADC(414)  SETC  '/       '                                           08760000
+&HEADC(415)  SETC  '"'                                                  08780000
+&HEADC(416)  SETC  '   ""   '                                           08800000
+&HEADC(417)  SETC  '   ""   '                                           08820000
+&HEADC(418)  SETC  '    "   '                                           08840000
+&HEADC(419)  SETC  '   "    '                                           08860000
+&HEADC(420)  SETC  '        '                                           08880000
+&HEADC(421)  SETC  '        '                                           08900000
+&HEADC(422)  SETC  '        '                                           08920000
+&HEADC(423)  SETC  '        '                                           08940000
+&HEADC(424)  SETC  '-'                                                  08960000
+&HEADC(425)  SETC  '        '                                           08980000
+&HEADC(426)  SETC  '        '                                           09000000
+&HEADC(427)  SETC  '        '                                           09020000
+&HEADC(428)  SETC  '        '                                           09040000
+&HEADC(429)  SETC  ' -------'                                           09060000
+&HEADC(430)  SETC  '        '                                           09080000
+&HEADC(431)  SETC  '        '                                           09100000
+&HEADC(432)  SETC  '        '                                           09120000
+&HEADC(433)  SETC  '*'                                                  09140000
+&HEADC(434)  SETC  '        '                                           09160000
+&HEADC(435)  SETC  '  *   * '                                           09180000
+&HEADC(436)  SETC  '   * *  '                                           09200000
+&HEADC(437)  SETC  ' *******'                                           09220000
+&HEADC(438)  SETC  '   * *  '                                           09240000
+&HEADC(439)  SETC  '  *   * '                                           09260000
+&HEADC(440)  SETC  '        '                                           09280000
+&HEADC(441)  SETC  '        '                                           09300000
+&HEADC(442)  SETC  'END'           MARKS END OF THE CHARACTER LIST      09320000
+.PROC    AIF   ('&PRINT' EQ 'NOGEN' OR '&PRINT' EQ 'NODATA').MEND       09340000
+.*                                                                      09360000
+.*                                                                      09380000
+         AIF   (K'&TITLE LE 0).NTITL                                    09400000
+.*                                                                      09420000
+         AIF   ('&TITLE' NE 'EJECT').NEJEC                              09440000
+         EJECT                                                          09460000
+         AGO   .NTITL                                                   09480000
+.*                                                                      09500000
+.NEJEC   ANOP                                                           09520000
+&TITLE(1) TITLE &TITLE(2)                                               09540000
+.*                                                                      09560000
+.*                                                                      09580000
+.NTITL   ANOP                                                           09600000
+.*                                                                      09620000
+.*                                                                      09640000
+&K       SETA  K'&STRING                                                09660000
+         AIF   ((&K EQ 0) OR (&K GT 64)).DONE                           09680000
+.*                                                                      09700000
+.*                                                                      09720000
+         AIF   ('&BLOCK' EQ 'NO').NBLK1                                 09740000
+ MNOTE   '**************************************************************09760000
+               **********'                                              09780000
+&B       SETC  '*'                                                      09800000
+.NBLK1   ANOP  ,                                                        09820000
+.*                                                                      09840000
+.*                                                                      09860000
+.*                                                                      09880000
+&M       SETA  1                                                        09900000
+.COPY2   ANOP  ,                                                        09920000
+&STR(&M) SETC  '&STRING'(&M,1)                                          09940000
+&M       SETA  &M+1                                                     09960000
+         AIF   (&M LE &K).COPY2                                         09980000
+.*                                                                      10000000
+&J       SETA  0                                                        10020000
+&M       SETA  0                                                        10040000
+.*                                                                      10060000
+.*                                                                      10080000
+.EDIT    AIF   (&M EQ &K).AGIN                                          10100000
+&M       SETA  &M+1                                                     10120000
+&I       SETA  &M                                                       10140000
+         AIF   ('&STR(&M)' NE '''').EDIT                                10160000
+.*                                                                      10180000
+         AIF   (&J GT 0).QTCK                                           10200000
+.*                                                                      10220000
+&J       SETA  1                                                        10240000
+         AGO   .COMP                                                    10260000
+.*                                                                      10280000
+.*                                                                      10300000
+.QTCK    AIF   ('&STR(&M+1)' NE '''').COMP                              10320000
+.*                                                                      10340000
+&STR(&M) SETC  '"'                                                      10360000
+&J       SETA  0                                                        10380000
+&M       SETA  &M+1                                                     10400000
+&I       SETA  &M                                                       10420000
+.*                                                                      10440000
+.*                                                                      10460000
+.COMP    ANOP                                                           10480000
+&STR(&I) SETC  '&STR(&I+1)'                                             10500000
+&I       SETA  &I+1                                                     10520000
+         AIF   (&I LT &K).COMP                                          10540000
+.*                                                                      10560000
+&STR(&K) SETC  ' '                                                      10580000
+&K       SETA  &K-1                                                     10600000
+&M       SETA  &M-1                                                     10620000
+         AGO   .EDIT                                                    10640000
+.*                                                                      10660000
+.*                                                                      10680000
+.AGIN    ANOP                                                           10700000
+&I       SETA  1                                                        10720000
+&L       SETA  &K-&N                                                    10740000
+         AIF   (&L LE 0).ENDOFF                                         10760000
+.*                                                                      10780000
+         AIF   (&L LE 8).CK4                                            10800000
+.*                                                                      10820000
+&L       SETA  8                                                        10840000
+.*                                                                      10860000
+.*                                                                      10880000
+.CK4     ANOP                                                           10900000
+&J       SETA  (8-&L)/2*8                                               10920000
+.*                                                                      10940000
+.*                                                                      10960000
+.FILT    AIF   (&I GT &J).SETL                                          10980000
+.*                                                                      11000000
+&F(&I)   SETC  '        '                                               11020000
+&F(&I+1) SETC  '        '                                               11040000
+&F(&I+2) SETC  '        '                                               11060000
+&F(&I+3) SETC  '        '                                               11080000
+&F(&I+4) SETC  '        '                                               11100000
+&F(&I+5) SETC  '        '                                               11120000
+&F(&I+6) SETC  '        '                                               11140000
+&F(&I+7) SETC  '        '                                               11160000
+&I       SETA  &I+8                                                     11180000
+         AGO   .FILT                                                    11200000
+.*                                                                      11220000
+.*                                                                      11240000
+.SETL    ANOP                                                           11260000
+&L       SETA  &L+&N                                                    11280000
+.*                                                                      11300000
+.*                                                                      11320000
+.LOOP    AIF   (&N EQ &L).FINI                                          11340000
+.*                                                                      11360000
+&N       SETA  &N+1                                                     11380000
+&J       SETA  1                                                        11400000
+&W       SETC  '&STR(&N)'                                               11420000
+.*                                                                      11440000
+.*                                                                      11460000
+.MTCH    AIF   ('&W' EQ '&HEADC(&J)').GO                                11480000
+.*                                                                      11500000
+&J       SETA  &J+9                                                     11520000
+         AIF   ('&HEADC(&J)' NE 'END').MTCH                             11540000
+&J       SETA  &J-9                                                     11560000
+.*                                                                      11580000
+.*                                                                      11600000
+.GO      ANOP                                                           11620000
+.*                                                                      11640000
+&F(&I)   SETC  '&HEADC(&J+1)'                                           11660000
+&F(&I+1) SETC  '&HEADC(&J+2)'                                           11680000
+&F(&I+2) SETC  '&HEADC(&J+3)'                                           11700000
+&F(&I+3) SETC  '&HEADC(&J+4)'                                           11720000
+&F(&I+4) SETC  '&HEADC(&J+5)'                                           11740000
+&F(&I+5) SETC  '&HEADC(&J+6)'                                           11760000
+&F(&I+6) SETC  '&HEADC(&J+7)'                                           11780000
+&F(&I+7) SETC  '&HEADC(&J+8)'                                           11800000
+&I       SETA  &I+8                                                     11820000
+         AGO   .LOOP                                                    11840000
+.*                                                                      11860000
+.*                                                                      11880000
+.FINI    AIF   (&I GT 64).DOIT                                          11900000
+.*                                                                      11920000
+&F(&I)   SETC  '        '                                               11940000
+&F(&I+1) SETC  '        '                                               11960000
+&F(&I+2) SETC  '        '                                               11980000
+&F(&I+3) SETC  '        '                                               12000000
+&F(&I+4) SETC  '        '                                               12020000
+&F(&I+5) SETC  '        '                                               12040000
+&F(&I+6) SETC  '        '                                               12060000
+&F(&I+7) SETC  '        '                                               12080000
+&I       SETA  &I+8                                                     12100000
+         AGO   .FINI                                                    12120000
+.*                                                                      12140000
+.*                                                                      12160000
+.DOIT    AIF   ('&BLOCK' EQ 'NO').SPACE                                 12180000
+ MNOTE   '*                                                            *12200000
+                        *'                                              12220000
+ MNOTE   '*                                                            *12240000
+                        *'                                              12260000
+         AGO   .DOIT2                                                   12280000
+.SPACE   ANOP   ,                                                       12300000
+         SPACE 2                                                        12320000
+.DOIT2   ANOP  ,                                                        12340000
+ MNOTE   '&B  &F(1)&F(9)&F(17)&F(25)&F(33)&F(41)&F(49)&F(57)   &B'      12360000
+ MNOTE   '&B  &F(2)&F(10)&F(18)&F(26)&F(34)&F(42)&F(50)&F(58)   &B'     12380000
+ MNOTE   '&B  &F(3)&F(11)&F(19)&F(27)&F(35)&F(43)&F(51)&F(59)   &B'     12400000
+ MNOTE   '&B  &F(4)&F(12)&F(20)&F(28)&F(36)&F(44)&F(52)&F(60)   &B'     12420000
+ MNOTE   '&B  &F(5)&F(13)&F(21)&F(29)&F(37)&F(45)&F(53)&F(61)   &B'     12440000
+ MNOTE   '&B  &F(6)&F(14)&F(22)&F(30)&F(38)&F(46)&F(54)&F(62)   &B'     12460000
+ MNOTE   '&B  &F(7)&F(15)&F(23)&F(31)&F(39)&F(47)&F(55)&F(63)   &B'     12480000
+ MNOTE   '&B  &F(8)&F(16)&F(24)&F(32)&F(40)&F(48)&F(56)&F(64)   &B'     12500000
+         AGO   .AGIN                                                    12520000
+.*                                                                      12540000
+.*                                                                      12560000
+.ENDOFF  AIF   ('&BLOCK' EQ 'NO').DONE                                  12580000
+ MNOTE   '*                                                            *12600000
+                        *'                                              12620000
+ MNOTE   '*                                                            *12640000
+                        *'                                              12660000
+ MNOTE   '**************************************************************12680000
+               **********'                                              12700000
+.*                                                                      12720000
+.*                                                                      12740000
+.DONE    ANOP                                                           12760000
+         SPACE 3                                                        12780000
+.MEND    MEND                                                           12800000

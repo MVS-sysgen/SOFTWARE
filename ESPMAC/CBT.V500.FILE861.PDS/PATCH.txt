@@ -1,0 +1,16 @@
+         MACRO                                                          00010000
+&NM      PATCH &SIZE=64,&OPT=CODE                           NEW GP04234 00020000
+.*                                                                      00030000
+.*   THIS MACRO CREATES 'ZAP' SPACE WHERE USED                          00040000
+.*   SIZE SPECIFES THE NUMBER OF HALFWORDS CREATED                      00050000
+.*   USE OPT=DATA FOR SPACE NOT ADDRESSABLE, OR DATA ONLY               00060000
+.*                                                                      00070000
+         AIF   ('&OPT' EQ 'DATA').DATA                                  00080000
+         AIF   ('&OPT' EQ 'CODE').CODE                                  00090000
+ MNOTE 4,'PATCH: OPT= MUST BE CODE OR DATA'                             00100000
+.CODE    ANOP  ,                                                        00110000
+&NM      DC    (&SIZE)SL2(*)  PATCH SPACE                               00120000
+         MEXIT ,                                                        00130000
+.DATA    ANOP  ,                                                        00140000
+&NM      DC    (&SIZE)AL2(0)  PATCH SPACE                               00150000
+         MEND  ,                                                        00160000

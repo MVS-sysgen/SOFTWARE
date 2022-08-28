@@ -1,0 +1,10 @@
+         MACRO ,                                                        00010000
+         VNEXIT &LIST                                                   00020000
+         LCLA  &I,&J                                                    00030000
+&J       SETA  N'&SYSLIST                                               00040000
+.LOOP    AIF   (&I GE &J).MEND                                          00050000
+&I       SETA  &I+1                                                     00060000
+L&SYSLIST(&I) LA R1,=AL1(M&SYSLIST(&I),B&SYSLIST(&I))                   00070000
+         B     COMXCTL                                                  00080000
+         AGO   .LOOP                                                    00090000
+.MEND    MEND  ,                                                        00100000

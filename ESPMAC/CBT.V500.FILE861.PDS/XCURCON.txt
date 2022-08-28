@@ -1,0 +1,79 @@
+         MACRO ,                                                        00010000
+&NM      XCURCON &XOFF=0,&YOFF=0,&ERR=,&XINT=2,&YINT=1,&XMAX=,&YMAX=,  *00020000
+               &XFUZZ=0,&YFUZZ=0,                                      *00030000
+               &FLAGS=FDWPROFG,&FBIT=FDWPFCUR,&VAL=FDWCUR   NEW GP13105 00040000
+.*                                                                      00050000
+.*   XCURCON ALLOWS THE USER TO PLACE THE CURSOR AT A SCREEN LOCATION   00060000
+.*   AND HIT ENTER. THE MACRO EITHER BRANCHES TO THE 'ERR' LABEL,       00070000
+.*   OR ENDS WITH AN X OFFSET IN R3 AND A Y OFFSET IN R1 (REL. TO 0).   00080000
+.*     (FLAG AND CURSOR DEFAULTS SET FOR SCLINE SERVICE)                00090000
+.*                                                                      00100000
+.*   &VAL   - THE CURSOR ADDRESS SUITABLE FOR THE NEXT WRITE            00110000
+.*   &FLAGS - CONTROL BYTE SET ON FOR A MINIMAL VALID ADDRESS           00120000
+.*   &FBIT  - CONTROL BIT INDICATING A CURSOR ADDRESS PROCESSED         00130000
+.*   &ERR   - LABEL FOR ERROR (CURSOR NOT IN TARGET RECTANGLE)          00140000
+.*   &XOFF  - MINIMUM X OFFSET IN SCREEN LINE (DEFAULT IS 0)            00150000
+.*   &XINT  - X SPACING (DEFAULT IS 2; INTEGER OR HALFWORD)             00160000
+.*   &XMAX  - NUMBER OF HORIZONTAL POSITIONS                            00170000
+.*   &XFUZZ - DEVIATION FROM MINIMUM (FUZZY POSITION)           GP13162 00180000
+.*   &YOFF  - MINIMUM OFFSET ON SCREEN (DEFAULT IS 0)                   00190000
+.*   &YINT  - Y SPACING (DEFAULT IS 1; INTEGER OR HALFWORD)     GP13162 00200000
+.*   &YMAX  - NUMBER OF VERTICAL POSITIONS                              00210000
+.*   &YFUZZ - DEVIATION FROM MINIMUM (FUZZY POSITION)           GP13162 00220000
+.*                                                                      00230000
+.*  XFUZZ/YFUZZ ALLOW CURSOR IN AN AREA TO REGISTER AS A POINT. GP13162 00240000
+.*                                                                      00250000
+&NM      MVC   DB(3),EXCRAWIN  COPY TO PARAMETER AREA                   00260000
+         BAS   R14,EXWFRSBA  GET SCREEN ADDRESS OF CURSOR               00270000
+         STH   R0,&VAL       SAVE BINARY CURSOR ADDRESS                 00280000
+         MACPARM R15,&ERR    QUICK RETURN ON ERROR                      00290000
+         SRDA  R0,32         MOVE TO R1 AND ZERO R0                     00300000
+         LH    R2,LSIZE      GET SCREEN WIDTH                           00310000
+         DR    R0,R2         GET COLUMN / ROW OF CURSOR                 00320000
+         LR    R3,R0         COPY Y OFFSET                      GP13162 00330000
+         AIF   (T'&XOFF EQ 'N').NUMX                                    00340000
+         MACPARM R3,&XOFF,OP=SH,OPR=SR                                  00350000
+         AGO   .TESTY                                                   00360000
+.NUMX    SH    R3,=AL2(&XOFF)  LESS STARTING ROW                        00370000
+.TESTY   BMR   R15           NOT IN DISPLAY AREA                        00380000
+         AIF   (T'&YOFF EQ 'N').NUMY                                    00390000
+         MACPARM R1,&YOFF,OP=SH,OPR=SR                                  00400000
+         AGO   .TESTZ                                                   00410000
+.NUMY    SH    R1,=AL2(&YOFF)  LESS STARTING ROW                        00420000
+.TESTZ   BMR   R15           NOT IN DISPLAY AREA                        00430000
+         SR    R0,R0         PREPARE FOR DIVIDE                 GP13162 00440000
+         AIF   ('&YINT' EQ '1').VERTZ                           GP13162 00450000
+         AIF   (T'&YINT NE 'N').VERTN                           GP13162 00460000
+         LA    R14,&YINT                                        GP13162 00470000
+         AGO   .VERTR                                           GP13162 00480000
+.VERTN   MACPARM R14,&YINT,OP=LH                                GP13162 00490000
+.VERTR   DR    R0,R14                                           GP13162 00500000
+         AIF   ('&YFUZZ' EQ '0').VERTP                          GP13162 00510000
+         CH    R0,=AL2(&YFUZZ)                                  GP13162 00520000
+         BNLR  R15                                              GP13162 00530000
+         AGO   .VERTZ                                           GP13162 00540000
+.VERTP   LTR   R0,R0         ANY REMAINDER                      GP13162 00550000
+         BNZR  R15           YES; NOT ON DISPLAY CHARACTER      GP13162 00560000
+.VERTZ   OI    &FLAGS,&FBIT  SHOW CURSOR GENERATED                      00570000
+         AIF   ('&XINT' EQ '2').TMODD                                   00580000
+         AIF   ('&XINT' EQ '1').TMAXS                                   00590000
+         SR    R2,R2                                                    00600000
+         D     R2,=A(&XINT)  TEST                                       00610000
+         AIF   ('&XFUZZ' EQ '0').HORFZ                          GP13162 00620000
+         CH    R2,=AL2(&XFUZZ)                                  GP13162 00630000
+         BNLR  R15                                              GP13162 00640000
+         AGO   .TMAXS                                           GP13162 00650000
+.HORFZ   LTR   R2,R2         REMAINDER ?                                00660000
+         BNZR  R15             YES; INVALID OFFSET                      00670000
+         AGO   .TMAXS        CHECK FOR MAXIMA                           00680000
+.TMODD   EX    R3,EXTMODD    IS THE COLUMN OFFSET ODD ?                 00690000
+         BNZR  R15           YES; NOT ON DISPLAY CHARACTER              00700000
+         SRA   R3,1          CONVERT INDEX TO OFFSET                    00710000
+.TMAXS   CH    R3,=AL2(&XMAX)  VALID ?                                  00720000
+         BNLR  R15           NO; IGNORE                                 00730000
+         CH    R1,=AL2(&YMAX)  VALID ?                                  00740000
+         BNLR  R15           NO; IGNORE                                 00750000
+         AIF   ('&XINT' NE '2').MEND                            GP13162 00760000
+         B     *+8           PROCESS                                    00770000
+EXTMODD  TM    =X'01',*-*    IS REGISTER ODD ?                          00780000
+.MEND    MEND  ,                                                        00790000

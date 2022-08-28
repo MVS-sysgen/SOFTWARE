@@ -1,0 +1,72 @@
+         MACRO ,                                                        00010000
+&NM      CATCALL &FUN,&ARG,&PFX=CSP,&MODE=(V,BASSM),&PARM=PARM          00020000
+.*--------------------------------------------------------------------* 00030000
+.*                                                                    * 00040000
+.*  CATCALL - USED TO INVOKE THE SUBCAT SERVICE FOR SIMPLE AND        * 00050000
+.*    MASKED CATALOG LOOKUP. 'FUN' IS LOOK (SINGLE REQUEST),          * 00060000
+.*    INIT, THEN LOOP, FOR MASKED REQUEST, CLOSE TO FREE STORAGE.     * 00070000
+.*                                                                    * 00080000
+.*--------------------------------------------------------------------* 00090000
+         GBLB  &MACPNUL,&MVSXA                                          00100000
+         GBLC  &MACPLAB                                                 00110000
+         LCLA  &I,&J,&K                                                 00120000
+         LCLC  &C,&D,&E,&SUBNM                                          00130000
+&SUBNM   SETC  'UBICF'       ICF CATALOG INTERFACE                      00140000
+         AIF   (&MVSXA).SYSXA  AT LEAST MVS XA ?                        00150000
+&SUBNM   SETC  'UBCAT'       VSAM & CVOL CATALOG INTERFACE              00160000
+.SYSXA   ANOP  ,                                                        00170000
+&MACPLAB SETC  '&NM'                                                    00180000
+&C       SETC  '&FUN'.'    '                                            00190000
+&C       SETC  '&C'(1,4)                                                00200000
+&J       SETA  1                                                        00210000
+.FUNLOOP AIF   ('&C' EQ 'CLOSLOOKINITLOOP'(&J,4)).HAVEFUN               00220000
+&J       SETA  &J+4                                                     00230000
+         AIF   (&J LT 16).FUNLOOP                                       00240000
+&J       SETA  0                                                GP09149 00250000
+         AIF   ('&C' EQ 'END ').HAVEFUN    ALTERNATE FOR CLOSE  GP09149 00260000
+         MNOTE 8,'CATCALL: INVALID FUNCTION REQUEST &FUN'               00270000
+.HAVEFUN MACPARM &PFX.$REQ,&J/4,OP=MVI                                  00280000
+         MACPARM R14,&ARG,NULL=SKIP                                     00290000
+         AIF   (&MACPNUL).NOARG                                         00300000
+         MACPARM R14,&PFX.@REQ,OP=ST                                    00310000
+.NOARG   AIF   ('&MODE(1)' EQ '').DOV                                   00320000
+         AIF   ('&MODE(1)' NE 'V').NOTV                                 00330000
+.DOV     MACPARM R15,=V(&SUBNM),OP=L                                    00340000
+         O     R15,=X'80000000'    GET HIGH                             00350000
+         AGO   .INVOKE                                                  00360000
+.NOTV    AIF   ('&MODE(1)' NE 'A').NOTA                                 00370000
+         MACPARM R15,=A(&SUBNM),OP=L                                    00380000
+         O     R15,=X'80000000'    GET HIGH                             00390000
+         AGO   .INVOKE                                                  00400000
+.NOTA    AIF   ('&MODE(1)' NE '@').NOTD                                 00410000
+         MACPARM R15,@&SUBNM,OP=L                                       00420000
+         AGO   .INVOKE                                                  00430000
+.NOTD    MNOTE 8,'CATCALL: LOAD ADDRESS MODE &MODE(1) NOT RECOGNIZED'   00440000
+.INVOKE  MACPARM R1,&PFX.&PARM,NULL=SKIP  PASS WORK AREA                00450000
+         AIF   (&MVSXA).AM31  NEWFLANGLED 370 INSTRUCTIONS              00460000
+&C       SETC  'BALR'                                                   00470000
+&E       SETC  'R14'         RETURN REGISTER                            00480000
+         AIF   (N'&MODE LE 1).REGOP2                                    00490000
+&D       SETC  '&MODE(2)'                                               00500000
+         AIF   ('&D' EQ 'BAKR' OR '&D' EQ 'BASSM').REGOP2               00510000
+         AIF   ('&D' EQ 'BASR' OR '&D' EQ 'BALR').REGOP2                00520000
+         AIF   ('&D' EQ 'BSM').REGOP2                                   00530000
+         AGO   .BADMODE                                                 00540000
+.AM31    ANOP  ,                                                        00550000
+&C       SETC  'BAKR'                                                   00560000
+&E       SETC  '0'           NO RETURN REGISTER                         00570000
+         AIF   ('&D' EQ 'BAKR').REGOP2                                  00580000
+&C       SETC  'BASSM'                                                  00590000
+&E       SETC  'R14'         RETURN REGISTER                            00600000
+         AIF   (N'&MODE LE 1).REGOP2                                    00610000
+&D       SETC  '&MODE(2)'                                               00620000
+         AIF   ('&D' EQ 'BASSM').REGOP2                                 00630000
+&C       SETC  'BSM'                                                    00640000
+         AIF   ('&D' EQ 'BSM').REGOP2                                   00650000
+&C       SETC  'BASR'                                                   00660000
+         AIF   ('&D' EQ 'BASR').REGOP2                                  00670000
+&C       SETC  'BALR'                                                   00680000
+         AIF   ('&D' EQ 'BALR').REGOP2                                  00690000
+.BADMODE MNOTE 8,'CATCALL: BRANCH TYPE MODE &D NOT RECOGNIZED'          00700000
+.REGOP2  MACPARM R14,(R15),OP=&C,OPR=&C                                 00710000
+         MEND  ,                                                        00720000

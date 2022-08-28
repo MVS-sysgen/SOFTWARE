@@ -1,0 +1,68 @@
+         MACRO ,                                                        00010000
+&NM      HCON  &STR,&END=                              ADDED ON GP02298 00020000
+         GBLB  &VCON@OP                                                 00030000
+         GBLC  &VCON@NM                                                 00040000
+         LCLA  &I,&J,&K,&L                                              00050000
+.********************************************************************** 00060000
+.**                                                                  ** 00070000
+.**  HCON BUILDS A TEXT MESSAGE BEGINNING WITH A TWO-BYTE LENGTH,    ** 00080000
+.**    FOLLOWED BY TEXT.                                             ** 00090000
+.**                                                                  ** 00100000
+.**  USE   HCON  'TEXT'                                              ** 00110000
+.**                                                                  ** 00120000
+.**  OR    HCON  'TEXT1',END=LABEL                                   ** 00130000
+.**        DC     ...ZERO OR MORE STORAGE ITEMS                      ** 00140000
+.**  LABEL HCON   *END    TO GENERATE A SINGLE MESSAGE               ** 00150000
+.**                                                                  ** 00160000
+.********************************************************************** 00170000
+&K       SETA  K'&STR                                                   00180000
+         AIF   (T'&END NE 'O').TSTOPEN                                  00190000
+         AIF   (T'&STR EQ 'O').CLOSE                                    00200000
+         AIF   ('&STR'(1,1) EQ '*').CLOSE                               00210000
+.TSTOPEN AIF   (&K EQ 0).COMLEN                                         00220000
+         AIF   ('&STR'(1,1) NE '''').COMLEN                             00230000
+&I       SETA  2                                                        00240000
+&J       SETA  &K-2                                                     00250000
+&K       SETA  &J                                                       00260000
+.LOOP    AIF   ('&STR'(&I,2) EQ '''''').SK2                             00270000
+         AIF   ('&STR'(&I,2) EQ '&&').SK2                               00280000
+&I       SETA  &I+1                                                     00290000
+         AGO   .INC                                                     00300000
+.SK2     ANOP  ,                                                        00310000
+&I       SETA  &I+2                                                     00320000
+&K       SETA  &K-1                                                     00330000
+.INC     AIF   (&I LE &J).LOOP                                          00340000
+.COMLEN  AIF   (NOT &VCON@OP).NOPEN                                     00350000
+         MNOTE 4,'PRIOR HCON/VCON NOT TERMINATED'                       00360000
+&VCON@OP SETB  0                                                        00370000
+.NOPEN   AIF   (T'&END NE 'O').OPEN                                     00380000
+         AIF   (&K EQ 0).REQSTR                                         00390000
+         AIF   ('&STR'(1,1) EQ '''').QSTR                               00400000
+&NM      DC    AL2(&K),C'&STR'                                          00410000
+         AGO   .MEND                                                    00420000
+.QSTR    ANOP  ,                                                        00430000
+&NM      DC    AL2(&K),C&STR                                            00440000
+         AGO   .MEND                                                    00450000
+.OPEN    AIF   (&K NE 0).OPSTR                                          00460000
+&NM      DC    AL2(&END-*-2)                                            00470000
+         AGO   .SETOPEN                                                 00480000
+.OPSTR   AIF   ('&STR'(1,1) EQ '''').OQSTR                              00490000
+&NM      DC    AL2(&END-*-2),C'&STR'                                    00500000
+         AGO   .SETOPEN                                                 00510000
+.OQSTR   ANOP  ,                                                        00520000
+&NM      DC    AL2(&END-*-2),C&STR                                      00530000
+.SETOPEN ANOP  ,                                                        00540000
+&VCON@NM SETC  '&END'                                                   00550000
+&VCON@OP SETB  1                                                        00560000
+         MEXIT ,                                                        00570000
+.REQSTR  MNOTE 4,'TEXT STRING REQUIRED'                                 00580000
+         MEXIT ,                                                        00590000
+.CLOSE   AIF   (&VCON@OP).WASOPEN                                       00600000
+         MNOTE 4,'HCON/VCON END OUT OF SEQUENCE'                        00610000
+.WASOPEN AIF   ('&NM' EQ '' OR '&NM' EQ '&VCON@NM').BLAB                00620000
+&NM      EQU   *                                                        00630000
+.BLAB    ANOP  ,                                                        00640000
+&VCON@NM EQU   *                                                        00650000
+&VCON@NM SETC  ''                                                       00660000
+&VCON@OP SETB  0                                                        00670000
+.MEND    MEND  ,                                                        00680000

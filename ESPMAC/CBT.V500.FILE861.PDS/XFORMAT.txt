@@ -1,0 +1,151 @@
+         MACRO                                                          00010000
+         XFORMAT &DB=DB                                         GP13008 00020000
+         GBLB  &INLINE(50)                                              00030000
+         COPY  OPTIONS                                                  00040000
+         LCLC  &WK           DOUBLE-WORD WORK SPACE              88025  00050000
+         LCLB  &INMOVE,&INWORK                                  GP09347 00060000
+&WK      SETC  '&DB'         USE USER'S                          88025  00070000
+         AIF   ('&WK' NE '').HAVEWK    OK                        88025  00080000
+&WK      SETC  'DCONDB'      GENERATE LOCALLY                    88025  00090000
+.*       (1)   EXPANSION SWITCH                                         00100000
+.*       (5)   INLINE HEX EXPANSION                                     00110000
+.*       (6)   CVH / CNVD CALL                                          00120000
+.*       (7)   CNVR / CNVX CALL                                         00130000
+.*       (8)   CVI - FORMAT INTEGER WITH COMMAS AND SCALING             00140000
+.*       (9)   IN-LINE TRANSLATE TABLE (3278 CHARS)                     00150000
+.*       (10)  CALL TO RANDOM                                           00160000
+.*       (11)  INLINE DECIMAL EXPANSION                                 00170000
+.*       (12)  INTEGER + 1 DECIMAL                              GP13008 00180000
+.*       (13)  INTEGER + 2 DECIMALS                             GP13008 00190000
+.*       (14)  INTEGER + 3 DECIMALS                             GP13008 00200000
+.*                                                                      00210000
+.HAVEWK  AIF   (NOT &INLINE(1)).OKONCE                          GP13008 00220000
+         MNOTE 4,'MULTIPLE ''INSECT/XFORMAT'' CALLS INVALID'    GP13008 00230000
+         MEXIT ,                                                        00240000
+.OKONCE  ANOP  ,                                                GP13008 00250000
+&INLINE(1) SETB 1            SHOW EXPANSION REQUESTED           GP13008 00260000
+         AIF   (&INLINE(2) AND &INLINE(3)).OK1                          00270000
+         AIF   (NOT &INLINE(2) AND NOT &INLINE(3)).OK3                  00280000
+         MNOTE 4,'INCONSISTENT USE OF ''SPxxxx'' CALLS'         GP13008 00290000
+.OK1     MNOTE 4,'REPLACE SPxxxx CALLS BY XLINE'                GP13008 00300000
+.OK3     ANOP  ,                                                GP09347 00310000
+&INLINE(5) SETB (&INLINE(5) OR &INLINE(11))                     GP09347 00320000
+&INWORK  SETB  (&INLINE(5))                                     GP10037 00330000
+         AIF   (NOT &INLINE(12)).OK6P1                          GP13008 00340000
+         SPACE 1                                                        00350000
+*        CONVERT BINARY TO EBCDIC  NNN.N                        GP13008 00360000
+*        (0) - VALUE    (1) O/P ADDRESS     (15) - O/P LENGTH   GP13008 00370000
+*                                                               GP13008 00380000
+DCONVONE STM   R14,R3,12(R13)                                   GP13008 00390000
+         MVC   DCONWORK-1(17),DCONPONE                          GP13008 00400000
+         B     DCONPCOM                                         GP13008 00410000
+DCONPONE DC    C' ',12X'20',X'21204B20' .   EDIT MASK           GP13008 00420000
+.OK6P1   AIF   (NOT &INLINE(13)).OK6P2                          GP13008 00430000
+         SPACE 1                                                        00440000
+*        CONVERT BINARY TO EBCDIC  NNN.NN                       GP13008 00450000
+*        (0) - VALUE    (1) O/P ADDRESS     (15) - O/P LENGTH   GP13008 00460000
+*                                                               GP13008 00470000
+DCONVTWO STM   R14,R3,12(R13)                                   GP13008 00480000
+         MVC   DCONWORK-1(17),DCONPTWO                          GP13008 00490000
+         B     DCONPCOM                                         GP13008 00500000
+DCONPTWO DC    C' ',11X'20',X'21204B2020' .   EDIT MASK         GP13008 00510000
+.OK6P2   AIF   (NOT &INLINE(14)).OK6COM                         GP13008 00520000
+         SPACE 1                                                        00530000
+*        CONVERT BINARY TO EBCDIC  NNN.NNN                      GP13008 00540000
+*        (0) - VALUE    (1) O/P ADDRESS     (15) - O/P LENGTH   GP13008 00550000
+*                                                               GP13008 00560000
+DCONVTRE STM   R14,R3,12(R13)                                   GP13008 00570000
+         MVC   DCONWORK-1(17),DCONPTRE                          GP13008 00580000
+         B     DCONPCOM                                         GP13008 00590000
+DCONPTRE DC    C' ',10X'20',X'21204B202020' . EDIT MASK         GP13008 00600000
+.OK6COM  AIF (NOT &INLINE(12) AND NOT &INLINE(13) AND NOT &INLINE(14)).*00610000
+               OK6P                                             GP13008 00620000
+DCONPCOM CVD   R0,&WK        MAKE VALUE PACKED                  GP13008 00630000
+         ED    DCONWORK-1(17),&WK                               GP13008 00640000
+&INWORK  SETB  1                                                GP13008 00650000
+&INMOVE  SETB  1                                                GP13008 00660000
+         AIF   (NOT &INLINE(6)).OK6P                            GP13008 00670000
+         B     DCONCOM       GO TO OUTPUT MOVE                          00680000
+.OK6P    AIF   (NOT &INLINE(6)).OK6                                     00690000
+         SPACE 2                                                        00700000
+*        CONVERT BINARY TO EBCDIC                                       00710000
+*        (0) - VALUE    (1) O/P ADDRESS     (15) - O/P LENGTH           00720000
+*                                                                       00730000
+DCONVERT STM   R14,R3,12(R13)                                           00740000
+         MVC   DCONWORK(16),DCONPAT                                     00750000
+DCONVCOM CVD   R0,&WK        MAKE VALUE PACKED                          00760000
+         ED    DCONWORK,&WK                                             00770000
+&INWORK  SETB  1                                                GP09347 00780000
+&INMOVE  SETB  1                                                GP09347 00790000
+         AIF   (NOT &INLINE(7) AND NOT &INLINE(8)).DOCON        GP09347 00800000
+         B     DCONCOM       GO TO OUTPUT MOVE                          00810000
+.OK6     AIF   (NOT &INLINE(8)).OK8                                     00820000
+         SPACE 2                                                        00830000
+*        CONVERT BINARY TO EBCDIC                               GP09347 00840000
+*        (0) - VALUE    (1) O/P ADDRESS     (15) - O/P LENGTH   GP09347 00850000
+*                                                               GP09347 00860000
+ICONVERT STM   R14,R3,12(R13)                                   GP09347 00870000
+&INWORK  SETB  1                                                GP09347 00880000
+&INMOVE  SETB  1                                                GP09347 00890000
+         CVD   R0,&WK        MAKE VALUE PACKED                  GP09347 00900000
+         MVC   DCONWORK-1(17),DCOMPAT                           GP09347 00910000
+         ED    DCONWORK-1(17),&WK                               GP09347 00920000
+         CLI   DCONWORK+8,C' '    LESS THAN 1M?                 GP09347 00930000
+         BE    DCONCOM       YES; MOVE IT                       GP09347 00940000
+         LA    R2,DCONWORK+13                                   GP09347 00950000
+         MVI   DCONWORK+12,C'K'                                 GP09347 00960000
+         SR    R2,R15                                           GP09347 00970000
+         LR    R3,R15                                           GP09347 00980000
+         BCTR  R3,0                                             GP09347 00990000
+         EX    R3,DCONMOVE                                      GP09347 01000000
+         LM    R14,R3,12(R13)                                   GP09347 01010000
+         BR    R14                                              GP09347 01020000
+DCOMPAT  DC    X'402020202020202020202020206B202120'            GP09347 01030000
+.OK8     AIF   (NOT &INLINE(7)).DOCON                           GP09347 01040000
+         SPACE 2                                                        01050000
+*        CONVERT HEX TO EBCDIC                                          01060000
+*        (0) - INPUT ADDR.   (1) - O/P ADDR.   (15) - O/P LENGTH        01070000
+*                                                                       01080000
+XCONVERT STM   R14,R3,12(R13)                                           01090000
+         LA    R3,1(,R15) .     O/P LEN + 1                             01100000
+         SRA   R3,1 .        /2                                         01110000
+         AR    R3,R0 .        I/P + 1/2  O/P LEN                        01120000
+         SH    R3,DCONH8     - 8                                        01130000
+&INWORK  SETB  1                                                GP09347 01140000
+&INMOVE  SETB  1                                                GP09347 01150000
+         UNPK  DCONWORK(9),0(5,R3) .    UNPACK FIRST WORD               01160000
+         UNPK  DCONWORK+8(9),4(5,R3) .     SECOND WORD                  01170000
+         TR    DCONWORK(16),HEXTAB .    MAKE VIEWABLE                   01180000
+         SPACE                                                          01190000
+.DOCON   AIF   (NOT &INMOVE).OK6Z                                       01200000
+DCONCOM  LA    R2,DCONWORK+16                                           01210000
+         SR    R2,R15                                                   01220000
+         LR    R3,R15                                                   01230000
+         BCTR  R3,0                                                     01240000
+&INMOVE  SETB  1                                                GP09347 01250000
+         EX    R3,DCONMOVE                                              01260000
+         LM    R14,R3,12(R13)                                           01270000
+         BR    R14                                                      01280000
+         SPACE                                                          01290000
+.OK6Z    AIF   ('&DB' NE '').OKWK                                88025  01300000
+DCONDB   DC    D'0'          LOCAL WORK AREA                     88025  01310000
+.OKWK    ANOP  ,                                                 88025  01320000
+DCONPAT  DC    C' ',13X'20',X'2120' .     EDIT MASK                     01330000
+         AIF   (NOT &INLINE(11) AND NOT &INMOVE).OK7            GP09347 01340000
+DCONMOVE MVC   0(0,R1),0(R2)                                            01350000
+DCONH8   DC    H'8'                                                     01360000
+.OK7     AIF   (NOT &INWORK).B8                                 GP09347 01370000
+         DS    C       1/2                                      GP09347 01380000
+DCONWORK DS    CL16    2/2                                      GP09347 01390000
+         DS    C                                                        01400000
+         ORG   DCONWORK                                                 01410000
+UPD      DS    CL9                                                      01420000
+         ORG                                                            01430000
+HEXTAB   EQU   *-C'0'                                                   01440000
+         DC    C'0123456789ABCDEF'                                      01450000
+.B8      AIF   (NOT &INLINE(9)).OK9                                     01460000
+TRTAB    TRTAB CODE=&CRT,OPT=ERR                                        01470000
+.OK9     AIF   (NOT &INLINE(10)).OK10                                   01480000
+         RANDOM ,                                                       01490000
+.OK10    ANOP                                                           01500000
+         MEND                                                           01510000

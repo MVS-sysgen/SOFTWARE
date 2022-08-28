@@ -1,0 +1,22 @@
+         MACRO                                                          00001000
+&L       WTPVT &TYPE,&PFX=,&LPFX=0,&SFX=,&LSFX=0                        00002000
+         AIF   ('&TYPE' EQ 'CODE').CODE                                 00003000
+         AIF   ('&TYPE' EQ 'DSECT').DSECT                               00004000
+         AIF   ('&TYPE' EQ 'AREAID').AREAID                             00005000
+         MNOTE 12,'&TYPE INVALID - TYPE MUST BE AREAID, CODE OR DSECT.' 00006000
+         MEXIT                                                          00007000
+.CODE    ANOP                                                           00008000
+         LA    R4,TEXTDISP-4(R4)        ADJUST FOR PFX                  00009000
+         AIF   (&LPFX EQ 0).NOPFX                                       00010000
+         MVC   4(&LPFX,R5),=C&PFX                                       00011000
+.NOPFX   AIF   (&LSFX EQ 0).NOSFX                                       00012000
+         MVC   LPFX(&LSFX,R3),=C&SFX                                    00013000
+.NOSFX   LA    R3,&LSFX+LPFX(R3)        ADJUST FOR PREFIX/SUFFIX        00014000
+         MEXIT                                                          00015000
+.DSECT   ANOP                                                           00016000
+LPFX     EQU   &LPFX                                                    00017000
+TEXTDISP EQU   4+&LPFX                                                  00018000
+         MEXIT                                                          00019000
+.AREAID  ANOP                                                           00020000
+         MVI   WTAREAID,0               L=Z                             00021000
+         MEND                                                           00022000

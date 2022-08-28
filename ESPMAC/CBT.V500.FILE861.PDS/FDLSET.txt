@@ -1,0 +1,178 @@
+         MACRO ,                                       ADDED ON GP12303 00010000
+&NM      FDLSET &FIELD,&ATTR1,&ATTR2 ...                                00020000
+.*                                                                      00030000
+.*   SET OR ALTER A FIELD ATTRIBUTE IN A DISPLAY LINE DEFINED           00040000
+.*   WITH FDLINE OR FDLITEM MACROS, FOR THE SCLINE SERVICE.             00050000
+.*                                                                      00060000
+.*   FIRST POSITIONAL IS THE ADDRESS OF THE FIELD ATTRIBUTE             00070000
+.*     TO BE CHANGED                                                    00080000
+.*   SECOND AND SUBSEQUENT POSITIONALS ARE THE ATTRIBUTES               00090000
+.*     COLOR, HIGH-LIGHTING, AND INPUT VS. OUTPUT                       00100000
+.*     THE SECOND, AND ONLY SECOND, OPERAND MAY BE A LIST, SIMILAR TO   00110000
+.*       FDLINE AND FDLITEM ENTRIES.                                    00120000
+.*   ATTRIBUTES:                                                        00130000
+.*                                                                      00140000
+.*   IN, OUT, INT(ENSE OUT),                                            00150000
+.*   RED, BLUE, GREEN, CYAN, TURQ(OISE), WHITE, YELLOW                  00160000
+.*   BLACK (NON-DISPLAY) - FORCES INPUT MODE                            00170000
+.*                                                                      00180000
+.*   THIS MACRO GENERATES NEITHER THE LINE NOR FLAG FIELDS; USE FDLINE  00190000
+.*   OR FDLITEM FOR THOSE                                               00200000
+.*                                                                      00210000
+.*   EXAMPLE:                                                           00220000
+.*       FDLINE (UPPER,LADJ),(GR),'Cmd:',CL40,MSGCOL:,(CY),ERRMSG:,CL39 00230000
+.*   the message will be cyan (light blue)                              00240000
+.*   To change it to yellow, use                                        00250000
+.*       FDLSET MSGCOL,YE                                               00260000
+.*   or intense red                                                     00270000
+.*       FDLSET MSGCOL,INT,RED                                          00280000
+.*                                                                      00290000
+.*                                                                      00300000
+         LCLC  &C,&D                                                    00310000
+         LCLB  &F0,&F1,&F2,&F3,&F4,&F5,&F6,&F7                          00320000
+         LCLB  &INP,&INT,&BLACK                                         00330000
+         LCLA  &I,&J,&K,&L,&M,&N,&NN,&NJ                        GP12357 00340000
+&N       SETA  N'&SYSLIST                                               00350000
+         AIF   (&N GT 1).FIELD    HAVE MULTIPLE ARGUMENTS               00360000
+         MNOTE 4,'FDLSET: NO ATTRIBUTES SUPPLIED'                       00370000
+         MEXIT ,                                                        00380000
+.*                                                                      00390000
+.FIELD   ANOP  ,                                                        00400000
+&J       SETA  1             START WITH SECOND                          00410000
+&L       SETA  N'&SYSLIST    NUMBER OF ARGUMENTS                        00420000
+&F0      SETB  0             MUST BE OFF                                00430000
+&F1      SETB  0             MUST BE OFF (RANGE 01-3F)                  00440000
+&F2      SETB  0                                                        00450000
+&F3      SETB  0   DFLT 1 0  OUTPUT  ;  1 1  OUT INTENSE                00460000
+&F4      SETB  0        0 1  INPUT   ;  0 0  NON-DISPLAY                00470000
+&F5      SETB  0             COLOR: GREEN                               00480000
+&F6      SETB  0             COLOR: RED                                 00490000
+&F7      SETB  0             COLOR: BLUE                                00500000
+&INP     SETB  0             INPUT                                      00510000
+&INT     SETB  0             INTENSE                                    00520000
+&BLACK   SETB  0             NON-DISPLAY                                00530000
+.FDLOOM  AIF   (&J GE &L).EXPFLD                                        00540000
+&J       SETA  &J+1                                                     00550000
+&NJ      SETA  0                                                GP12357 00560000
+&NN      SETA  N'&SYSLIST(&J)                                   GP12357 00570000
+.FDLOOP  AIF   (&NJ GE &NN).FDLOOM                              GP12357 00580000
+&NJ      SETA  &NJ+1                                            GP12357 00590000
+.*                                                              GP12357 00600000
+&C       SETC  '&SYSLIST(&J,&NJ)'                               GP12357 00610000
+         AIF   ('&C' EQ '').FDLOOP                                      00620000
+.*DEFER* AIF   ('&C' EQ 'REVERSE').REVERSE                              00630000
+.*DEFER* AIF   ('&C' EQ 'BLINK').BLINK                                  00640000
+.*DEFER* AIF   ('&C' EQ 'UNDER').UNDER                                  00650000
+.*DEFER* AIF   ('&C' EQ 'DFLT').NULL                                    00660000
+         AIF   ('&C' EQ 'BL').BLUE                                      00670000
+         AIF   ('&C' EQ 'RE').RED                                       00680000
+         AIF   ('&C' EQ 'PI').PINK                                      00690000
+         AIF   ('&C' EQ 'MA').PINK                                      00700000
+         AIF   ('&C' EQ 'GR').GREEN                                     00710000
+         AIF   ('&C' EQ 'CY').TURQ                                      00720000
+         AIF   ('&C' EQ 'TU').TURQ                                      00730000
+         AIF   ('&C' EQ 'YE').YELLOW                                    00740000
+         AIF   ('&C' EQ 'WH').WHITE                                     00750000
+         AIF   ('&C' EQ 'BK').BLACK                                     00760000
+         AIF   ('&C' EQ 'ND').BLACK                                     00770000
+         AIF   ('&C' EQ 'IN').INPUT                                     00780000
+         AIF   ('&C' EQ 'BLUE').BLUE                                    00790000
+         AIF   ('&C' EQ 'RED').RED                                      00800000
+         AIF   ('&C' EQ 'PINK').PINK                                    00810000
+         AIF   ('&C' EQ 'MAGENTA').PINK                                 00820000
+         AIF   ('&C' EQ 'GREEN').GREEN                                  00830000
+         AIF   ('&C' EQ 'CYAN').TURQ                                    00840000
+         AIF   ('&C' EQ 'TURQ').TURQ                                    00850000
+         AIF   ('&C' EQ 'TURQOISE').TURQ                                00860000
+         AIF   ('&C' EQ 'YELLOW').YELLOW                                00870000
+         AIF   ('&C' EQ 'WHITE').WHITE                                  00880000
+         AIF   ('&C' EQ 'BLACK').BLACK                                  00890000
+         AIF   ('&C' EQ 'INPUT').INPUT                                  00900000
+         AIF   ('&C' EQ 'OUT').OUTPUT                                   00910000
+         AIF   ('&C' EQ 'INT').INTENSE                                  00920000
+         AIF   ('&C' EQ 'INTENSE').INTENSE                              00930000
+&I       SETA  &J-1                                                     00940000
+       MNOTE 8,'FDLSET: ATTRIBUTE &I INVALID - &C NOT A VALID ENTRY'    00950000
+         AGO   .FDLOOP                                                  00960000
+.BLUE    ANOP  ,                                                        00970000
+&F5      SETB  0                                                        00980000
+&F6      SETB  0                                                        00990000
+&F7      SETB  1                                                        01000000
+         AGO   .FDLOOP                                                  01010000
+.*                                                                      01020000
+.RED     ANOP  ,                                                        01030000
+&F5      SETB  0                                                        01040000
+&F6      SETB  1                                                        01050000
+&F7      SETB  0                                                        01060000
+         AGO   .FDLOOP                                                  01070000
+.*                                                                      01080000
+.PINK    ANOP  ,                                                        01090000
+&F5      SETB  0                                                        01100000
+&F6      SETB  1                                                        01110000
+&F7      SETB  1                                                        01120000
+         AGO   .FDLOOP                                                  01130000
+.*                                                                      01140000
+.GREEN   ANOP  ,                                                        01150000
+&F5      SETB  1                                                        01160000
+&F6      SETB  0                                                        01170000
+&F7      SETB  0                                                        01180000
+         AGO   .FDLOOP                                                  01190000
+.*                                                                      01200000
+.TURQ    ANOP  ,                                                        01210000
+&F5      SETB  1                                                        01220000
+&F6      SETB  0                                                        01230000
+&F7      SETB  1                                                        01240000
+         AGO   .FDLOOP                                                  01250000
+.*                                                                      01260000
+.YELLOW  ANOP  ,                                                        01270000
+&F5      SETB  1                                                        01280000
+&F6      SETB  1                                                        01290000
+&F7      SETB  0                                                        01300000
+         AGO   .FDLOOP                                                  01310000
+.*                                                                      01320000
+.WHITE   ANOP  ,                                                        01330000
+&F5      SETB  1                                                        01340000
+&F6      SETB  1                                                        01350000
+&F7      SETB  1                                                        01360000
+         AGO   .FDLOOP                                                  01370000
+.*                                                                      01380000
+.BLACK   ANOP  ,                                                        01390000
+&F3      SETB  0                                                        01400000
+&F4      SETB  0                                                        01410000
+&F5      SETB  0                                                        01420000
+&F6      SETB  0                                                        01430000
+&F7      SETB  1             FORCE NON-ZERO                             01440000
+&BLACK   SETB  1                                                        01450000
+         AGO   .FDLOOP                                                  01460000
+.*                                                                      01470000
+.INPUT   ANOP                                                           01480000
+&F3      SETB  0                                                        01490000
+&F4      SETB  1                                                        01500000
+&INP     SETB  1                                                        01510000
+         AIF   (&INT).CONFII                                            01520000
+         AGO   .FDLOOP                                                  01530000
+.*                                                                      01540000
+.OUTPUT  ANOP  ,                                                        01550000
+&F3      SETB  1                                                        01560000
+&F4      SETB  0                                                        01570000
+         AGO   .FDLOOP                                                  01580000
+.*                                                                      01590000
+.INTENSE ANOP  ,                                                        01600000
+&F4      SETB  1                                                        01610000
+&INT     SETB  1                                                        01620000
+         AIF   (&INP).CONFII                                            01630000
+&F3      SETB  1                                                        01640000
+         AGO   .FDLOOP                                                  01650000
+.CONFII  MNOTE *,'FDLSET: INTENSE INPUT NOT SUPPORTED'                  01660000
+         AGO   .FDLOOP                                                  01670000
+.*                                                                      01680000
+.EXPFLD  AIF   (NOT &BLACK).EXPFLD1                                     01690000
+&F4      SETB  0             FORCED INPUT MODE                          01700000
+         AIF   (NOT &F3).EXPFLD2                                        01710000
+         MNOTE 4,'FDLSET: CONFLICTING NON-DISPLAY AND OUTPUT ATTR &I'   01720000
+.EXPFLD1 AIF   (&F3 OR &F4).EXPFLD2                                     01730000
+&F3      SETB  1             OUTPUT IS DEFAULT                          01740000
+.*                                                                      01750000
+.EXPFLD2 ANOP  ,                                                        01760000
+&NM      MVI   &FIELD,B'&F0&F1&F2&F3&F4&F5&F6&F7'                       01770000
+.MEND    MEND  ,                                                        01780000

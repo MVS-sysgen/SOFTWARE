@@ -1,0 +1,33 @@
+         MACRO                                                          00010000
+&NM      INPWORK &DD,&ALTDD,&WIDTH=80,&EODAD=1,&FILL=0,&EDIT=0,&JFCB=, *00020000
+               &PDE=0,&PDS=NO,&BUF=                             GP08088 00030000
+         LCLA  &PFG,&IPDS,&I,&J,&K                               89351  00040000
+         LCLB  &I0,&I1,&I2,&I3,&I4,&I5,&I6,&I7                   89351  00050000
+&K       SETA  N'&PDS                                            89351  00060000
+         AIF   ('&BUF' NE '1').NOBUF1  NOT SINGLE BUFFER OPTION GP08088 00070000
+&PFG     SETA  &PFG+1        SET ONE BUFFER ONLY                GP08088 00080000
+.NOBUF1  AIF   ('&PDE' EQ '0').NOPDE                            GP08088 00090000
+&PFG     SETA  &PFG+8        SHOW PDS FEEDBACK REQUESTED         89351  00100000
+.NOPDE   AIF   (&I GE &K).ENDPDE                                 89351  00110000
+&I       SETA  &I+1                                              89351  00120000
+&I0      SETB  (&I0 OR ('&PDS(&I)' EQ 'DIR'))  PROCESS DIRECTORY 89351  00130000
+&I1      SETB  (&I1 OR ('&PDS(&I)' EQ 'MEM'))  PROCESS MEMBERS   89351  00140000
+&I2      SETB  (&I2 OR ('&PDS(&I)' EQ 'ALI'))  PROCESS ALIAS TOO 89351  00150000
+&I7      SETB  (&I7 OR ('&PDS(&I)' EQ 'UPD'))  BUILD ./ ADD      89351  00160000
+         AGO   .NOPDE        TRY NEXT ENTRY                      89351  00170000
+.ENDPDE  AIF   ('&PDS' EQ 'NO').OKPDE                            89351  00180000
+&IPDS    SETA  128*&I0+64*&I1+32*&I2+16*&I3+8*&I4+4*&I5+2*&I6+&I7       00190000
+&J       SETA  &I0+&I1+&I2+&I3+&I4+&I5+&I6+&I7                   89351  00200000
+         AIF   (&J EQ &K).OKPDE                                  89351  00210000
+         MNOTE 4,'*** INVALID PDS= PARAMETER ***'                89351  00220000
+.OKPDE   AIF   (T'&JFCB NE 'O').ADDJFCB                          82116  00230000
+         DC    0F'0'                                                    00240000
+&NM      DC    CL8'&DD ',CL8'&ALTDD ',A(&EODAD,&PDE),AL2(&WIDTH,0),AL1(*00250000
+               &PFG,&FILL,&EDIT,&IPDS)                           89351  00260000
+         MEXIT ,                                                 82116  00270000
+.ADDJFCB ANOP  ,                                                 82116  00280000
+&PFG     SETA  16+&PFG       SET JFCB PRESENT                    82116  00290000
+         DC    0F'0'                                                    00300000
+&NM      DC    CL8'&DD ',CL8'&ALTDD ',A(&EODAD,&PDE),AL2(&WIDTH,0),AL1(*00310000
+               &PFG,&FILL,&EDIT,&IPDS),A(&JFCB)                  89351  00320000
+         MEND  ,                                                        00330000

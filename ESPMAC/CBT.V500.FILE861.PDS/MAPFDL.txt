@@ -1,0 +1,24 @@
+         MACRO ,             MAP SINGLE ENTRY FOR SCLINE FUNCTION       00010000
+&NM      MAPFDL &DSECT=YES,&PFX=FDL                                     00020000
+.********************************************************************** 00030000
+.*                                                                    * 00040000
+.*  EXHIBIT - MAP HEADER DATA FOR FDLINE EXPANSIONS (SEE SCLINE)      * 00050000
+.*                                                                    * 00060000
+.********************************************************************** 00070000
+         LCLC  &P                                                       00080000
+&P       SETC  '&PFX'                                                   00090000
+&NM      MACMAPHD DSECT,DSECT=&DSECT,PFX=&P                             00100000
+&P.LEN   DC    AL2(0)        LENGTH OF CONTROL/TEXT DATA                00110000
+&P.FLAG  DC    X'00'         LINE CONTROL FLAGS                         00120000
+&P.FLAD  EQU   X'10'           INPUT FIELDS TO BE LEFT-JUSTIFIED        00130000
+&P.FRAD  EQU   X'08'           INPUT FIELDS TO BE RIGHT-JUSTIFIED       00140000
+&P.FUPP  EQU   X'04'           INPUT FIELDS TO BE UPPER CASED           00150000
+&P.FSCR  EQU   X'02'           LINE IS SCROLLABLE (LEFT/RIGHT)          00160000
+&P.FMDT  EQU   X'01'           LINE CONTAINS MODIFIED INPUT FIELD       00170000
+&P.CNTL  DS    X             CONTROL BYTE (01-3F)  {REPEATED W/TEXT}    00180000
+&P.CIN   EQU   X'08'           INPUT FIELD                              00190000
+&P.COU   EQU   X'10'           OUTPUT                                   00200000
+&P.CHI   EQU   X'18'           HIGH INTENSITY OUT                       00210000
+&P.MCOL  EQU   X'07'           MASK FOR COLOR BITS                      00220000
+&P.TEXT  DS    0C              TEXT DATA                                00230000
+         MEND  ,                                                        00240000

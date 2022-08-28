@@ -1,0 +1,57 @@
+         MACRO                                                          00010000
+&NM      LMVC  &R1,&R3                                                  00020000
+         GBLC  &MODEL                                                   00030000
+         LCLC  &N,&A1,&A3                                               00040000
+         LCLA  &I                                                       00050000
+.*                                                                      00060000
+.*       THIS MACRO SUPPORTS LONG MOVES OF EQUAL LENGTH AREAS           00070000
+.*       REGISTERS MUST BE SPECIFIED AS FOR MVCL                        00080000
+.*       AND ARE RESTRICTED TO ABSOLUTE VALUES OR THE FORM              00090000
+.*       R||ABSOLUTE; E.G. 2 4 OR R4, R6, ETC.                          00100000
+.*                                                                      00110000
+&I       SETA  K'&R1                                                    00120000
+         AIF   (&I LT 1 OR &I GT 3).BADONE                              00130000
+&A1      SETC  '&R1'                                                    00140000
+         AIF   ('&A1'(1,1) NE 'R').HAV1                                 00150000
+&A1      SETC  '&A1'(2,&I-1)                                            00160000
+.HAV1    AIF   ('&A1' EQ '2' OR '&A1' EQ '4').GOOD1                     00170000
+         AIF   ('&A1' EQ '6' OR '&A1' EQ '8' OR '&A1' EQ '10').GOOD1    00180000
+         AIF   ('&A1' EQ '12' OR '&A1' EQ '14').GOOD1                   00190000
+.BADONE  MNOTE 8,'INVALID TO REGISTER ''&R1'''                          00200000
+         MEXIT                                                          00210000
+.GOOD1   ANOP  ,                                                        00220000
+&I       SETA  K'&R3                                                    00230000
+         AIF   (&I LT 1 OR &I GT 3).BADTHRE                             00240000
+&A3      SETC  '&R3'                                                    00250000
+         AIF   ('&A3'(1,1) NE 'R').HAV3                                 00260000
+&A3      SETC  '&A3'(2,&I-1)                                            00270000
+.HAV3    AIF   ('&A3' EQ '2' OR '&A3' EQ '4').GOOD3                     00280000
+         AIF   ('&A3' EQ '6' OR '&A3' EQ '8' OR '&A3' EQ '10').GOOD3    00290000
+         AIF   ('&A3' EQ '12' OR '&A3' EQ '14').GOOD3                   00300000
+.BADTHRE MNOTE 8,'INVALID FROM REGISTER ''&R3'''                        00310000
+         MEXIT                                                          00320000
+.GOOD3   AIF   ('&A1' NE '&A3').LAPOK                                   00330000
+         MNOTE 8,'TO AND FROM REGISTERS EQUAL'                          00340000
+         MEXIT                                                          00350000
+.LAPOK   ANOP  ,                                                        00360000
+&N       SETC  '&NM' .                                                  00370000
+         AIF   ('&N' NE '').NOK                                  86010  00380000
+&N       SETC  'LM'.'&SYSNDX'                                    86010  00390000
+.NOK     AIF   ('&MODEL' NE '360').MVCL                                 00400000
+&N       LA    &R3+1,256 .   SET MVC MAX LENGTH                         00410000
+&N.1     CR    &R1+1,&R3+1 . FULL BLOCK ?                               00420000
+         BNH   &N.2 .        NO, MOVE PART                              00430000
+         MVC   0(256,&R1),0(&R3) MOVE BLOCK                             00440000
+         AR    &R1,&R3+1 .   UP TO ADDRESS                              00450000
+         AR    &R3,&R3+1 .   UP FROM                                    00460000
+         SR    &R1+1,&R3+1 . REMAINDER                                  00470000
+         BP    &N.1 .        CHECK RESIDUAL LENGTH                      00480000
+         B     &N.4 .        DONE                                       00490000
+&N.3     MVC   0(0,&R1),0(&R3)  EXECUTE PATTERN                         00500000
+&N.2     BCTR  &R1+1,0 .     REMAINING LENGTH - 1                       00510000
+         EX    &R1+1,&N.3 .  MOVE REMAINDER                             00520000
+&N.4     EQU   *                                                        00530000
+         MEXIT                                                          00540000
+.MVCL    ANOP  ,                                                        00550000
+&N       MVCL  &R1,&R3 .     MOVE EQUAL AREAS                           00560000
+         MEND                                                           00570000

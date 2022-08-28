@@ -1,0 +1,22 @@
+         MACRO ,                                                        00010000
+&NM      DEBSTOMP &I,&VAR=                                              00020000
+         GBLC  &MACPLAB                                                 00030000
+         GBLC  &ZZSTMNM                                                 00040000
+         GBLB  &BUGBEAR                                                 00050000
+         GBLA  &ZZSTMNO                                                 00060000
+&MACPLAB SETC  '&NM'                                                    00070000
+.*--------------------------------------------------------------------* 00080000
+.*   THIS SETS A SIMPLE (ONE BYTE) PROGRESS INDICATOR FLAG FOR DEBUG  * 00090000
+.*--------------------------------------------------------------------* 00100000
+         AIF   ('&VAR' EQ '').HAVEVAR                                   00110002
+&ZZSTMNM SETC  '&VAR'                                                   00120000
+.HAVEVAR AIF   ('&ZZSTMNM' NE '').HAVEVAT                               00130000
+&ZZSTMNM SETC  'DEBSTOMP'                                               00140000
+.HAVEVAT AIF   ('&I' EQ '').EXPAND                                      00150000
+&ZZSTMNO SETA  &I                                                       00160000
+.EXPAND  AIF   (NOT &BUGBEAR AND '&ZZSTMNO' EQ 'DEBSTOMP').EXIT         00170000
+         MACPARM &ZZSTMNM,&ZZSTMNO,OP=MVI,OPR=MVI  MARK MY SPOT         00180000
+         MNOTE 0,'DEBSTOMP: FOOTPRINT NUMBER &ZZSTMNO'                  00190001
+.EXIT    MACPARM MODE=LBL                                               00200000
+&ZZSTMNO SETA  &ZZSTMNO+1                                               00210000
+         MEND  ,                                                        00220000

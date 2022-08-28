@@ -1,0 +1,7 @@
+         MACRO ,                                                        00010000
+&NM      DEBEX  &N                                    ADDED ON 2012064  00020000
+.*                                                                      00030000
+.*    THIS MACRO CAUSES AN 0C3 - USED FOR DEBUGGING                     00040000
+.*      (easier to FIND than plain EX)                                  00050000
+&NM      EX    0,*                                                      00060000
+         MEND  ,                                                        00070000

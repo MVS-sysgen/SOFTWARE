@@ -1,0 +1,8 @@
+         MACRO ,                                                        00010000
+&NM      SPLEVEL &FUN,&SET=                                             00020000
+.*                                                                      00030000
+.*    BACKWARD COMPATIBILITY FOR MVS                                    00040000
+.*                                                                      00050000
+         GBLC  &SYSSPLV                                                 00060000
+&SYSSPLV SETC  '0'           BREAK IT                                   00070000
+.MEND    MEND  ,                                                        00080000

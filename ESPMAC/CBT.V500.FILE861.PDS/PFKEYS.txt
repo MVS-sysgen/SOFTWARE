@@ -1,0 +1,107 @@
+         MACRO ,                                                        00010000
+&NM      PFKEYS ,                                       ADDED ON 88211  00020000
+         GBLA  &#PFKEY                                                  00030000
+         GBLC  &PFKEY(52),&PFKEX(52)                                    00040000
+         AIF   (&#PFKEY EQ 52).MEND                                     00050000
+&#PFKEY  SETA  52                                                       00060000
+.*       THE FOLLOWING HEXADECIMAL PFKEY VALUES RESULT FROM             00070000
+.*       SPECIAL PROCESSING ON THE AID BYTE IN THE @SCREENS ROUTINE     00080000
+.*       AND EXHABASE/EXHASCRN EXHIBIT ROUTINES.                        00090000
+.*                                                                      00100000
+&PFKEY(01) SETC '    '                                                  00110000
+&PFKEX(01) SETC '01'                                                    00120000
+&PFKEY(02) SETC '    '                                                  00130000
+&PFKEX(02) SETC '02'                                                    00140000
+&PFKEY(03) SETC '    '                                                  00150000
+&PFKEX(03) SETC '03'                                                    00160000
+&PFKEY(04) SETC '    '                                                  00170000
+&PFKEX(04) SETC '04'                                                    00180000
+&PFKEY(05) SETC '    '                                                  00190000
+&PFKEX(05) SETC '05'                                                    00200000
+&PFKEY(06) SETC 'OID'                                                   00210000
+&PFKEX(06) SETC '06'                                                    00220000
+&PFKEY(07) SETC 'MSR'                                                   00230000
+&PFKEX(07) SETC '07'                                                    00240000
+&PFKEY(08) SETC '¬PRT'                                                  00250000
+&PFKEX(08) SETC '08'                                                    00260000
+&PFKEY(09) SETC '    '                                                  00270000
+&PFKEX(09) SETC '09'                                                    00280000
+&PFKEY(10) SETC '    '                                                  00290000
+&PFKEX(10) SETC '0A'                                                    00300000
+&PFKEY(11) SETC 'PA3'                                                   00310000
+&PFKEX(11) SETC '0B'                                                    00320000
+&PFKEY(12) SETC 'PA1'                                                   00330000
+&PFKEX(12) SETC '0C'                                                    00340000
+&PFKEY(13) SETC 'CLEAR'                                                 00350000
+&PFKEX(13) SETC '0D'                                                    00360000
+&PFKEY(14) SETC 'PA2'                                                   00370000
+&PFKEX(14) SETC '0E'                                                    00380000
+&PFKEY(15) SETC '    '                                                  00390000
+&PFKEX(15) SETC '0F'                                                    00400000
+&PFKEY(16) SETC 'TEST'                                                  00410000
+&PFKEX(16) SETC '10'                                                    00420000
+&PFKEY(17) SETC 'PF1'                                                   00430000
+&PFKEX(17) SETC '11'                                                    00440000
+&PFKEY(18) SETC 'PF2'                                                   00450000
+&PFKEX(18) SETC '12'                                                    00460000
+&PFKEY(19) SETC 'PF3'                                                   00470000
+&PFKEX(19) SETC '13'                                                    00480000
+&PFKEY(20) SETC 'PF4'                                                   00490000
+&PFKEX(20) SETC '14'                                                    00500000
+&PFKEY(21) SETC 'PF5'                                                   00510000
+&PFKEX(21) SETC '15'                                                    00520000
+&PFKEY(22) SETC 'PF6'                                                   00530000
+&PFKEX(22) SETC '16'                                                    00540000
+&PFKEY(23) SETC 'PF7'                                                   00550000
+&PFKEX(23) SETC '17'                                                    00560000
+&PFKEY(24) SETC 'PF8'                                                   00570000
+&PFKEX(24) SETC '18'                                                    00580000
+&PFKEY(25) SETC 'PF9'                                                   00590000
+&PFKEX(25) SETC '19'                                                    00600000
+&PFKEY(26) SETC 'PF10'                                                  00610000
+&PFKEX(26) SETC '1A'                                                    00620000
+&PFKEY(27) SETC 'PF11'                                                  00630000
+&PFKEX(27) SETC '1B'                                                    00640000
+&PFKEY(28) SETC 'PF12'                                                  00650000
+&PFKEX(28) SETC '1C'                                                    00660000
+&PFKEY(29) SETC 'ENTER'                                                 00670000
+&PFKEX(29) SETC '1D'                                                    00680000
+&PFKEY(30) SETC 'LPEN'                                                  00690000
+&PFKEX(30) SETC '1E'                                                    00700000
+&PFKEY(31) SETC '    '                                                  00710000
+&PFKEX(31) SETC '1F'                                                    00720000
+&PFKEY(32) SETC '    '                                                  00730000
+&PFKEX(32) SETC '20'                                                    00740000
+&PFKEY(33) SETC 'PF13'                                                  00750000
+&PFKEX(33) SETC '21'                                                    00760000
+&PFKEY(34) SETC 'PF14'                                                  00770000
+&PFKEX(34) SETC '22'                                                    00780000
+&PFKEY(35) SETC 'PF15'                                                  00790000
+&PFKEX(35) SETC '23'                                                    00800000
+&PFKEY(36) SETC 'PF16'                                                  00810000
+&PFKEX(36) SETC '24'                                                    00820000
+&PFKEY(37) SETC 'PF17'                                                  00830000
+&PFKEX(37) SETC '25'                                                    00840000
+&PFKEY(38) SETC 'PF18'                                                  00850000
+&PFKEX(38) SETC '26'                                                    00860000
+&PFKEY(39) SETC 'PF19'                                                  00870000
+&PFKEX(39) SETC '27'                                                    00880000
+&PFKEY(40) SETC 'PF20'                                                  00890000
+&PFKEX(40) SETC '28'                                                    00900000
+&PFKEY(41) SETC 'PF21'                                                  00910000
+&PFKEX(41) SETC '29'                                                    00920000
+&PFKEY(42) SETC 'PF22'                                                  00930000
+&PFKEX(42) SETC '2A'                                                    00940000
+&PFKEY(43) SETC 'PF23'                                                  00950000
+&PFKEX(43) SETC '2B'                                                    00960000
+&PFKEY(44) SETC 'PF24'                                                  00970000
+&PFKEX(44) SETC '2C'                                                    00980000
+&PFKEY(49) SETC 'CANCEL'                                                00990000
+&PFKEX(49) SETC '0E'                                                    01000000
+&PFKEY(50) SETC 'TREQ'                                                  01010000
+&PFKEX(50) SETC '10'                                                    01020000
+&PFKEY(51) SETC 'PEN'                                                   01030000
+&PFKEX(51) SETC '1E'                                                    01040000
+&PFKEY(52) SETC '¬AID'                                                  01050000
+&PFKEX(52) SETC '00'                                                    01060000
+.MEND    MEND  ,                                                        01070000

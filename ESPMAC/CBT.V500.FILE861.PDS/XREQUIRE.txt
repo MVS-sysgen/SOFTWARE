@@ -1,0 +1,121 @@
+         MACRO                                                          00010000
+&NM      XREQUIRE &OPTS,&B=EXCXCB,&MINLS=,&MINLN=               GP10206 00020000
+         GBLC  &MACPLAB                                                 00030000
+.********************************************************************** 00040000
+.*   EXHIBIT MACRO TO TEST (AND FAIL) IMPROPER MODULE INVOCATION     ** 00050000
+.*     (WAS NAMED RESTRICT)                                          ** 00060000
+.********************************************************************** 00070000
+         LCLA  &I,&M                                                    00080000
+         LCLB  &TRUE,&F(36)                                     GP07007 00090000
+         LCLC  &C,&J                                            GP10213 00100000
+&M       SETA  N'&SYSLIST                                               00110000
+&J       SETC  '&SYSNDX'                                                00120000
+&I       SETA  0                                                        00130000
+&MACPLAB SETC  '&NM'                                                    00140000
+.LOOP    AIF   (&I GE &M).LEND                                          00150000
+&I       SETA  &I+1                                                     00160000
+&C       SETC  '&SYSLIST(&I)'                                           00170000
+         AIF   ('&C' EQ '').LOOP                                        00180000
+&F(2)    SETB  (('&C' EQ 'PCP') OR &F(2))                               00190000
+&F(3)    SETB  (('&C' EQ 'MFT') OR &F(3))                               00200000
+&F(4)    SETB  (('&C' EQ 'MVT') OR &F(4))                               00210000
+&F(6)    SETB  (('&C' EQ 'MP') OR &F(6))                                00220000
+&F(7)    SETB  (('&C' EQ 'DAT') OR &F(7))                               00230000
+&F(9)    SETB  (('&C' EQ 'TSO') OR &F(9))                        *TSO*  00240000
+&F(10)   SETB  (('&C' EQ 'NOTSO') OR &F(10))                     *TSO*  00250000
+&F(11)   SETB  (('&C' EQ 'DEBUG') OR &F(11))                            00260000
+&F(12)   SETB  (('&C' EQ 'HASP') OR &F(12))                             00270000
+&F(12)   SETB  (('&C' EQ 'JES2') OR &F(12))                      89211  00280000
+&F(13)   SETB  (('&C' EQ 'CON') OR &F(13))                              00290000
+&F(14)   SETB  (('&C' EQ 'PAS') OR &F(14))                              00300000
+&F(15)   SETB  (('&C' EQ 'KEY') OR &F(15))                              00310000
+&F(16)   SETB  (('&C' EQ 'UNL') OR &F(16))                              00320000
+&F(17)   SETB  (('&C' EQ 'VM') OR &F(17))                        79194  00330000
+&F(18)   SETB  (('&C' EQ 'GAME') OR ('&C' EQ 'GAMES') OR &F(18))        00340000
+&F(19)   SETB  (('&C' EQ 'KEY0') OR &F(19))  ->WITH DEBUG ONLY  GP11260 00350000
+&F(21)   SETB  (('&C' EQ '12') OR &F(21))                               00360000
+&F(22)   SETB  (('&C' EQ '24') OR &F(22))                               00370000
+&F(27)   SETB  (('&C' EQ '40') OR &F(27))                               00380000
+&F(28)   SETB  (('&C' EQ '80') OR &F(28))                               00390000
+&F(29)   SETB  (('&C' EQ '132') OR &F(29))                       89211  00400000
+&F(30)   SETB  (('&C' EQ 'DRDEBUG') OR &F(30))                  GP07007 00410000
+         AGO   .LOOP                                                    00420000
+.LEND    ANOP  ,                                                        00430000
+&TRUE    SETB (&F(2) OR &F(3) OR &F(4) OR &F(6) OR &F(7))               00440000
+         AIF   (NOT &TRUE).SK1                                          00450000
+         NEED  CVT                                                      00460000
+&NM   MACPARM  WRKSYS,&F(2)*CVT1SSS+&F(3)*CVT2SPS+&F(4)*CVT4MS1+&F(6)*C*00470000
+               VT4MPS+&F(7)*CVT6DAT,OP=TM  TEST SYSTEM BITS             00480000
+         MACPARM &B,MODE=ONE,OP=BNZ,OPR=BNZR                    GP10206 00490000
+.SK1     ANOP  ,                                                        00500000
+&TRUE    SETB (&F(13) OR &F(14) OR &F(16) OR &F(15))                    00510000
+         AIF   (NOT &TRUE).SK2                                          00520000
+         MACPARM EXCPRIV,EXCPSYS,OP=TM KEY MODE ?                       00530000
+&TRUE    SETB (&F(13) OR &F(14) OR &F(16))                       *TSM*  00540000
+         AIF   (NOT &TRUE).N15                                   *TSM*  00550000
+         BO    ZZX&J.K       SKIP ALL TESTS IF IN KEY MODE      GP10213 00560000
+         AIF   (NOT &F(13) OR NOT &F(14)).N13                           00570000
+         TM    EXCPRIV,EXCONSOL .  CONTROL DESK ?                       00580000
+         BZ    ZZX&J.I       NO; SKIP THE NEXT TEST             GP10206 00590000
+         TM    EXCPRIV,EXCONCAN .   SUPPLIED PASSWORD ?                 00600000
+.N15     MACPARM &B,MODE=ONE,OP=BZ,OPR=BZR                      GP10206 00610000
+ZZX&J.I  EQU   * .           BYPASS IF IN KEY MODE              GP10206 00620000
+&F(13)   SETB  0                                                        00630000
+&F(14)   SETB  0                                                        00640000
+.N13     ANOP                                                           00650000
+         AIF   (NOT &F(16) AND NOT &F(14)).N16                          00660000
+         TM    EXCPRIV,EXCAUTH*&F(16)+EXCONCAN*&F(14) .  PASS/UNL ?     00670000
+         MACPARM &B,MODE=ONE,OP=BZ,OPR=BZR                      GP10206 00680000
+.N16     AIF   (NOT &F(13)).SS2                                         00690000
+         TM    EXCPRIV,EXCONSOL .  CONTROL DESK CRT ?                   00700000
+         MACPARM &B,MODE=ONE,OP=BZ,OPR=BZR                      GP13221 00710000
+.SS2     ANOP                                                           00720000
+ZZX&J.K  EQU   * .           BYPASS IF IN KEY MODE                      00730000
+.SK2     AIF   (NOT &F(12)).SKCRT                                       00740000
+         MACPARM HASPHCT+1(3),ZEROES,OP=CLC                             00750000
+         MACPARM &B,MODE=ONE,OP=BE,OPR=BER                      GP10206 00760000
+.SKCRT   AIF   (NOT &F(21) AND NOT &F(22)).SKCB                         00770000
+         MACPARM LNO+1,LN24+LN32,OP=TM . MORE THAN 15 LINES ?    78051  00780000
+         AIF   (&F(22)).SKC2                                            00790000
+         MACPARM &B,MODE=ONE,OP=BZ,OPR=BZR                      GP10206 00800000
+         AGO   .SKCB                                                    00810000
+.SKC2    MACPARM &B,MODE=ONE,OP=BNZ,OPR=BNZR                    GP10206 00820000
+.SKCB    AIF   (NOT &F(27) AND NOT &F(28) AND NOT &F(29)).SKOTH  89211  00830000
+         MACPARM LSIZE+1,80,OP=CLI  40 OR 80 BYTE CRT ?          88249  00840000
+         BC    2*&F(29)+8*&F(28)+4*&F(27),&B                     91364  00850000
+         MACPARM 2*&F(29)+8*&F(28)+4*&F(27),&B,OP=BC,OPR=BCR    GP10206 00860000
+.SKOTH   AIF   (NOT &F(11)).SKNDEB                                      00870000
+         AIF   (NOT &F(9)).SKBOPT  SKIP COMBINED TEST            78216  00880000
+         MACPARM OPTS,DEBUG+OPTSO,OP=TM DEBUG OR TSO ?           78216  00890000
+         MACPARM &B,MODE=ONE,OP=BNZ,OPR=BNZR                    GP10206 00900000
+         AGO   .SKTSO                                            78216  00910000
+.SKBOPT  ANOP  ,                                                 78216  00920000
+         MACPARM OPTS,DEBUG,OP=TM . RUNNING DEBUG MODE ?                00930000
+         MACPARM &B,MODE=ONE,OP=BNZ,OPR=BNZR                    GP10206 00940000
+.SKNDEB  AIF   (NOT &F(9) AND NOT &F(10)).SKTSO                  *TSO*  00950000
+         MACPARM OPTS,OPTSO,OP=TM . RUNNING UNDER TSO ?          *TSO*  00960000
+         AIF   (NOT &F(9)).NTTSO                                 *TSO*  00970000
+         MACPARM &B,MODE=ONE,OP=BNZ,OPR=BNZR                    GP10206 00980000
+         AGO   .SKTSO                                            *TSO*  00990000
+.NTTSO   ANOP  ,                                                 *TSO*  01000000
+         MACPARM &B,MODE=ONE,OP=BZ,OPR=BZR                      GP10206 01010000
+.SKTSO   AIF   (NOT &F(17) AND NOT &F(18)).NOSS18                79194  01020000
+         MACPARM SQSAVPO,SQSAFVM*&F(17)+SQSNGAM*&F(18),OP=TM     79194  01030000
+         MACPARM &B,MODE=ONE,OP=BNZ,OPR=BNZR                    GP10206 01040000
+.NOSS18  AIF   (NOT &F(19)).NOSAVP     NO KEY0 CHECK            GP11260 01050000
+         MACPARM OPTS,DEBUG,OP=TM . RUNNING DEBUG MODE ?        GP11260 01060000
+         MACPARM &B,MODE=ONE,OP=BZ,OPR=BZR                      GP11260 01070000
+         TESTAUTH KEY=YES,FCTN=0,RBLEVEL=1  KEY ZERO ?          GP11260 01080000
+         LTR   R15,R15                                          GP11260 01090000
+         MACPARM &B,MODE=ONE,OP=BNZ,OPR=BNZR                    GP11260 01100000
+.NOSAVP  AIF   (NOT &F(30)).SS30                                        01110000
+         TM    DRFLAG,DRDEBUG  DASD FUNCTION IN DEBUG MODE ?    GP07007 01120000
+         MACPARM &B,MODE=ONE,OP=BNZ,OPR=BNZR                    GP10206 01130000
+.SS30    AIF   (T'&MINLS EQ 'O').SS31                           GP10206 01140000
+         CLI   LSIZE+1,&MINLS                                   GP10206 01150000
+         MACPARM &B,MODE=ONE,OP=BL,OPR=BLR                      GP10206 01160000
+.SS31    AIF   (T'&MINLN EQ 'O').SS32                           GP10206 01170000
+         CLI   LNO+1,&MINLN                                     GP10206 01180000
+         MACPARM &B,MODE=ONE,OP=BL,OPR=BLR                      GP10206 01190000
+.SS32    ANOP  ,                                                GP10206 01200000
+         MEND  ,                                                        01210000

@@ -1,0 +1,21 @@
+         MACRO ,                                                        00010000
+&NM      CATSCAT &PFX=CSC,&DSECT=YES                                    00020001
+         AIF   ('&DSECT' NE 'YES').ALTSECT                              00030002
+&PFX.DSECT DSECT ,                                                      00040002
+         AGO   .NODSECT ,                                               00050002
+.ALTSECT ANOP  ,                                                        00060002
+&PFX.DSECT  DS 0D            PLANT A LABEL                              00070002
+.NODSECT AIF   (T'&NM EQ 'O').NOLABEL                                   00080001
+&NM      DS    0F                                                       00090001
+.NOLABEL ANOP  ,                                                        00100001
+&PFX.LINK  DS  A             LINK TO NEXT ELEMENT                       00110000
+&PFX.NAME  DS  CL44          NAME                                       00120000
+&PFX.CAX   DS  A             ADDRESS OF CAX OR 0                        00130003
+&PFX.FLGS  DS  X             PROCESSING FLAG                            00140003
+&PFX.FGUS  EQU X'80'           ENTRY WAS USED (IN MULTIPLE CAT SEARCH)  00150004
+           DS  X             RESERVED                                   00160003
+           DS  X             RESERVED                                   00170003
+           DS  X             RESERVED                                   00180003
+           DS  X             RESERVED                                   00190003
+&PFX.SIZE  EQU  *-&PFX.LINK  AREA SIZE                                  00200000
+         MEND  ,                                                        00210000

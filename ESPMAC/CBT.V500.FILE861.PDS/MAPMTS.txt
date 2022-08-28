@@ -1,0 +1,306 @@
+         MACRO ,                                                        00010000
+&NM      MAPMTS &TYPE=DSECT,&PFX=MTS,&MODE=,&FLAVOR=EXHIBIT,           *00020000
+               &ACB=MYACB,&ETX=XETXR,&EPLOC=EXHABASS,            87012 *00030000
+               &MAXLINE=62,&MAXWITH=160                          92269  00040000
+.*  EXHABASE CREATED TABLE FOR EACH EXHIBIT SESSION                     00050000
+         LCLC  &P,&LACB,&LETX,&LLOC                                     00060000
+&LACB    SETC  '&ACB'                                                   00070000
+&LETX    SETC  '&ETX'                                                   00080000
+&LLOC    SETC  '&EPLOC'                                                 00090000
+&P       SETC  'MTS'                                                    00100000
+         AIF   ('&PFX' EQ '').NOP                                       00110000
+&P       SETC  '&PFX'                                                   00120000
+.NOP     AIF   ('&TYPE' NE 'DSECT').NOD                                 00130000
+&P.WORK  DSECT ,             MULTI-TASKING MODE SUBTASK WORK AREA       00140000
+&LACB    SETC  '1'                                                      00150000
+&LETX    SETC  '1'                                                      00160000
+&LLOC    SETC  '1'                                                      00170000
+         AIF   ('&NM' EQ '').NONM                                89065  00180000
+.NOD     ANOP  ,                                                        00190000
+&NM      DS    0F                                                       00200000
+.NONM    ANOP ,                                                  89065  00210000
+&P.ID    DC    0CL4'MTS '    VECTOR TABLE SELF-ID                       00220000
+&P.NIB   NIB   MODE=RECORD,PROC=TRUNC                                   00230000
+&P.WRPL  RPL   AM=VTAM,ACB=&LACB,STYPE=REQ,CONTROL=DATA,POST=RESP,     *00240000
+               BRACKET=(BB,NEB),RTYPE=DFSYN,OPTCD=(ASY,CA),            *00250000
+               RESPOND=(NEX,FME,NRRN),NIB=&P.NIB                        00260000
+&P.CRPL  RPL   AM=VTAM,ACB=&LACB,STYPE=REQ,CONTROL=DATA,POST=RESP,     *00270000
+               OPTCD=SYN,RESPOND=(NEX,FME,NRRN),NIB=&P.NIB              00280000
+&P.PDCB  DCB   DSORG=PS,MACRF=PM,DDNAME=EXHPRINT,EROPT=ACC,            *00290000
+               RECFM=VBA,LRECL=137,BLKSIZE=689                          00300000
+&P.PMG14 VCON  'EXH414E EXHPRINT ABENDED XXX-CC '                       00310000
+&P.PRDD  EQU   &P.PMG14+4+8,8,C'C'   PRINT DCB DDNAME (DYNALLOC)        00320000
+&P.DEB   DC   4A(0),X'05',AL3(0),X'FF',AL3(0),X'0F',AL3(0),X'02',AL3(0) 00330000
+&P.DEBND DC    X'33',AL3(0)  UCB POINTER FOR CRT                        00340000
+         DC    3AL1(X'73',0,0,0)  DUMMY EXTENTS                         00350000
+&P.DEBPR DC    X'37',AL3(0)  PRINTER UCB POINTER                        00360000
+&P.UCB   DC    0A(0),X'0000FF88',X'00AF0000',X'00000000',X'00',C'VTM'   00370000
+         DC    X'12501009',A(0,0,0,0,0,0)                               00380000
+&P.UCBX  DC    6A(0)                                                    00390000
+&P.UCBD  DC    2A(0)         DDT                                        00400000
+&P.ATT7  DC    18A(0)        ENOUGH ROOM FOR SP2 ATTACH          93270  00410000
+         ORG   &P.ATT7                                           93270  00420000
+&P.ATT   ATTACH EPLOC=&LLOC,ETXR=&LETX,SZERO=NO, STAI=XESTAI,          *00430000
+               ASYNCH=NO,PURGE=NONE,SF=L                                00440000
+         ORG   ,             ALLOW EITHER LENGTH ATTACH          93270  00450000
+&P.CSCB  DC    A(0,0),CL8'ID',CL8'EXHABASE',CL3'UCB',5AL1(0)            00460000
+         DC    4A(0),X'00',CL7' ',2A(0),C'CSCB'                         00470000
+         ORG   &P.CSCB+X'DC'                                    GP97290 00480000
+&P.CSCX  DC    A(&P.CSCB+32) CSCB EXTENSION OVERLAPS FAKE CSCB  GP97290 00490000
+         ORG   ,                                                GP97290 00500000
+         AIF   ('&PFX' EQ 'PAT').MEND                                   00510000
+         SPACE 1                                                        00520000
+&P.QLINK DC    A(0)          LINK TO NEXT AREA ON CHAIN                 00530000
+&P.SAVER DC    16F'0'        SUBROUTINE SAVE AREA                       00540000
+&P.SAVES DC    16F'0'        SECOND SUBROUTINE SAVE AREA                00550000
+&P.INPAD DC    A(&P.BUFIN) 1/2  INPUT BUFFER                            00560000
+&P.INPLN DC    F'0'       2/2  SIZE OF SAVED INPUT                      00570000
+&P.WECB  DC    A(0)                                                     00580000
+&P.FEAT  DC    0A(0),XL18'0' FEATURE/SIZE INFORMATION                   00590000
+&P.SCRSZ EQU   &P.FEAT+6,4,C'Y'  TERMINAL SIZES (ROWS ; COLUMNS)        00600000
+&P.BUFSZ EQU   &P.FEAT+4,2,C'Y'  TERMINAL SIZE (ROWS * COLUMNS)  89327  00610000
+&P.ROWS  EQU   &P.FEAT+8,2,C'Y'  ROWS ON SCREEN                  89327  00620000
+&P.COLS  EQU   &P.FEAT+10,2,C'Y' COLUMNS ON SCREEN               89327  00630000
+&P.FLGV  DC    X'00'         SPECIAL PROCESSING FLAGS                   00640000
+&P.FBKER EQU   X'80'           BRACKET ERROR (RECOVERY)          87257  00650000
+&P.FENAT EQU   X'10'           RE-ENABLE ATTENTIONS AFTER WRITE         00660000
+&P.UA90  EQU   X'04'           SKIP UNSOLICITED 3290 ATTENTION   94073  00670000
+&P.FRSVP EQU   X'02'           NEXT WRITE IS A RESPONSE                 00680000
+&P.FVONC EQU   X'01'           FIRST TIME FLAG;  POSSIBLE RACE ERROR    00690000
+         SPACE 1                                                        00700000
+&P.FLGT  DC    X'00'         TERMINAL STATUS FLAGS                      00710000
+&P.FGONE EQU   X'80'           TERMINAL IS GONE                         00720000
+&P.FXEND EQU   X'40'           EXECUTION TO BE ENDED             89327  00730000
+&P.FGOIN EQU   X'20'           GRADUAL SHUT-DOWN (QUIESCE)       90231  00740000
+&P.FNSTA EQU   X'08'           SKIP STAE MSGS (DONE BY ESPIE)    93185  00750000
+&P.FTTIM EQU   X'02'           FIRST INPUT WAIT INTERVAL EXPIRED 92108  00760000
+&P.FBUG  EQU   X'01'           DEBUG TRACE REQUEST                      00770000
+&P.SAVE4 DC    18F'0'        SAVE AREA                                  00780000
+&P.PDCBX DC    0A(0),X'91',AL3(0)    DCB ABEND EXIT                     00790000
+         SPACE 1                                                        00800000
+&P.DDB   DC    D'0'          DOUBLE WORD WORK AREA                      00810000
+&P.SAVCK DC    5A(0)         RPL CHECK ROUTINE SAVE AREA                00820000
+&P.NAPPL DC    CL8' '        NEXT APPLICATION OR NULL                   00830000
+&P.@WORK DC    A(0)          ADDRESS OF WORK AREA                       00840000
+&P.@SQSP DC    A(0)          ADDRESS OF SQA WORK AREA                   00850000
+&P.TASK  DC    A(0)          ADDRESS OF SUBTASK                         00860000
+&P.ERRCT DC    F'0'          CONSECUTIVE I/O ERROR COUNT                00870000
+&P.@PARM DC    A(0) ATTPARM  POINTER TO PARM OPTIONS                    00880000
+&P.@MTV  DC    A(0) MTVECT   POINTER TO MAIN-TASK AREA                  00890000
+&P.UID   DC    CL8' '        NAME OF USER                        87012  00900000
+&P.ACCT  DC    CL8' ',CL4' '   ACCOUNT + SPARE                   87012  00910000
+&P.LOUD  DC    A(0)          LOCAL ONLINE USER DATA              89107  00920000
+&P.#WRIT DC    A(0)          WRITE I/O COUNT                            00930000
+&P.#READ DC    A(0)          READ I/O COUNT                             00940000
+&P.PRVWR DC    2A(0)         ADDRESS/LENGTH OF LAST FULL-SCREEN WRITE   00950000
+&P.CURSA DC    A(0)          CURSOR ADDRESS                             00960000
+&P.BFEND DC    A(0)          LOGICAL BUFFER END                         00970000
+&P.SPARM DC    0A(0)         COMPRESSION ROUTINE PARMS           90147  00980000
+&P.CMPO@ DC    A(0)          OUTPUT BUFFER ADDRESS               90147  00990000
+&P.CMPOL DC    A(0)          ADDRESS OF MAX/ACT OUTPUT LENGTH    90147  01000000
+&P.CMPI@ DC    A(0)          INPUT BUFFER ADDRESS                90147  01010000
+&P.CMPIL DC    A(0)          ADDRESS OF INPUT LENGTH             90147  01020000
+&P.CMPB@ DC    A(0)          ADDRESS OF BUFFER SIZE              90147  01030000
+&P.CMPF@ DC    A(0)          ADDRESS OF OPTION FLAGS             90147  01040000
+&P.CMPC@ DC    A(0)          ADDRESS OF COLOR CONVERSION TABLE   90147  01050000
+&P.CMPTY DC    A(0)          ADDRESS OF TTY TYPE FOR SIMULATION  93331  01060000
+         DC    A(0)            SPARE                             90147  01070000
+&P.CMPOS DC    A(0)          OUTPUT LENGTH (MAX, THEN RESULT)    90147  01080000
+&P.CMPIS DC    A(0)          INPUT LENGTH                        90147  01090000
+&P.CMPBS DC    A(0)          BUFFER SIZE                         90147  01100000
+&P.CMPFG DC    X'00'         REQUESTED FUNCTIONS                 90147  01110000
+&P.CMFSF EQU   X'80'           INSERT PROT. SF IF NO SF IN LINE 2       01120000
+&P.CMNCM EQU   X'40'           BYPASS BUFFER COMPRESSION, ETC.   90147  01130000
+&P.CMNCO EQU   X'20'           BYPASS COLOR SUBSTITUTION         90147  01140000
+&P.CMESC EQU   X'10'           BUFFER MAY CONTAIN ESCAPE (BTAM)  90147  01150000
+&P.CMCCW EQU   X'08'           BUFFER CONTAINS CCW               90147  01160000
+&P.CMWCC EQU   X'04'           BUFFER CONTAINS WCC/PCC           90147  01170000
+&P.CMCCO EQU   X'01'           O/P BUFFER HAS CCW @ ADDR-1       93331  01180000
+&P.CMPFA DC    X'00'         ADDRESSING MODE                     90147  01190000
+&P.CMA16 EQU   X'02'           USE 16-BIT ADDRESSING ONLY        90147  01200000
+&P.CMA14 EQU   X'01'           14-BIT ADDRESSING SUPPORTED       90147  01210000
+&P.CMPFC DC    X'00'         COLOR MODE                          90147  01220000
+&P.CMCO7 EQU   X'07'           7-COLOR MODE                      90147  01230000
+&P.CMCOB EQU   X'70'           BACKGROUND COLOR AVAILABLE        90147  01240000
+&P.CMPFH DC    X'00'         EXTENDED HIGH-LIGHTING              90147  01250000
+&P.CMHI7 EQU   X'07'           ALL EXTENDED HIGH-LIGHTING        90147  01260000
+&P.CMPFM DC    X'00'         MISCELLANEOUS OPTIONS               90147  01270000
+&P.CMVAL EQU   X'80'           FIELD VALIDATION SUPPORTED        90147  01280000
+&P.CMOUT EQU   X'40'           FIELD OUTLINING                   90147  01290000
+&P.CMGE  EQU   X'08'           GRAPHICS ESCAPE PROCESSING        91101  01300000
+         DC    X'00'         SPARE                               90147  01310000
+         DC    X'00'         SPARE                               90147  01320000
+         DC    X'00'         SPARE                               90147  01330000
+&P.PPARM DC    CL8' '        PRINT WORK WORDS                           01340000
+&P.PLINE DC    H'0'          LNE WORK AREA                              01350000
+&P.PLIN# DC    H'-1'                                                    01360000
+&P.PPRFX DC    XL5'0'        SAVE AREA FOR LEN, FGS, CC ON H BOUND      01370000
+&P.PPRCC EQU   &P.PPRFX+4,1,C'C'  SAVED CARRIAGE CONTROL                01380000
+&P.FLGM  DC    X'00'         CONTROL FLAG                               01390000
+&P.FREAD EQU   X'80'           DISPLAY READ INPUT INSTEAD OF WRITE      01400000
+&P.FSFO  EQU   X'40'           START FIELD ORDER FOUND                  01410000
+&P.FNOND EQU   X'20'           NON-DISPLAY FIELD                        01420000
+&P.FFSF  EQU   X'10'           FAKE SF TO BE INSERTED                   01430000
+&P.FNCOL EQU   X'08'           BYPASS COLOR MAPPING              87172  01440000
+&P.FNCMP EQU   X'02'           BYPASS COMPRESSION (AND COL.MAP)         01450000
+&P.FATTN EQU   X'01'           WRITE INTERRUPTED BY ATTN                01460000
+&P.PPAG# DC    PL3'0'        PAGE NUMBER                                01470000
+&P.TRMTY DC    X'00'         - RESERVED FOR TERMINAL TYPE               01480000
+         DC    X'00'                                                    01490000
+&P.TRMFG DC    X'00'         TERMINAL MODE FLAGS                        01500000
+&P.FAUCR EQU   X'80'           IF ON, SKIP CR IF LEN=WIDTH              01510000
+&P.FAULF EQU   X'40'           IF ON, CR INCLUDES LF                    01520000
+&P.FSAS  EQU   X'10'           SAS TPUT CONTROL MODS ON TCAM            01530000
+&P.FVTAM EQU   X'08'           VTAM TERMINAL (DIRECT OR TSO)     89065  01540000
+&P.FWYLB EQU   X'04'           RUNNING AS WYLBUR SUBSYSTEM       91267  01550000
+         AIF   ('&FLAVOR' NE 'KERMIT').NOTKERM                   89327  01560000
+&P.ATECB DC    F'0'          ATTENTION ECB                       89327  01570000
+&P.CNECB DC    F'0'          CANCEL ECB                          89327  01580000
+&P.TMECB DC    F'0'          STIMER ECB                          89327  01590000
+&P.TLIST DC    A(&P.TMECB)   ECB LIST WITH TIMER                 89327  01600000
+&P.ELIST DC    A(&P.ATECB,&P.CNECB),X'80',AL3(&P.WECB)           89327  01610000
+&P.GETLN DC    A(0)          GETLINE ROUTINE ADDRESS             89327  01620000
+&P.PUTLN DC    A(0)          PUTLINE ROUTINE ADDRESS             89327  01630000
+&P.PUTFS DC    A(0)          FULL-SCREEN PUT                     89327  01640000
+&P.PUTPG DC    A(0)          PUT STRUCTURED FIELD/RESPONSE       89327  01650000
+&P.LOGOF DC    A(0)          LOGOFF EXIT                         89337  01660000
+&P.COMND DC    A(0)          COMMAND (PRE)PROCESSING             89337  01670000
+&P.DDACC DC    A(0)          DDNAME ACCESS CONTROL CHECKING      89337  01680000
+         DC    4A(0)           RESERVED ...                      90049  01690000
+&P.DDNIO DC    CL8' '        DYN.ALL.DDN FOR I/O FILES           90049  01700000
+&P.DDNCT DC    CL8' '        DYN.ALL.DDN FOR CONTROL FILES       90049  01710000
+         DC    1A(0)           RESERVED ...                      90049  01720000
+&P.TETOA DC    A(0)          EBCDIC TO ASCII TRANSLATE TABLE     91315  01730000
+&P.TATOE DC    A(0)          ASCII TO EBCDIC TRANSLATE TABLE     91315  01740000
+&P.KMXPK DC    A(0)          MAX PACKET IF NON-ZERO              91267  01750000
+.*                           ZAP SPACE                           89327  01760000
+.*                           ZAP SPACE                           89327  01770000
+&P.SMF   DS    0F                  SMF TS STEP TERMINATION RECORD       01780000
+&P.RLEN  DS    BL2'0'    RECORD LENGTH                           89337  01790000
+&P.RSEG  DS    BL2'0'    SEGMENT DESCRIPTOR                      89337  01800000
+&P.RFLG  DC    BL1'0'              HEADER FLAG BYTE              89337  01810000
+&P.RCDTY DC    BL1'0'              RECORD TYPE (34 DECIMAL)      89337  01820000
+&P.RCDTS DC    BL4'0'              TIME STAMP  TOD .01 SECS      89337  01830000
+&P.RCDTE DC    PL4'0000'                       DATE 00YYDDDF     89337  01840000
+&P.CPUID DC    CL4' '              CPU IDENTIFICATION (SYSTEM, MODEL)   01850000
+&P.UIF   DC    CL8' '              USER IDENTIFICATION FIELD     Y02901 01860000
+&P.ONTME DC    BL4'0'              LOGON TIME  TOD .01 SECS      89337  01870000
+&P.ONDTE DC    PL4'0000'                       DATE 00YYDDDF     89337  01880000
+&P.UDATA DC    CL8' '              RESV FOR USER                 89337  01890000
+&P.INVSQ DC    BL1'0'              STEP SEQUENCE NUMBER          89337  01900000
+&P.SIT   DC    BL4'0'              TOD STEP INITIATION         @YL026WA 01910000
+&P.OUTCT DC    BL4'0'              LINE OUT COUNT                89337  01920000
+&P.INCT  DC    BL4'0'              LINE IN COUNT                 89337  01930000
+&P.STAT  DC    BL2'0'              STEP TERMINATION STATUS       89337  01940000
+&P.PRI   DC    BL1'0'              STEP DISPATCHING PRIORITY     89337  01950000
+&P.PRGNM DC    CL8' '              NAME OF PROGRAM INVOKED       89337  01960000
+&P.INVNM DC    CL8' '              STEP (PROC) NAME              89337  01970000
+&P.EFRGN DC    BL2'0'              EFFECTIVE REGION SIZE IN 1K BLKS     01980000
+&P.SYST  DC    BL2'0'              SYST AREA USED, TOP PRI AREA  Y02901 01990000
+&P.MCRE  DC    BL2'0'              CORE ACTUALLY USED IN  1K BLKS       02000000
+&P.RVC   DC    BL6'0'              RESERVED                      89337  02010000
+&P.SPK   DC    BL1'0'              STORAGE PROTECT KEY           A40791 02020000
+&P.STI   DC    BL1'0'              STEP TERMINATION INDICATORS   89337  02030000
+*                        BIT6 - 0=NORMAL COMPLETION              89337  02040000
+*                               1=ABEND                          89337  02050000
+&P.RV1   DC    BL2'0'              RESERVED                      A40791 02060000
+&P.AST   DC    BL4'0'              ALLOC. START TIME             A40791 02070000
+&P.PPST  DC    BL4'0'              PROBLEM PROG. START TIME      A40791 02080000
+&P.RV2   DC    BL1'0'              RESERVED                    @YL026WA 02090000
+&P.SRBT  DC    BL3'0'              STEP CPU UNDER SRB(.01 SEC) @YL026WA 02100000
+&P.RIN   DC    BL2'0'              RECORD INDICATORS             89337  02110000
+&P.RLCT  DC    BL2'0'              OFFSET TO RELOCATE SECTION    89337  02120000
+&P.VAR   DC    BL2'0'              LENGTH OF EXCP COUNT FIELDS   89337  02130000
+*                                  (INCLUDING THESE TWO BYTES)   89337  02140000
+&P.EXCP  EQU   *                   DEVICES USED AND EXCP COUNTS  89337  02150000
+*                                                                89337  02160000
+*                                  EACH ENTRY                    89337  02170000
+*                                                                89337  02180000
+&P.DEVC  DC    BL1'0'              DEVICE CLASS                  89337  02190000
+&P.UTYP  DC    BL1'0'              UNIT TYPE                     89337  02200000
+&P.CUAD  DC    BL2'00'             CHANNEL/UNIT ADDRESS          89337  02210000
+&P.VDV   EQU   X'80'               VIRTUAL INDICATOR           @Y30AQPF 02220000
+&P.NEXCP DC    BL4'0'              EXCP COUNT                    89337  02230000
+*                                                                89337  02240000
+&P.OXCP  DC    XL8'0'        OUTPUT COUNTS                       89337  02250000
+&P.VARA  DC    BL1'0'              LENGTH OF CPU AND ACCT. SECTION      02260000
+*                                  (NOT INCLUDING THIS BYTE)     89337  02270000
+&P.CPUTM DC    BL3'0'              STEP CPU UNDER TCB(.01 SEC) @YL026WA 02280000
+&P.NBRAC DC    BL1'0'              NUMBER OF ACCOUNTING FIELDS   89337  02290000
+&P.RCEND EQU   *             END OF SMF RECORD                   89337  02300000
+&P.STAXP DC    5A(0)         STAE PARAMETER AREA                 89327  02310000
+&P.SAVPR DC    X'0'          GLOBAL PRIVILEGE FLAGS              89327  02320000
+&P.SAVPO DC    X'0'          ADDITIONAL OPTIONS                  89327  02330000
+&P.SAFIO EQU   X'80'         DELAY IF INTERVENTION REQ.          89327  02340000
+&P.SAFIG EQU   X'40'         DELAY IF ANY ERROR                  89327  02350000
+&P.SAFSH EQU   X'20'         MULTIPLE INPUT CRTS PER TASK        89327  02360000
+&P.SAPRM EQU   X'10'         WRITE PROMPT ON DISPLAY CYCLE       89327  02370000
+&P.SNGAM EQU   X'08'         GAMES NOT PERMITTED ON THIS CRT     89327  02380000
+&P.SAMUL EQU   X'02'           MULTI-TASKING ENVIRONMENT         89327  02390000
+&P.SAFVM EQU   X'01'         RUNNING UNDER VM                    89327  02400000
+&P.SEDFG DC    X'00'         EDIT OPTIONS FOR SQEXCP             89327  02410000
+&P.SENED EQU   X'80'           BYPASS EDITING                    89327  02420000
+&P.SENCM EQU   X'40'           BYPASS BUFFER COMPRESSION         89327  02430000
+&P.SENCT EQU   X'20'           BYPASS COMPR. ON NEXT WRITE ONLY  89327  02440000
+&P.SENCO EQU   X'10'           BYPASS COLOR MAPPING ON NEXT WRT  89327  02450000
+         DC    X'00'         RESERVED                            89327  02460000
+&P.SECFG DC    X'00'         SECURITY FLAGS                      89327  02470000
+&P.SECRQ EQU   X'80'           SIGNON REQUIRED                   89327  02480000
+&P.SECMD EQU   X'20'           SIGNON REQ. FOR ANY CONV.         89327  02490000
+&P.SECUN EQU   X'40'           SIGNON FOR PRIV. ONLY             89327  02500000
+&P.SECON EQU   X'02'           USER SIGNED ON                    89327  02510000
+&P.SIMFG DC    X'00'         EXTENDED FLAGS                      89327  02520000
+&P.SICRT EQU   X'80'           OUTPUT IS TO A CRT                89327  02530000
+&P.SIPRT EQU   X'40'           PRINTED OUTPUT REQUESTED          89327  02540000
+&P.SITSO EQU   X'20'           TSO FLAG (SAME AS OPTSO)          89327  02550000
+&P.SIVTM EQU   X'10'           RUNNING UNDER VTAM                89327  02560000
+&P.SIFSC EQU   X'08'           FULL-SCREEN I/O SUPPORT PRESENT   89327  02570000
+&P.SIF78 EQU   X'04'           EXTENDED HIGH-LIGHTING AVAILABLE  89327  02580000
+&P.SIF79 EQU   X'02'           SEVEN-COLOR SUPPORT AVAILABLE     89327  02590000
+&P.SINPR EQU   X'01'           PRINT FUNCTION PERMANENTLY DISABLED      02600000
+.NOTKERM SPACE 2                                                        02610000
+&P.PTITL DC    0A(0),CL137' '                                           02620000
+         ORG   &P.PTITL                                                 02630000
+&P.PH137 DC    H'137,0',C'1'                                            02640000
+&P.PTITX DC    CL60'     *****     EXHIBIT TERMINAL ACTIVITY LOG     ***02650000
+               ***     '                                                02660000
+&P.PTITE DC    C'RUN ON '                                               02670000
+&P.PTIDT DC    CL6'YY.DDD',C' AT '                                      02680000
+&P.PTITM DC    CL8'HH:MM:SS',CL4' '                                     02690000
+         DC    C'PAGE'                                                  02700000
+&P.PTIPG DC    C'123456'                                                02710000
+&P.PTILE EQU   &P.PTITE-&P.PTITX                                        02720000
+         ORG   &P.PTITL+137                                             02730000
+&P.PVLIN DC    0A(0),AL2(137,0)    PRINT LINE                           02740000
+&P.PFLIN DC    CL133' '      PRINT DATA                                 02750000
+         ORG   &P.PFLIN+5                                               02760000
+&P.PLNDC DC    C'WRITE AT LINE '                                        02770000
+&P.PLNAD DC    C'  ',C'   **'                                           02780000
+&P.PLNTX DC    CL80' ',C'**'                                            02790000
+         ORG   &P.PVLIN+138 ,   SET FOR NEXT LINE                       02800000
+&P.PVLN2 DC    0A(0),AL2(137,0)    PRINT LINE 2                         02810000
+&P.PFLN2 DC    CL133' '      PRINT DATA                                 02820000
+&P.BINDS DC    XL120'0'      SESSION INFO (CURR MAX IS 88 BYTES)        02830000
+&P.STAVC VCON   'EXH513E EXHIBIT  ABENDED SXXX; APSW=FF00CCCC FFAAAAAA;*02840000
+                PSW=FF00CCCC FFAAAAAA'   STAE ABEND MESSAGE             02850000
+&P.STAMG EQU   &P.STAVC+4,*-&P.STAVC+4,C'C'                             02860000
+&P.STADB DC    D'0'          STAE WORK SPACE                            02870000
+         DC    CL73' '       WITH ABOVE, REGISTER FORMAT AREA           02880000
+         SPACE 1                                                        02890000
+*        BUFFER PREFIX FOR 3180 EXPLICIT PARTITION DATASTREAM    88243  02900000
+&P.XPART DC    X'F3000A0C'   CCW; SIZE; CREATE PARTITION         88243  02910000
+&P.XPNM  DC    X'00',X'0000' PART.ID; CELL, 12/14 BIT; UNPROT    88243  02920000
+&P.XPROW DC    X'0018'       ROWS                                88243  02930000
+&P.XPCOL DC    X'0050'       COLUMNS                             88243  02940000
+&P.DSSIZ DC    X'0000'       SIZE OF DATA STREAM                 88243  02950000
+         DC    X'4000'       3270DS ID; CCW FOLLOWS              88243  02960000
+&P.PRCCW DC    X'F5'         CCW CODE FOR WRITE TYPE                    02970000
+&P.BUFF  DC    (&MAXLINE)CL&MAXWITH' '    WORK BUFFER            92269  02980000
+&P.BUFND DC    (&MAXLINE/2+1)CL&MAXWITH' ' MSG LINE / COLOR+HILIGHT     02990000
+&P.BUFLN EQU   &P.BUFND-&P.BUFF   BUFFER LENGTH                         03000000
+&P.BUFIN DC    CL256' ' 1/2  INPUT AREA  (TTY-WHOLE, CRT 1/2)           03010000
+&P.BUFTY DC    (&MAXLINE)CL(&MAXWITH+3)' '  LEAVE ROOM FOR ATB PER LINE 03020000
+*                                       2/2 (TTY-PREV.BUF, CRT - INPUT) 03030000
+&P.BUFIL EQU   *-&P.BUFIN    LENGTH OF INPUT BUFFER              93190  03040000
+&P.WORKL EQU   *-&P.WORK     LENGTH OF STORAGE                          03050000
+.MEND    MEND  ,                                                        03060000

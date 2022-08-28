@@ -1,0 +1,15 @@
+         MACRO ,                                                        00010000
+&NM      FOOT  &VAL,&LEN,&ID=                                           00020000
+&NM      STM   R14,R1,12(R13)     SAVE A LOT                            00030000
+         L     R14,EXW@RENT+8     NEW WORK AREA #2                      00040000
+         L     R15,0(,R14)        GET CURRENT OFFSET                    00050000
+         LA    R1,4(R15,R14)      NEW INSERTION ADDRESS                 00060000
+         AIF   ('&ID' EQ '').NOID                                       00070000
+         MVC   0(8,R1),=CL8'&ID '                                       00080000
+         LA    R15,8(,R15)        INCREMENT                             00090000
+         LA    R1,8(,R1)                                                00100000
+.NOID    MVC   0(&LEN,R1),&VAL    PRESERVE TEXT                         00110000
+         LA    R15,&LEN.(,R15)                                          00120000
+         ST    R15,0(,R14)                                              00130000
+         LM    R14,R1,12(R13)     RESTORE                               00140000
+         MEND  ,                                                        00150000

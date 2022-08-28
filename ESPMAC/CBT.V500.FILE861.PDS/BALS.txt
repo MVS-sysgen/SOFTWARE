@@ -1,0 +1,26 @@
+         MACRO ,                                                        00010000
+&NM      BALS  &R,&A                                    ADDED ON 90308  00020000
+.*                                                                      00030000
+.*       THIS MODULE GENERATES EITHER A BAL OR A BAS, OR POSSIBLY       00040000
+.*       A BALR OR BASR, DEPENDING ON THE SYSTEM. BAS AND BASR          00050000
+.*       REQUIRE AT LEAST SP 2 (MVS/XA)                                 00060000
+.*                                                                      00070000
+         GBLB  &MVT                                                     00080000
+         LCLA  &K                                                       00090000
+&K       SETA  K'&A                                                     00100000
+         AIF   (&K LT 3).NORMAL                                         00110000
+         AIF   ('&A'(1,1) NE '(' OR '&A'(2,1) EQ '(').NORMAL            00120000
+         AIF   ('&A'(&K,1) NE ')' OR '&A'(&K-1,1) EQ ')').NORMAL        00130000
+         AIF   (&MVT).BALR                                              00140000
+&NM      DC    0H'0',AL.4(0,13,&R,&A(1))  BASR                          00150000
+         MEXIT ,                                                        00160000
+.BALR    ANOP  ,                                                        00170000
+&NM      BALR  &R,&A(1)                                                 00180000
+         MEXIT ,                                                        00190000
+.NORMAL  ANOP  ,                                                        00200000
+&NM      BAL   &R,&A                                                    00210000
+         AIF   (&MVT).MEND                                              00220000
+         ORG   *-4                                                      00230000
+         DC    X'4D'         BAS                                        00240000
+         ORG   *+3                                                      00250000
+.MEND    MEND  ,                                                        00260000

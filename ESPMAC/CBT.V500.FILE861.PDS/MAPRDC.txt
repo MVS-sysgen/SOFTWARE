@@ -1,0 +1,45 @@
+         MACRO ,                                                        00010000
+&NM      MAPRDC &DSECT=YES,&PFX=                       ADDED ON GP10248 00020000
+         LCLC  &DS,&P                                                   00030000
+&DS      SETC  'MAPRDC'      SET DEFAULT NAME                           00040000
+&P       SETC  '&PFX'                                                   00050000
+         AIF   ('&NM' EQ '').HAVEDS                                     00060000
+&DS      SETC  '&NM'                                                    00070000
+.HAVEDS  AIF   ('&DSECT' NE 'YES').NODSECT                              00080000
+&DS      DSECT ,             MAPPING OF DEVICE CHARACTERISTICS          00090000
+         AGO   .COMDS                                                   00100000
+.NODSECT ANOP  ,                                                        00110000
+&DS      DS    0H            MAPPING OF DEVICE CHARACTERISTICS          00120000
+.COMDS   AIF   ('&PFX' NE '').COMPFX                                    00130000
+&P       SETC  'RDC'                                                    00140000
+.COMPFX  ANOP  ,                                                        00150000
+&P.CONTY DS    XL2           CONTROLLER TYPE                            00160000
+&P.CONMD DS    XL1           CONTROLLER MODEL                           00170000
+&P.DEVTY DS    XL2           DEVICE TYPE                                00180000
+&P.DEVMD DS    XL1           DEVICE MODEL                               00190000
+&P.DEVFT DS    XL4           DEVICE & CONTROLLER FEATURES               00200000
+&P.DEVCL DS    XL1           DEVICE CLASS (UCBTBYT3)                    00210000
+&P.DEVCD DS    XL1           DEVICE CODE  (UCBTBYT4)                    00220000
+&P.PRICY DS    XL2           PRIMARY CYLINDER NUMBER                    00230000
+&P.PRITK DS    XL2           TRACKS PER CYLINDER                        00240000
+&P.PRISC DS    XL1           SECTORS PER TRACK                          00250000
+&P.TRKLN DS    XL3           BYTES PER TRACK (DATA)                     00260000
+&P.HA0LN DS    XL2           HOME ADDRESS & R0 LENGTH                   00270000
+&P.CAPCD DS    XL1           TRACK CAPACITY CODE                        00280000
+&P.CAPFA DS    XL1           TRACK CAPACITY FACTOR                      00290000
+&P.NKOHD DS    XL2           NON-KEYED OVERHEAD                         00300000
+&P.KYOHD DS    XL2           KEYED AREA OVERHEAD                        00310000
+&P.ALTAD DS    XL2           ALTERNATE CYLINDER ADDRESS                 00320000
+&P.ALTNO DS    XL2           ALTERNATE TRACK NUMBER                     00330000
+&P.DIAAD DS    XL2           DIAGNOSTIC CYLINDER ADDRESS                00340000
+&P.DIANO DS    XL2           DIAGNOSTIC TRACK NUMBER                    00350000
+&P.SARAD DS    XL2           SA CYLINDER START                          00360000
+&P.SARNO DS    XL2           SA TRACK NUMBER                            00370000
+&P.MDRID DS    XL1           MDR ID                                     00380000
+&P.OBRID DS    XL1           OBR ID                                     00390000
+&P.CONTP DS    XL1           CONTROLLER TYPE (?)                        00400000
+         DS    XL1             RESERVED                                 00410000
+&P.RCDLN DS    XL2           LENGTH OF RECORD                           00420000
+         DS    XL18            RESERVED                                 00430000
+&P.LEN   EQU   *-&DS         LENGTH OF ONE ENTRY                        00440000
+         MEND  ,                                                        00450000

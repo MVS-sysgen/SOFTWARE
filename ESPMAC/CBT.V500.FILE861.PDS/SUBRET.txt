@@ -1,0 +1,40 @@
+         MACRO ,                                                        00010001
+&NM      SUBRET &RREG,&TYPE=BR,&RS=,&RE=,&OR=8,&VECT=0                  00020002
+         GBLC  &ZZSUBR1,&ZZSUBR2                                GP00020 00030002
+         LCLC  &RR                                              GP00020 00040002
+.*  SUBRET ENDS A MATCHING SUBHEAD USING SUBROUTINE                     00050002
+.*    &RREG SPECIFIES THE RETURN REGISTER (DEFAULT IS R14)              00060002
+.*    &TYPE MAY SPECIFY POP (RELOAD, NO BRANCH), BR FOR BRANCH,         00070002
+.*      OR BSM FOR A BSM 0,&&REG RETURN                                 00080002
+.*    &RS AND &RE MAY OVERRIDE THE RESTORE REGISTERS, BUT NOTE THAT     00090002
+.*      THIS WILL WORK ONLY IF RE IS LESS THAN THE SUBHEAD SECOND REG.  00100002
+.*    &VECT SPECIFIES AN INTEGER RETURN OFFSET (CALLER'S RETURN + N)    00110002
+.*                                                                      00120002
+.*  SUBHEAD BEGINS A SUBROUTINE, USING A SAVE AREA STACK                00130002
+.*    THE MACRO MUST PHYSICALLY PRECEDE THE MATCHING SUBRET             00140002
+.*    MACRO FOR CORRECT REGISTER RESTORE.                               00150002
+.*  BY SPECIFYING &F AND &L APPROPRIATELY, (E.G., R2,R0),               00160002
+.*    ALTERED REGISTER VALUES (IN THIS CASE, R1) CAN BE RETURNED        00170002
+.*    TO THE CALLER                                                     00180002
+&RR      SETC  '&RREG(1)'                                       GP00020 00190003
+         AIF   ('&RR' NE '').HAVER                              GP00020 00200002
+&RR      SETC  'R14'                                            GP00020 00210002
+.HAVER   AIF   ('&RS' EQ '').HAVE1                              GP00020 00220002
+&ZZSUBR1 SETC  '&RS'                                            GP00020 00230002
+.HAVE1   AIF   ('&RE' EQ '').HAVE2                              GP00020 00240002
+&ZZSUBR2 SETC  '&RE'                                            GP00020 00250002
+.HAVE2   ANOP  ,                                                GP00020 00260002
+&NM      SH    R13,=Y(LOCSAVE1-LOCSAVE)  POP THE STACK                  00270001
+         LM    &ZZSUBR1,&ZZSUBR2,&OR.(R13)  RESTORE CALLER'S REGISTERS  00280002
+         AIF   ('&RR' EQ 'POP').MEND                            GP00020 00290002
+         AIF   ('&TYPE' EQ 'POP' OR '&TYPE' EQ 'NO').MEND               00300001
+         AIF   ('&TYPE' EQ 'BSM').BSM                                   00310001
+         AIF   ('&VECT' EQ '0').BR                                      00320001
+         B     &VECT.(,&RR)  VECTORED RETURN                            00330002
+         MEXIT ,                                                        00340001
+.BR      BR    &RR           RETURN TO CALLER                           00350002
+         MEXIT ,                                                        00360001
+.BSM     AIF   ('&VECT' EQ '0').BSM0                                    00370001
+         AL    &RR,=A(&VECT) ADJUST RETURN ADDRESS                      00380002
+.BSM0    RET31 &RR           RETURN IN CALLER'S MODE                    00390002
+.MEND    MEND  ,                                                        00400001

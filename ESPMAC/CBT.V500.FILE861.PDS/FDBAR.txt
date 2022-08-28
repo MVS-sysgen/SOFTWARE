@@ -1,0 +1,35 @@
+         MACRO                                                          00010000
+&NM      FDBAR &O1,&O2,&O3,&O4,&O5,&O6,&O7,&O8,&O9,&O10,&O11,&O12,&O13,*00020000
+               &O14,&O15,&O16,&LEN=50,                                 *00030000
+               &CHAR=C'*',&MAX=0                                        00040000
+.*--------------------------------------------------------------------* 00050000
+.*   FDBAR PRODUCES A BAR (E.G., PERCENTAGE BY MAKING THE LEN= AREA   * 00060000
+.*     NON-BLANK FOR THE CALCULATED PERCENTAGE OF &O1 * 100 / MAX=    * 00070000
+.*     THE EXPANSION IS THE SAME AS FOR A REGULAR FD, FOLLOWED BY THE * 00080000
+.*     PLOT CHARACTER AND THE S(MAX-ADDR)  MAX=0 DEFAULTS TO 100      * 00090000
+.*--------------------------------------------------------------------* 00100000
+         LCLA  &N,&K                                                    00110000
+         LCLB  &I1,&I2,&I3                                              00120000
+         LCLC  &C                                                       00130000
+&N       SETA  N'&SYSLIST                                               00140000
+&K       SETA  1             FIRST IS DIVIDEND, SKIP TEST               00150000
+.LOOP    AIF   (&K GE &N).TEST                                          00160000
+&K       SETA  &K+1                                                     00170000
+&C       SETC  '&SYSLIST(&K)'                                           00180000
+&I1      SETB  (('&C' EQ 'I') OR &I1)                                   00190000
+&I2      SETB  (('&C' EQ 'D') OR &I2)                                   00200000
+&I3      SETB  (('&C' EQ 'F') OR &I3)                                   00210000
+         AGO   .LOOP                                                    00220000
+.TEST    AIF   ((&I1+&I2+&I3) NE 1).BADTYP                              00230000
+         AIF   ('&CHAR' NE '').CHAROK                                   00240000
+.BADTYP  MNOTE 'FDBAR: CHAR= MISSING'                                   00250000
+         MEXIT ,                                                        00260000
+.CHAROK  AIF   ('&MAX' NE '').GOOD                                      00270000
+         MNOTE 'FDBAR: MAX= (DIVISOR) MISSING'                          00280000
+         MEXIT ,                                                        00290000
+.GOOD    ANOP  ,                                                        00300000
+&N       SETA  48+&I2+2*&I3                                             00310000
+         FD    &O1,&O2,&O3,&O4,&O5,&O6,&O7,&O8,&O9,&O10,&O11,&O12,&O13,*00320000
+               &O14,&O15,&O16,LEN=&LEN,TYPE=&N                          00330000
+         DC    SL2(&MAX),AL1(&CHAR,0)                                   00340000
+         MEND  ,                                                        00350000

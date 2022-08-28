@@ -1,0 +1,49 @@
+         MACRO                                                          00010000
+&L       MTITL &TIT,&LEN=40                                             00020000
+.*             THIS MACRO IS CALLED AT THE BEGINNING OF AN ASSEMBLY,    00030000
+.*             IN ORDER TO SET UP THE LEFT HALF OF THE TITLE.           00040000
+.*             IT IS INTENDED TO BE USED IN CONJUNCTION WITH STITL.     00050000
+.*             MAIN HALF OF TITLE IS PADDED TO &LEN CHARACTERS.         00060000
+.*                                                                      00070000
+.*             THIS MACRO MAY NOT BE USED WITH ASSEMBLER F.             00080000
+.*             USE F EXTENDED(FROM OS/VS), G WITH LSETC=255, OR H.      00090000
+.*       CHANGES DATED 81154 MADE TO SUPPORT ASSEMBLER G AS ADVERTISED  00100000
+         GBLC  &MTITLE                                                  00110000
+         LCLA  &I,&LN                                                   00120000
+         LCLC  &BS                                               81154  00130000
+&BS      SETC  '                                        '  L'40  81154  00140000
+&I       SETA  1                                                        00150000
+         AIF   ('&TIT'(1,1) NE '''' OR '&TIT'(K'&TIT,1) NE '''').DEL    00160000
+.LOOP    AIF   (&I GE K'&TIT-1).ENDLOOP                                 00170000
+         AIF   (&LN GE &LEN).TOOBIG                                     00180000
+&I       SETA  &I+1                                                     00190000
+&LN      SETA  &LN+1                                                    00200000
+         AIF   ('&TIT'(&I,1) EQ '''' OR '&TIT'(&I,1) EQ '&&').SPECIAL   00210000
+&MTITLE  SETC  '&MTITLE'.'&TIT'(&I,1)                                   00220000
+         AGO   .LOOP                                                    00230000
+.*                                                                      00240000
+.DEL     MNOTE 4,'TITLE NOT DELIMITED BY "''" - IGNORED'                00250000
+&MTITLE  SETC  'LEARN TO PUT QUOUTES AROUND THINGS'                     00260000
+.*                                                                      00270000
+.SPECIAL AIF   (&I EQ K'&TIT).NOTPAIR                                   00280000
+         AIF   ('&TIT'(&I,1) NE '&TIT'(&I+1,1)).NOTPAIR                 00290000
+&MTITLE  SETC  '&MTITLE'.'&TIT'(&I,2)                                   00300000
+&I       SETA  &I+1                                                     00310000
+         AGO   .LOOP                                                    00320000
+.*                                                                      00330000
+.NOTPAIR MNOTE 4,' CHARACTER "''" OR "&&" NOT PAIRED'                   00340000
+&MTITLE  SETC  '&MTITLE'.'&TIT'(&I,1).'&TIT'(&I,1)               81154  00350000
+         AGO   .LOOP                                                    00360000
+.*                                                                      00370000
+.TOOBIG  MNOTE 4,'TITLE LONGER THAN &LEN - EXCESS TRUNCATED'            00380000
+         MEXIT                                                          00390000
+.*                                                                      00400000
+.ENDLOOP AIF   (&LN EQ &LEN).END                                        00410000
+&I       SETA  &LEN-&LN                                          81154  00420000
+.PADLOOP AIF   (&I LE 40).TRUNCB                                 81154  00430000
+&MTITLE  SETC  '&MTITLE'.'&BS'                                   81154  00440000
+&I       SETA  &I-40                                             81154  00450000
+         AGO   .PADLOOP                                          81154  00460000
+.TRUNCB  AIF   (&I LT 1).END                                     81154  00470000
+&MTITLE  SETC  '&MTITLE'.'&BS'(1,&I)                             81154  00480000
+.END     MEND                                                           00490000

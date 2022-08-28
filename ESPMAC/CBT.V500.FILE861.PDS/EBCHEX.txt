@@ -1,0 +1,30 @@
+         MACRO ,                                                        00010000
+&NM      EBCHEX &VAL,&LEN                                       GP97272 00020000
+.********************************************************************** 00030000
+.*                                                                   ** 00040000
+.*       THIS MACRO CONVERTS A NUMERIC VARIABLE (E.G. L') INTO AN       00050000
+.*       EBCDIC CONSTANT OF LENGTH &LEN IN HEXADECIMAL FORMAT           00060000
+.*                                                                   ** 00070000
+.********************************************************************** 00080000
+         LCLA  &I,&J,&K                                                 00090000
+&I       SETA  8                                                        00100000
+&K       SETA  268435456                                                00110000
+         AIF   (T'&LEN NE 'N').BADLEN                                   00120000
+         AIF   ('&NM' EQ '').NODC                                       00130000
+&NM      DC    0CL(&LEN)' '                                             00140000
+.NODC    AIF   (&LEN GT 8).BADLEN                                       00150000
+         AIF   (&LEN GT 0).OKLEN                                        00160000
+.BADLEN  MNOTE 8,'LENGTH (OPERAND 2) IS UNACCEPTABLE: &LEN '            00170000
+         MEXIT ,                                                        00180000
+.OKLEN   AIF   (&LEN LT &I).NOTLEN                                      00190000
+         AIF   (&I LT 8).LONGFM                                         00200000
+         DC    AL1(240+((&VAL)/&K)-((C'0'-C'A'+10)*(((&VAL)/&K)/10)))   00210000
+         AGO   .NOTLEN                                                  00220000
+.LONGFM  DC    AL1(240+(((&VAL)/&K)-((&VAL)/&J)*16)-((C'0'-C'A'+10)*(((*00230000
+               (&VAL)/&K)-((&VAL)/&J)*16)/10)))                         00240000
+.NOTLEN  AIF   (&I EQ 1).MEND                                           00250000
+&I       SETA  &I-1                                                     00260000
+&J       SETA  &K                                                       00270000
+&K       SETA  &K/16                                                    00280000
+         AGO   .OKLEN                                                   00290000
+.MEND    MEND  ,                                                        00300000

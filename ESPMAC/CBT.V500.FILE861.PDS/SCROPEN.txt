@@ -1,0 +1,18 @@
+         MACRO                                                          00010000
+&NM      SCROPEN &WORK,&DEV=,&OPT=                                      00020000
+         LCLA  &I,&J                                                    00030000
+         LCLB  &A,&D,&W,&S                                       87317  00040000
+&J       SETA  N'&OPT                                                   00050000
+.OPTL    ANOP  ,                                                        00060000
+&I       SETA  &I+1                                                     00070000
+         AIF   (&I GT &J).OPTN                                          00080000
+         AIF   ('&OPT(&I)' EQ '').OPTL                                  00090000
+&A       SETB  (&A OR '&OPT(&I)' EQ 'ABE' OR '&OPT(&I)' EQ 'ABEND')     00100000
+&D       SETB  (&D OR '&OPT(&I)' EQ 'DUMMY')                            00110000
+&W       SETB  (&W OR '&OPT(&I)' EQ 'NOWTO')                            00120000
+&S       SETB  (&S OR '&OPT(&I)' EQ 'SA')                        87317  00130000
+         AGO   .OPTL                                                    00140000
+.OPTN    ANOP  ,                                                        00150000
+&I       SETA  128*&A+64*&D+32*&W+8*&S                           87317  00160000
+&NM      SCRCOM 0,0,2,&I,&WORK,DEV=&DEV                                 00170000
+         MEND  ,                                                        00180000

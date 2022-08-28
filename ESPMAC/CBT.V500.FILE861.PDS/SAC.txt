@@ -1,0 +1,7 @@
+         MACRO ,                                                        00010000
+&NM      SAC   &R                                       ADDED ON 04234  00020000
+.*                                                                      00030000
+.*    HERCULES MVS 3.8 SUPPORT                                          00040000
+.*                                                                      00050000
+&NM      MACPARM MODE=LBL                                               00060000
+         MEND  ,                                                        00070000

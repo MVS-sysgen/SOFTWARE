@@ -1,0 +1,94 @@
+         MACRO ,                                                        00010000
+&NM      XTRAP &LIST,&OPT=(PSW,REGS),&TEST=,&ID=        ADDED ON 86218  00020000
+.*                                                                      00030000
+.*    THIS MACRO, RUNNING UNDER THE EXORCISE DEBUG PROGRAM, WILL TRACE  00040000
+.*    INSTRUCTION FLOW, PRINT VARIABLES, AND DISPLAY REGISTERS          00050000
+.*  NAME CHANGED TO XTRAP TO PREMIT XTRACE USE FOR INSTRUCTION TRACE    00060000
+.*                                                                      00070000
+.*  MAINTENANCE:  2005-06-14  GYP                                       00080000
+.*  ALLOW *var AS INDIRECT LOOKUP REQUEST - 24-BIT ADDRESS IN WORD      00090000
+.*  ALLOW /var AS INDIRECT INDIRECT LOOKUP                              00100000
+.*    IMPLEMENTED BY TRUNCATING PRINTED NAME TO CL7                     00110000
+.*                2008-04-18  GYP                                       00120000
+.*  LENGTH FIELD CHANGED FROM AL2 TO SL2 USING DEBTROLD         GP10021 00130000
+.*                                                                      00140000
+         LCLC  &LN,&N,&V,&LAB,&TAG,&C                           GP08109 00150000
+         LCLA  &I,&J,&K,&L,&FG,&NL,&R                           GP08109 00160000
+         LCLB  &B80,&B40,&B20,&B10,&B08,&B04,&B02,&B01                  00170000
+&TAG     SETC  '&ID'         USE OVERRIDE LABEL                         00180000
+         AIF   ('&TAG' NE '').HVTAG                                     00190000
+&TAG     SETC  '&NM'         ELSE USE NAME FIELD                        00200000
+.HVTAG   ANOP  ,                                                        00210000
+.*       B01 RESERVED FOR FULL MEMORY DUMP                              00220000
+&I       SETA  N'&OPT                                                   00230000
+&LN      SETC  'L'''                                                    00240000
+&LAB     SETC  '&NM'                                                    00250000
+         AIF   ('&TEST' NE '').TEST                                     00260000
+         AIF   ('&SYSPARM' NE 'DEBUG').EASY                             00270000
+         AGO   .PROCEED                                                 00280000
+.TEST    ANOP  ,                                                        00290000
+&LAB     TM    OPTS,DEBUG .   RUNNING UNDER EXORCISE ?                  00300000
+         BZ    XTR&SYSNDX    NO; BYPASS TRACE                           00310000
+&LAB     SETC  ''                                                       00320000
+.PROCEED AIF   (&I GT 0).OPTLOOP                                        00330000
+         MNOTE 0,'OPTIONS OMITTED - PSW DEFAULTED'                      00340000
+&B40     SETB  1                                                        00350000
+         AGO   .OPTDONE                                                 00360000
+.OPTLOOP AIF   (&J GE &I).OPTDONE                                       00370000
+&J       SETA  &J+1                                                     00380000
+&B40     SETB  ('&OPT(&J)' EQ 'PSW' OR &B40)                            00390000
+&B80     SETB  (('&OPT(&J)' EQ 'PSW' AND '&TAG' NE '') OR &B80)         00400000
+&B20     SETB  ('&OPT(&J)' EQ 'REGS' OR &B20)                           00410000
+&B10     SETB  ('&OPT(&J)' EQ 'MREGS' OR &B10)                          00420000
+&B08     SETB  ('&OPT(&J)' EQ 'MAP' OR &B08)                            00430000
+&B04     SETB  ('&OPT(&J)' EQ 'BUFFER' OR &B04)                         00440000
+         AGO   .OPTLOOP                                                 00450000
+.OPTDONE AIF   ((&B40+&B20+&B10+&B08+&B04+&B02+&B01) GE &I).OPTOK       00460000
+         MNOTE 4,'UNRECOGNIZED OPTION SPECIFIED'                        00470000
+.OPTOK   ANOP  ,                                                        00480000
+&I       SETA  N'&SYSLIST                                               00490000
+&J       SETA  0                                                        00500000
+.COUNTER AIF   (&J GE &I).COUNTED                                       00510000
+&J       SETA  &J+1                                                     00520000
+         AIF   ('&SYSLIST(&J)' EQ '').COUNTER                           00530000
+&K       SETA  (N'&SYSLIST(&J)+1)/2                                     00540000
+&NL      SETA  &NL+&K                                                   00550000
+         AGO   .COUNTER                                                 00560000
+.COUNTED ANOP  ,                                                        00570000
+&J    SETA  128*&B80+64*&B40+32*&B20+16*&B10+8*&B08+4*&B04+2*&B02+&B01  00580000
+&LAB     DC    0H'0',X'830E',AL1(&J,&NL) DEBUG: TRACE                   00590000
+         AIF   (&NL EQ 0 AND NOT &B80).EXPDONE                          00600000
+         B     XTR&SYSNDX                                               00610000
+&J       SETA  0                                                        00620000
+         AIF   (NOT &B80).EXPAND                                        00630000
+         DC    CL8'&TAG '                                               00640000
+.EXPAND  AIF   (&J GE &I).EXPDONE                                       00650000
+&J       SETA  &J+1                                                     00660000
+         AIF   ('&SYSLIST(&J)' EQ '').EXPAND                            00670000
+&K       SETA  N'&SYSLIST(&J)                                           00680000
+&L       SETA  1                                                        00690000
+.EXPITEM AIF   (&L GT &K).EXPAND                                        00700000
+&N       SETC  '&SYSLIST(&J,&L)'                                        00710000
+&V       SETC  '&N'                                             GP05165 00720000
+         AIF   ('&V'(1,1) NE '*' AND '&V'(1,1) NE '/').NIND     GP05165 00730000
+&V       SETC  '&V'(2,K'&N-1)  ELIMINATE * FROM VARIABLE NAME   GP05165 00740000
+.* &N    SETC  '&V'          COPY   (DEFER)                     GP05165 00750000
+.NIND    AIF   ('&SYSLIST(&J,&L+1)' EQ '').DEFLN                        00760000
+&R       SETA  K'&SYSLIST(&J,&L+1)                              GP08109 00770000
+         AIF   (&R LT 3).NOREGLN                                GP08109 00780000
+&C       SETC  '&SYSLIST(&J,&L+1)'                              GP08109 00790000
+         AIF   ('&C'(1,1) NE '(' OR '&C'(2,1) EQ '(').NOREGLN   GP08109 00800000
+         AIF   ('&C'(&R,1) NE ')' OR '&C'(&K-1,1) EQ ')').NOREGLN       00810000
+         DC    CL8'&N ',SL2(&V,0&C)                             GP10021 00820000
+         AGO   .EXPITEX                                         GP08109 00830000
+.NOREGLN DC    CL8'&N ',SL2(&V,&SYSLIST(&J,&L+1))               GP10021 00840000
+         AGO   .EXPITEX                                         GP08109 00850000
+.DEFLN   DC    CL8'&N ',SL2(&V,&LN&V)                           GP10021 00860000
+.EXPITEX ANOP  ,                                                        00870000
+&L       SETA  &L+2                                                     00880000
+         AGO   .EXPITEM                                                 00890000
+.EASY    AIF   ('&NM' EQ '').EXPDONE                                    00900000
+&LAB     DS    0H            NO DEBUG MODE - NO TRACE                   00910000
+.EXPDONE AIF   ('&TEST' EQ '' AND &NL EQ 0 AND NOT &B80).MEXIT          00920000
+XTR&SYSNDX DS  0H                                                       00930000
+.MEXIT   MEND  ,                                                        00940000

@@ -1,0 +1,26 @@
+         MACRO                                                          00010000
+&L       STITL &TIT                                                     00020000
+.*             THIS MACRO IS USED IN CONJUNCTION WITH MTITL TO          00030000
+.*             SPECIFY THE SUB-TITLE FOR A TITLE CARD.                  00040000
+.*             THE MAIN PORTION OF THE TITLE IS SPECIFIED ONCE,         00050000
+.*             VIA MTITL, WHILE EACH STITL SPECIFIES ITS OWN            00060000
+.*             SUB-TITLE, WHICH IS PLACED ON THE RIGHT HAND SIDE.       00070000
+.*             AN OPERAND OF OFF GENERATES A TITLE WITH NO SUB-TITLE.   00080000
+         GBLC  &MTITLE                                                  00090000
+         LCLC  &STIT                                                    00100000
+         PUSH  PRINT                                             80140  00101000
+         PRINT GEN                                               80140  00102000
+         AIF   (T'&TIT EQ 'O').OFF                                      00110000
+         AIF   ('&TIT' EQ 'OFF').OFF                                    00120000
+         AIF   ('&TIT'(1,1) EQ '''' AND '&TIT'(K'&TIT,1) EQ '''').OK    00130000
+         MNOTE 4,'SUBTITLE NOT DELIMITED BY "''" - IGNORED'             00140000
+&STIT    SETC  '*** INVALID SUBTITLE ***'                               00150000
+         AGO   .TIT                                                     00160000
+.OK      ANOP                                                           00170000
+&STIT    SETC  '&TIT'(2,K'&TIT-2)                                       00180000
+.TIT     TITLE '&MTITLE- &STIT'                                         00190000
+         POP   PRINT                                             80140  00191000
+         MEXIT                                                          00200000
+.OFF     TITLE '&MTITLE'                                                00210000
+         POP   PRINT                                             80140  00211000
+         MEND                                                           00220000

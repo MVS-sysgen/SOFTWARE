@@ -1,0 +1,71 @@
+         MACRO ,                                                        00010000
+&NM      FMT   &VALUE,&OLN,&SIGN=Y,&CENT=N,&GROUP=N,                   *00020000
+               &FILL=N,&LJUST=N,&SPACE=N,&TRUNC=N,&TYPE=DEC             00030000
+.********************************************************************** 00040000
+.*                                                                      00050000
+.*  THIS MACRO INVOKES NUMERIC FORMATTING SERVICES (VIA @FORMATS)       00060000
+.*                                                                      00070000
+.*  FIRST POSITIONAL IS ADDRESS/NAME OF VALUE                           00080000
+.*  SECOND POSITIONAL USED TO SPECIFY (FORCED) OUTPUT LENGTH            00090000
+.*                                                                      00100000
+.*  OTHER SERVICES:    SIGN=Y - NEGATIVE # PREFIXED BY MINUS(DEFAULT)   00110000
+.*     CENT=Y  - FORMAT A DECIMAL NUMBER WITH TWO PLACES WWW.PP         00120000
+.*     GROUP=Y - FORMAT IN GROUPS OF THREE 123,456                      00130000
+.*     FILL=Y  - FILL WITH LEADING ZEROES  00012300                     00140000
+.*     LJUST=Y - LEFT JUSTIFY THE NUMBER, THEN ABUT TEXT                00150000
+.*     SPACE=Y - ONE SPACE BETWEEN NUMBER AND TEXT                      00160000
+.*     TRUNC=N - OVERFLOW (***) WHEN SIGNIFICANT DIGITS LOST (CC=4)     00170000
+.*                                                                      00180000
+.*  EXCEPT FOR LJUST=Y, ALL OUTPUT FIELDS WILL BE THE MAXIMUM LENGTH    00190000
+.*  POSSIBLE (TO MAINTAIN COMMON ALIGNMENT) DEPENDING ON THE INPUT      00200000
+.*  LENGTH.  OUTPUT LENGTH INCLUDES SIGN (UNLESS SIGN=N) AND COMMAS     00210000
+.*  AND PERIODS.  OR SPECIFY EXPLICIT OUTPUT LENGTH (NUM,LEN)           00220000
+.*  LJUST=Y WITH SHORT LENGTH TRUNCATES ON RIGHT, ELSE LEFT.            00230000
+.*                                                                      00240000
+.********************************************************************** 00250000
+         GBLC  &MACPLAB                                                 00260000
+&MACPLAB SETC  '&NM'                                                    00270000
+         LCLA  &EPYT,&OPTS                                              00280000
+         LCLA  &K,&I,&J                                                 00290000
+         LCLB  &O01,&O02,&O04,&O08,&O10,&O20,&O40,&O80                  00300000
+         LCLC  &L                                                       00310000
+&L       SETC  'L'''                                                    00320000
+&O80     SETB  ('&SIGN' EQ 'Y' OR '&SIGN' EQ 'YES')                     00330000
+&O40     SETB  ('&LJUST' EQ 'Y' OR '&LJUST' EQ 'YES')                   00340000
+&O20     SETB  ('&SPACE' EQ 'Y' OR '&SPACE' EQ 'YES')                   00350000
+&O10     SETB  ('&FILL' EQ 'Y' OR '&FILL' EQ 'YES')                     00360000
+&O08     SETB  ('&TRUNC' EQ 'Y' OR '&TRUNC' EQ 'YES')                   00370000
+.*&O04     SETB  ('&O04' EQ 'Y' OR '&O04' EQ 'YES')                     00380000
+&O02     SETB  ('&GROUP' EQ 'Y' OR '&GROUP' EQ 'YES')                   00390000
+&O01     SETB  ('&CENT' EQ 'Y' OR '&CENT' EQ 'YES')                     00400000
+&OPTS    SETA  &O80*128+&O40*64+&O20*32+&O10*16                         00410000
+&OPTS    SETA  &OPTS+&O08*8+&O04*4+&O02*2+&O01                          00420000
+         AIF   ('&TYPE' EQ 'DEC' OR '&TYPE' EQ 'PACKED').LADD           00430000
+&EPYT    SETA  1                                                        00440000
+         AIF   ('&TYPE' EQ 'ADEC' OR '&TYPE' EQ 'ABSDEC').LADD          00450000
+&EPYT    SETA  2                                                        00460000
+         AIF   ('&TYPE' EQ 'INT' OR '&TYPE' EQ 'INTEGER').LADD          00470000
+&EPYT    SETA  3                                                        00480000
+         AIF   ('&TYPE' EQ 'AINT' OR '&TYPE' EQ 'ABSINT').LADD          00490000
+&EPYT    SETA  5                                                        00500000
+         AIF   ('&TYPE' EQ 'HEX').LADD                                  00510000
+&EPYT    SETA  6                                                        00520000
+         AIF   ('&TYPE' EQ 'SBIN' OR '&TYPE' EQ 'SBIT').LADD            00530000
+&EPYT    SETA  7                                                        00540000
+         AIF   ('&TYPE' EQ 'BIN' OR '&TYPE' EQ 'BINARY').LADD           00550000
+         MNOTE 8,'INVALID NUMERIC TYPE=&TYPE '                          00560000
+&EPYT    SETA  4             DO AS HEX                                  00570000
+.LADD    AIF   ('&OLN' EQ '').NOLOAD                                    00580000
+         MACPARM R0,12,=Y(&OLN*256),OP=ICM,MODE=THREE USER'S LENGTH     00590000
+         MACPARM R0,3,=Y(&EPYT*256+&OPTS),OP=ICM,MODE=THREE TYPE        00600000
+         AGO   .TESTCC                                                  00610000
+.NOLOAD  MACPARM R0,&EPYT*256+&OPTS,OP=LA   LOAD FORMATTING SELECTION   00620000
+.TESTCC  AIF   (N'&VALUE LT 2).NONUML                                   00630000
+         MACPARM R1,&VALUE(1),OP=LA LOAD ADDRESS OF PACKED COUNTER      00640000
+         MACPARM R0,4,=AL1(&VALUE(2)),OP=ICM,MODE=THREE                 00650000
+         AGO   .CMNUML                                                  00660000
+.NONUML  MACPARM R1,&VALUE,OP=LA LOAD ADDRESS OF PACKED COUNTER         00670000
+         MACPARM R0,4,=AL1(&L&VALUE),OP=ICM,MODE=THREE                  00680000
+.CMNUML  MACPARM R15,=V(@FORMATS),OP=L                                  00690000
+         BASR  R14,R15       CALL FORMATTING SERVICES                   00700000
+         MEND  ,                                                        00710000

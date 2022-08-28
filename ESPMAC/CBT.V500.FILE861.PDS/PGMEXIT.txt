@@ -1,0 +1,220 @@
+         MACRO ,                                                        00010000
+&NM      PGMEXIT &DUMMY,&PFX=,&NEXT=,                                  *00020000
+               &RC=,&RC0=,&RC1=,&COPYRET=,&RETADDR=(R14)         83087  00030000
+         GBLB  &ZZSVBSM      SET BY SAVEM WHEN BSM IS USED ON ENTRY     00040000
+         GBLB  &MVS,&MVSXA,&MVSESA,&OS390,&Z900,&BUGDBO         GP04234 00050000
+         GBLC  &SAVTYPE,&SAVNAME                                GP04050 00060000
+         GBLC  &MACPLAB                                         GP04051 00070000
+.*--------------------------------------------------------------------* 00080000
+.*                                                                    * 00090000
+.*    PGMEXIT PROVIDES THE LOGICAL END OF A PROGRAM INITIATED WITH    * 00100000
+.*    A PGMHEAD REQUEST. INFORMATION IS PASSED WITH GLOBALS, AND THE  * 00110000
+.*    CODE DOES NOT SUPPORT INTERLEAVED PGMHEAD/PGMEXIT STATEMENTS.   * 00120000
+.*                                                                    * 00130000
+.*    THE PARAMETERS ARE:                                             * 00140000
+.*                                                                    * 00150000
+.*    RC=     NUMERIC VALUE (0-4095), REGISTER, OR RELOCATABLE WORD   * 00160000
+.*    RC0=    NUMERIC VALUE (0-4095), REGISTER, OR RELOCATABLE WORD   * 00170000
+.*    RC1=    NUMERIC VALUE (0-4095), REGISTER, OR RELOCATABLE WORD   * 00180000
+.*                                                                    * 00190000
+.*    RC LOADS REGISTER 15 (STANDARD RETURN CODE CONVENTION)          * 00200000
+.*    RC0 AND RC1 LOAD REGISTERS 0 AND 1 AND ARE OPTIONAL             * 00210000
+.*                                                                    * 00220000
+.*    COPYRET=ADDRESS  OR COPYRET=(ADDRESS) LOAD R15 FROM STORAGE     * 00230000
+.*    COPYRET=(ADDRESS,LENGTH)  LOAD R15,R0, ETC. DEPENDING ON LENGTH * 00240000
+.*      ADDRESS IS A RELOCATABLE; LENGTH MUST BE AN ABSOLUTE TERM     * 00250000
+.*                                                                    * 00260000
+.*    ANY REGISTER NOT SPECIFIED IS RESTORED TO ITS VALUE ON ENTRY,   * 00270000
+.*      UNLESS THE NOSAVE OPTION IS IN EFFECT                         * 00280000
+.*                                                                    * 00290000
+.*    R14 IS NOT SUPPORTED FOR A REGISTER OPERAND                     * 00300000
+.*    R15, R0, AND R1 ARE ALLOWED PROVIDING THEY DO NOT CONFLICT      * 00310000
+.*      E.G.  RC=(R15),RC1=(R1) IS VALID                              * 00320000
+.*            RC=(R1),RC1=(R15) WILL FAIL                             * 00330000
+.*                                                                    * 00340000
+.*    RETADDR=R14 SPECIFIES THE REGISTER CONTAINING THE RETURN        * 00350000
+.*      ADDRESS. IN BSM MODE, THIS MUST INCLUDE THE APPROPRIATE MODE  * 00360000
+.*      SETTING BITS. OPERAND IS IGNORED IN BAKR/PR AND XCTL MODES.   * 00370000
+.*                                                                    * 00380000
+.*    PFX= SPECIFIES AN OVERRIDE TO THE SAVE AREA AND REGISTER NAME   * 00390000
+.*      PREFIX. BY DEFAULT THE PFX FROM PGMHEAD IS USED.              * 00400000
+.*                                                                    * 00410000
+.*    NEXT= SPECIFIES THE NAME OF A MODULE TO XCTL TO, EITHER AS AN   * 00420000
+.*      UNQUOTED NAME, OR AS QUOTED STRING, OR AS =CL8' ' LITERAL.    * 00430000
+.*                                                                    * 00440000
+.*                                                                    * 00450000
+.*    THIS MACRO WAS SUGGESTED BY ENDM WRITTEN BY SHMUEL (SEYMOUR J.  * 00460000
+.*    METZ, WHICH IS COPYRIGHT 1978 BY SHMUEL (SEYMOUR J.) METZ       * 00470000
+.*                                                                      00480000
+.*    THIS MACRO IS NOT TO BE DISTRIBUTED WITHOUT PERMISSION,           00490000
+.*    AS DESCRIBED IN MEMBER $$RIGHTS.                                  00500000
+.*                                                                      00510000
+.*--------------------------------------------------------------------* 00520000
+         LCLC  &SAVBASE      SAVE AREA START                            00530000
+         LCLC  &OSVREG,&C    WORK REGISTER FOR HIGH LEVEL SAVE AREA     00540000
+         LCLB  &NOSAVE,&OLDSAVE  PASSED BY PGMEXIT              GP04051 00550000
+         LCLB  &OSVLOAD      FLAG THAT OSVREG LOADED AND SET            00560000
+         LCLB  &LR15         FLAG THAT R15 HAS RC                       00570000
+         LCLB  &LR0          FLAG THAT R15 HAS RC0                      00580000
+         LCLB  &LR1          FLAG THAT R15 HAS RC0                      00590000
+         LCLA  &I,&K                                                    00600000
+&I       SETA  &SYSNDX                                                  00610000
+&MACPLAB SETC  '&NM'                                            GP04051 00620000
+         AIF   ('&PFX' EQ '').NOPFX                             GP04050 00630000
+&SAVNAME SETC  '&PFX'                                                   00640000
+.NOPFX   AIF   ('&SAVNAME' NE '').DFPFX                         GP04050 00650000
+&SAVNAME SETC  'SAVE'                                           GP04050 00660000
+.DFPFX   ANOP  ,                                                GP04050 00670000
+&SAVBASE SETC '&SAVNAME'.'SPLN'                                         00680000
+&NOSAVE  SETB  ('&SAVTYPE' EQ 'NO')                             GP04051 00690000
+&OLDSAVE SETB  ('&SAVTYPE' EQ 'OLD')                            GP04051 00700000
+.*--------------------------------------------------------------------* 00710000
+.*   STEP 1:  EXCEPT FOR NOSAVE, SAVE ANY NON-NUMERIC RETURN CODES    * 00720000
+.*       USE R14 AS A WORKING REGISTER                                * 00730000
+.*       WITH NOSAVE, JUST LOAD THE NON-NUMERICS                      * 00740000
+.*--------------------------------------------------------------------* 00750000
+         AIF   (&NOSAVE).CPRCOM                                         00760000
+         AIF   (NOT &OLDSAVE).CPROLD                                    00770000
+&OSVREG  SETC  'R13'                                                    00780000
+&OSVLOAD SETB  1                                                        00790000
+         MACPARM R13,&SAVNAME.13-&SAVBASE.(R13),OP=L  LOAD OLD SV       00800000
+         AGO   .CPRCOM                                                  00810000
+.CPROLD  MACPARM R14,&SAVNAME.13-&SAVBASE.(R13),OP=L  LOAD WORK         00820000
+&OSVREG  SETC  'R14'         WORK REGISTER                              00830000
+&OSVLOAD SETB  1             WORK REGISTER LOADED                       00840000
+.CPRCOM  AIF   (T'&COPYRET EQ 'O').DONCOPY                              00850000
+         AIF   (N'&COPYRET LT 2).CPRONE                                 00860000
+         AIF   (N'&COPYRET EQ 2).CPRTWO                                 00870000
+.CPRBAD  MNOTE 4,' COPYRET PARAMETER INVALID; USE (ADDR-EXPR,LENGTH)'   00880000
+         MEXIT ,                                                        00890000
+.CPRTWO  AIF   (&NOSAVE).CPRTWON                                        00900000
+&MACPLAB MVC   &SAVNAME.15-&SAVBASE.(&COPYRET(2),&OSVREG),&COPYRET(1)   00910000
+&MACPLAB SETC  ''                                                       00920000
+         AGO   .NOL15                                                   00930000
+.CPRTWON MACPARM R15,&COPYRET(2)/4-2,&COPYRET(1),OP=LM                  00940000
+         AGO   .NOL15                                                   00950000
+.CPRONE  AIF   (&NOSAVE).CPRONEN                                        00960000
+&MACPLAB MVC   &SAVNAME.15-&SAVBASE.(4,&OSVREG),&COPYRET(1)             00970000
+&MACPLAB SETC  ''                                                       00980000
+         AGO   .NOL15                                                   00990000
+.CPRONEN MACPLAB R15,&COPYRET(1),OP=L,OPR=LR                            01000000
+         AGO   .NOL15                                                   01010000
+.*--------------------------------------------------------------------* 01020000
+.*    NOTE THAT NUMERIC (T' = 'N') CODES ARE LOADED LATER ON          * 01030000
+.*--------------------------------------------------------------------* 01040000
+.DONCOPY AIF   (T'&RC EQ 'O').NOL15                                     01050000
+         AIF   (T'&RC EQ 'N').NOL15                             GP04051 01060000
+         AIF   (&NOSAVE).NSL15                                          01070000
+         AIF   ('&RC'(1,1) EQ '(').STL15                                01080000
+.NSL15   MACPARM R15,&RC,OP=L                                   GP04051 01090000
+         AIF   (&NOSAVE).NOL15                                          01100000
+         MACPARM R15,&SAVNAME.15-&SAVBASE.(,&OSVREG),OP=ST      GP04051 01110000
+         AGO   .NOL15                                           GP04051 01120000
+.STL15   MACPARM &RC(1),&SAVNAME.15-&SAVBASE.(,&OSVREG),OP=ST   GP04051 01130000
+.NOL15   AIF   (T'&RC0 EQ 'O').NOL0                                     01140000
+         AIF   (T'&RC0 EQ 'N').NOL0                             GP04051 01150000
+         AIF   (&NOSAVE).NSL0                                           01160000
+         AIF   ('&RC0'(1,1) EQ '(').STL0                                01170000
+.NSL0    MACPARM R0,&RC0,OP=L                                   GP04051 01180000
+         AIF   (&NOSAVE).NOL0                                           01190000
+         MACPARM R0,&SAVNAME.0-&SAVBASE.(,&OSVREG),OP=ST        GP04051 01200000
+         AGO   .NOL0                                            GP04051 01210000
+.STL0    MACPARM &RC0(1),&SAVNAME.0-&SAVBASE.(,&OSVREG),OP=ST   GP04051 01220000
+.NOL0    AIF   (T'&RC1 EQ 'O').DONLREG                                  01230000
+         AIF   (T'&RC1 EQ 'N').DONLREG                          GP04051 01240000
+         AIF   (&NOSAVE).NSL1                                           01250000
+         AIF   ('&RC1'(1,1) EQ '(').STL1                                01260000
+.NSL1    MACPARM R1,&RC1,OP=L                                   GP04051 01270000
+         AIF   (&NOSAVE).DONLREG                                        01280000
+         MACPARM R1,&SAVNAME.1-&SAVBASE.(,&OSVREG),OP=ST        GP04051 01290000
+         AGO   .DONLREG                                         GP04051 01300000
+.STL1    MACPARM &RC1(1),&SAVNAME.1-&SAVBASE.(,&OSVREG),OP=ST   GP04051 01310000
+.*--------------------------------------------------------------------* 01320000
+.*   STEP 2: REGAIN OLD SAVE AREA                                     * 01330000
+.*--------------------------------------------------------------------* 01340000
+.DONLREG AIF   (&NOSAVE).DONLSAV                                        01350000
+         AIF   (&OLDSAVE).NSVSAVE                                       01360000
+         MACPARM R1,(R13),OP=LR        SAVE STORAGE ADDRESS             01370000
+.NSVSAVE AIF   (NOT &OSVLOAD).NSVLOAD  GET CALLER'S SAVE AREA           01380000
+         AIF   ('&OSVREG' EQ 'R13').DONLSAV  HAVE IT ALREADY            01390000
+         MACPARM R13,(&OSVREG),OP=LR   SKIP STORAGE IF HAVE             01400000
+         AGO   .DONLSAV                                                 01410000
+.NSVLOAD MACPARM R13,&SAVNAME.13-&SAVBASE.(R13),OP=L  OLD SAVE AREA     01420000
+.*--------------------------------------------------------------------* 01430000
+.*   STEP 3: FREE WORKING STORAGE                                     * 01440000
+.*--------------------------------------------------------------------* 01450000
+.DONLSAV AIF   (&NOSAVE OR &OLDSAVE).DONFREE                            01460000
+         MACPARM R0,&SAVNAME.SPLN-&SAVBASE.(R1),OP=L                    01470000
+         AIF   (&MVSESA).STOREL                                 GP04234 01480000
+         ICM   R15,7,&SAVNAME.SPLN+1-&SAVBASE.(R1)  ANY LENGTH? GP04234 01490000
+         BZ    ZZZ&I.L       SKIP IF ZERO LENGTH                GP04234 01500000
+         FREEMAIN R,LV=(0),A=(1)  FREE STORAGE                  GP04234 01510000
+ZZZ&I.L  DS    0H                                               GP06277 01520000
+         AGO   .COMREL                                          GP04234 01530000
+.STOREL  LR    R15,R0        COPY POSSIBLE SUBPOOL              GP04051 01540000
+         SLL   R0,8                                                     01550000
+         SRA   R0,8          REMOVE SUBPOOL                             01560000
+         BZ    ZZZ&I.L       SKIP IF ZERO LENGTH                        01570000
+         SRL   R15,24        RIGHT-JUSTIFY SUBPOOL                      01580000
+.*       STORAGE RELEASE,ADDR=(1),LENGTH=(0),SP=(15)                    01590000
+         STORAGE RELEASE,ADDR=(1),LENGTH=(0),SP=(15)                    01600000
+.COMREL  ANOP  ,                                                GP04234 01610000
+.*--------------------------------------------------------------------* 01620000
+.*   STEP 4: LOAD NUMERIC RETURN CODES                                * 01630000
+.*--------------------------------------------------------------------* 01640000
+.DONFREE AIF   (T'&COPYRET NE 'O').LARDONE  COPYRET DONE ALREADY        01650000
+         AIF   (T'&RC NE 'N').NOR15                                     01660000
+&LR15    SETB  1             SHOW REGISTER LOADED                       01670000
+         MACPARM R15,&RC,OP=LA                                  GP04051 01680000
+.NOR15   AIF   (T'&RC0 NE 'N').NOR0                                     01690000
+         MACPARM R0,&RC0,OP=LA                                          01700000
+&LR0     SETB  1             SHOW REGISTER LOADED                       01710000
+.NOR0    AIF   (T'&RC1 NE 'N').LARDONE                                  01720000
+         MACPARM R1,&RC1,OP=LA                                          01730000
+&LR1     SETB  1             SHOW REGISTER LOADED                       01740000
+.*--------------------------------------------------------------------* 01750000
+.*   STEP 5: RESTORE NON-RC REGISTERS AS NEEDED                       * 01760000
+.*--------------------------------------------------------------------* 01770000
+.LARDONE AIF   (&NOSAVE).LNRDONE                                        01780000
+&OSVREG  SETC  'R14'                                                    01790000
+         AIF   (NOT &LR15 AND NOT &LR0 AND NOT &LR1).LNRALL             01800000
+         AIF   (NOT &LR15).LNR2LM                                       01810000
+         MACPARM R14,&SAVNAME.14-&SAVBASE.(R13),OP=L                    01820000
+&OSVREG  SETC  'R2'                                                     01830000
+         AIF   (&LR1 AND &LR0).LNRALL                                   01840000
+&OSVREG  SETC  'R0'                                                     01850000
+         AIF   (NOT &LR0 AND NOT &LR1).LNRALL                           01860000
+&OSVREG  SETC  'R1'                                                     01870000
+         AIF   (&LR0).LNRALL                                            01880000
+&OSVREG  SETC  'R2'                                                     01890000
+         MACPARM R0,&SAVNAME.0-&SAVBASE.(R13),OP=L                      01900000
+         AGO   .LNRALL                                                  01910000
+.LNR2LM  ANOP  ,                                                        01920000
+&OSVREG  SETC  'R1'.'+&LR1*4'                                           01930000
+         AIF   (NOT &LR0).LNRE0                                         01940000
+         MACPARM R14,R15,&SAVNAME.14-&SAVBASE.(R13),OP=LM,MODE=THREE    01950000
+         AGO   .LNRALL                                                  01960000
+.LNRE0   MACPARM R14,R0,&SAVNAME.14-&SAVBASE.(R13),OP=LM,MODE=THREE     01970000
+.LNRALL  ANOP  ,                                                        01980000
+&K       SETA   K'&OSVREG                                               01990000
+&C       SETC   '&OSVREG'(2,&K-1)                                       02000000
+        MACPARM &OSVREG,R12,&SAVNAME.&C-&SAVBASE.(R13),OP=LM,MODE=THREE 02010000
+.*--------------------------------------------------------------------* 02020000
+.*   STEP 6: XCTL OR RETURN ACCORDING TO ENTRY LINKAGE                * 02030000
+.*--------------------------------------------------------------------* 02040000
+.LNRDONE AIF   (&NOSAVE).RETFOOT                                GP04051 02050000
+         MVI   &SAVNAME.14-&SAVBASE.(R13),X'FF' FLAG AS LAST SAVE AREA  02060000
+.RETFOOT AIF   (T'&NEXT NE 'O').GOXCTL                                  02070000
+         AIF   (T'&RETADDR EQ 'O').BUGME                        GP09183 02080000
+         AIF   (&ZZSVBSM).GOBSM                                         02090000
+         MACPARM &RETADDR,OP=B,OPR=BR,MODE=ONE                  GP04051 02100000
+         AGO   .BUGME                                           GP09183 02110000
+.GOXCTL  ANOP  ,                                                GP04234 02120000
+&MACPLAB LA    R15,ZZZ&SYSNDX.X                                         02130000
+         XCTL  SF=(E,(15))                                      GP04050 02140000
+ZZZ&SYSNDX.X XCTL EP=&NEXT,SF=L                                         02150000
+         AGO   .BUGME                                           GP09183 02160000
+.GOBSM   MACPARM 0,&RETADDR(1),OP=BSM,OPR=BSM                   GP04051 02170000
+.BUGME   AIF   (NOT &BUGDBO).END                                GP09183 02180000
+         DBO   MODE=C        EXPAND DEBUG SUPPORT               GP09183 02190000
+.END     MEND  ,                                                        02200000

@@ -1,0 +1,13 @@
+         MACRO                                                          00010000
+&NAME    TERMTYPE &TERMIDL=                                             00020000
+         CNOP 0,4                                                       00030000
+&NAME    DS   0H                                                        00040000
+         SR   1,1                  ZERO REGISTER 1                      00050000
+         LA   0,&TERMIDL           LOAD TERMINAL ID LOCATION            00060000
+         LA   15,2                 LOAD ENTRY CODE                      00070000
+         SLL  15,24                SHIFT TO TOP BYTE                    00080000
+         OR   0,15                 GATE INTO REGISTER 0                 00090000
+         LNR  0,0                  MAKE NEGATIVE                        00100000
+         SVC  94                   ISSUE TERMINAL CONTROL SVC           00110000
+         MEXIT                                                          00120000
+         MEND                                                           00130000

@@ -1,0 +1,62 @@
+         MACRO ,                                                        00010000
+&NM    SERVINIT &LPA=YES,&MAP=YES,&ERR=,&LIST=NO,&AMODE=*,       81167 *00020000
+               &MODE=NEW                                        GP03129 00030000
+         GBLA  &SVC@SVC      SVC NUMBER OF @SERVICE              83100  00040000
+         GBLB  &MVSESA                                          GP04234 00050000
+         GBLB  &SRVCM@P,&SRV#NUT                                        00060000
+         GBLC  &PRTMAC,&SRVCM@R,&MACPLAB                                00070000
+         AIF   ('&MODE' EQ 'NEW' AND &MVSESA).CALLSUB           GP04234 00080000
+&NM      MACPARM R15,15,@SERVICE,MODE=THREE,OP=ICM,OPR=ICM              00090000
+         BNZ   ZZZZ&SYSNDX+4                                            00100000
+         AIF   ('&LPA' NE 'YES').NOLPA                                  00110000
+         AIF   (&SVC@SVC EQ 0).DOLPA                             83100  00120000
+         SR    R0,R0         REQUEST GETMAIN/INITIALIZATION      83100  00130000
+         SVC   &SVC@SVC      CALL IT                             83100  00140000
+         AGO   .COMMON                                           83100  00150000
+.DOLPA   LPALOOK EP=@SERVICE,DCB=4                              GP03262 00160000
+         AGO   .COMMON                                                  00170000
+.NOLPA   AIF   ('&LPA' NE 'LINK').DOLOAD                        GP09179 00180000
+         L     R0,=V(@SERVICE)    LINK IN                       GP09179 00190000
+         AGO   .COMMON                                          GP09179 00200000
+.DOLOAD  LOAD  EP=@SERVICE                                              00210000
+.COMMON  AIF   ('&AMODE' EQ '*' AND &MVSESA).BSM                GP04234 00220000
+ZZZZ&SYSNDX ST R0,@SERVICE                                              00230000
+         AIF   (NOT &MVSESA).COMSET                             GP04234 00240000
+         AIF   ('&AMODE' EQ '31').AM31                          GP99124 00250000
+         AIF   ('&AMODE' EQ '24').AM24                          GP99124 00260000
+         MNOTE 4,'UNDEFINED AMODE=&AMODE - AM24 ASSUMED'        GP99124 00270000
+.AM24    MVI   @SERVICE,0    FORCE LOW                          GP99124 00280000
+         AGO   .COMSET                                          GP99124 00290000
+.AM31    OI    @SERVICE,X'80'   SET AM31 ON BASSM INVOCATION    GP99124 00300000
+         AGO   .COMSET                                          GP99124 00310000
+.BSM     ANOP  ,                                                GP99124 00320000
+ZZZZ&SYSNDX LR R15,R0        COPY ADDRESS                       GP99124 00330000
+         BSM   R15,0         IMPART CURRENT MODE                GP99124 00340000
+         ST    R15,@SERVICE  AND STASH IT                       GP99124 00350000
+         AGO   .COMSET                                                  00360000
+.*--------------------------------------------------------------------* 00370000
+.*  NEW INTERFACE FOR EXTERNAL INITIALIZATION ROUTINE SUBSERV         * 00380000
+.*--------------------------------------------------------------------* 00390000
+.*                                                                      00400000
+.CALLSUB ANOP  ,                                                GP03129 00410000
+&NM      MACPARM R0,(R0),MODE=EVEN,OP=SR,OPR=SR                 GP03129 00420000
+         MACPARM R1,@SERVICE   LOCATE THE SERVDEFS AREA         GP03129 00430000
+         L     R15,=V(SUBSERV)  CALL INITIALIZATION ROUTINE     GP03129 00440000
+         BASR  R14,R15       CALL IT                            GP03129 00450000
+&SRV#NUT SETB  1             USE NEW INTERFACE                  GP03129 00460000
+.COMSET  AIF   ('&ERR' EQ '').NOERR                              81148  00470000
+&SRVCM@R SETC  ''                                                81148  00480000
+         AIF   ('&ERR' EQ 'NO').NOERR                            81148  00490000
+&SRVCM@R SETC  '&ERR'                                            81148  00500000
+.NOERR   AIF   ('&MAP' EQ 'NO').MEND                                    00510000
+         AIF   (&SRVCM@P).MEND                                          00520000
+&SRVCM@P SETB  1                                                        00530000
+         PUSH  PRINT                                                    00540000
+         AIF   ('&LIST' NE 'NO').DOLIST                          81167  00550000
+         PRINT OFF                                               81167  00560000
+         AGO   .CMLIST                                           81167  00570000
+.DOLIST  PRINT ON,GEN                                            81167  00580000
+.CMLIST  SPACE 1                                                 81167  00590000
+         COPY  SERVFLAG                                                 00600000
+         POP   PRINT                                                    00610000
+.MEND    MEND  ,                                                        00620000

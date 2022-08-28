@@ -1,0 +1,22 @@
+         MACRO ,                                                        00010000
+&NM      LTP   &R,&INDEX,&BZ=,&BNZ=,&PARM=                              00020000
+         GBLC  &ZZLTPRM                                                 00030000
+.*--------------------------------------------------------------------* 00040000
+.*   LTP LOADS AND TESTS A PARAMETER E.G., CALL SUBR(A,B,C..) A=0,B=1 * 00050000
+.*   OP1:REGISTER TO BE LOADED  INDEX:PARAMETER NUMBER (REL. TO 0)    * 00060000
+.*   BZ:TARGET WHEN ADDRESS IS ZERO     PARM:REG. WITH PARM ADDRESS   * 00070000
+.*   PARM DEFAULTS TO R9, ELSE MAY BE SET ON THE FIRST INVOCATION     * 00080000
+.*--------------------------------------------------------------------* 00090000
+         AIF   ('&PARM' NE '').SETPARM                                  00100000
+         AIF   ('&ZZLTPRM' NE '').COMPARM                               00110000
+&ZZLTPRM SETC  'R9'          DEFAULT PARM REGISTER                      00120000
+.SETPARM ANOP  ,                                                        00130000
+&ZZLTPRM SETC  '&PARM(1)'                                               00140000
+.COMPARM ANOP  ,                                                        00150000
+&NM      L     &R(1),&INDEX*4(,&ZZLTPRM)                                00160000
+         AIF   ('&BZ' EQ '' AND '&BNZ' EQ '').MEND                      00170000
+         LA    &R(1),0(,&R(1))                                          00180000
+         LTR   &R(1),&R(1)                                              00190000
+         MACPARM &BZ,OP=BZ,OPR=BZR,NULL=SKIP,MODE=ONE                   00200000
+         MACPARM &BNZ,OP=BNZ,OPR=BNZR,NULL=SKIP,MODE=ONE                00210000
+.MEND    MEND  ,                                                        00220000

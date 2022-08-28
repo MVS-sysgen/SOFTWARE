@@ -1,0 +1,135 @@
+         MACRO ,                                                        03830000
+&NM      LNKSTK &DSECT=YES                                              03840000
+.*--------------------------------------------------------------------* 03850000
+.*  LNKSTK PRODUCES MAPPINGS FOR STACK ENTRIES. PREFIX IS LS + THE    * 03860000
+.*  ENTRY TYPE IN HEX                                                 * 03870000
+.*                                                                    * 03880000
+.*  LSX - COMMON ENTRY DESCRIPTOR (SAME FOR OS390 AND Z900)           * 03890000
+.*  LS1 - OS390 HEADER                                                * 03900000
+.*  LS2 - OS390 TRAILER                                               * 03910000
+.*  LS4 - OS390 BRANCH STATE ENTRY                                    * 03920000
+.*  LS5 - OS390 PROGRAM-CALL STATE                                    * 03930000
+.*                                                                    * 03940000
+.*  LS9 - Z/900 HEADER                                                * 03950000
+.*  LSA - Z/900 TRAILER                                               * 03960000
+.*  LSC - Z/900 BRANCH STATE ENTRY                                    * 03970000
+.*  LSD - Z/900 PROGRAM-CALL STATE                                    * 03980000
+.*                                                                    * 03990000
+.*--------------------------------------------------------------------* 04000000
+&NM      MACMAPHD DSECT=&DSECT,SFX=_CED,DFLT=LNKSTK                     04010000
+LSCED    DS    0D            COMMON ENTRY DESCRIPTOR                    04020000
+LSXET    DC    X'00'         ENTRY TYPE                                 04030000
+LSXU     EQU   X'80'           UNSTACK SUPPRESSION BIT                  04040000
+LSXSI    DC    X'00'         SECTION IDENTIFICATION                     04050000
+LSXRFS   DC    XL2'0'        REMAINING FREE SPACE                       04060000
+LSXNES   DC    XL2'0'        NEXT ENTRY SIZE (0 FOR CURRENT)            04070000
+         DC    XL2'0'          RESERVED                                 04080000
+LSXSIZE  EQU   *-LSXET       ENTRY DESCRIPTOR SIZE                      04090000
+.*--------------------------------------------------------------------* 04100000
+.*  OS390 HEADER                                                      * 04110000
+.*--------------------------------------------------------------------* 04120000
+&NM      MACMAPHD DSECT=&DSECT,DFLT=LNKSTK                              04130000
+LSENTRY  DS    0D                                                       04140000
+LS1RSV   DC    A(0)            RESERVED                                 04150000
+LS1BSEA  DC    A(0)          BACKWARD STACK ENTRY ADDRESS               04160000
+LS1B     EQU   X'80'           BACKWARD STACK ENTRY VALIDITY BIT        04170000
+LS1LSX   DC    XL(LSXSIZE)'0' STACK ENTRY                               04180000
+LS1SIZE  EQU   *-LS1RSV      SIZE WITH DESCRIPTOR                       04190000
+.*--------------------------------------------------------------------* 04200000
+.*  OS390 TRAILER                                                     * 04210000
+.*--------------------------------------------------------------------* 04220000
+         ORG   LSENTRY                                                  04230000
+LS2RSV   DC    A(0)            RESERVED                                 04240000
+LS2FSHA  DC    A(0)          FORWARD SECTION HEADER ADDRESS             04250000
+LS2F     EQU   X'80'           FORWARD SECTION HEADER VALIDITY BIT      04260000
+LS2LSX   DC    XL(LSXSIZE)'0' STACK ENTRY                               04270000
+LS2SIZE  EQU   *-LS2RSV      SIZE WITH DESCRIPTOR                       04280000
+.*--------------------------------------------------------------------* 04290000
+.*  OS390 BRANCH STATE ENTRY                                          * 04300000
+.*--------------------------------------------------------------------* 04310000
+         ORG   LSENTRY                                                  04320000
+LS4REGS  DC    16A(0)        GENERAL PURPOSE REGISTERS                  04330000
+LS4ACRS  DC    16A(0)        ACCESS CONTROL REGISTERS                   04340000
+LS4PKM   DC    XL2'0'        PSW-KEY MASK                               04350000
+LS4SASN  DC    XL2'0'        SECONDARY ASN                              04360000
+LS4EAX   DC    XL2'0'        EXTENDED AUTHORIZATION INDEX               04370000
+LS4PASN  DC    XL2'0'        PRIMARY ASN                                04380000
+LS4PSW   DC    XL8'0'                                                   04390000
+LS4RSV   DC    XL4'0'          RESERVED                                 04400000
+LS4BRAD  DC    XL4'0'        BRANCH ADDRESS                             04410000
+LS4MOD   DC    XL8'0'        (USER) MODIFIABLE AREA                     04420000
+LS4LSX   DC    XL(LSXSIZE)'0' ENTRY DESCRIPTOR                          04430000
+LS4SIZE  EQU   *-LS4REGS     SIZE WITH DESCRIPTOR                       04440000
+.*--------------------------------------------------------------------* 04450000
+.*  OS390 PC-CALL STATE ENTRY                                         * 04460000
+.*--------------------------------------------------------------------* 04470000
+         ORG   LSENTRY                                                  04480000
+LS5REGS  DC    16A(0)        GENERAL PURPOSE REGISTERS                  04490000
+LS5ACRS  DC    16A(0)        ACCESS CONTROL REGISTERS                   04500000
+LS5PKM   DC    XL2'0'        PSW-KEY MASK                               04510000
+LS5SASN  DC    XL2'0'        SECONDARY ASN                              04520000
+LS5EAX   DC    XL2'0'        EXTENDED AUTHORIZATION INDEX               04530000
+LS5PASN  DC    XL2'0'        PRIMARY ASN                                04540000
+LS5PSW   DC    XL8'0'                                                   04550000
+LS5CSI   DC    XL4'0'        CALLED SPACE ID                            04560000
+LS5PCN   DC    XL4'0'        PC NUMBER                                  04570000
+LS5MOD   DC    XL8'0'        (USER) MODIFIABLE AREA                     04580000
+LS5LSX   DC    XL(LSXSIZE)'0' ENTRY DESCRIPTOR                          04590000
+LS5SIZE  EQU   *-LS5REGS     SIZE WITH DESCRIPTOR                       04600000
+.*--------------------------------------------------------------------* 04610000
+.*  Z/900 HEADER                                                      * 04620000
+.*--------------------------------------------------------------------* 04630000
+         ORG   LSENTRY                                                  04640000
+LS9BSEA  DC    XL8'0'        BACKWARD STACK ENTRY ADDRESS               04650000
+LS9B     EQU   X'01'           BACKWARD STACK ENTRY VALIDITY BIT        04660000
+LS9LSX   DC    XL(LSXSIZE)'0' STACK ENTRY                               04670000
+LS9SIZE  EQU   *-LS9BSEA     SIZE WITH DESCRIPTOR                       04680000
+.*--------------------------------------------------------------------* 04690000
+.*  Z/900 TRAILER                                                     * 04700000
+.*--------------------------------------------------------------------* 04710000
+         ORG   LSENTRY                                                  04720000
+LSAFSHA  DC    XL8'0'        FORWARD SECTION HEADER ADDRESS             04730000
+LSAF     EQU   X'01'           FORWARD SECTION HEADER VALIDITY BIT      04740000
+LSALSX   DC    XL(LSXSIZE)'0' STACK ENTRY                               04750000
+LSASIZE  EQU   *-LSAFSHA     SIZE WITH DESCRIPTOR                       04760000
+.*--------------------------------------------------------------------* 04770000
+.*  Z/900 BRANCH STATE ENTRY                                          * 04780000
+.*--------------------------------------------------------------------* 04790000
+         ORG   LSENTRY                                                  04800000
+LSCREGS  DC    16XL8'0'      GENERAL PURPOSE REGISTERS                  04810000
+LSCPKM   DC    XL2'0'        PSW-KEY MASK                               04820000
+LSCSASN  DC    XL2'0'        SECONDARY ASN                              04830000
+LSCEAX   DC    XL2'0'        EXTENDED AUTHORIZATION INDEX               04840000
+LSCPASN  DC    XL2'0'        PRIMARY ASN                                04850000
+LSCPSWL  DC    XL8'0'                                                   04860000
+LSCBRAD  DC    XL8'0'        BRANCH ADDRESS                             04870000
+LSCBR64  EQU   X'01'           AM64 IF LOW BIT ON                       04880000
+LSCMOD   DC    XL8'0'        (USER) MODIFIABLE AREA                     04890000
+LSCRSV   DC    XL8'0'          RESERVED                                 04900000
+LSCPSWR  DC    XL8'0'        PSW                                        04910000
+LSCRSV2  DC    XL48'0'         RESERVED                                 04920000
+LSCACRS  DC    16XL4'0'      ACCESS CONTROL REGISTERS                   04930000
+LSCLSX   DC    XL(LSXSIZE)'0' ENTRY DESCRIPTOR                          04940000
+LSCSIZE  EQU   *-LSCREGS     SIZE WITH DESCRIPTOR                       04950000
+.*--------------------------------------------------------------------* 04960000
+.*  Z/900 PC-CALL STATE ENTRY                                         * 04970000
+.*--------------------------------------------------------------------* 04980000
+         ORG   LSENTRY                                                  04990000
+LSDREGS  DC    16XL8'0'      GENERAL PURPOSE REGISTERS                  05000000
+LSDPKM   DC    XL2'0'        PSW-KEY MASK                               05010000
+LSDSASN  DC    XL2'0'        SECONDARY ASN                              05020000
+LSDEAX   DC    XL2'0'        EXTENDED AUTHORIZATION INDEX               05030000
+LSDPASN  DC    XL2'0'        PRIMARY ASN                                05040000
+LSDPSWL  DC    XL8'0'        PSW                                        05050000
+LSDCSI   DC    XL4'0'        CALLED SPACE ID                            05060000
+LSDPCN   DC    XL4'0'        PC NUMBER                                  05070000
+LSDPC64  EQU   X'80'           AM64 IF HIGH BIT ON                      05080000
+LSDMOD   DC    XL8'0'        (USER) MODIFIABLE AREA                     05090000
+LSDRSV   DC    XL8'0'          RESERVED                                 05100000
+LSDPSWR  DC    XL8'0'        PSW                                        05110000
+LSDRSV2  DC    XL48'0'         RESERVED                                 05120000
+LSDACRS  DC    16XL4'0'      ACCESS CONTROL REGISTERS                   05130000
+LSDLSX   DC    XL(LSXSIZE)'0' ENTRY DESCRIPTOR                          05140000
+LSDSIZE  EQU   *-LSDREGS     SIZE WITH DESCRIPTOR                       05150000
+         ORG   ,                                                        05160000
+         MEND  ,                                                        05170000

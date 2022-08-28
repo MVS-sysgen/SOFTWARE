@@ -1,0 +1,36 @@
+        MACRO                                                           00010000
+&LABEL  TRINV  ,                                                        00020000
+.* Construct reverse bits translate table                               00030000
+.* Contributed by Kenneth Wilkerson on IBM-MAIN as REVTABLE             00040000
+         LCLA  &I,&J,&K,&L,&M,&N,&O                                     00050000
+         LCLC  &X                                                       00060000
+&LABEL   DS    0D            LIKE EM DOUBLE WORD ALIGNED                00070000
+&I       SETA  0             STARTING VALUE                             00080000
+.TABLOOP ANOP  ,             LOOP UNTIL TABLE IS DONE                   00090000
+&K       SETA  1             NEED SIXTEEN ENTRIES PER LINE              00100000
+&X       SETC  'AL1('                                                   00110000
+         AGO   .X16LP                                                   00120000
+.X16NXT  ANOP  ,                                                        00130000
+&X       SETC  '&X'.'&J'.','                                            00140000
+.X16LP   ANOP  ,             16 ENTRY LOOP                              00150000
+&J       SETA  0             STARTING RESULT                            00160000
+&L       SETA  1             STARTING ADDEND                            00170000
+&M       SETA  1             8 BITS PER BYTE                            00180000
+&N       SETA  128           STARTING COMPARAND X'80'                   00190000
+&O       SETA  &I            COPY CURRENT BYTE TO REVERSE               00200000
+.BYTELP  ANOP  ,                                                        00210000
+         AIF   (&O LT &N).BYTEFT     LESS THAN CURRENT - 0              00220000
+&O       SETA  &O-&N                                                    00230000
+&J       SETA  &J+&L                                                    00240000
+.BYTEFT  ANOP  ,                                                        00250000
+&L       SETA  &L*2          NEXT ADDEND                                00260000
+&N       SETA  &N/2          NEXT COMPARAND                             00270000
+&M       SETA  &M+1          NEED EIGHT BITS                            00280000
+         AIF   (&M LE 8).BYTELP                                         00290000
+&I       SETA  &I+1                                                     00300000
+&K       SETA  &K+1                                                     00310000
+         AIF   (&K LE 16).X16NXT                                        00320000
+&X       SETC  '&X'.'&J'.')'                                            00330000
+      DC &X                                                             00340000
+         AIF   (&I LT 256).TABLOOP                                      00350000
+         MEND  ,                                                        00360000

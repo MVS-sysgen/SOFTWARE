@@ -1,0 +1,57 @@
+         MACRO ,                                                        00010000
+&NM      DCIN  &O1,&O2,&O3,&O4,&O5,&O6,&O7,&O8,&O9,&O10         GP04234 00020000
+.********************************************************************** 00030000
+.*                                                                      00040000
+.*   SOME OF US ARE HORRIBLY LAZY - THIS MACRO DEFINES A (PRESUMED      00050000
+.*   CHARACTER) CONSTANT WITH THE LABEL POINTING TO THE *LAST*          00060000
+.*   BYTE OF THE CONSTANT, AS USED BY MVCIN FROM FIELD                  00070000
+.*                                                                      00080000
+.********************************************************************** 00090000
+.*                                                                      00100000
+         LCLC  &BL                                                      00110000
+         LCLA  &I                                                       00120000
+&I       SETA  &SYSNDX                                                  00130000
+&BL      SETC  'ZZB'.'&I'                                               00140000
+         AIF   (N'&SYSLIST LE 1).NUM1                                   00150000
+         AIF   (N'&SYSLIST LE 2).NUM2                                   00160000
+         AIF   (N'&SYSLIST LE 3).NUM3                                   00170000
+         AIF   (N'&SYSLIST LE 4).NUM4                                   00180000
+         AIF   (N'&SYSLIST LE 5).NUM5                                   00190000
+         AIF   (N'&SYSLIST LE 6).NUM6                                   00200000
+         AIF   (N'&SYSLIST LE 7).NUM7                                   00210000
+         AIF   (N'&SYSLIST LE 8).NUM8                                   00220000
+         AIF   (N'&SYSLIST LE 9).NUM9                                   00230000
+&BL      DC    &O1,&O2,&O3,&O4,&O5,&O6,&O7,&O8,&O9,&O10                 00240000
+         AIF   (N'&SYSLIST LE 10).NUMOK                                 00250000
+         MNOTE 4,'DCIN: MORE THAN 10 OPERANDS'                          00260000
+         AGO   .NUMOK                                                   00270000
+.NUM9    ANOP  ,                                                        00280000
+&BL      DC    &O1,&O2,&O3,&O4,&O5,&O6,&O7,&O8,&O9                      00290000
+         AGO   .NUMOK                                                   00300000
+.NUM8    ANOP  ,                                                        00310000
+&BL      DC    &O1,&O2,&O3,&O4,&O5,&O6,&O7,&O8                          00320000
+         AGO   .NUMOK                                                   00330000
+.NUM7    ANOP  ,                                                        00340000
+&BL      DC    &O1,&O2,&O3,&O4,&O5,&O6,&O7                              00350000
+         AGO   .NUMOK                                                   00360000
+.NUM6    ANOP  ,                                                        00370000
+&BL      DC    &O1,&O2,&O3,&O4,&O5,&O6                                  00380000
+         AGO   .NUMOK                                                   00390000
+.NUM5    ANOP  ,                                                        00400000
+&BL      DC    &O1,&O2,&O3,&O4,&O5                                      00410000
+         AGO   .NUMOK                                                   00420000
+.NUM4    ANOP  ,                                                        00430000
+&BL      DC    &O1,&O2,&O3,&O4                                          00440000
+         AGO   .NUMOK                                                   00450000
+.NUM3    ANOP  ,                                                        00460000
+&BL      DC    &O1,&O2,&O3                                              00470000
+         AGO   .NUMOK                                                   00480000
+.NUM2    ANOP  ,                                                        00490000
+&BL      DC    &O1,&O2                                                  00500000
+         AGO   .NUMOK                                                   00510000
+.NUM1    ANOP  ,                                                        00520000
+&BL      DC    &O1                                                      00530000
+.*                                                                      00540000
+.NUMOK   ANOP  ,                                                        00550000
+&NM      EQU   *-1,*-&BL+1,C'C'                                         00560000
+         MEND  ,                                                        00570000

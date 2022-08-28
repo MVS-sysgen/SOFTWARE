@@ -1,0 +1,36 @@
+         MACRO                                                          00010000
+&NM      BLANKOUT &RET=R14,&ADD=R1,&LEN=R3,&CPU=,&WK=R15         78187  00020000
+         SPACE 1                                                        00030000
+*        THIS ROUTINE BLANKS OUT AN AREA OF ANY LENGTH                  00040000
+         AIF   ('&CPU' NE '360').MVCL                                   00050000
+*                                                                       00060000
+&NM      SH    &LEN,H1       AT LEAST ONE BYTE ?                 78187  00070000
+         BMR   &RET          NO                                  78187  00080000
+         MVI   0(&ADD),C' '  SET FIRST BYTE BLANK                       00090000
+         BZR   &RET .        DONE IF ONLY ONE                    78187  00100000
+&NM.A    BCTR  &LEN,0        LESS ONE FOR EXECUTE                78187  00110000
+         LA    &WK,255       SET LENGTH-1                        78187  00120000
+         NR    &WK,&LEN      MASK OUT NUMBER THIS TIME           78187  00130000
+         EX    &WK,&NM.B     MOVE SPECIFIED NUMBER               78187  00140000
+         LA    &ADD,1(&WK,&ADD)  BUMP POINTER                    78187  00150000
+         XR    &LEN,&WK      ACCOUNT FOR NUMBER DONE             78187  00160000
+         BL    &NM.A .       DO NEXT SEGMENT                     78187  00170000
+         BR    &RET          RETURN DONE                         78187  00180000
+&NM.B    MVC   1(0,&ADD),0(&ADD)                                 78187  00190000
+         MEXIT                                                          00200000
+.MVCL    SPACE 1                                                 78187  00210000
+&NM      LTR   &LEN,&LEN .   AT LEAST ONE BYTE ?                 79182  00220000
+         BNPR  &RET .        NO, RETURN                          79182  00230000
+         STM   R15,R1,12(R13) .  SAVE REGS                       78187  00240000
+         AIF   ('&LEN' NE '0' AND '&LEN' NE 'R0').M01                   00250000
+         MACPARM R1,(&LEN)                                              00260000
+         MACPARM R0,(&ADD)                                              00270000
+         AGO   .MCOM                                                    00280000
+.M01     MACPARM R0,(&ADD)                                              00290000
+         MACPARM R1,(&LEN)                                              00300000
+.MCOM    SR    R15,R15                                                  00320000
+         ICM   R15,8,BLANKS .  BLANK IS PADDING BYTE                    00330000
+         MVCL  R0,R14 .      CLEAR ALL                                  00340000
+         LM    R15,R1,12(R13) .  RESTORE                                00350000
+         BR    &RET                                                     00360000
+         MEND                                                           00370000

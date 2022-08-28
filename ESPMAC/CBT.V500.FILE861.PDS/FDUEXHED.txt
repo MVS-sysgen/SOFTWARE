@@ -1,0 +1,15 @@
+         MACRO ,                                                        00010000
+&NM      FDUEXHED ,                                                     00020000
+.*                                                                      00030000
+.*    SIMPLE INPUT VALIDITY CHECK FOR FDIN FIELDS                       00040000
+.*    DO NOT USE R13'S SAVE AREA                                        00050000
+.*                                                                      00060000
+         PUSH  USING                                                    00070000
+         DROP  ,                                                        00080000
+         USING &NM,R15                                                  00090000
+&NM      LM    R4,R6,4(R1)   LOAD FD, FIW, AND FDW ADDRESSES            00100000
+         USING FHDLINK,R4    MAP FIELD REQUEST                          00110000
+         USING FIWFG,R5      MAP FIELD INPUT WORK AREA                  00120000
+         USING FDWFDA,R6     MAP FIELD DEFINITION WORK AREA             00130000
+         USING EXHBWORK,R11  PASSED                                     00140000
+         MEND  ,                                                        00150000

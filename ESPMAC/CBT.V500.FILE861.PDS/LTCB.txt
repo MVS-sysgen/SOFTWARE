@@ -1,0 +1,20 @@
+         MACRO ,                                                        00010000
+&NM      LTCB  &R,&HAVE=,&USE=NO                        ADDED ON 86138  00020000
+         GBLB  &MVS                                                     00030000
+         LCLC  &N                                                       00040000
+&N       SETC  '&NM'                                                    00050000
+         AIF   (&MVS).PSA                                               00060000
+         AIF   ('&HAVE' EQ 'CVT').HAVCVT                                00070000
+&N       L     &R,CVTPTR                                                00080000
+&N       SETC  ''                                                       00090000
+         L     &R,CVTTCBP-CVTMAP(,&R)                            90327  00100000
+         AGO   .OLDBOX                                           90327  00110000
+.HAVCVT  ANOP  ,                                                        00120000
+&N       L     &R,CVTTCBP                                               00130000
+.OLDBOX  L     &R,4(,&R)                                                00140000
+         AGO   .EXIT                                                    00150000
+.PSA     ANOP  ,                                                        00160000
+&N       L     &R,PSATOLD-PSA                                           00170000
+.EXIT    AIF   ('&USE' EQ 'NO').MEND                                    00180000
+         USING TCB,&R                                                   00190000
+.MEND    MEND                                                           00200000

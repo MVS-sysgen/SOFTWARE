@@ -1,0 +1,36 @@
+         MACRO                                                          00010000
+&NM      FDTM  &STR,&MASK,&BZ=0,&BM=0,&BO=0,&BNO=0,&BNZ=0        81264  00020000
+         GBLA  &FDCNTR                                                  00030000
+         LCLA  &T,&C                                                    00040000
+         LCLB  &NOP                                              81133  00050000
+         LCLC  &FDCHAIN,&FZ,&FM,&FO                              81264  00060000
+&FDCNTR  SETA  &FDCNTR+1                                                00070000
+&FDCHAIN SETC  'ZFD'.'&FDCNTR'                                          00080000
+&C       SETA  &FDCNTR+1                                                00090000
+         AIF   ('&NM' EQ '').NONAME                                     00100000
+&NM      EQU   *                                                        00110000
+.NONAME  AIF   ('&STR' NE 'END' AND '&STR' NE '*END').PROCESS           00120000
+&FDCHAIN DC    AL1(0)        END OF FD LIST                             00130000
+         MEXIT ,                                                        00140000
+.PROCESS ANOP  ,                                                        00150000
+&FZ      SETC  '&BZ'                                             81264  00160000
+&FM      SETC  '&BM'                                             81264  00170000
+&FO      SETC  '&BO'                                             81264  00180000
+         AIF   ('&BNZ' EQ '0' OR '&BNO' EQ '0').BNZBNO           81264  00190000
+         MNOTE 8,'MUTUALLY EXCLUSIVE BNZ AND BNO'                81264  00200000
+.BNZBNO  AIF   ('&BNO' EQ '0').NOBNO                             81264  00210000
+         AIF   ('&FZ' EQ '0' AND '&FM' EQ '0').DOBNO             81264  00220000
+         MNOTE 8,'MUTUALLY EXCLUSIVE BNO AND BZ/BM'              81264  00230000
+.DOBNO   ANOP  ,                                                 81264  00240000
+&FZ      SETC  '&BNO'                                            81264  00250000
+&FM      SETC  '&BNO'                                            81264  00260000
+.NOBNO   AIF   ('&BNZ' EQ '0').CHECK                             81264  00270000
+         AIF   ('&FM' EQ '0' AND '&FO' EQ '0').DOBNZ             81264  00280000
+         MNOTE 8,'MUTUALLY EXCLUSIVE BNZ AND BM/BO'              81264  00290000
+.DOBNZ   ANOP  ,                                                 81264  00300000
+&FM      SETC  '&BNZ'                                            81264  00310000
+&FO      SETC  '&BNZ'                                            81264  00320000
+.CHECK   ANOP  ,                                                        00330000
+&T       SETA  64*&NOP+19                                               00340000
+&FDCHAIN DC AL1(ZFD&C-*,&T),SL2(&FZ,&FM,&FO,&STR),AL1(&MASK)     81264  00350000
+         MEND  ,                                                        00360000

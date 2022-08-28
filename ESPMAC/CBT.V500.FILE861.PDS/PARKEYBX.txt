@@ -1,0 +1,23 @@
+         MACRO ,                                                        00010000
+&NM      PARKEYBX &PREFIX                                               00020001
+.*--------------------------------------------------------------------* 00030000
+.*  THIS MACRO BUILDS THE BXLE ADDRESS TABLE FOR THE SUBVERB ROUTINE. * 00040001
+.*  USE IN CONJUNCTION WITH @PARSER/PARSE, AND PARKEYAD/PARKEYFG      * 00050001
+.*  MACROS TO BUILD THE TABLES.                                       * 00060001
+.*                                                                    * 00070001
+.*  THE PREFIX OPERAND SPECIFIES THE NAME OF THE FIRST TABLE ENTRY.   * 00080001
+.*  THE LAST ADDRESS IS PREFIX.Z, AND THE ENTRY LENGTH IS TAKEN AS    * 00090001
+.*  PREFIX.2-PREFIX                                                   * 00100001
+.*--------------------------------------------------------------------* 00110000
+         GBLC  &ZZZOPTL,&MACPLAB                                        00120001
+&ZZZOPTL SETC ''             RESET FLAG TABLE ENTRY LENGTH              00130001
+         LCLC  &PFX                                                     00140001
+&PFX     SETC  '&PREFIX'                                                00150001
+         AIF   ('&PREFIX' NE '').HAVEPFX                                00160001
+         MNOTE 8,'PARKEYBX: TABLE NAME MISSING'                         00170001
+&PFX     SETC  'VERBTAB'                                                00180001
+.HAVEPFX AIF   ('&NM' NE '').HAVENM                                     00190005
+&MACPLAB SETC '&PFX'.'P'                                                00200005
+.HAVENM  ANOP  ,                                                        00210005
+&NM      MACPARM A(&PFX,&PFX.2-&PFX,&PFX.N,0),OP=DC,MODE=ONE            00220004
+         MEND  ,                                                        00230001

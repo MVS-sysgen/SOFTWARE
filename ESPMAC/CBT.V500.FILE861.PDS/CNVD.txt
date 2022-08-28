@@ -1,0 +1,29 @@
+         MACRO                                                          00010000
+&NM      CNVD  &R,&AD,&LEN,&FORM=I                                      00020000
+         GBLB  &INLINE(50)                                              00030000
+         GBLB  &MVS,&MVSXA,&MVSESA,&OS390,&Z900                 GP04234 00040000
+         GBLC  &MACPLAB                                                 00050000
+&MACPLAB SETC  '&NM'                                                    00060000
+         LCLC  &L,&RTNE                                         GP13008 00070000
+         LCLA  &IX                                                      00080000
+&L       SETC  'L'''                                                    00090000
+&RTNE    SETC  'DCONVERT'    NORMAL INTEGER FORMATTING          GP13008 00100000
+&IX      SETA  6             STANDARD FLAG INDEX                GP13008 00110000
+         AIF   ('&FORM' EQ 'I').COMCODE                         GP13008 00120000
+&RTNE    SETC  'DCONVONE'    INTEGER PLUS SINGLE DECIMAL        GP13008 00130000
+&IX      SETA  12            SPECIAL INDEX                      GP13008 00140000
+         AIF   ('&FORM' EQ 'P1').COMCODE                        GP13008 00150000
+&RTNE    SETC  'DCONVTWO'    INTEGER PLUS TWO DECIMALS          GP13008 00160000
+&IX      SETA  13            SPECIAL INDEX                      GP13008 00170000
+         AIF   ('&FORM' EQ 'P2').COMCODE                        GP13008 00180000
+&RTNE    SETC  'DCONVTRE'    INTEGER PLUS THREE DECIMALS        GP13008 00190000
+&IX      SETA  14            SPECIAL INDEX                      GP13008 00200000
+         AIF   ('&FORM' EQ 'P3').COMCODE                        GP13008 00210000
+         MNOTE 8,'CNVD: UNRECOGNIZED FORM=&FORM VALUE'          GP13008 00220000
+&IX      SETA  6             STANDARD FLAG INDEX                GP13008 00230000
+.COMCODE MACPARM R0,(&R(1)),OP=LR   SET VALUE                   GP13003 00240000
+&INLINE(&IX) SETB 1                                             GP13008 00250000
+         MACPARM R1,&AD      GET OUTPUT ADDRESS                         00260000
+         MACPARM R15,&LEN,NULL=&L&AD   OUTPUT LENGTH                    00270000
+         MACPARM R14,&RTNE,OP=BAL                               GP13008 00280000
+         MEND                                                           00290000

@@ -1,0 +1,72 @@
+         MACRO ,                                                        00010000
+&NM      MVC2  &TO,&FR                                      NEW GP08096 00020000
+.*                                                                      00030000
+.*   THIS LITTLE GOODY IS BASED ON AN IDEA OFFERED IN THE ASSEMBLER     00040000
+.*   LIST, NAMELY THAT THERE SHOULD BE A MOVE INSTRUCTION WHOSE DEFAULT 00050000
+.*   LENGTH IS THAT OF THE SECOND OPERAND.                              00060000
+.*                                                                      00070000
+         GBLA  &MACPLEN      RETURN SIGNIFICANT LENGTH OF STRING        00080000
+         GBLB  &MACPNUL      TRUE IF NULL STRING                        00090000
+         GBLB  &MACQUOT      TRUE IF ORIGINAL WAS QUOTED                00100000
+         GBLB  &MACPERR      TRUE IF ERROR                              00110000
+         GBLC  &MACQSTR      RETURN QUOTED STRING                       00120000
+         LCLA  &K,&I,&J                                                 00130000
+         LCLC  &L,&LF,&RT                                               00140000
+&L       SETC  'L'''                                                    00150000
+         AIF   ('&TO' EQ '').NOTO                                       00160000
+         AIF   ('&FR' EQ '').NOFR                                       00170000
+&K       SETA  K'&TO                                                    00180000
+         MACQOLIT &FR        CHECK FOR QUOTED STRING            GP08130 00190000
+         AIF   (&MACQUOT).QUOTED                                GP08130 00200000
+         AIF   ('&TO'(&K,1) NE ')').SIMPLE                              00210000
+.*  PARSE xxx ( yyy ) - CHANGE TO xxx ( L'fr , yyy )                    00220000
+&I       SETA  &K                                                       00230000
+&J       SETA  1                                                        00240000
+.LOOP    AIF   (&I LE 1).ERRTO                                          00250000
+&I       SETA  &I-1                                                     00260000
+         AIF   ('&TO'(&I,1) EQ '(').HAVLEFT                             00270000
+         AIF   ('&TO'(&I,1) EQ ')').HAVRITE                             00280000
+         AGO   .LOOP                                                    00290000
+.HAVRITE ANOP  ,                                                        00300000
+&J       SETA  &J+1                                                     00310000
+         AGO   .LOOP                                                    00320000
+.HAVLEFT ANOP  ,                                                        00330000
+&J       SETA  &J-1                                                     00340000
+         AIF   (&J GT 0).LOOP                                           00350000
+         AIF   (&I LE 1).SIMPLE   ((XYZ-RST))                           00360000
+&LF      SETC  '&TO'(1,&I)                                              00370000
+&RT      SETC  '&TO'(&I+1,&K-&I)                                        00380000
+&NM      MVC   &LF&L&FR,&RT,&FR                                         00390000
+         MEXIT ,                                                        00400000
+.QUOTED  AIF   ('&TO'(&K,1) NE ')').QSIMP                       GP08130 00410000
+.*  PARSE xxx ( yyy ) - CHANGE TO xxx ( L'fr , yyy )            GP08130 00420000
+&I       SETA  &K                                               GP08130 00430000
+&J       SETA  1                                                GP08130 00440000
+.QLOOP   AIF   (&I LE 1).ERRTO                                  GP08130 00450000
+&I       SETA  &I-1                                             GP08130 00460000
+         AIF   ('&TO'(&I,1) EQ '(').QLEFT                       GP08130 00470000
+         AIF   ('&TO'(&I,1) EQ ')').QRITE                       GP08130 00480000
+         AGO   .QLOOP                                           GP08130 00490000
+.QRITE   ANOP  ,                                                GP08130 00500000
+&J       SETA  &J+1                                             GP08130 00510000
+         AGO   .QLOOP                                           GP08130 00520000
+.QLEFT   ANOP  ,                                                GP08130 00530000
+&J       SETA  &J-1                                             GP08130 00540000
+         AIF   (&J GT 0).QLOOP                                  GP08130 00550000
+         AIF   (&I LE 1).QSIMP   ((XYZ-RST))                    GP08130 00560000
+&LF      SETC  '&TO'(1,&I)                                      GP08130 00570000
+&RT      SETC  '&TO'(&I+1,&K-&I)                                GP08130 00580000
+&NM      MVC   &LF&MACPLEN,&RT,&MACQSTR                         GP08130 00590000
+         MEXIT ,                                                GP08130 00600000
+.QSIMP   ANOP  ,                                                GP08130 00610000
+&NM      MVC   &TO.(&MACPLEN),&MACQSTR                          GP08130 00620000
+         MEXIT ,                                                GP08130 00630000
+.ERRTO   MNOTE 8,'MVC2: TO OPERAND IS MALFORMED'                        00640000
+         MEXIT ,                                                        00650000
+.SIMPLE  ANOP  ,                                                        00660000
+&NM      MVC   &TO.(&L&FR),&FR                                          00670000
+         MEXIT ,                                                        00680000
+.NOTO    MNOTE 8,'MVC2: TO OPERAND MISSING'                             00690000
+         MEXIT ,                                                        00700000
+.NOFR    MNOTE 8,'MVC2: FROM OPERAND MISSING'                           00710000
+         MEND  ,                                                        00720000

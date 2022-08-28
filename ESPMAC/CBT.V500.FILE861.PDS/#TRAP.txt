@@ -1,0 +1,229 @@
+         MACRO ,                                                        00010000
+&NM      #TRAP &LIST,&OPT=(PSW),&ID=,&REGS=YES,&MF=A   ADDED ON GP09277 00020000
+.*                                                                    * 00030000
+.*  THIS MACRO INVOKES EXTERNAL LOAD MODULE @SPIEDER TO PRODUCE       * 00040000
+.*  TRACING, REGISTER CONTENTS, AND VARIABLES. PRIOR TO USE, @SPIEDER * 00050000
+.*  MUST BE INITIALIZED WITH '  BANDAID SPIE ' OR ' #TRACE INIT '     * 00060000
+.*                                                                    * 00070000
+.*  ALTERNATIVELY, IT MAY BE USED IN ANY SECTION OF                   * 00080000
+.*  CODE THAT HAS THE PGMTRACE FACILITY ACTIVE (SEE #TRC AND #TRACE   * 00090000
+.*  MACROS).                                                          * 00100000
+.*                                                                    * 00110000
+.*    PRINT REQUIRES A SYSDEBUG DD CARD.                              * 00120000
+.*                                                                    * 00130000
+.*                                                                    * 00140000
+.*  OPTIONAL:  ID=name   IDENTIFIES THE DEBUG PACKET                  * 00150000
+.*                                                                    * 00160000
+.*                REGS= (DEFAULT) | REGS=NO - NO REGISTERS            * 00170000
+.*                REGS=YES  -  REGISTERS R0 THROUGH R15               * 00180000
+.*                REGS=(R1,R2) - REGISTERS R1 THROUGH R2              * 00190000
+.*                REGS=SHORT   - R14 THROUGH R1                       * 00200000
+.*                                                                    * 00210000
+.*             OPT=      LIST OF OPTIONAL FORMATTING ITEMS:           * 00220000
+.*                PSW, GPR, FPR, CTL                                  * 00230000
+.*                later (PGM, BUF, MAP) mini-dump information         * 00240000
+.*                                                                    * 00250000
+.*             MF=A      POINTER TO ITEM LIST IS ADDRESS CONSTANT     * 00260000
+.*             MF=S      POINTER TO ITEM LIST IS BASE/DISPLACEMENT    * 00270000
+.*                       (NEEDED FOR WYLBUR OVERLAYS)                 * 00280000
+.*             MF=L      PRODUCES ID AND VARIABLE LIST ONLY           * 00290000
+.*             MF=(E,list)  USES S CONSTANT TO PROCESS REMOTE LIST    * 00300000
+.*                                                                    * 00310000
+.*                                                                    * 00320000
+.*                                                                    * 00330000
+.*       Positional operands (0 to nnn):                              * 00340000
+.*           (OP1,LN1,FM1),(OP2,LN2,FM2), ...                         * 00350000
+.*                                                                    * 00360000
+.*                OP - ADDRESS EXPRESSION VALID IN S CONSTANT         * 00370000
+.*                LN - LENGTH EXPRESSION; DEFAULT IS L'OP             * 00380000
+.*                FM - TEXT | CTEXT | HEX | PACK - DEFAULT IS HEX     * 00390000
+.*                     OR ABBREVIATED   T | CT | H | P                * 00400000
+.*                                                                    * 00410000
+.*    EACH TRAP WILL EXPAND 8 BYTES IN THE CALLER'S SECTION, AND A    * 00420000
+.*    REQUEST LIST IN RSECT TRPnnnnn: B2FF0000/AL4(traplist)          * 00430000
+.*                 OR          B2FF0000,FFFF /SL2(traplist)           * 00440000
+.*                                                                    * 00450000
+.*                                                                    * 00460000
+.*  ALLOW *var AS INDIRECT LOOKUP REQUEST - 24-BIT ADDRESS IN WORD    * 00470000
+.*  ALLOW /var AS INDIRECT INDIRECT LOOKUP                            * 00480000
+.*                2008-04-18  GYP                                     * 00490000
+.*  ALLOW REGISTER (ONLY) AS A LENGTH FIELD OPERAND - CODE AS 800r    * 00500000
+.*                                                                    * 00510000
+.*                                                                    * 00520000
+.********************************************************************** 00530000
+.*  MAINTENANCE:                                                      * 00540000
+.*  2011-12-1n  GYP  ADDED MF= SUPPORT (ALSO IN @SPIEDER & PGMTRACE)  * 00550000
+.********************************************************************** 00560000
+         GBLA  &MACP#        NUMBER OF SUBLIST PARAMETERS       GP04234 00570000
+         GBLB  &BUGBEAR                                         GP09301 00580000
+         GBLC  &MACP1,&MACP2,&MACP3,&MACP4,&MACP5,&LOCAL        GP09301 00590000
+         GBLC  &MACP6,&MACP7,&MACP8,&MACP9,&MACP10              GP04234 00600000
+         GBLC  &V                                                       00610000
+         LCLA  &LN,&I,&EN,&EM,&EO,&J,&NL                        GP95235 00620000
+         LCLB  &B80,&B40,&B20,&B10,&B08,&B04,&B02,&B01,&EXEC    GP11352 00630000
+         LCLC  &L,&ET,&EL,&EK,&CURSECT,&TRPSECT,&TAG,&NMLST     GP11352 00640000
+&L       SETC  'L'''                                            GP95235 00650000
+&V       SETC  'ZZT'.'&SYSNDX'                                          00660000
+&NMLST   SETC  'XTL'.'&SYSNDX'                                  GP11352 00670000
+         AIF   (&BUGBEAR).DOSOME                                GP09301 00680000
+         AIF   ('&LOCAL' EQ '').DOSOME  NON-ESP ENVIRONMENT     GP09301 00690000
+         AIF   ('&NM' EQ '').MEND                                       00700000
+&NM      DS    0H            DEBUG SWITCH NOT ON                        00710000
+         AGO   .MEND                                                    00720000
+.DOSOME  ANOP  ,                                                 95067  00730000
+&CURSECT SETC  '&SYSECT'                                        GP09301 00740000
+&TRPSECT SETC  '&SYSECT'.'ZZZZZZZZ'                             GP09301 00750000
+&TRPSECT SETC  'TRP'.'&TRPSECT'(4,5)                            GP09301 00760000
+&TAG     SETC  '&ID'         USE OVERRIDE LABEL                         00770000
+         AIF   ('&TAG' NE '').HVTAG                                     00780000
+&TAG     SETC  '&NM'         ELSE USE NAME FIELD                        00790000
+.HVTAG   ANOP  ,                                                        00800000
+&B80     SETB  ('&TAG' NE '' OR &B80)                                   00810000
+.*       B01 RESERVED FOR FULL MEMORY DUMP                              00820000
+&I       SETA  N'&OPT                                                   00830000
+         AIF   (&I GT 0).OPTLOOP                                        00840000
+*DEFER*  MNOTE 0,'OPTIONS OMITTED - PSW DEFAULTED'                      00850000
+&B40     SETB  1                                                        00860000
+         AGO   .OPTDONE                                                 00870000
+.OPTLOOP AIF   (&J GE &I).OPTDONE                                       00880000
+&J       SETA  &J+1                                                     00890000
+&B40     SETB  ('&OPT(&J)' EQ 'PSW' OR &B40)                            00900000
+&B20     SETB  ('&OPT(&J)' EQ 'REGS' OR &B20)                           00910000
+&B20     SETB  ('&OPT(&J)' EQ 'GPR' OR &B20)                    GP10092 00920000
+&B10     SETB  ('&OPT(&J)' EQ 'FPR' OR &B10)                    GP10092 00930000
+&B08     SETB  ('&OPT(&J)' EQ 'CTL' OR &B08)   AUTH ONLY        GP10092 00940000
+&B04     SETB  ('&OPT(&J)' EQ 'PGM' OR &B04)                            00950000
+&B02     SETB  ('&OPT(&J)' EQ 'MAP' OR &B02)                            00960000
+&B01     SETB  ('&OPT(&J)' EQ 'BUF' OR &B01)                            00970000
+         AGO   .OPTLOOP                                                 00980000
+.OPTDONE AIF   ((&B40+&B20+&B10+&B08+&B04+&B02+&B01) GE &I).OPTOK       00990000
+         MNOTE 4,'UNRECOGNIZED OPTION SPECIFIED'                        01000000
+.OPTOK   AIF   ('&REGS' EQ 'YES').FGREGS                        GP12336 01010000
+         AIF   (N'&REGS NE 2).BGREGS                            GP12336 01020000
+         AIF   ('&REGS(1)' NE 'R0' OR '&REGS(1)' NE '0').BGREGS GP12336 01030000
+         AIF ('&REGS(2)' NE 'R15' OR '&REGS(2)' NE '15').BGREGS GP12336 01040000
+.FGREGS  ANOP  ,                                                GP12336 01050000
+&B20     SETB  1                                                GP12336 01060000
+.BGREGS  ANOP  ,                                                GP12336 01070000
+&I       SETA  N'&SYSLIST                                               01080000
+&J       SETA  0                                                        01090000
+         AIF   ('&REGS' EQ '' OR '&REGS' EQ 'NO').COUNTER               01100000
+         AIF   (&B20).COUNTER                                   GP12336 01110000
+&NL      SETA  1                                                        01120000
+.COUNTER AIF   (&J GE &I).COUNTED                                       01130000
+&J       SETA  &J+1                                                     01140000
+         AIF   ('&SYSLIST(&J)' EQ '').COUNTER                           01150000
+&NL      SETA  &NL+1                                                    01160000
+         AGO   .COUNTER                                                 01170000
+.COUNTED ANOP  ,                                                        01180000
+&J    SETA  128*&B80+64*&B40+32*&B20+16*&B10+8*&B08+4*&B04+2*&B02+&B01  01190000
+         AIF   (N'&MF NE 2).MFONE                               GP11352 01200000
+         AIF   ('&MF(1)' NE 'E').MFONE                          GP11352 01210000
+&EXEC    SETB  1                                                GP11352 01220000
+&NMLST   SETC  '&MF(2)'                                         GP11352 01230000
+         AGO   .POINTS                                          GP11352 01240000
+.MFONE   AIF   ('&MF' EQ 'A').POINTA                            GP11346 01250000
+         AIF   ('&MF' EQ 'S').POINTS                            GP11346 01260000
+         AIF   ('&MF' EQ 'L').POINTL                            GP11352 01270000
+         MNOTE 4,'MF= NOT RECOGNIZED; MF=A ASSUMED'             GP11346 01280000
+.POINTA  ANOP  ,                                                GP11346 01290000
+&NM      DC    0H'0',X'B2FF0000',AL4(&NMLST)                    GP11352 01300000
+         AGO   .CPOINT                                          GP11346 01310000
+.POINTS  ANOP  ,                                                GP11346 01320000
+&NM      DC    0H'0',X'B2FF0000,FFFF',SL2(&NMLST)               GP11352 01330000
+.CPOINT  AIF   (&EXEC).MEND                                     GP11352 01340000
+&TRPSECT RSECT ,                                                GP09301 01350000
+         AGO   .POINTCM                                         GP11352 01360000
+.POINTL  ANOP  ,                                                GP11352 01370000
+&NMLST   SETC  '&NM'                                            GP11352 01380000
+.POINTCM ANOP  ,                                                GP11352 01390000
+&NMLST   DC    0H'0',AL1(&J,&NL)  TRAP LIST                     GP11352 01400000
+         AIF   (NOT &B80).EXPAND                                        01410000
+         DC    CL8'&TAG '                                               01420000
+.EXPAND  AIF   ('&REGS' EQ '' OR '&REGS' EQ 'NO').NOREGS         95079  01430000
+         AIF   (&B20).NOREGS      ALREADY REQUESTED             GP12336 01440000
+         AIF   ('&REGS' EQ 'R15' OR '&REGS' EQ 'SHORT'                 *01450000
+               OR '&REGS' EQ 'RET').RETREG                      GP97225 01460000
+         AIF   ('&REGS' EQ 'YES' OR '&REGS' EQ 'ALL').REGSALL   GP02246 01470000
+         AIF   (N'&REGS EQ 2).REGS2                             GP97225 01480000
+         DC    AL1(0,128),SL2(&REGS(1),&REGS(1))                GP09301 01490000
+         AGO   .NOREGS                                          GP97225 01500000
+.REGS2   DC    AL1(0,128),SL2(&REGS(1),&REGS(2))                GP09301 01510000
+         AGO   .NOREGS                                          GP97225 01520000
+.REGSALL DC    AL1(0,128),SL2(0,15)                             GP09301 01530000
+         AGO   .NOREGS                                          GP97225 01540000
+.RETREG  DC    SL2(128,14,1)    R15-R1 ONLY                     GP09301 01550000
+.NOREGS  ANOP  ,                                                GP09301 01560000
+&I       SETA  0                                                GP09301 01570000
+&LN      SETA  N'&SYSLIST                                       GP95235 01580000
+.DOLIST  AIF   (&I GE &LN).LISTDON  DONE WITH LIST              GP95235 01590000
+&I       SETA  &I+1          BUMP LOOP INDEX                    GP95235 01600000
+&EN      SETA  K'&EK         GET LENGTH                         GP04234 01610000
+&EN      SETA  N'&SYSLIST(&I)                                           01620000
+&MACP1   SETC  '&SYSLIST(&I,1)'                                         01630000
+&MACP2   SETC  '&SYSLIST(&I,2)'                                         01640000
+&MACP3   SETC  '&SYSLIST(&I,3)'                                         01650000
+         AIF   (&EN LT 1).DOLIST  USER IN COMA?                 GP95235 01660000
+         AIF   (&EN LT 4).TOOLIST WARN                          GP95235 01670000
+         MNOTE 4,'MORE THAN 3 SUBPARMS IN &SYSLIST(&I) '        GP95235 01680000
+.TOOLIST ANOP  ,                                                GP95235 01690000
+&EK      SETC  '&MACP1'                                         GP04234 01700000
+&EM      SETA  K'&EK         LENGTH OF FIRST OPERAND                    01710000
+&EO      SETA  0             PRESET FOR NORMAL ADDRESSING MODE          01720000
+&ET      SETC  '03'          PRESET FOR HEX DEFAULT             GP95235 01730000
+         AIF   (&EM GT 0).TPFX                                  GP04234 01740000
+&EK      SETC  '0'           ALLOW EXPANSION WITHOUT ERROR      GP04234 01750000
+&EM      SETA  1                                                GP04234 01760000
+         MNOTE 4,'TRAP: PARAMETER &I REQUIRES AN ADDRESS'       GP09301 01770000
+.TPFX    AIF   (&EM LT 2).NOTA31                                GP04234 01780000
+         AIF   ('&EK'(1,1) NE '/').NOTIND                               01790000
+&EO      SETA  &EO+1         REQUEST INDIRECT ADDRESSING                01800000
+&EK      SETC  '&EK'(2,&EM-1)  DELETE LEADING CONTROL BYTE              01810000
+&EM      SETA  K'&EK         LENGTH OF FIRST OPERAND                    01820000
+.NOTIND  AIF   ('&EK'(&EM,1) NE '%').NOTA24                             01830000
+&EO      SETA  &EO+2         REQUEST FORCED 24-BIT ADDRESSING           01840000
+&EK      SETC  '&EK'(1,&EM-1)  DELETE TRAILING CONTROL BYTE             01850000
+&EM      SETA  K'&EK         LENGTH OF FIRST OPERAND                    01860000
+.NOTA24  AIF   ('&EK'(&EM,1) NE '?').NOTA31                             01870000
+&EO      SETA  &EO+4         REQUEST FORCED 31-BIT ADDRESSING           01880000
+&EK      SETC  '&EK'(1,&EM-1)  DELETE TRAILING CONTROL BYTE             01890000
+&EM      SETA  K'&EK         LENGTH OF FIRST OPERAND                    01900000
+.NOTA31  AIF   (&EN LT 3 OR '&MACP3' EQ 'HEX').HTYPE            GP95235 01910000
+         AIF   ('&MACP3' EQ 'X').HTYPE                          GP97225 01920000
+         AIF   ('&MACP3' EQ 'HEX').HTYPE                                01930000
+         AIF   ('&MACP3' EQ 'T').TTYPE                          GP98189 01940000
+         AIF   ('&MACP3' EQ 'TEXT').TTYPE                       GP95235 01950000
+         AIF   ('&MACP3' EQ 'TXT').TTYPE                                01960000
+         AIF   ('&MACP3' EQ 'C').CTYPE                          GP97225 01970000
+         AIF   ('&MACP3' EQ 'CT').CTYPE                                 01980000
+         AIF   ('&MACP3' EQ 'CTEXT').CTYPE                      GP97225 01990000
+         AIF   ('&MACP3' EQ 'PACK').PTYPE                       GP97225 02000000
+         AIF   ('&MACP3' EQ 'PACKED').PTYPE                     GP97225 02010000
+         AIF   ('&MACP3' EQ 'P').PTYPE                          GP97225 02020000
+         AIF   ('&MACP3' EQ 'PD').PTYPE                                 02030000
+         AIF   ('&MACP3' EQ 'D').PTYPE                          GP97225 02040000
+ MNOTE 4,'TYPE MUST BE TEXT, CTEXT, HEX, OR PACKED, NOT &MACP3'         02050000
+         AGO   .HTYPE                                           GP95235 02060000
+.TTYPE   ANOP  ,                                                GP95235 02070000
+&ET      SETC  '01'          SET FOR TEXT                       GP95235 02080000
+         AGO   .HTYPE                                           GP95235 02090000
+.CTYPE   ANOP  ,                                                GP97225 02100000
+&ET      SETC  '02'          SET FOR CONDITIONAL TEXT, ELSE HEX GP97225 02110000
+         AGO   .HTYPE                                           GP97225 02120000
+.PTYPE   ANOP  ,                                                GP97225 02130000
+&ET      SETC  '04'          SET FOR PACKED                     GP97225 02140000
+.HTYPE   ANOP  ,                                                GP97225 02150000
+&EL      SETC  '&MACP2'                                         GP95235 02160000
+         AIF   ('&EL' NE '').HLEN                               GP95235 02170000
+&EL      SETC  '&L'.'&EK'                                               02180000
+         AGO   .BDLEN                                           GP10160 02190000
+.HLEN    AIF   ('&EL'(1,1) NE '(' OR '&EL'(K'&EL,1) NE ')').BDLEN 10160 02200000
+         AIF   (K'&EL LT 3).BDLEN                               GP10160 02210000
+         AIF   ('&EL'(2,1) EQ '(' OR '&EL'(K'&EL-1,1) EQ ')').BDLEN     02220000
+         DC    AL1(&ET,&EO),SL2(&EK),X'80',AL1(&EL),CL8'&MACP1' GP10160 02230000
+         AGO   .DOLIST                                          GP95235 02240000
+.BDLEN   DC    AL1(&ET,&EO),SL2(&EK,&EL),CL8'&MACP1 '                   02250000
+         AGO   .DOLIST                                          GP95235 02260000
+.LISTDON ANOP  ,                                                GP09301 02270000
+&CURSECT CSECT ,                                                GP09301 02280000
+.MEND    MEND  ,                                                        02290000

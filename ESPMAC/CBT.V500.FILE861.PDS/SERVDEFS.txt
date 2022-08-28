@@ -1,0 +1,41 @@
+         MACRO ,                                                        00010000
+&NM     SERVDEFS &PARM=10                                               00020000
+         GBLC  &MACPLAB,&SRVLMOD(20),&SRVLDEL(20)                       00030000
+         GBLB  &SRVBMOD(20)                                             00040000
+         GBLB  &BUGBEAR,&ZZSPIE                                         00050000
+         GBLB  &MVS,&MVSSP,&MVSXA,&MVSESA                               00060000
+         GBLA  &SRVNMOD                                                 00070000
+.*--------------------------------------------------------------------* 00080000
+.*  SERVDEFS IS USED IN THE PROGRAM'S MAIN SAVE AREA TO EXPAND THE    * 00090000
+.*  ADDRESS LABELS FOR STANDARD SERVICE ROUTINES (@SERVICE, @PRINTER, * 00100000
+.*  ETC.).  WHEN RUNNING IN DEBUG MODE, IT ALSO EXPANDS PGMTRACE AND  * 00110000
+.*  DEBTRACE WORK AREAS.                                              * 00120000
+.*--------------------------------------------------------------------* 00130000
+         LCLA  &I,&J                                                    00140000
+&MACPLAB SETC  '&NM'         ENSURE CORRECT VALUE                       00150000
+         MACPARM MODE=LABEL                                             00160000
+@SERVICE DS    A             ADDRESS OF @SERVICE ROUTINE                00170000
+@SERVEXC DS    A             EXECUTED INSTRUCITON (SVC, BASSM, ...)     00180000
+@SERVTCA DS    A             ADDRESS OF @SERVICE TASK CONTROL AREA      00190000
+.DSLOOP  AIF   (&I GE &SRVNMOD).NDLOOP                                  00200000
+&I       SETA  &I+1                                                     00210000
+         AIF   (&SRVBMOD(&I)).DSLOOP  SKIP EXPANSION ?                  00220000
+&SRVLMOD(&I)  DS  A                                                     00230000
+         AGO   .DSLOOP                                                  00240000
+.NDLOOP  AIF   (NOT &ZZSPIE).NDSPIE  SKIP IF NOT (E)SPIE MODE   GP09277 00250000
+@SPIEDER DS    A  *DEBUG*    @SPIEDER (E)SPIE INTERCEPT         GP09277 00260000
+.NDSPIE  AIF   (NOT &BUGBEAR).PARM  SKIP IF NOT DEBUG MODE              00270000
+@TRACE   DS    A  *DEBUG*    PGMTRACE ROUTINE                           00280000
+    #TRC  DATA    *DEBUG*    PGMTRACE RE-ENTRANT WORK AREA      GP06319 00290000
+         AIF   (NOT &MVSXA AND NOT &MVSESA).OLDBUG                      00300000
+         DBT   MODE=D  *DEBUG*  DEBTRACE WORK AREA                      00310000
+         AGO   .PARM                                                    00320000
+.OLDBUG  DBO   MODE=D  *DEBUG*  DEBTROLD WORK AREA                      00330000
+.PARM    AIF   ('&PARM' EQ '').MEND                                     00340000
+.*DEFER* AIF   (T'&PARM' NE 'N').MEND                                   00350000
+         AIF   ('&PARM' EQ '0').MEND                                    00360000
+CALLPARM DS    (&PARM)A      PARAMETER LIST FOR SUBCALL, ETC.           00370000
+RETCODE  DS    F             PROGRAM RETURN CODE                        00380000
+RSNCODE  DS    F             ERROR REASON                               00390000
+RR1CODE  DS    F             RETURNED R1                        GP04068 00400000
+.MEND    MEND  ,                                                        00410000

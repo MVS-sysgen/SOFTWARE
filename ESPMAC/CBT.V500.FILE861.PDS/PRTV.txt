@@ -1,0 +1,11 @@
+         MACRO                                                          00010000
+&NM      PRTV  &VAD,&DEV=,&TITLE=0,&FOOTER=0,&CC=,&OPT=,&MODE=   90309  00020000
+         LCLA  &CT,&HF                                                  00030000
+         AIF   (&TITLE EQ 0 AND &FOOTER EQ 0).NOT                       00040000
+         AIF   (&TITLE LT 16 AND &FOOTER LT 16).OKT                     00050000
+         MNOTE 4,'*** NON-NUMERIC TITLE/FOOTER NOT SUPPORTED'           00060000
+.OKT     ANOP  ,                                                        00070000
+&HF      SETA  &TITLE*16+&FOOTER                                        00080000
+.NOT     ANOP  ,                                                 90309  00090000
+&NM      PRTCOM PRTV,FUN=6,B1=&HF,A1=&VAD,DEV=&DEV,OPT=(&OPT,&CC)       00100001
+         MEND                                                           00110000

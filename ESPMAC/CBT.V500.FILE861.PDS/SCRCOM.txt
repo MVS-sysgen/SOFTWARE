@@ -1,0 +1,66 @@
+         MACRO                                                          00010000
+&NM      SCRCOM &B0,&B1,&FN,&A0,&A1,&DEV=                               00020000
+         GBLC  &MACPLAB,&SCRMODE                                        00030000
+.********************************************************************** 00040000
+.*                                                                   ** 00050000
+.*   TSO INTERFACE TO @SCREENS FULL-SCREEN FORMATTING & I/O ROUTINE  ** 00060000
+.*                                                                   ** 00070000
+.********************************************************************** 00080000
+         LCLA  &I,&J,&K,&VD,&D(8)                                       00090000
+         LCLB  &INDEV                                            81259  00100000
+         LCLC  &DC                                               81259  00110000
+&MACPLAB SETC  '&NM'                                             81259  00120000
+         AIF   ('&DEV' EQ '' OR '&DEV' EQ '0').NODV                     00130000
+         AIF   ('&DEV' NE 'ALL').DVSOM                                  00140000
+&VD      SETA  255                                                      00150000
+         AGO   .NODV                                                    00160000
+.DVSOM   AIF   (K'&DEV LT 2).DVSOL                               81259  00170000
+         AIF   ('&DEV'(1,1) NE '=').DVSOL                        81259  00180000
+&INDEV   SETB  1             SET INDIRECT DEVICE NUMBER          81259  00190000
+         AGO   .NODV                                             81259  00200000
+.DVSOL   ANOP  ,                                                 81259  00210000
+&I       SETA  0                                                        00220000
+&J       SETA  N'&DEV                                                   00230000
+.DEVLOOP ANOP  ,                                                        00240000
+&I       SETA  &I+1                                                     00250000
+         AIF   (&I GT &J).DVEND                                         00260000
+         AIF   ('&DEV(&I)' EQ '').DEVLOOP                               00270000
+         AIF   ('&DEV(&I)' EQ '0').DEVLOOP                              00280000
+         AIF   ('&DEV(&I)' LT '1' OR '&DEV(&I)' GT '8').DVERR           00290000
+&D(&DEV(&I)) SETA  1                                                    00300000
+         AGO   .DEVLOOP                                                 00310000
+.DVERR   MNOTE 8,'*** INVALID DEVICE NUMBER &DEV(&I)'                   00320000
+         AGO   .DEVLOOP                                                 00330000
+.DVEND   ANOP  ,                                                        00340000
+&VD      SETA  128*&D(8)+64*&D(7)+32*&D(6)+16*&D(5)+8*&D(4)             00350000
+&VD      SETA  &VD+4*&D(3)+2*&D(2)+&D(1)                                00360000
+.NODV    AIF   ('&B0' NE '0' OR '&B1' NE '0').LONG                      00370000
+         AIF   (&VD GT 15).LONG                                         00380000
+&K       SETA  &VD*256+&FN                                              00390000
+         MACPARM R0,&K       LOAD DEVICE/FUNCTION INDEX          81259  00400000
+         AGO   .POST0                                            81259  00410000
+.LONG    AIF   (K'&B0 LT 2).LONGCON                              82326  00420000
+         AIF   ('&B0'(1,1) NE '(').LONGCON                       82326  00430000
+         AIF   ('&B0'(2,1) EQ '(').LONGCON                       82326  00440000
+         MACPARM R0,&B0      LOAD R0                             82326  00450000
+         SLL   R0,24         ALIGN LENGTH TO HIGH BYTE           82326  00460000
+         O     R0,=AL1(0,&B1,&VD,&FN)                            82326  00470000
+         AGO   .POST0                                            82326  00480000
+.LONGCON ANOP  ,                                                 82326  00490000
+&MACPLAB L     R0,=AL1(&B0,&B1,&VD,&FN)                          81259  00500000
+&MACPLAB SETC  ''            CANCEL LABEL                        81259  00510000
+.POST0   AIF   (NOT &INDEV).LOAD1                                81259  00520000
+&VD      SETA  K'&DEV-1                                          81259  00530000
+&DC      SETC  '&DEV'(2,&VD)                                     81259  00540000
+&MACPLAB ICM   R0,2,&DC                                          81259  00550000
+&MACPLAB SETC  ''                                                81259  00560000
+.LOAD1   AIF   ('&FN' EQ '0' OR '&FN' EQ '1').BAL                       00570000
+         MACPARM R1,&A1      LOAD PARAMETER REGISTER                    00580000
+         AIF   ('&A0' EQ '' OR '&A0' EQ '0').BAL                        00590000
+         ICM   R1,8,=AL1(&A0)                                           00600000
+.BAL     AIF   ('&SCRMODE' EQ 'V').VCON                                 00610000
+         L     R15,@SCREENS                                             00620000
+         AGO   .BALR                                                    00630000
+.VCON    L     R15,=V(@SCREENS)                                         00640000
+.BALR    BASSM R14,R15                                                  00650000
+         MEND  ,                                                        00660000

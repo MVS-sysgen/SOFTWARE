@@ -1,0 +1,63 @@
+         MACRO                                                          00010000
+&NM      PUNWORK &DD,&ALTDD,&TITLE=0,&FOOTER=0,&LPP=0,                 *00020000
+               &WIDTH=80,&RECFM=FBN,&EXLST=,&BUF=               GP08088 00030000
+         LCLA  &PFG                                                     00040000
+         LCLA  &I,&J                                             81155  00050000
+         LCLB  &B0,&B1,&B2,&B3,&B4,&B5,&B6,&B7                   81155  00060000
+         LCLC  &REC                                              81155  00070000
+&REC     SETC  '&RECFM'                                          81155  00080000
+&PFG     SETA  128           SET PUNCH OPTION                           00090000
+         AIF   ('&REC' EQ '0').DEFREC                            81155  00100000
+&I       SETA  K'&RECFM                                          81155  00110000
+         AIF   (&I LT 4).NRECSD                                  81155  00120000
+         AIF   ('&RECFM'(&I,1) EQ '''').DEFREC                   81155  00130000
+.NRECSD  AIF   (&J GE &I).DONREC                                 81155  00140000
+&J       SETA  &J+1                                              81155  00150000
+         AIF   ('&REC'(&J,1) EQ 'U').RECU                        81155  00160000
+         AIF   ('&REC'(&J,1) EQ 'V').RECV                        81155  00170000
+         AIF   ('&REC'(&J,1) EQ 'F').RECF                        81155  00180000
+         AIF   ('&REC'(&J,1) EQ 'D').RECD                        81155  00190000
+         AIF   ('&REC'(&J,1) EQ 'T').RECT                        81155  00200000
+         AIF   ('&REC'(&J,1) EQ 'B').RECB                        81155  00210000
+         AIF   ('&REC'(&J,1) EQ 'S').RECS                        81155  00220000
+         AIF   ('&REC'(&J,1) EQ 'M').RECM                        81155  00230000
+         AIF   ('&REC'(&J,1) EQ 'N').RECN                        81271  00240000
+         AIF   ('&REC'(&J,1) NE 'A').DEFREC                      81155  00250000
+&B5      SETB  1                                                 81155  00260000
+         AGO   .NRECSD                                           81155  00270000
+.RECM    ANOP  ,                                                 81155  00280000
+&B6      SETB  1                                                 81155  00290000
+         AGO   .NRECSD                                           81155  00300000
+.RECN    ANOP  ,             SUPPRESS CC INSERTION IN OPEN       81271  00310000
+&B7      SETB  1                                                 81271  00320000
+         AGO   .NRECSD                                           81271  00330000
+.RECS    ANOP  ,                                                 81155  00340000
+&B4      SETB  1                                                 81155  00350000
+         AGO   .NRECSD                                           81155  00360000
+.RECB    ANOP  ,                                                 81155  00370000
+&B3      SETB  1                                                 81155  00380000
+         AGO   .NRECSD                                           81155  00390000
+.RECD    AIF   (&B0 OR &B1).DEFREC     FAIL VD, ETC.             81155  00400000
+.RECT    ANOP  ,                                                 81155  00410000
+&B2      SETB  1                                                 81155  00420000
+.RECV    ANOP  ,                                                 81155  00430000
+&B1      SETB  1                                                 81155  00440000
+         AGO   .NRECSD                                           81155  00450000
+.RECU    ANOP  ,                                                 81155  00460000
+&B1      SETB  1                                                 81155  00470000
+.RECF    ANOP  ,                                                 81155  00480000
+&B0      SETB  1                                                 81155  00490000
+         AGO   .NRECSD                                           81155  00500000
+.DONREC  ANOP  ,                                                 81155  00510000
+&REC     SETC  'B'''.'&B0&B1&B2&B3&B4&B5&B6&B7'.''''             81155  00520000
+.DEFREC  AIF   ('&EXLST' EQ '').NOLST1                           84169  00530000
+&PFG     SETA  &PFG+4        SET EXIT LIST PRESENT               84169  00540000
+.NOLST1  AIF   ('&BUF' NE '1').NOBUF1                           GP08088 00550000
+&PFG     SETA  &PFG+16       SIGNLE BUFFER                      GP08088 00560000
+.NOBUF1  ANOP  ,                                                GP08088 00570000
+         DC    0H'0'                                                    00580000
+&NM      DC    CL8'&DD ',CL8'&ALTDD ',AL2(&LPP,&WIDTH),AL1(&TITLE,&FOOT*00590000
+               ER,&REC,&PFG)                                            00600000
+         AIF   ('&EXLST' EQ '').MEND                             84169  00610000
+         DC    AL4(&EXLST)   EXIT LIST ADDRESS                   84169  00620000
+.MEND    MEND  ,                                                 84169  00630000

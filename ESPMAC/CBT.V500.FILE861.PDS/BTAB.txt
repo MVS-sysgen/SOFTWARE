@@ -1,0 +1,110 @@
+         MACRO                                                          00010000
+&NM      BTAB  &STRING,&TO,&XCT,&S,&BASE=                               00020000
+         GBLC  &CRT                                                     00030000
+         GBLC  &TABMBAS,&TABMOPT                                        00040000
+         GBLC  &PFKEY(52),&PFKEX(52)                             88211  00050000
+         GBLA  &#PFKEY                                           88211  00060000
+         LCLC  &TEXT                                             88211  00070000
+         LCLA  &I,&J,&K,&L                                              00080000
+&K       SETA  K'&STRING-1                                              00090000
+         AIF   ('&STRING' EQ '').PARMA                                  00100000
+         AIF   ('&STRING'(1,1) NE '''').COMLEN                          00110000
+&I       SETA  2                                                        00120000
+&J       SETA  &K-1                                                     00130000
+&K       SETA  &J                                                       00140000
+.LOOP    AIF   ('&STRING'(&I,2) EQ '''''').SK2                          00150000
+         AIF   ('&STRING'(&I,2) EQ '&&').SK2                            00160000
+&I       SETA  &I+1                                                     00170000
+         AGO   .INC                                                     00180000
+.SK2     ANOP                                                           00190000
+&I       SETA  &I+2                                                     00200000
+&K       SETA  &K-1                                                     00210000
+.INC     AIF   (&I LE &J).LOOP                                          00220000
+&K       SETA  &K-1                                                     00230000
+         AIF   (&K GE 0).COMLEN                                         00240000
+&K       SETA  0                                                        00250000
+.COMLEN  AIF   ('&BASE' EQ '').NBAS                                     00260000
+         AIF   ('&BASE' NE '*').UBAS                                    00270000
+&TABMBAS SETC  '&SYSECT'                                                00280000
+         AGO   .NBAS                                                    00290000
+.UBAS    ANOP                                                           00300000
+&TABMBAS SETC  '&BASE'                                                  00310000
+.NBAS    AIF   ('&TABMBAS' NE '').BASOK                                 00320000
+&TABMBAS SETC  'EXHBCOMM' .   DEFAULT BASE CSECT                        00330000
+.BASOK   ANOP                                                           00340000
+         AIF   ('&STRING' EQ '*END').LAST                               00350000
+         AIF   ('&TO' NE '' AND '&XCT' EQ '' AND '&S' EQ '').TO         00360000
+         AIF   ('&TO' EQ '' AND '&XCT' NE '' AND '&S' EQ '').XCT        00370000
+         AIF   ('&TO' EQ '' AND '&XCT' EQ '' AND '&S' NE '').S          00380000
+.PARMA   MNOTE 8,'MISSING OR CONFLICTING PARAMETERS'                    00390000
+         MEXIT                                                          00400000
+.BADBASE MNOTE 8,'INCORRECT BASE PARAMETER'                             00410000
+         MEXIT                                                          00420000
+.TO      AIF   ('&TABMOPT' EQ '' OR '&TABMOPT' EQ 'TO').TOTO            00430000
+.NONO    MNOTE 8,'INCORRECT MACRO NAME, OR PREVIOUS *END MISSING'       00440000
+         MEXIT                                                          00450000
+.TOTO    ANOP                                                           00460000
+&TABMOPT SETC  'TO'                                                     00470000
+         AIF   ('&STRING'(1,1) EQ '*').SPEC                             00480000
+         AIF   ('&STRING'(1,1) EQ '''').TOAP                            00490000
+&NM      DC    AL1(&K),AL3(&TO-(&TABMBAS)),C'&STRING'                   00500000
+         MEXIT                                                          00510000
+.TOAP    ANOP                                                           00520000
+&NM      DC    AL1(&K),AL3(&TO-(&TABMBAS)),C&STRING                     00530000
+         MEXIT                                                          00540000
+.XCT     AIF   ('&TABMOPT' NE '' AND '&TABMOPT' NE 'XCT').NONO          00550000
+&TABMOPT SETC  'XCT'                                                    00560000
+         AIF   ('&STRING'(1,1) EQ '*').SPEC                             00570000
+         AIF   ('&STRING'(1,1) EQ '''').XAP                             00580000
+&NM      DC    AL1(&K),CL3'&XCT',C'&STRING'                             00590000
+         MEXIT                                                          00600000
+.XAP     ANOP                                                           00610000
+&NM      DC    AL1(&K),CL3'&XCT',C&STRING                               00620000
+         MEXIT                                                          00630000
+.S       AIF   ('&TABMOPT' NE '' AND '&TABMOPT' NE 'S').NONO            00640000
+&TABMOPT SETC  'S'                                                      00650000
+         AIF   ('&STRING'(1,1) EQ '''').SAP                             00660000
+         AIF   ('&STRING'(1,1) EQ '*').SPEC                             00670000
+&NM      DC    AL1(&K,0),SL2(&S),C'&STRING'                             00680000
+         MEXIT                                                          00690000
+.SAP     ANOP                                                           00700000
+&NM      DC    AL1(&K,0),SL2(&S),C&STRING                               00710000
+         MEXIT                                                          00720000
+.SPEC    AIF   ('&STRING' EQ '*').PARMA                                 00730000
+         PFKEYS ,            INVOKE PFK HEX EQUIVALENTS          88211  00740000
+&TEXT    SETC  '&STRING'(2,&K)                                          00750000
+&I       SETA  0                                                        00760000
+.SPLP    AIF   (&I GE &#PFKEY).SPHEX                             88211  00770000
+&I       SETA  &I+1                                                     00780000
+         AIF   ('&TEXT' NE '&PFKEY(&I)').SPLP                    88211  00790000
+&TEXT    SETC  '&PFKEX(&I)'                                      88211  00800000
+&K       SETA  0                                                        00810000
+         AIF   ('&CRT' EQ '3270' OR '&CRT' EQ '').HEXT          GP04045 00820000
+         AIF   ('&NM' EQ '').MEND   SKIP IF NOT 3270                    00830000
+&NM      EQU   * .           PLANT A LABEL - NO 3270 CODE EXPANDED      00840000
+.MEND    MEXIT                                                          00850000
+.SPHEX   ANOP                                                           00860000
+&I       SETA  0                                                        00870000
+.SPHL    AIF   (&I GE &K).SPHEXS                                        00880000
+&I       SETA  &I+1                                                     00890000
+&J       SETA  1                                                        00900000
+.SPHLD   AIF   ('&TEXT'(&I,1) EQ '0123456789ABCDEF'(&J,1)).SPHL         00910000
+&J       SETA  &J+1                                                     00920000
+         AIF   (&J GT 16).PARMA                                         00930000
+         AGO   .SPHLD                                                   00940000
+.SPHEXS  ANOP                                                           00950000
+&K       SETA  (&K-1)/2                                                 00960000
+.HEXT    AIF   ('&TABMOPT' EQ 'TO').HEXTO                               00970000
+         AIF   ('&TABMOPT' EQ 'XCT').HEXCT                              00980000
+&NM      DC    AL1(&K,0),SL2(&S),X'&TEXT'                               00990000
+         MEXIT                                                          01000000
+.HEXCT   ANOP                                                           01010000
+&NM      DC    AL1(&K),CL3'&XCT',X'&TEXT'                               01020000
+         MEXIT                                                          01030000
+.HEXTO   ANOP                                                           01040000
+&NM      DC    AL1(&K),AL3(&TO-(&TABMBAS)),X'&TEXT'                     01050000
+         MEXIT                                                          01060000
+.LAST    ANOP                                                           01070000
+&TABMOPT SETC  ''                                                       01080000
+&NM      DC    X'FF' .       END OF TABLE                               01090000
+         MEND                                                           01100000

@@ -1,0 +1,23 @@
+         MACRO ,                                                        00010000
+&NM      MAPTSA &PFX=TSA,&DSECT=                                        00020000
+         GBLC  &ZZZLNM(128)                                             00030000
+         GBLB  &ZZZLFG                                                  00040000
+         GBLA  &ZZZLNO                                                  00050000
+         LCLC  &P,&N                                                    00060000
+&P       SETC  '&PFX'                                                   00070000
+&N       SETC  '&NM'                                                    00080000
+         AIF   ('&N' NE '').HAVSECT                                     00090000
+&N       SETC  'MAP'.'&P'                                               00100000
+.HAVSECT AIF   ('&DSECT' EQ 'NO').NOSEC                                 00110000
+&N       DSECT ,                                                        00120000
+         AGO   .COMSEC                                                  00130000
+.NOSEC   AIF   ('&NM' EQ '').COMSEC                                     00140000
+&NM      DS    0D                                                       00150000
+.COMSEC  ANOP  ,                                                        00160000
+&P.@SERV DC    A(0)          ADDRESS OF @SERVICE ROUTINE                00170000
+&P.EXSVC SVC   0             SVC OR BASR TO @SERVICE (TARGET OF EX 0,)  00180000
+&P.#SIZE DC    AL2(&P.SIZE)  AMOUNT OF STORAGE GOTTEN                   00190001
+&P.FIX@  DC    D'0'          BASE OF FIXED OFFSET WORK AREA ADDRESSES   00200000
+         SERVWORK OPT=EXPAND  EXPAND FIXED STORAGE SAVERS               00210000
+&P.SIZE  EQU   *-&P.@SERV    SIZE TO GET                                00220000
+         MEND  ,                                                        00230000

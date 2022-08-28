@@ -1,0 +1,32 @@
+         MACRO ,                                                        00010000
+&NM      MAPFDS &DSECT=,&PFX=FDS,&LEN=0                 ADDED ON 87312  00020000
+.*   MAPPING FOR USE IN @SCREENS                                        00030000
+         LCLC  &P,&Q                                                    00040000
+&P       SETC  '&PFX'                                                   00050000
+&Q       SETC  '&P'.'SECT'                                              00060000
+         AIF   ('&NM' EQ '').DFDS                                       00070000
+&Q       SETC  '&NM'                                                    00080000
+.DFDS    AIF   ('&DSECT' EQ 'NO').NODS                                  00090000
+&Q       DSECT ,                                                        00100000
+         AGO   .CMDS                                                    00110000
+.NODS    AIF   ('&NM' EQ '').CMDS                                       00120000
+&Q       DS    0X                                                       00130000
+.CMDS    ANOP  ,                                                        00140000
+&P.LEN   DC    X'00'         LENGTH-1 OF TEXT                           00150000
+&P.FG    DC    X'00'         OPTION FLAGS                               00160000
+&P.FMOVE EQU   X'80'           ENTRY CONTAINS REPLACEMENT TEXT          00170000
+&P.FPOS  EQU   X'40'           POSITIONAL PARAMETER ENTRY               00180000
+&P.FKEY  EQU   X'20'           KEYWORD=VALUE OR (VALUE) ENTRY           00190000
+&P.FPOS2 EQU   &P.FPOS+&P.FKEY  CHAINED POSITIONAL UID/PSW/NPSW  87361  00200000
+&P.FREQ  EQU   X'02'           MANDATORY FIELD                   87314  00210000
+&P.FLONG EQU   X'01'           KEYWORD NOT ABBREVIATED                  00220000
+&P.FDAD  DC    SL2(0)        ADDRESS OF FDIN/FDINP DEFINITION           00230000
+         AIF   ('&LEN' EQ '0' OR '&LEN' EQ '').NULLEN                   00240000
+&P.TEXT  DC    CL(&LEN)' '   TEXT FIELD                                 00250000
+         AGO   .COMLEN                                                  00260000
+.NULLEN  ANOP  ,                                                        00270000
+&P.TEXT  DC    0C' '         TEXT FIELD                                 00280000
+.COMLEN  ANOP  ,                                                        00290000
+&P.RLEN  DC    AL1(0)        (OPTIONAL) REPLACEMENT TEXT LENGTH         00300000
+&P.RTXT  DC    0C' '         (OPTIONAL) REPLACEMENT TEXT                00310000
+         MEND  ,                                                        00320000

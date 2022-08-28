@@ -1,0 +1,17 @@
+         MACRO                                                          00010000
+      VTOBYTE  &CHAR=CHAR                                               00020000
+.*       R1 => VTOTAB TABLE                                             00030000
+.*       R5 => INPUT STRING                                             00040000
+CHARBYTE MVI   &CHAR,0 .     CLEAR CHARACTER OUT                        00050000
+         SR    R14,R14 .     CLEAR IC REG                               00060000
+CHARBYTL CLI   1(R1),255 .   END OF TABLE ?                             00070000
+         BER   R9 .          YES, RETURN                                00080000
+         IC    R14,1(R1) .   ELSE GET LENGTH - 1 OF ENTRY               00090000
+         EX    R14,CHARCLC .  IS THIS ENTRY IN INPUT STRING ?           00100000
+         BNE   CHARBYTI .    NO, TRY NEXT TABLE ENTRY                   00110000
+         OC    &CHAR,0(R1) .   OR FLAG(S) TO BYTE                       00120000
+         LA    R5,1(R5,R14) .   SET INPUT TO NEXT                       00130000
+CHARBYTI LA    R1,3(R1,R14) .   SET TO NEXT TABLE ENTRY                 00140000
+         B     CHARBYTL .    TRY AGAIN                                  00150000
+CHARCLC  CLC   2(0,R1),0(R5) .   IS INPUT SAME AS TABLE ENTRY ?         00160000
+         MEND                                                           00170000

@@ -1,0 +1,22 @@
+         MACRO ,                                                        00010000
+&NM      BSM   &R,&A                                   ADDED ON GP04234 00020000
+         GBLB  &MVSXA                                           GP08292 00030000
+         GBLC  &MODEL                                           GP08292 00040000
+.*                                                                      00050000
+.*       THIS MODULE GENERATES A BALR FOR COMPATIBILITY                 00060000
+.*                                                                      00070000
+         AIF   ('&MODEL' EQ '380').BSM                          GP08292 00080000
+         AIF   (NOT &MVSXA).OLD                                 GP08292 00090000
+.BSM     ANOP  ,                                                GP08292 00100000
+&NM      DC    0H'0',AL.4(0,11,&R,&A)   BSM                     GP08292 00110000
+         MEXIT ,                                                        00120000
+.OLD     AIF   ('&R(1)' EQ '0' OR '&R(1)' EQ 'R0').BR           GP08292 00130000
+         AIF   ('&A(1)' EQ '0' OR '&A(1)' EQ 'R0').SETAM        GP10159 00140000
+&NM      MACPARM MODE=LBL                                       GP08292 00150000
+         MEXIT ,                                                GP08292 00160000
+.SETAM   ANOP  ,                                                GP10159 00170000
+&NM      LA    &R,0(,&R)     CLEAN HIGH BYTE (AM24)             GP10159 00180000
+         MEXIT ,                                                GP10159 00190000
+.BR      ANOP  ,                                                GP08292 00200000
+&NM      BR    &A                                                       00210000
+         MEND  ,                                                        00220000

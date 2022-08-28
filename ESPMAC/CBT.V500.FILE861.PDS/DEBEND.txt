@@ -1,0 +1,16 @@
+         MACRO ,                                                        00010000
+&NM      DEBEND ,                                     ADDED ON 20090628 00020000
+.*                                                                      00030000
+.*    TARGET OF PRIOR DEBDO                                             00040000
+.*                                                                      00050000
+         GBLB  &BUGBEAR                                                 00060000
+         GBLC  &ZZDEBDO                                                 00070000
+         AIF   ('&ZZDEBDO' NE '').OK                                    00080000
+ MNOTE 0,'DEBDO/DEBEND STATEMENT MISMATCH'                              00090000
+         MEXIT ,                                                        00100000
+.OK      ANOP  ,                                                        00110000
+         AIF   (&BUGBEAR).MEND                                          00120000
+&ZZDEBDO DS    0H                                                       00130000
+.MEND    ANOP  ,                                                        00140000
+&ZZDEBDO SETC  ''                                                       00150000
+         MEND  ,                                                        00160000

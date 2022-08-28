@@ -1,0 +1,25 @@
+         MACRO ,                                                        00010000
+&NM      MAPEXTNT &DSECT=YES                            ADDED ON 82105  00020000
+         LCLC  &DS                                                      00030000
+&DS      SETC  'MAPEXTNT'    SET DEFAULT NAME                           00040000
+         AIF   ('&NM' EQ '').HAVEDS                                     00050000
+&DS      SETC  '&NM'                                                    00060000
+.HAVEDS  AIF   ('&DSECT' NE 'YES').NODSECT                              00070000
+&DS      DSECT ,             MAPPING OF DSCB1/DSCB3 EXTENT ENTRY        00080000
+         AGO   .COMDS                                                   00090000
+.NODSECT ANOP  ,                                                        00100000
+&DS      DS    0H            MAPPING OF DSCB1/DSCB3 EXTENT ENTRY        00110000
+.COMDS   ANOP  ,                                                        00120000
+XTWHOLE  DC    0XL10'0'      DUMMY FOR CLC/XC                           00130000
+XTTYPE   DC    X'0'          EXTENT TYPE                                00140000
+XTTTRK   EQU   X'01'           TRACK ALIGNMENT                          00150000
+XTTLABEL EQU   X'40'           LABEL EXTENT                             00160000
+XTTCYL   EQU   X'81'           CYLINDER ALIGNMENT                       00170000
+XTTSPLIT EQU   X'80'           SPLIT CYLINDER ALLOCATION                00180000
+XTSEQ    DC    X'0'          EXTENT SEQUENCE (0-15)                     00190000
+XTLOCYL  DC    H'0'          LOW CYLINDER                               00200000
+XTLOTRK  DC    H'0'          LOW TRACK                                  00210000
+XTHICYL  DC    H'0'          HIGH CYLINDER                              00220000
+XTHITRK  DC    H'0'          HIGH TRACK                                 00230000
+XTLEN    EQU   *-&DS         LENGTH OF ONE ENTRY                        00240000
+         MEND  ,                                                        00250000

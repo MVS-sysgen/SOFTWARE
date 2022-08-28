@@ -1,0 +1,28 @@
+         MACRO ,                                                        00010000
+&NM      MAPVOLRD &DSECT=YES,&PFX=                        ADDED GP09158 00020000
+.*                                                                      00030000
+.*   THIS MACRO MAPS THE DATA RETURNED FROM @VOLREAD USING THE          00040000
+.*     VOLREAD TRACK,CCHH    MACRO CALL                                 00050000
+.*                                                                      00060000
+         LCLC  &DS,&P                                                   00070000
+&DS      SETC  'MAPVOLRD'    SET DEFAULT NAME                           00080000
+&P       SETC  'TRK'                                                    00090000
+         AIF   ('&PFX' EQ '').DEFPFX                                    00100000
+&P       SETC  '&PFX'                                                   00110000
+.DEFPFX  AIF   ('&NM' EQ '').HAVEDS                                     00120000
+&DS      SETC  '&NM'                                                    00130000
+.HAVEDS  AIF   ('&DSECT' NE 'YES').NODSECT                              00140000
+&DS      DSECT ,             MAPPING OF @VOLREAD TRACK DATA             00150000
+         AGO   .COMDS                                                   00160000
+.NODSECT ANOP  ,                                                        00170000
+&DS      DS    0H            MAPPING OF @VOLREAD TRACK DATA             00180000
+.COMDS   ANOP  ,                                                        00190000
+&P.CCHH  DC    XL4'0'        CCHH TRACK ADDRESS                         00200000
+&P.PCYL  DC    FL4'0'        TRACKS PER CYLINDER                        00210000
+&P.MAXSZ DC    FL4'0'        MAXIMUM (RAW) TRACK CAPACITY               00220000
+&P.#BLOK DC    FL4'0'        NUMBER OF BLOCKS (1-N)                     00230000
+&P.R0DAT DC    XL8'0'        R0 DATA                                    00240000
+&P.@DATA DC    AL4(0)  1/2   ADDRESS OF TRACK DATA                      00250000
+&P.CURSZ DC    FL4'0'  2/2   CURRENT SIZE OF ALL BLOCKS                 00260000
+&P.SIZE  EQU   *-&DS           SIZE OF RETURN AREA                      00270000
+         MEND  ,                                                        00280000

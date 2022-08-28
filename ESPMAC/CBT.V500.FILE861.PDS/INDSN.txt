@@ -1,0 +1,74 @@
+         MACRO ,                                                        00010000
+&NM      INDSN &DSN=DRDSN,&OUT=R1,&LEN=R2,&LV=44,&IN=R5,&SAVE=   84289  00020002
+         LCLA  &I,&LONG                                                 00030000
+         LCLB  &SV                                              GP01013 00040002
+&I       SETA  &SYSNDX                                                  00050000
+&SV      SETB  ('&SAVE' EQ 'Y')                                 GP01013 00060002
+&SV      SETB  (&SV OR '&SAVE' EQ 'YES')                        GP01013 00070002
+&NM      MACPARM R14,&DSN                                               00080000
+         MACPARM R15,&LV                                                00090000
+         MACPARM R1,(&IN)                                               00100000
+         AIF   (NOT &SV).NSAV1                                  GP01013 00110002
+         MACPARM R10,0(R13),OP=ST                               GP01013 00120002
+.NSAV1   MACPARM R10,15,EXRESAD,OP=ICM,MODE=THREE  RESIDENT MODULE ?    00130002
+         BZ    ZZI&I.A       NO; JUST CHECK SYS1                        00140000
+         BALS  R9,20(,R10)   CALL LPA RESIDENT FUNCTION          93046  00150000
+         B     ZZI&I.L       SKIP AROUND IF PREFIX FOUND                00160000
+ZZI&I.A  DS    0H                                                93046  00170000
+         AIF   (NOT &SV).NSAV2                                  GP01013 00180002
+         MACPARM R10,0(R13),OP=L                                GP01013 00190002
+.NSAV2   AIF   (NOT &LONG).SYS                                   93046  00200002
+         CLI   0(R1),C'.'    UID PREFIX ?                        93002  00210000
+         BE    ZZI&I.U       YES                                 93002  00220000
+         CLI   0(R1),C';'    UID+ACCT PREFIX ?                   93002  00230000
+         BE    ZZI&I.U       YES                                 93002  00240000
+         CLI   0(R1),C'¢'    ACCOUNT ONLY ?                      93002  00250000
+         BE    ZZI&I.N       YES                                 93002  00260000
+.SYS     CLI   0(R1),C'&&'   SPECIAL INPUT NAME ?                       00270000
+         BNE   ZZI&I.L       NO                                         00280000
+         MVC   0(4,R14),=C'SYS1' MOVE INDEX LEVEL                93002  00290000
+         B     ZZI&I.4       JOIN COMMON                         93002  00300000
+         AIF   (NOT &LONG).SYSC                                  93046  00310000
+ZZI&I.U  CLI   EXWUID,C' '   IS THERE A USER ID ?                93002  00320000
+         BNH   ZZI&I.L       NO; FAIL                            93002  00330000
+         MVC   0(8,R14),EXWUID  MOVE USER ID                     93002  00340000
+         LA    R0,8          SET LENGTH TO SKIP                  93002  00350000
+         ST    R14,12(,R13)  SAVE START                          93002  00360000
+         AR    R14,R0        PAST LAST BYTE                      93002  00370000
+ZZI&I.V  BCTR  R14,0         BACK-UP ONE                         93002  00380000
+         CLI   0(R14),C' '   TRAILING GUNK ?                     93002  00390000
+         BH    ZZI&I.W       NO                                  93002  00400000
+         BCT   R0,ZZI&I.V                                        93002  00410000
+ZZI&I.W  L     R14,12(,R13)  RESTORE START                       93002  00420000
+         CLI   0(R1),C';'    UID PLUS ACCOUNT ?                  93002  00430000
+         BNE   ZZI&I.X       NO; GO TO COMMON EXIT               93002  00440000
+         CLI   EXWACCT,C' '  ANY ACCOUNT ?                       93002  00450000
+         BNH   ZZI&I.X       NO; GO TO COMMON                    93002  00460000
+         AR    R14,R0        GET END AGAIN                       93002  00470000
+         MVI   0(R14),C'.'   MAKE INDEX POINT                    93002  00480000
+         MVC   1(8,R14),EXWACCT  MOVE ACCOUNT                    93002  00490000
+ZZI&I.9  LA    R14,9(R14,0)  MAKE HALF-WORD CONSTANT             93002  00500000
+         AH    R0,ZZI&I.9+2  SET NEW LENGTH                      93002  00510000
+ZZI&I.C  BCTR  R14,0         BACK-SPACE ONE                      93002  00520000
+         CLI   0(R14),C' '   ANY THERE THERE ?                   93002  00530000
+         BH    ZZI&I.D       YES                                 93002  00540000
+         BCT   R0,ZZI&I.C    GO AGAIN                            93002  00550000
+ZZI&I.D  L     R14,12(,R13)  RESTORE START                       93002  00560000
+         B     ZZI&I.X       ADD INDEX POINT, ETC.               93002  00570000
+ZZI&I.N  CLI   EXWACCT,C' '   ANY ACCOUNT ?                      93002  00580000
+         BNH   ZZI&I.L       NO; WILL FAIL                       93002  00590000
+         MVC   0(4,R14),EXWACCT  MAKE MAJOR ACCOUNT              93002  00600000
+.SYSC    ANOP  ,                                                 93046  00610000
+ZZI&I.4  LA    R0,4          SET LENGTH TO FOUR                  93002  00620000
+ZZI&I.X  LA    R1,1(,R1)     SKIP OVER SPECIAL CHARACTER                00630000
+         AR    R14,R0        ADJUST OUTPUT ADDRESS                      00640000
+         SR    R15,R0        ADJUST OUTPUT LENGTH                       00650000
+         MVI   0(R14),C'.'   MAKE INDEX POINT                    93002  00660000
+         LA    R14,1(,R14)   SKIP IT                             93002  00670000
+         BCTR  R15,0         AND SET FINAL LENGTH                93002  00680000
+ZZI&I.L  MACPARM &IN,(R1)    RESTORE INPUT ADDRESS REGISTER             00690000
+         MACPARM &OUT,(R14)  AND OUTPUT                                 00700000
+         MACPARM &LEN,(R15)  AND RESIDUAL LENGTH                        00710000
+         AIF   (NOT &SV).NSAV3                                  GP01013 00720002
+         MACPARM R10,0(R13),OP=L                                GP01013 00730002
+.NSAV3   MEND  ,                                                GP01013 00740002

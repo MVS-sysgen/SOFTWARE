@@ -1,0 +1,17 @@
+         MACRO ,                                                        00010000
+&NM      CRMHEAD &PFX=                                  ADDED ON 85070  00020000
+         GBLC  &CRM@NAM                                                 00030000
+         LCLC  &P                                                       00040000
+&P       SETC  '&PFX'                                                   00050000
+         AIF   ('&P' NE '').HP                                          00060000
+&P       SETC  'CRX'                                                    00070000
+.HP      AIF   ('&NM' EQ '').NL                                         00080000
+&NM      DS    0D .                                                     00090000
+.NL      DROP  ,             NO ADDRESSABILITY                          00100000
+&CRM@NAM SETC  '&P'          SAVE PREFIX GLOBALLY                       00110000
+&P.CODE  DS    0D                                                       00120000
+&P.SAVE  DC    16A(0)        SAVE AREA USED BY @SERVICE'S SRB           00130000
+&P.SPEX  DC    A(0,0)        SPIE EXIT CODE ADDRESS/COUNT               00140000
+         USING &P.CODE,R13   SET BY SRB CODE                            00150000
+&P.ENTY  STM   R0,R15,&P.SAVE-&P.SAVE(R13)  SAVE ALL REGISTERS   90274  00160000
+         MEND  ,                                                        00170000

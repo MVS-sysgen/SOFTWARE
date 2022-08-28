@@ -1,0 +1,101 @@
+         MACRO ,                                                        00010000
+&NM      #PRT  &AD,&LN,&TYPE=VCON,&DEV=0,&CC=YES                        00020000
+         GBLB  &ZZ#PRTF                                                 00030000
+         GBLC  &MACPLAB,&ZZ#PRTN(10),&ZZ#PRTI(10)                       00040000
+.********************************************************************** 00050000
+.*                                                                    * 00060000
+.*   #PRT GENERATES CALLS TO SUBROUTINE SUBPRT FOR PRINTING ON UP TO  * 00070000
+.*   EIGHT OPEN PRINT STREAMS (DEV=1 OR DEV=(3,7)...                  * 00080000
+.*     MULTIPLE PRINTERS ARE VALID EXCEPT WITH TYPE=OPEN              * 00090000
+.*   PRINT DDs ARE ASSOCIATED WITH #PRTWRK MACROS                     * 00100000
+.*                                                                    * 00110000
+.********************************************************************** 00120000
+         LCLA  &I,&J,&K,&N                                              00130000
+         LCLB  &B0,&B1,&B2,&B3,&B4,&B5,&B6,&B7                          00140000
+         LCLC  &PT,&PD,&OP1,&L,&M,&DV,&FN                               00150000
+&MACPLAB SETC  '&NM'                                                    00160000
+&L       SETC  'L'''                                                    00170000
+&M       SETC  '&SYSNDX'                                                00180000
+&DV      SETC  '&DEV'                                                   00190000
+&OP1     SETC  '&AD'                                                    00200000
+&FN      SETC  '0'                                                      00210000
+         AIF   ('&CC' NE 'NO').YESCC                                    00220000
+&FN      SETC  '128'                                                    00230000
+.YESCC   AIF   (T'&DEV EQ 'N').DEVASIS                                  00240000
+         AIF   (N'&DEV EQ 1).DEVASIS                                    00250000
+.DEVLOOP AIF   (&J GE N'&DEV).DEVDONE                                   00260000
+&J       SETA  &J+1                                                     00270000
+         AIF   ('&DEV(&J)' GE '1' OR '&DEV(&J)' LE '8').DEVOK           00280000
+         MNOTE 8,'#PRT: DEV=&DEV(&J) UNACCEPTABLE'                      00290000
+.DEVOK   ANOP  ,                                                        00300000
+&B0      SETB  (&B0 OR ('&DEV(&J)' EQ '8'))                             00310000
+&B1      SETB  (&B1 OR ('&DEV(&J)' EQ '7'))                             00320000
+&B2      SETB  (&B2 OR ('&DEV(&J)' EQ '6'))                             00330000
+&B3      SETB  (&B3 OR ('&DEV(&J)' EQ '5'))                             00340000
+&B4      SETB  (&B4 OR ('&DEV(&J)' EQ '4'))                             00350000
+&B5      SETB  (&B5 OR ('&DEV(&J)' EQ '3'))                             00360000
+&B6      SETB  (&B6 OR ('&DEV(&J)' EQ '2'))                             00370000
+&B7      SETB  (&B7 OR ('&DEV(&J)' EQ '1'))                             00380000
+         AGO   .DEVLOOP                                                 00390000
+.*                                                                      00400000
+.DEVDONE ANOP  ,                                                        00410000
+&DV      SETC  '128*&B0+64*&B1+32*&B2+16*&B3+8*&B4+4*&B5+2*&B6+&B7'     00420000
+.DEVASIS AIF   (&ZZ#PRTF).NOT1ST                                        00430000
+&ZZ#PRTN(01) SETC 'VCON'                                                00440000
+&ZZ#PRTI(01) SETC '0'                                                   00450000
+&ZZ#PRTN(02) SETC 'SPACE'                                               00460000
+&ZZ#PRTI(02) SETC '1'                                                   00470000
+&ZZ#PRTN(03) SETC 'SKIP'                                                00480000
+&ZZ#PRTI(03) SETC '1'                                                   00490000
+&ZZ#PRTN(04) SETC 'KEEP'                                                00500000
+&ZZ#PRTI(04) SETC '2'                                                   00510000
+&ZZ#PRTN(05) SETC 'RESERVE'                                             00520000
+&ZZ#PRTI(05) SETC '2'                                                   00530000
+&ZZ#PRTN(06) SETC 'OPEN'                                                00540000
+&ZZ#PRTI(06) SETC '3'                                                   00550000
+&ZZ#PRTN(07) SETC 'CLOSE'                                               00560000
+&ZZ#PRTI(07) SETC '4'                                                   00570000
+&ZZ#PRTN(08) SETC 'TEXT'                                                00580000
+&ZZ#PRTI(08) SETC '5'                                                   00590000
+&ZZ#PRTN(09) SETC 'PRINTF'                                              00600000
+&ZZ#PRTI(09) SETC '5'                                                   00610000
+&ZZ#PRTN(10) SETC 'BCON'                                                00620000
+&ZZ#PRTI(10) SETC '6'                                                   00630000
+&ZZ#PRTF SETB  1             FIRST TIME STUFF DONE                      00640000
+.NOT1ST  AIF   (T'&AD NE 'O').HAVEAD                                    00650000
+         AIF   ('&TYPE' EQ 'CLOSE').HAVEAD                              00660000
+         MNOTE 8,'#PRT: FIRST OPERAND REQUIRED (ADDR/TEXT/PRTWRK)'      00670000
+         MEXIT ,                                                        00680000
+.HAVEAD  AIF   (&I GE 10).BADTYPE                                       00690000
+&I       SETA  &I+1                                                     00700000
+         AIF   ('&TYPE' NE '&ZZ#PRTN(&I)').HAVEAD                       00710000
+&PT      SETC  '&ZZ#PRTI(&I)'                                           00720000
+         AIF   ('&TYPE' EQ 'CLOSE').HAVTYPE                             00730000
+         AIF   ('&AD'(1,1) NE '''').HAVTYPE                             00740000
+         AIF   ('&PT' EQ '0' OR '&PT' EQ '5' OR '&PT' EQ '6').DEFTEXT   00750000
+         MNOTE 4,'#PRT: TYPE=&TYPE INVALID WITH LITERAL STRING'         00760000
+&PT      SETC  '6'           DO LITERAL AS BCON                         00770000
+.BADTYPE AIF   ('&AD'(1,1) EQ '''').DEFTEXT                             00780000
+         MNOTE 8,'#PRT: TYPE=&TYPE INVALID'                             00790000
+         MEXIT ,                                                        00800000
+.*                                                                      00810000
+.DEFTEXT ANOP  ,                                                        00820000
+&PT      SETC  '6'           DO LITERAL AS BCON                         00830000
+         MACPARM ZZZ&M.C,OP=B,MODE=ONE                                  00840000
+ZZZ&M.L  BCON  &AD           DEFINE LITERAL WITH LENGTH                 00850000
+&MACPLAB SETC  'ZZZ'.'&M'.'C'                                           00860000
+&OP1     SETC  'ZZZ'.'&M'.'L'                                           00870000
+.*                                                                      00880000
+.HAVTYPE AIF   ('&PT' NE '5').NOTLEN                                    00890000
+         MACPARM R0,&LN,NULL=&L&AD     GET TEXT LENGTH                  00900000
+         MACPARM R0,16,OP=SLL          LEFT JUSTIFY                     00910000
+         MACPARM R0,3,=AL1(&PT,&DV),OP=ICM,MODE=THREE  SET FUNC/DEV     00920000
+         AGO   .SETADD                                                  00930000
+.*                                                                      00940000
+.NOTLEN  MACPARM R0,=AL1(0,0,&PT,&DV),OP=L                              00950000
+.SETADD  AIF   ('&FN' EQ '' OR '&FN' EQ '0').SETFUN             GP09275 00960000
+         MACPARM R0,8,=AL1(&FN),OP=ICM,MODE=THREE  SET FUNCTION CODE    00970000
+.SETFUN  MACPARM R1,&OP1,NULL=SKIP     GET STORAGE ADDRESS              00980000
+         MACPARM R15,=V(SUBPRT),OP=L    GET SUBROUTINE ADDRESS          00990000
+         MACPARM R14,R15,OP=BALR,OPR=BALR  CALL SUBROUTINE              01000000
+.MEND    MEND ,                                                         01010000

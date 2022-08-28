@@ -1,0 +1,22 @@
+         MACRO ,                                                        00010000
+&NM      CSADD &CTR,&INC=1,&WK1=R14,&WK2=R15                     87001  00020000
+         LCLC  &N                                                       00030000
+&N       SETC  '&NM'                                                    00040001
+         AIF   ('&N' NE '').NOLB                                        00050001
+&N       SETC  'ZZCS'.'&SYSNDX'                                         00060000
+.NOLB    ANOP  ,                                                        00070001
+&N       L     &WK1,&CTR     LOAD OLD VALUE                             00080000
+         AIF   (K'&INC LT 3).NOREG                                      00090000
+         AIF   ('&INC'(1,1) EQ '(' AND '&INC'(2,1) NE '(').REG          00100000
+.NOREG   AIF   ('&WK1(1)' EQ '0' OR '&WK1(1)' EQ 'R0').NOLA             00110000
+         LA    &WK2,&INC.(,&WK1)  INCREASE                              00120000
+         AGO   .COM                                                     00130000
+.NOLA    LA    &WK2,&INC     INCREMENT                                  00140000
+         AR    &WK2,&WK1                                                00150000
+         AGO   .COM                                                     00160000
+.REG     ANOP  ,                                                        00170000
+         LR    &WK2,&WK1                                                00180000
+         AR    &WK2,&INC(1)  INCREASE                                   00190000
+.COM     CS    &WK1,&WK2,&CTR  REPLACE                                  00200000
+         BNZ   &N            ELSE TRY AGAIN                             00210000
+         MEND  ,                                                        00220000

@@ -1,0 +1,5 @@
+         MACRO ,                                                        00010000
+&NM      DIAG  &R1,&R3,&I2                                 NEW  GP10041 00020000
+.*  ADDED FOR HERCULES SUPPORT                                          00030000
+&NM      DC    0H'0',AL.4(8,3,&R1,&R3),AL2(&I2)                         00040000
+.MEXIT   MEND  ,                                                        00050000

@@ -1,0 +1,103 @@
+         MACRO ,                                                        00010000
+&NM      #RDR  &AD,&TYPE=GET,&DEV=0,&OPT=                               00020000
+         GBLB  &ZZ#RDRF                                                 00030000
+         GBLC  &MACPLAB,&ZZ#RDRN(10),&ZZ#RDRI(10)                       00040000
+.********************************************************************** 00050000
+.*                                                                    * 00060000
+.*   #RDR GENERATES CALLS TO SUBROUTINE SUBRDR FOR READING UP TO      * 00070000
+.*   EIGHT OPEN INPUT STREAMS (DEV=1 OR DEV=(3,7)...                  * 00080000
+.*                                                                    * 00090000
+.*   INPUT DDs ARE ASSOCIATED WITH #RDRWRK MACROS                     * 00100000
+.*                                                                    * 00110000
+.********************************************************************** 00120000
+         LCLA  &I,&J,&K,&N                                              00130000
+         LCLB  &B0,&B1,&B2,&B3,&B4,&B5,&B6,&B7                          00140000
+         LCLB  &F0,&F1,&F2,&F3,&F4,&F5,&F6,&F7                          00150000
+         LCLC  &PT,&PD,&M,&DV,&FN,&C                                    00160000
+&MACPLAB SETC  '&NM'                                                    00170000
+&M       SETC  '&SYSNDX'                                                00180000
+&DV      SETC  '&DEV'                                                   00190000
+&FN      SETC  '0'                                                      00200000
+         AIF   (T'&DEV NE 'O').DEVNUMT                                  00210000
+         AIF   ('&TYPE' NE 'CLOSE').DEVNUMT                             00220000
+&DV      SETC  '255'         CLOSE ALL                                  00230000
+         AGO   .DEVASIS                                                 00240000
+.DEVNUMT AIF   (T'&DEV EQ 'N').DEVASIS                                  00250000
+         AIF   (N'&DEV EQ 1).DEVASIS                                    00260000
+&N       SETA  0                                                        00270000
+.DEVLOOP AIF   (&J GE N'&DEV).DEVDONE                                   00280000
+&J       SETA  &J+1                                                     00290000
+&C       SETC  '&DEV(&J)'                                               00300000
+         AIF   ('&C' EQ '').DEVLOOP                                     00310000
+         AIF   ('&C' GE '1' OR '&C' LE '8').DEVOK                       00320000
+         MNOTE 8,'#RDR: DEV=&C UNACCEPTABLE'                            00330000
+         AGO   .DEVLOOP                                                 00340000
+.DEVOK   ANOP  ,                                                        00350000
+&N       SETA  &N+1                                                     00360000
+&B0      SETB  (&B0 OR ('&C' EQ '8'))                                   00370000
+&B1      SETB  (&B1 OR ('&C' EQ '7'))                                   00380000
+&B2      SETB  (&B2 OR ('&C' EQ '6'))                                   00390000
+&B3      SETB  (&B3 OR ('&C' EQ '5'))                                   00400000
+&B4      SETB  (&B4 OR ('&C' EQ '4'))                                   00410000
+&B5      SETB  (&B5 OR ('&C' EQ '3'))                                   00420000
+&B6      SETB  (&B6 OR ('&C' EQ '2'))                                   00430000
+&B7      SETB  (&B7 OR ('&C' EQ '1'))                                   00440000
+         AGO   .DEVLOOP                                                 00450000
+.*                                                                      00460000
+.DEVDONE AIF   (&N EQ (&B0+&B1+&B2+&B3+&B4+&B5+&B6+&B7)).DOVDON         00470000
+         MNOTE 4,'#RDR: ERROR IN DEV= PARAMETER'                        00480000
+.DOVDON  ANOP  ,                                                        00490000
+&N       SETA  (128*&B0+64*&B1+32*&B2+16*&B3+8*&B4+4*&B5+2*&B6+&B7)     00500000
+&DV      SETC  '&N'                                                     00510000
+.DEVASIS AIF   (&ZZ#RDRF).NOT1ST                                        00520000
+&ZZ#RDRN(01) SETC 'GET'                                                 00530000
+&ZZ#RDRI(01) SETC '0'                                                   00540000
+&ZZ#RDRN(02) SETC 'READ'                                                00550000
+&ZZ#RDRI(02) SETC '0'                                                   00560000
+&ZZ#RDRN(03) SETC 'KEEP'                                                00570000
+&ZZ#RDRI(03) SETC '1'                                                   00580000
+&ZZ#RDRN(04) SETC 'OPEN'                                                00590000
+&ZZ#RDRI(04) SETC '2'                                                   00600000
+&ZZ#RDRN(05) SETC 'CLOSE'                                               00610000
+&ZZ#RDRI(05) SETC '3'                                                   00620000
+&ZZ#RDRN(06) SETC 'REREAD'                                              00630000
+&ZZ#RDRI(06) SETC '1'                                                   00640000
+&ZZ#RDRF SETB  1             FIRST TIME STUFF DONE                      00650000
+.NOT1ST  AIF   (T'&OPT EQ 'O').DONEFUN                                  00660000
+&J       SETA  0                                                        00670000
+&N       SETA  0                                                        00680000
+.LOOPFUN AIF   (&J GE N'&OPT).SETFUN                                    00690000
+&J       SETA  &J+1                                                     00700000
+&C       SETC  '&OPT(&J)'                                               00710000
+         AIF   ('&C' EQ '').LOOPFUN                                     00720000
+&N       SETA  &N+1                                                     00730000
+&F1      SETB  (&F0 OR ('&C' EQ 'DUMP'))                                00740000
+&F0      SETB  (&F0 OR ('&C' EQ 'NOCC'))                                00750000
+&F1      SETB  (&F0 OR ('&C' EQ 'ABEND'))                               00760000
+&F7      SETB  (&F7 OR ('&C' EQ 'NOWTO'))                               00770000
+         AGO   .LOOPFUN                                                 00780000
+.SETFUN  AIF   (&N EQ (&F0+&F1+&F2+&F3+&F4+&F5+&F6+&F7)).SATFUN         00790000
+         MNOTE 4,'#RDR: ERROR IN OPT= PARAMETER'                        00800000
+.SATFUN  ANOP  ,                                                        00810000
+&N       SETA  (128*&F0+64*&F1+32*&F2+16*&F3+8*&F4+4*&F5+2*&F6+&F7)     00820000
+&FN      SETC  '&N'                                                     00830000
+.DONEFUN AIF   (T'&AD NE 'O').HAVEAD                                    00840000
+         AIF   ('&TYPE' NE 'OPEN').HAVEAD                               00850000
+         MNOTE 8,'#RDR: FIRST OPERAND REQUIRED (ADDR/TEXT/RDRWRK)'      00860000
+         MEXIT ,                                                        00870000
+.HAVEAD  AIF   (&I GE 6).BADTYPE                                        00880000
+&I       SETA  &I+1                                                     00890000
+         AIF   ('&TYPE' NE '&ZZ#RDRN(&I)').HAVEAD                       00900000
+&PT      SETC  '&ZZ#RDRI(&I)'                                           00910000
+         AGO   .HAVTYPE                                                 00920000
+.BADTYPE MNOTE 8,'#RDR: TYPE=&TYPE INVALID'                             00930000
+         MEXIT ,                                                        00940000
+.*                                                                      00950000
+.HAVTYPE AIF   ('&FN' NE '0').HAVTYPF                                   00960000
+         MACPARM R0,256*&PT+&DV                                         00970000
+         AGO   .HAVTYPA                                                 00980000
+.HAVTYPF MACPARM R0,=AL1(&FN,0,&PT,&DV),OP=L                            00990000
+.HAVTYPA MACPARM R1,&AD,NULL=SKIP     GET STORAGE ADDRESS               01000000
+         MACPARM R15,=V(SUBRDR),OP=L    GET SUBROUTINE ADDRESS          01010000
+         MACPARM R14,R15,OP=BALR,OPR=BALR  CALL SUBROUTINE              01020000
+.MEND    MEND ,                                                         01030000

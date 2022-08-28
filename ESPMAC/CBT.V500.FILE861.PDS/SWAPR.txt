@@ -1,0 +1,6 @@
+         MACRO ,                                                        00010000
+&NM      SWAPR &A,&B         EXCHANGE TWO REGISTERS              86197  00020000
+&NM      XR    &A,&B                                                    00030000
+         XR    &B,&A                                                    00040000
+         XR    &A,&B                                                    00050000
+         MEND  ,                                                        00060000

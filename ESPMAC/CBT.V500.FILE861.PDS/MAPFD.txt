@@ -1,0 +1,141 @@
+         MACRO                                                          00010000
+&NM      MAPFD ,                                                        00020000
+         GBLB  &MAPFDS                                                  00030000
+.*--------------------------------------------------------------------* 00040000
+.*   THIS MAPPING REPLACES FDSECT                                     * 00050000
+.*   IT SUPPORTS SPLIT DSECTS AS REQUIRED FOR EXHASCR WHILE EXAMINING * 00060000
+.*   MIXED FD AND FDPRT REQUESTS                                      * 00070000
+.*                                                                    * 00080000
+.*   PREFIX IS FHD FOR ALL COMMON MAPPINGS, AND FFD FOR FDPRT VARS.   * 00090000
+.*--------------------------------------------------------------------* 00100000
+         AIF   (&MAPFDS).MEND                                           00110000
+&MAPFDS  SETB  1                                                        00120000
+         AIF   ('&NM' NE '').EXNAME                                     00130000
+FHDSECT  DSECT ,             FD ITEM MAPPING                            00140000
+         AGO   .COMNAME                                                 00150000
+.EXNAME  ANOP  ,                                                        00160000
+&NM      DSECT ,             FD ITEM MAPPING                            00170000
+.COMNAME ANOP  ,                                                        00180000
+FHDLINK  DS    AL1           LENGTH TO NEXT ENTRY OR 0                  00190000
+FHDTYPE  DS    X             ENTRY TYPE (IN, OUT, NOP)                  00200000
+FHDFNOP  EQU   X'40'           IGNORE THIS ENTRY                        00210000
+FHDFIN   EQU   X'80'           INPUT ENTRY                              00220000
+FHDFCIN  EQU   X'08'           FHDIN IS LOCKED (COND. INPUT)     87156  00230000
+FHDFPRT  EQU   X'30'           FD/FDIN - NO 3270 FIELDS          81127  00240000
+FHDFIND@ EQU   X'01'             FDSADD IS INDIRECT ADDRESS      81270  00250000
+FHDFREG# EQU   X'02'             FDILEN IS REGISTER WITH LENGTH  81270  00260000
+FHDFEXAD EQU   X'04'             EXPANSION HAS USER EXIT ADDRESS 89095  00270000
+FHDFOPT  EQU   X'20'           OPTION LIST                              00280000
+FHDFGOTO EQU   X'10'           BRANCH TO ANOTHER FD ENTRY               00290000
+FHDFEXEC EQU   X'11'           PERFORM NEW FD RANGE              81131  00300000
+FHDFBR   EQU   X'12'           BRANCH/TEST AFTER PRIOR TEST      81131  00310000
+FHDFTM   EQU   X'13'           TM/BRANCH                         81131  00320000
+FHDFCLI  EQU   X'14'           CLI/BRANCH                        81131  00330000
+FHDFCLC  EQU   X'15'           CLC/BRANCH                        81131  00340000
+FHDFMOD  EQU   X'18'           SET ADDRESS RESOLUTION MODE       92307  00350000
+FHDFSPC  EQU   X'1E'           SPACE/ROOM/REPT SERVICE           82109  00360000
+FHDFUEX  EQU   X'1F'           USER EXIT                         81193  00370000
+FHDGOTO  DS    0SL2(0)       ADDRESS OF TARGET FD OF GO TO              00380000
+FHDEDIT  DS    X             EDITING OPTIONS                            00390000
+FHDFNL   EQU   X'80'           POSITION TO NEW LINE                     00400000
+FHDFDEBL EQU   X'40'           STRIP LEADING BLANKS                     00410000
+FHDFDEBR EQU   X'20'           STRIP TRAILING BLANKS                    00420000
+FHDFDEBZ EQU   X'10'           STRIP LEADING ZEROES                     00430000
+FHDFPADL EQU   X'08'           LEFT BLANK OR SF                         00440000
+FHDFPADR EQU   X'04'           RIGHT BLANK OR SF                        00450000
+FHDFRADJ EQU   X'02'           RIGHT-ADJUST IN OUTPUT                   00460000
+FHDFUP   EQU   X'01'           UPPER CASE INPUT TRANSLATE               00470000
+*        REDEFINITION FOR FDOPT                                  82109  00480000
+*FHDFNL  EQU   X'80'           POSITION TO NEW LINE                     00490000
+FHDOWCCP EQU   X'40'         WCC OPTIONS PRESENT                        00500000
+FHDOSBAP EQU   X'20'         SBA PRESENT                                00510000
+FHDOCURP EQU   X'08'         CURSOR ADDRESS PRESENT                     00520000
+FHDOINDP EQU   X'04'           AUTO INDENT VALUE PRESENT         81270  00530000
+FHDOPTP  EQU   X'02'         COLOR OR DISPLAY OPTIONS PRESENT           00540000
+FHDOPCCP EQU   X'01'         PRT CARRIAGE CONTROL INSTEAD OF CURP       00550000
+FHDOPT9  DS    X             3279 OPTIONS                               00560000
+FHDFCOLR EQU   X'70' 0DFLT,1BLUE,2RED,3PINK,4GREEN,5TURQ,6YELLOW,7WHITE 00570000
+FHDFMONO EQU   X'08'         APPLY HIGH-LIGHT ON MONOCHROME ONLY 87313  00580000
+FHDFUNDR EQU   X'04'           UNDERLINE                                00590000
+FHDFREV  EQU   X'02'           REVERSE                                  00600000
+FHDFBLNK EQU   X'01'           BLINK                                    00610000
+FHDOPT7  DS    X             3277/3278 OPTIONS                          00620000
+FHDFINT  EQU   X'08'           INTENSIFIED                              00630000
+FHDFLPEN EQU   X'04'           LIGHT-PEN DETECTABLE                     00640000
+FHDFNDSP EQU   X'0C'           NON-DISPLAY                              00650000
+FHDFNUM  EQU   X'10'           NUMERIC INPUT                            00660000
+FHDFSKIP EQU   X'30'           SKIP DISPLAY                             00670000
+FHDFPROT EQU   X'20'           PROTECTED                                00680000
+FHDFDFLT EQU   X'80'           DEFAULT OPTIONS/COLORS                   00690000
+FHDFPREV EQU   X'40'           PREVIOUS OPTIONS/COLORS                  00700000
+FHDFNULL EQU   X'02'           SUPPRESS X'00' IN INPUT FIELDS           00710000
+FHDFMTD  EQU   X'01'           MODIFIED DATA TAG                 87313  00720000
+FHDDATA  DS    0X            START OF LONG DATA                         00730000
+.*                                                                      00740000
+FHDOWCC  DC    X'0'          WCC OPTIONS                                00750000
+FHDOSBA  DC    XL2'0'        SBA ADDRESS                                00760000
+FHDOCUR  DC    0XL2'0'       CURSOR ADDRESS                             00770000
+FHDOCC   DS    C             PRINTER CARRIAGE CONTROL            81201  00780000
+FHDOIND  DS    AL1           AUTOMATIC LINE INDENT               81270  00790000
+         SPACE 1                                                 81127  00800000
+         ORG   FHDGOTO                                           81127  00810000
+FHDBRE   DS    SL2           BRANCH EQUAL                        81127  00820000
+FHDBRL   DS    SL2           BRANCH LOW/MIXED                    81127  00830000
+FHDBRH   DS    SL2           BRANCH HIGH/ONES                    81127  00840000
+FHDBVAR  DS    SL2           TEST VARIABLE                       81127  00850000
+FHDBIDA  DS    0X              IMMEDIATE DATA FOR TEST           81127  00860000
+FHDBLEN  DS    X               LENGTH FOR FDCLC                  81127  00870000
+FHDBCLC  DS    SL2           COMPARE STRING                      81127  00880000
+         SPACE 1                                                 81193  00890000
+         ORG   FHDGOTO       DEFINITION FOR USER EXIT REQUEST    81193  00900000
+FHDUXAD  DS    SL2           USER EXIT ADDRESS                   81193  00910000
+FHDUXFPM DS    0X            USER SUPPLIED PARM INFO             81193  00920000
+         ORG   ,                                                 81193  00930000
+FHDXOK   EQU   0             RETURN CODES - NORMAL PROCESSING    81193  00940000
+FHDXGOTO EQU   2               NEW FD ADDRESS IN R1              81193  00950000
+FHDXCLR  EQU   4               CLEAR CURRENT LINE                81193  00960000
+FHDXPRT  EQU   8               PRINT CURRENT LINE                81193  00970000
+FHDXADD  EQU   FHDXCLR+FHDXPRT DATA ADDED TO LINE                81193  00980000
+FHDXQUIT EQU   16              TERMINATE CURRENT PRTLIST         81193  00990000
+.*                                                                      01000000
+.*  PORTION DISTINCT FOR FDPRT                                          01010000
+.*                                                                      01020000
+FFDDSECT DSECT ,             SPECIAL SECTION FOR FDPRT/FD COMMON DATA   01030000
+FFDDATA  DS    X             DATA TYPE                                  01040000
+FFDDLIT  EQU   X'80'           FD CONTAINS LITERAL, NOT ADDRESS         01050000
+FFDDCHAR EQU   1               EBCDIC, TRANSLATED                       01060000
+FFDDCON  EQU   2               EBCDIC WITH CONTROL CHARACTERS           01070000
+FFDDASIS EQU   3               EBCDIC(?), NO TRANSLATE                  01080000
+FFDDADDR EQU   4               ADDRESS                                  01090000
+FFDDHEX  EQU   5               HEXADECIMAL                              01100000
+FFDDSHEX EQU   6               HEXADECIMAL WITH EXPLICIT SIGN           01110000
+FFDDBIT  EQU   7               BIT STRING                               01120000
+FFDDINT  EQU   8               INTEGER                                  01130000
+FFDD$INT EQU   9               INTEGER.DD                               01140000
+FFDDDEC  EQU   10              PACKED DECIMAL                           01150000
+FFDD$DEC EQU   11              PACKED DECIMAL.DD                        01160000
+FFDDFIX  EQU   12              FLOATING POINT                           01170000
+FFDDTIME EQU   13              TIME (BIN 1/100 SECONDS)          81193  01180000
+FFDDTIMD EQU   14              TIME (PACKED)                     81193  01190000
+FFDDDATE EQU   15              DATE (PACKED; O/P MM/DD/YY)       81193  01200000
+FFDDDATJ EQU   16              DATE (PACKED; O/P YY.DDD)         81193  01210000
+FFDDFLAG EQU   64              FLAG/TABLE FORMATTING            GP06273 01220000
+FFDOLEN  DS    AL1           OUTPUT LENGTH; 0 FOR DEFAULT; MAX FOR FDIN 01230000
+FFDILEN  DS    AL1           CURRENT LENGTH OF ITEM                     01240000
+FFDTEXT  DS    0CL132        (FD/FDPRT) LITERAL TEXT                    01250000
+FFDSADD  DS    SL2           ADDRESS OF DATA ITEM                       01260000
+FFDIOFF  DS    AL2           FDIN - OFFSET TO FIW AREA           84237  01270000
+FFDIXAD  DS    SL2           FDIN - USER EXIT ADDRESS            89095  01280000
+         ORG   FFDIOFF         REDEFINE FOR FLAG PROCESSING     GP03287 01290000
+FFDTBAD  DS    SL2           ADDRESS OF BIT EQUIVALENT TEXT     GP03287 01300000
+FFDTSEP  DS    C             OUTPUT SEPARATOR CHARACTER OR 00   GP03287 01310000
+FFDTSPC  DS    XL1           NUMBER OF SPACES BETWEEN ITEMS     GP03287 01320000
+         ORG   ,                                                GP03287 01330000
+         SPACE 1                                                 81193  01340000
+FDUXPARM DSECT ,             MAPPING OF R1 LIST SUPPLIED TO EXIT 81193  01350000
+FDUXFD   DS    A               ADDRESS OF CURRENT FD             81193  01360000
+FDUXPWRK DS    A               ADDRESS OF PRINTER WORK AREA      81193  01370000
+FDUXSAVE DS    A               ADDRESS OF ORIGINAL SAVE AREA     81193  01380000
+FDUXPRT  DS    A               ADDRESS OF CURRENT PRINT LINE     81193  01390000
+         DS    A                 RESERVED                        81193  01400000
+.MEND    MEND  ,                                                        01410000

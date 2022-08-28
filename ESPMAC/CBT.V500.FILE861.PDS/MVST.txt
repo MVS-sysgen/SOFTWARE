@@ -1,0 +1,17 @@
+         MACRO ,                                                        00010000
+&NM      MVST  &R,&S                                      ADDED GP09154 00020000
+.*                                                                      00030000
+.*    BACKLEVEL IMPLEMENTATION OF MVST FOR HERCULES                     00040000
+.*    DOES NOT PRODUCE CODE 3                                           00050000
+.*                                                                      00060000
+         LCLA  &I                                                       00070000
+&I       SETA  &SYSNDX                                                  00080000
+&NM      MACPARM MODE=LBL                                               00090000
+ZZS&I.L  MVC   0(1,&R),0(&S)                                            00100000
+         CLM   R0,1,0(&R)    MOVED END CHAR ?                           00110000
+         BE    ZZS&I.X                                                  00120000
+         LA    &S,1(,&S)                                                00130000
+         LA    &R,1(,&R)                                                00140000
+         B     ZZS&I.L       DO AGAIN                                   00150000
+ZZS&I.X  TM    ZZS&I.L,X'FF'   SET CC=1 - MIXED                         00160000
+         MEND  ,                                                        00170000

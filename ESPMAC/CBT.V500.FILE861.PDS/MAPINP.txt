@@ -1,0 +1,44 @@
+         MACRO ,                                        ADDED ON 82116  00010000
+&NM      MAPINP &PREFIX=PN,&DSECT=YES  INPWORK MAPPING                  00020000
+.*    UPDATED FOR ESA AND OS/390 BY G.P.                                00030000
+         LCLC  &DS,&P                                                   00040000
+&P       SETC  '&PREFIX'                                                00050000
+&DS      SETC  '&P'.'PARM'                                              00060000
+         AIF   ('&NM' EQ '').HAVEDS                                     00070000
+&DS      SETC  '&NM'                                                    00080000
+.HAVEDS  AIF   ('&DSECT' NE 'YES').NODSECT                              00090000
+&DS      DSECT ,             MAPPING OF INPWORK EXPANSION               00100000
+         AGO   .COMDS                                                   00110000
+.NODSECT ANOP  ,                                                        00120000
+&DS      DS    0H            MAPPING OF INPWORK EXPANSION               00130000
+.COMDS   ANOP  ,                                                        00140000
+&P.DDNAM  DC   CL8' '        PRIMARY DDNAME                             00150000
+&P.DDALT  DC   CL8' '        ALTERNATE DDNAME                           00160000
+&P.EODAD  DC   A(1)          EODAD OR 0,1 IF NONE                       00170000
+&P.EODAM  EQU  X'80'         WHEN ON, EODAD ENTERED AMODE 31, ELSE 24   00180000
+&P.PPDE   DC   A(0)          POINTER TO RETURNED DIRECTORY DATA  89351  00190000
+&P.WIDTH  DC   H'0'          LINE WIDTH FOR TRUNCATION                  00200000
+          DC   H'0'               RESERVED                              00210000
+&P.PRFG   DC   X'00'         OPTION FLAGS                               00220000
+&P.FGABE  EQU  X'80'           ABEND IF OPEN FAILS/DD MISSING           00230000
+&P.FGDUM  EQU  X'40'           ALLOW DD DUMMY (ELSE ABEND)              00240000
+&P.FGNWTO EQU  X'20'           SUPPRESS WTO IF BAD OPEN AND NO ABEND    00250000
+&P.FGJFCB EQU  X'10'           WORD FOLLOWING INPWORK IS JFCB FOR OPEN  00260000
+&P.FGPDE  EQU  X'08'           USER REQUESTED PDE FEEDBACK       89351  00270000
+&P.FG1BUF EQU  X'01'           SINGLE BUFFER (SHORT ON MEMORY)  GP08088 00280000
+&P.FILL   DC   X'00'         FILL BYTE FOR PADDED RECORDS               00290000
+&P.EDIT   DC   X'80'         EDIT OPTIONS (MATCH DCMFG1)                00300000
+&P.FESET  EQU  X'80'           OPTION BITS SET (ELSE USE DEFAULTS)      00310000
+&P.FEOSI  EQU  X'40'           OSI LINE NUMBER FORMAT                   00320000
+&P.FEHWD  EQU  X'20'           HALF-WORD LINE NUMBERS                   00330000
+&P.FEINT  EQU  X'10'           CREATE INTEGER LINE NUMBERS              00340000
+&P.FEEDT  EQU  X'08'           CREATE EDIT LINE NUMBERS 4C.3C           00350000
+&P.FETSO  EQU  X'04'           LINE NUMBERS LEFT-ADJUSTED IN RECFM=V    00360000
+&P.FENB#  EQU  X'01'           INSERT LINE NUMBERS EVEN IF NON-BLANK    00370000
+&P.PDS    DC   X'00'         PDS PROCESSING OPTIONS              89351  00380000
+&P.FPDIR  EQU  X'80'           OPEN PDS DIRECTORY                89351  00390000
+&P.FPMEM  EQU  X'40'           PROCESS ALL MEMBERS               89351  00400000
+&P.FPALI  EQU  X'20'           ALSO PROCESS ALIAS ENTRIES        89351  00410000
+&P.FPUPA  EQU  X'01'           BUILD ./ ADD CARDS                89351  00420000
+&P.JFCB   DC   0A(0)         OPTIONAL JFCB ADDRESS FOR OPENJ OR 0       00430000
+         MEND  ,                                                        00440000

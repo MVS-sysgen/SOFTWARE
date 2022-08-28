@@ -1,0 +1,250 @@
+         MACRO                                                          00010000
+       SMPIOWK ,                                                        00020000
+         GBLA  &SMPREL       SMP RELEASE NUMBER                  79216  00030000
+         MAPIOWK                                                        00040000
+         SPACE 3                                                        00050000
+         ORG   DRDSN .       REDEFINE DSN FOR HEADER                    00060000
+SYSDSN   DS    CL4 .         CDS/ACDS/PTS                               00070000
+         DS    C                                                        00080000
+SYSVS    DS    CL6 .         VOL-SER                                    00090000
+         DS    C                                                        00100000
+SYSREL   DS    CL4 .         SYSTEM RELEASE TYPE/NUMBER                 00110000
+         DS    C                                                        00120000
+SYSTSO   DS    CL3 .         TSO                                        00130000
+         DS    C                                                        00140000
+SYSNUCC  DS    C'NUC' .      IDENTIFIER                                 00150000
+SYSNUC   DS    C .           NUCLEUS NUMBER                             00160000
+         DS    C                                                        00170000
+SYSPEMC  DS    C'PE'                                                    00180000
+SYSPEM   DS    CL5 .         PEMAX VALUE                         79216  00190000
+         DS    CL3 ,         SPACER                              79216  00200000
+SYSMEM   DS    CL8 .         CURRENT MEMBER NAME                        00210000
+         SPACE 1                                                        00220000
+         ORG   DRBUF                                                    00230000
+DMCDSWK  DS    0F ,          SMP WORK AREA                              00240000
+SCANCCW1 CCW   X'E9',0,X'60',8    SEARCH KEY <= DMKEY2                  00250000
+SCANCCW2 DC    0A(0),X'08',AL3(0),A(0)    TIC BACK                      00260000
+SCANCCW3 CCW   X'06',0,X'40',256  READ DATA INTO DMDE2                  00270000
+SCANCCW4 CCW   X'92',0,0,8   READ CCHHR FOR NEXT TTR                    00280000
+         SPACE 1                                                        00290000
+OPFLAGS  DS    0CL2 .        USER SPECIFIED PROCESSING OPTIONS          00300000
+OPF1     DC    X'0' .        LIBRARY TYPE/OPTIONS                       00310000
+OPF1CDS  EQU   X'80' .       THIS IS A CDS                              00320000
+OPF1ACDS EQU   X'40' .       ACDS                                       00330000
+OPF1PTS  EQU   X'20' .       PTS                                        00340000
+OPF1HLD  EQU   X'10' .       HLDS                                       00350000
+OPF1NOT  EQU   X'01' .       MEMBER NOT FOUND/EMPTY DS/NO LIST OPTION   00360000
+         SPACE 1                                                        00370000
+OPF2     DC    X'0' .        LISTING FLAGS                              00380000
+OPF2FULL EQU   X'80' .       LIST ASSEM/LDMOD CONTROL CARDS             00390000
+OPF2ASM  EQU   X'40' .       LIST ASSEMBLER ENTRIES                     00400000
+OPF2MAC  EQU   X'20' .       LIST MACRO ENTRIES                         00410000
+OPF2MOD  EQU   X'10' .       LIST OBJECT MODULE ENTRIES                 00420000
+OPF2LOAD EQU   X'08' .       LIST LOAD MODULE ENTRIES                   00430000
+OPF2PTF  EQU   X'04' .       LIST PTF ENTRIES                           00440000
+OPF2DLIB EQU   X'02' .       LIST DLIB ENTRIES                          00450000
+         SPACE 1                                                        00460000
+DMW1     DC    X'0' .        PROCESSING BYTE                            00470000
+DMW2     DC    X'0' .         DITTO                                     00480000
+DMPUTSAV DS    9F .          REGISTER SAVE AREA                         00490000
+DMPUTS9  DS    F .           RETURN REGISTER SAVE AREA                  00500000
+DMDEAT   DS    3A .          DIRECTORY ENTRY SCAN POINTERS              00510000
+DMTTR    DC    A(0) .        TTR FOR SEQUENTIAL READ                    00520000
+DMSCANT  DC    A(0) .        TTR FOR SCAN START                         00530000
+DMTRTAB  DS    CL256 .       TRANSLATE TABLE                            00540000
+DMTRINDX DS    5XL3 .        NAME/TTR INDEX FOR FASTER SCANNING         00550000
+         SPACE 1                                                        00560000
+         DS    0F ,          ALIGN                                      00570000
+DMDE     DS    XL264 .       PRIMARY PROCESSING DIRECTORY BLOCK         00580000
+DMKEY2   DS    CL8 .         KEY FIELD FOR SECOND BLOCK                 00590000
+DMDE2    DS    XL256 .       SECONDARY DIRECTORY BLOCK                  00600000
+DMDATA   DS    10CL80 .      DATA INPUT FIELD                           00610000
+DMDATEND DS    9X'FF' .      SCAN STOPPER                               00620000
+         ORG   ,                                                        00630000
+         SPACE 3                                                        00640000
+CDSDSECT DSECT ,             MAP THE CDS DIRECTORY ENTRIES              00650000
+IOPNAME  DC    0CL8' ',X'0' . NAME/FLAG FIELD                           00660000
+IOPCDTYP EQU   X'C0' .       OBJ IF ON/ASM IF OFF                       00670000
+IOPCDTYL EQU   X'40' .       LOAD MODULE ENTRY                          00680000
+IOPCDTYM EQU   X'80' .       MACRO ENTRY                                00690000
+IOPTYPE  EQU   X'F0' .       SPECIAL ENTRY IF ALL ON                    00700000
+IOPTYPED EQU   X'F0' .       DLIB ENTRY                                 00710000
+IOPTYPES EQU   X'F1' .       SYSTEM ENTRY                               00720000
+IOPTYPEE EQU   X'F2' .       EOF ENTRY                                  00730000
+IOPTYPEP EQU   X'F9' .       PTF ENTRY                                  00740000
+IOPNAME2 DS    CL7 .         REST OF NAME                               00750000
+IOPTTR   DS    XL3 .         TTR OF DATA, EXTENDED DIRECTORY OR EOF RCD 00760000
+IOPUSERL DS    X .           ALIAS FLAG; # OF USER DATA HALFWORDS       00770000
+IOPUSERS EQU   *                                                        00780000
+         AIF   (&SMPREL GT 1).NEWSMP                             79216  00790000
+         SPACE 1                                                        00800000
+*     OBJECT MODULE ENTRY                                               00810000
+*                                                                       00820000
+         ORG   IOPUSERS                                                 00830000
+IOPMODID DS    CL2 .         ID OF PTF OR LOCAL OWNER                   00840000
+IOPDLIB  DS    CL7 .         DISTRIBUTION LIBRARY                       00850000
+IOPLMODS DS    CL8 .         LOAD MODULE NAMES                          00860000
+         SPACE 1                                                        00870000
+*     LOAD MODULE ENTRY                                                 00880000
+*                                                                       00890000
+         ORG   IOPUSERS                                                 00900000
+IOPFLGS2 DS    X .           LKED ATTRIBUTES                            00910000
+IOPAPF   EQU   X'80' .       ?                                          00920000
+IOPRENT  EQU   X'40' .       RE-ENTRANT                                 00930000
+IOPREUS  EQU   X'20' .       RE-USABLE                                  00940000
+IOPSCTR  EQU   X'10' .       SCATTER LOADED                             00950000
+IOPOVLY  EQU   X'08' .       OVERLAY                                    00960000
+IOPREFR  EQU   X'04' .       RE-FRESHABLE                               00970000
+IOPDC    EQU   X'02' .       DOWNWARD CONTEMPTIBLE                      00980000
+IOPNE    EQU   X'01' .       NOT EDITABLE                               00990000
+IOPFLGS3 DS    X .           ATTRIBUTE RELATED FLAGS                    01000000
+IOPCOPY  EQU   X'80' .       COPIED AT SYSGEN TIME                      01010000
+IOPLINK  EQU   X'40' .       LKED PARMS OBTAINED                        01020000
+IOPCHREP EQU   X'20' .       TEXT INCLUDES CHANGE/REPLACE STATEMENTS    01030000
+IOPSYSLB DS    CL8 .         LIBRARIES LINKED TO                 79217  01040000
+IOPSYSL2 DS    CL8 .         ...                                 79217  01050000
+         SPACE 1                                                        01060000
+*     MACRO ENTRY                                                       01070000
+*                                                                       01080000
+         ORG   IOPUSERS                                                 01090000
+         DS    CL2 .         OWNER ID                                   01100000
+IOPASMOD DS    CL8 .         UP TO 50 NAMES OF REASSEMBLY MODULE NAMES  01110000
+         SPACE 1                                                        01120000
+*     PTF ENTRY                                                         01130000
+*                                                                       01140000
+         ORG   IOPUSERS                                                 01150000
+IOPFLGS5 DS    X .           PROCESSING FLAGS                           01160000
+IOPAPP   EQU   X'80' .       APPLIED                                    01170000
+IOPACC   EQU   X'40' .       ACCEPTED                                   01180000
+IOPFORCE EQU   X'20' .       FORCE RECEIVED                             01190000
+IOPDUMMP EQU   X'10' .       NAME OF SUPERCEDING PTF EXISTS             01200000
+IOPREGEN EQU   X'08' .       PTF APPLIED VIA SYSTEM REGENERATION        01210000
+IOPDATE  DS    PL3 .         DATE OF RECEIVE                            01220000
+IOPPNTRY DS    0CL9 .        SUPERCEDING PTF / LIST OF MODULES CHANGED  01230000
+IOPPMODS DS    CL8 .         MODULE NAME                                01240000
+IOPPIND  DS    X .           SUB-TYPE                                   01250000
+IOPPIND0 EQU   0 .           MACRO CHANGE/REPLACE                       01260000
+IOPPIND1 EQU   1 .           OBJECT MODULE REPLACEMENT                  01270000
+IOPPIND2 EQU   2 .           ZAP (EITHER S/ZAP OR X/ZAP)                01280000
+         SPACE 1                                                        01290000
+*     SYSTEM ENTRY                                                      01300000
+*                                                                       01310000
+         ORG   IOPUSERS                                                 01320000
+IOPFLGS7 DS    X .           SYSTEM OPTION FLAGS                        01330000
+IOPTSO   EQU   X'80' .       SYSTEM HAS TSO                             01340000
+IOPSREL  DS    CL4 .         SYSTEM TYPE/RELEASE                        01350000
+IOPNUCID DS    C .           NUCLEUS NUMBER                             01360000
+IOPPEMAX DS    AL2 .         MAX ENTRIES FOR RECEIVE PRIOR TO ACCEPT    01370000
+IOPPDLM  DS    X'FF' .       END OF LIST DELIMITER                      01380000
+         SPACE 1                                                        01390000
+*     DLIB ENTRY                                                        01400000
+*                                                                       01410000
+         ORG   IOPUSERS                                                 01420000
+IOPDSYS  DS    CL8 .         LIBRARIES COPIED TO DURING GEN             01430000
+IOPDSYS2 DS    CL8                                               79216  01440000
+         SPACE 2                                                        01450000
+***   PTS LIBRARY ENTRY                                                 01460000
+*                                                                       01470000
+         ORG   IOPUSERS                                                 01480000
+IOPPFLG1 DS    X .           LIBRARY PROCESSING                         01490000
+IOPLIBLK EQU   X'80' .       INDIRECT LINKLIB                           01500000
+IOPLIBTX EQU   X'40' .       INDIRECT TEXT LIBRARY                      01510000
+IOPTALIS EQU   X'20' .       TARGET ALIAS EXISTS                        01520000
+IOPDALIS EQU   X'10' .       DISTRIBUTION ALIAS EXISTS                  01530000
+IOPDISTN DS    CL8 .         DLIB NAME                                  01540000
+IOPINDLB DS    CL8 .         LIBRARY FROM HEADER                        01550000
+IOPALISL DS    CL8 .         ALIAS ENTRIES                              01560000
+         ORG   ,                                                        01570000
+         MEXIT ,                                                 79216  01580000
+.NEWSMP  SPACE 1                                                 79216  01590000
+*     OBJECT MODULE ENTRY                                        79216  01600000
+*                                                                79216  01610000
+         ORG   IOPUSERS                                          79216  01620000
+         DS    X                                                 79216  01630000
+IOPMODAP DS    CL7           PTF/APAR NUMBER                     79216  01640000
+IOPMODID DS    CL4 .         ID OF PTF OR LOCAL OWNER            79216  01650000
+         DS    X                                                 79216  01660000
+IOPDLIB  DS    CL8 .         DISTRIBUTION LIBRARY                79216  01670000
+IOPLMODS DS    CL8 .         LOAD MODULE NAMES                   79216  01680000
+         SPACE 1                                                 79216  01690000
+*     LOAD MODULE ENTRY                                          79216  01700000
+*                                                                79216  01710000
+         ORG   IOPUSERS                                          79216  01720000
+IOPFLGS2 DS    X .           LKED ATTRIBUTES                     79216  01730000
+IOPAPF   EQU   X'80' .       ?                                   79216  01740000
+IOPRENT  EQU   X'40' .       RE-ENTRANT                          79216  01750000
+IOPREUS  EQU   X'20' .       RE-USABLE                           79216  01760000
+IOPSCTR  EQU   X'10' .       SCATTER LOADED                      79216  01770000
+IOPOVLY  EQU   X'08' .       OVERLAY                             79216  01780000
+IOPREFR  EQU   X'04' .       RE-FRESHABLE                        79216  01790000
+IOPDC    EQU   X'02' .       DOWNWARD CONTEMPTIBLE               79216  01800000
+IOPNE    EQU   X'01' .       NOT EDITABLE                        79216  01810000
+IOPFLGS3 DS    X .           ATTRIBUTE RELATED FLAGS             79216  01820000
+IOPCOPY  EQU   X'80' .       COPIED AT SYSGEN TIME               79216  01830000
+IOPLINK  EQU   X'40' .       LKED PARMS OBTAINED                 79216  01840000
+IOPCHREP EQU   X'20' .       TEXT INCLUDES CHANGE/REPLACE STATEMENTS    01850000
+IOPLODID DS    XL4                                               79216  01860000
+IOPSYSLB DS    CL8 .         LIBRARIES LINKED TO                 79217  01870000
+         DS    X                                                 79217  01880000
+IOPSYSL2 DS    CL8 .         ...                                 79217  01890000
+         SPACE 1                                                 79216  01900000
+*     MACRO ENTRY                                                79216  01910000
+*                                                                79216  01920000
+         ORG   IOPUSERS                                          79216  01930000
+         DS    X                                                 79216  01940000
+IOPMACAP DS    CL7           PTF/APAR LEVEL                      79216  01950000
+IOPMACID DS    XL3                                               79217  01960000
+IOPASMOD DS    CL8 .         UP TO 50 NAMES OF REASSEMBLY MODULE NAMES  01970000
+         SPACE 1                                                 79216  01980000
+*     PTF ENTRY                                                  79216  01990000
+*                                                                79216  02000000
+         ORG   IOPUSERS                                          79216  02010000
+         DS    X                                                 79216  02020000
+IOPFLGS5 DS    X .           PROCESSING FLAGS                    79216  02030000
+IOPAPP   EQU   X'80' .       APPLIED                             79216  02040000
+IOPACC   EQU   X'40' .       ACCEPTED                            79216  02050000
+IOPFORCE EQU   X'20' .       FORCE RECEIVED                      79216  02060000
+IOPDUMMP EQU   X'10' .       NAME OF SUPERCEDING PTF EXISTS      79216  02070000
+IOPREGEN EQU   X'08' .       PTF APPLIED VIA SYSTEM REGENERATION 79216  02080000
+         DS    XL3                                               79216  02090000
+IOPPMODS DS    CL7           SUPER. PTF #                        79216  02100000
+         DS    X                                                 79216  02110000
+IOPDATE  DS    PL3 .         DATE OF RECEIVE                     79216  02120000
+IOPPNTRY DS    CL8 .         MODULE NAME                         79216  02130000
+IOPPIND  DS    X .           SUB-TYPE                            79216  02140000
+IOPPIND0 EQU   0 .           MACRO CHANGE/REPLACE                79216  02150000
+IOPPIND1 EQU   1 .           OBJECT MODULE REPLACEMENT           79216  02160000
+IOPPIND2 EQU   2 .           ZAP (EITHER S/ZAP OR X/ZAP)         79216  02170000
+         SPACE 1                                                 79216  02180000
+*     SYSTEM ENTRY                                               79216  02190000
+*                                                                79216  02200000
+         ORG   IOPUSERS                                          79216  02210000
+         DS    XL2                                               79216  02220000
+IOPFLGS7 DS    X .           SYSTEM OPTION FLAGS                 79216  02230000
+IOPTSO   EQU   X'80' .       SYSTEM HAS TSO                      79216  02240000
+IOPSREL  DS    CL4 .         SYSTEM TYPE/RELEASE                 79216  02250000
+IOPNUCID DS    C .           NUCLEUS NUMBER                      79216  02260000
+IOPPEMAX DS    AL2 .         MAX ENTRIES FOR RECEIVE PRIOR TO ACCEPT    02270000
+IOPPDLM  DS    X'FF' .       END OF LIST DELIMITER               79216  02280000
+         SPACE 1                                                 79216  02290000
+*     DLIB ENTRY                                                 79216  02300000
+*                                                                79216  02310000
+         ORG   IOPUSERS                                          79216  02320000
+         DS    X                                                 79216  02330000
+IOPDSYS  DS    CL8 .         LIBRARIES COPIED TO DURING GEN      79216  02340000
+         DS    X                                                 79216  02350000
+IOPDSYS2 DS    CL8                                               79216  02360000
+         SPACE 2                                                 79216  02370000
+***   PTS LIBRARY ENTRY                                          79216  02380000
+*                                                                79216  02390000
+         ORG   IOPUSERS                                          79216  02400000
+IOPPFLG1 DS    X .           LIBRARY PROCESSING                  79216  02410000
+IOPLIBLK EQU   X'80' .       INDIRECT LINKLIB                    79216  02420000
+IOPLIBTX EQU   X'40' .       INDIRECT TEXT LIBRARY               79216  02430000
+IOPTALIS EQU   X'20' .       TARGET ALIAS EXISTS                 79216  02440000
+IOPDALIS EQU   X'10' .       DISTRIBUTION ALIAS EXISTS           79216  02450000
+IOPDISTN DS    CL8 .         DLIB NAME                           79216  02460000
+IOPINDLB DS    CL8 .         LIBRARY FROM HEADER                 79216  02470000
+IOPALISL DS    CL8 .         ALIAS ENTRIES                       79216  02480000
+         ORG   ,                                                 79216  02490000
+         MEND  ,                                                 79216  02500000

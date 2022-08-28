@@ -1,0 +1,43 @@
+         MACRO                                                          00010000
+         VTOCHAR                                                        00020000
+         LCLC  &SECT                                                    00030000
+&SECT    SETC  '&SYSECT'                                                00040000
+CHARBIT  LA    R14,CHAROUT   START OF OUTPUT,AT END WILL BE LENGTH      00050000
+         LR    R15,R14       START ADDRESS - SETUP FOR SPMOVE           00060000
+         MVC   CHAROUT,BLANKS   CLEAR OUTPUT FIELD                      00070000
+         USING CHARMS,R1     MAP INPUT TABLE                            00080000
+         SR    R2,R2         CLEAR IC REGISTER                          00090000
+CHARLP   CLI   CHARL,255     END OF TABLE ?                             00100000
+         BNE   CHARTS        NO, CONTINUE                               00110000
+         SR    R14,R15       GET LENGTH OF OUTPUT STASHED               00120000
+         BPR   R9            AT LEAST ONE BYTE ?                        00130000
+         LA    R14,1         FORCE ONE                                  00140000
+         BR    R9            RETURN                                     00150000
+         SPACE                                                          00160000
+CHARTS   IC    R2,CHARL      GET LENGTH - 1 OF TEXT                     00170000
+         MVC   CHARN,CHAR    COPY TEST BYTE TO WORK BYTE                00180000
+         NC    CHARN,CHART   MASK OUT ALL BUT TESTED BITS               00190000
+        CLC   CHARN,CHART   IS THIS THE PATTERN ?                       00200000
+         BNE   CHARINC       NO, TRY NEXT ONE                           00210000
+         EX    R2,CHARMV     MOVE TEXT TO OUTPUT                        00220000
+         MVI   CHARX,255     PREPARE TO COMPLIMENT                      00230000
+         XC    CHARX,CHART   COMPLEMENT TEST PATTERN                    00240000
+         NC    CHAR,CHARX    MASK OUT BITS USED BY TEST                 00250000
+         LA    R14,1(R2,R14)    POINT TO NEXT O/P POSITION              00260000
+         SPACE                                                          00270000
+CHARINC  LA    R1,3(R1,R2)   POINT TO NEXT INPUT TABLE POSITION         00280000
+         B     CHARLP        TEST FOR END OR NEXT                       00290000
+         DROP  R1                                                       00300000
+         SPACE 2                                                        00310000
+CHARMS   DSECT                                                          00320000
+CHART    DS    X             TEST BIT PATTERN                           00330000
+CHARL    DS    X             LENGTH - 1 OF TEXT                         00340000
+CHARC    DS    C             CHARACTERS                                 00350000
+         SPACE                                                          00360000
+&SECT    CSECT                                                          00370000
+CHARMV   MVC   0(0,R14),2(R1)   MOVE TO OUTPUT                          00380000
+CHAR     DC    X'0'          BYTE TO BE ANALYZED                        00390000
+CHARN    DC    X'0'          TEST AREA                                  00400000
+CHARX    DC    X'0'          COMPLEMENT OF TEST BYTE                    00410000
+CHAROUT  DC    CL39' '       OUTPUT AREA                                00420000
+         MEND                                                           00430000

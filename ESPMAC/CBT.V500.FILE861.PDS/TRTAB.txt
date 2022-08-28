@@ -1,0 +1,304 @@
+         MACRO                                                          00010000
+&NM      TRTAB &FILL=C'.',&CODE=,&OPT=,&TYPE=                    90241  00020000
+         GBLC  &CRT                                                     00030000
+         LCLC  &N                                                       00040000
+         LCLA  &I,&J                                                    00050000
+         LCLB  &C60,&C70,&C78,&PN,&TN,&FOLD,&ERR,&UP,&LOW,&TRT   86244  00060000
+         LCLA  &LEN(30),&DISP(30),&ADD(30)                      GP08131 00070000
+.********************************************************************** 00080000
+.*                                                                    * 00090000
+.*  TRTAB PRODUCES DIFFERENT FLAVORS OF TRANSLATE, AND TRANSLATE AND  * 00100000
+.*  TEST TABLES.                                                      * 00110000
+.*                                                                    * 00120000
+.********************************************************************** 00130000
+.*                                                                    * 00140000
+.*  TYPE= EXPANDS A PREDEFINED CONVERSION: ATOE ETOA 7-BIT            * 00150000
+.*                                         ITOE ETOI 8-BIT            * 00160000
+.*                                         UPPER  LOWER               * 00170000
+.*                                                                    * 00180000
+.********************************************************************** 00190000
+.*                                                                    * 00200000
+.*  CODE= EXPANDS 3178 OR PRINT CONVERSION.                           * 00210000
+.*    DEFINED ARE 2260, 3270 (3178), PN, AND TN                       * 00220000
+.*                                                                    * 00230000
+.*    THE TABLE MAY BE QUALIFIED WITH OPT=                            * 00240000
+.*      OPT=3278  ADDS LEFT AND RIGHT BRACE, DEGREE, REVERSE SLASH    * 00250000
+.*      OPT=LOW   ADDS LOWER CASE TO PN AND 2260                      * 00260000
+.*      OPT=FOLD  ADDS LOWER CASE AS UPPER CASE                       * 00270000
+.*      OPT=UP    ADDS LOWER CASE AS UPPER CASE                       * 00280000
+.*      OPT=ERR   ADDS THE 2260 ERROR SYMBOL (X'7F')                  * 00290000
+.*                                                                    * 00300000
+.*    FILL=C'.' OR FILL=X'6A' SPECIFIES THE CHARACTER TO BE USED FOR  * 00310000
+.*      AND UNPRINTABLE.                                              * 00320000
+.*                                                                    * 00330000
+.********************************************************************** 00340000
+.*                                                                    * 00350000
+.*    FILL=X'FF' IN COMBINATION WITH ANY CODE= AND OPT=               * 00360000
+.*      CREATES A TRANSLATE AND TEST TABLE (VALID CHARACTERS ARE      * 00370000
+.*      ZERO; INVALID ARE THE FILL CHARACTER.                         * 00380000
+.*                                                                    * 00390000
+.********************************************************************** 00400000
+&DISP(1) SETA  75            .                                          00410000
+&LEN(1)  SETA  6             . TO &                                     00420000
+&DISP(2) SETA  91            $                                          00430000
+&LEN(2)  SETA  7             $ TO /                                     00440000
+&DISP(3) SETA  107           ,                                          00450000
+&LEN(3)  SETA  5             , TO ?                                     00460000
+&DISP(4) SETA  122           :                                          00470000
+&LEN(4)  SETA  5             : TO =                                     00480000
+&DISP(10) SETA 193           A-I                                        00490000
+&LEN(10) SETA  9             A                                          00500000
+&LEN(11) SETA  9             J                                          00510000
+&DISP(11) SETA 209           J-R                                        00520000
+&DISP(12) SETA 226           S-Z                                        00530000
+&LEN(12) SETA  8             S                                          00540000
+&DISP(13) SETA 240           0-9                                        00550000
+&LEN(13) SETA  10            0                                          00560000
+&TRT     SETB  ('&FILL' EQ 'X''FF''')  INVERSE TABLE                    00570000
+&N       SETC  '&NM'                                                    00580000
+         AIF   ('&N' NE '').OK                                          00590000
+&N       SETC  'TRTA'.'&SYSNDX'                                         00600000
+.OK      AIF   ('&TYPE' EQ '').PIZMEAL                           90241  00610000
+         AIF   ('&TYPE' NE 'ATOE').NOTATOE                       90241  00620000
+         SPACE 1                                                 90241  00630000
+*        TRANSLATE TABLES LIFTED FROM SVC 103 (PTF 77533 LEVEL)  90241  00640000
+*        0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F          91312  00650000
+&N DC X'00,01,02,03,37,2D,2E,2F,16,05,25,0B,0C,0D,0E,0F'  0X     90241  00660000
+   DC X'10,11,12,13,3C,3D,32,26,18,19,3F,27,1C,1D,1E,1F'  1X     90241  00670000
+   DC X'40,4F,7F,7B,5B,6C,50,7D,4D,5D,5C,4E,6B,60,4B,61'  2X     90241  00680000
+   DC X'F0,F1,F2,F3,F4,F5,F6,F7,F8,F9,7A,5E,4C,7E,6E,6F'  3X     90241  00690000
+   DC X'7C,C1,C2,C3,C4,C5,C6,C7,C8,C9,D1,D2,D3,D4,D5,D6'  4X     90241  00700000
+   DC X'D7,D8,D9,E2,E3,E4,E5,E6,E7,E8,E9,AD,E0,BD,5F,6D'  5X     90241  00710000
+   DC X'79,81,82,83,84,85,86,87,88,89,91,92,93,94,95,96'  6X     90241  00720000
+   DC X'97,98,99,A2,A3,A4,A5,A6,A7,A8,A9,C0,6A,D0,A1,07'  7X     90241  00730000
+         AIF   ('&OPT' EQ 'SHORT').MEND                          90241  00740000
+   DC X'3F,3F,3F,3F,3F,3F,3F,3F,3F,3F,3F,3F,3F,3F,3F,3F'  8X     90241  00750000
+   DC X'3F,3F,3F,3F,3F,3F,3F,3F,3F,3F,3F,3F,3F,3F,3F,3F'  9X     90241  00760000
+   DC X'3F,3F,3F,3F,3F,3F,3F,3F,3F,3F,3F,3F,3F,3F,3F,3F'  AX     90241  00770000
+   DC X'3F,3F,3F,3F,3F,3F,3F,3F,3F,3F,3F,3F,3F,3F,3F,3F'  BX     90241  00780000
+   DC X'3F,3F,3F,3F,3F,3F,3F,3F,3F,3F,3F,3F,3F,3F,3F,3F'  CX     90241  00790000
+   DC X'3F,3F,3F,3F,3F,3F,3F,3F,3F,3F,3F,3F,3F,3F,3F,3F'  DX     90241  00800000
+   DC X'3F,3F,3F,3F,3F,3F,3F,3F,3F,3F,3F,3F,3F,3F,3F,3F'  EX     90241  00810000
+   DC X'3F,3F,3F,3F,3F,3F,3F,3F,3F,3F,3F,3F,3F,3F,3F,3F'  FX     90241  00820000
+         MEXIT ,                                                 90241  00830000
+.NOTATOE AIF   ('&TYPE' NE 'ETOA').NOTETOA                       90241  00840000
+         SPACE 1                                                 90241  00850000
+*        TRANSLATE TABLES LIFTED FROM SVC 103 (PTF 77533 LEVEL)  90241  00860000
+*        0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F          91312  00870000
+&N DC X'00,01,02,03,1A,09,1A,7F,1A,1A,1A,0B,0C,0D,0E,0F'  0X     90241  00880000
+   DC X'10,11,12,13,1A,1A,08,1A,18,19,1A,1A,1C,1D,1E,1F'  1X     90241  00890000
+   DC X'1A,1A,1A,1A,1A,0A,17,1B,1A,1A,1A,1A,1A,05,06,07'  2X     90241  00900000
+   DC X'1A,1A,16,1A,1A,1A,1A,04,1A,1A,1A,1A,14,15,1A,1A'  3X     90241  00910000
+   DC X'20,1A,1A,1A,1A,1A,1A,1A,1A,1A,1A,2E,3C,28,2B,21'  4X     90241  00920000
+   DC X'26,1A,1A,1A,1A,1A,1A,1A,1A,1A,1A,24,2A,29,3B,5E'  5X     90241  00930000
+   DC X'2D,2F,1A,1A,1A,1A,1A,1A,1A,1A,7C,2C,25,5F,3E,3F'  6X     90241  00940000
+   DC X'1A,1A,1A,1A,1A,1A,1A,1A,1A,60,3A,23,40,27,3D,22'  7X     90241  00950000
+   DC X'1A,61,62,63,64,65,66,67,68,69,1A,1A,1A,1A,1A,1A'  8X     90241  00960000
+   DC X'1A,6A,6B,6C,6D,6E,6F,70,71,72,1A,1A,1A,1A,1A,1A'  9X     90241  00970000
+   DC X'1A,7E,73,74,75,76,77,78,79,7A,1A,1A,1A,1A,1A,1A'  AX     90241  00980000
+   DC X'1A,1A,1A,1A,1A,1A,1A,1A,1A,1A,1A,1A,1A,1A,1A,1A'  BX     90241  00990000
+   DC X'7B,41,42,43,44,45,46,47,48,49,1A,1A,1A,1A,1A,1A'  CX     90241  01000000
+   DC X'7D,4A,4B,4C,4D,4E,4F,50,51,52,1A,1A,1A,1A,1A,1A'  DX     90241  01010000
+   DC X'5C,1A,53,54,55,56,57,58,59,5A,1A,1A,1A,1A,1A,1A'  EX     90241  01020000
+   DC X'30,31,32,33,34,35,36,37,38,39,1A,1A,1A,1A,1A,1A'  FX     90241  01030000
+         MEXIT ,                                                 90241  01040000
+.NOTETOA AIF   ('&TYPE' NE 'ITOE').NOTITOE                       90241  01050000
+         SPACE 1                                                 90241  01060000
+*        TRANSLATE TABLES FROM APPENDIX E, GC26-4003-2           90241  01070000
+*        0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F          91312  01080000
+&N DC X'00,01,02,03,37,2D,2E,2F,16,05,25,0B,0C,0D,0E,0F'  0X     90241  01090000
+   DC X'10,11,12,13,3C,3D,32,26,18,19,3F,27,1C,1D,1E,1F'  1X     90241  01100000
+   DC X'40,4F,7F,7B,5B,6C,50,7D,4D,5D,5C,4E,6B,60,4B,61'  2X     90241  01110000
+   DC X'F0,F1,F2,F3,F4,F5,F6,F7,F8,F9,7A,5E,4C,7E,6E,6F'  3X     90241  01120000
+   DC X'7C,C1,C2,C3,C4,C5,C6,C7,C8,C9,D1,D2,D3,D4,D5,D6'  4X     90241  01130000
+   DC X'D7,D8,D9,E2,E3,E4,E5,E6,E7,E8,E9,4A,E0,5A,5F,6D'  5X     90241  01140000
+   DC X'79,81,82,83,84,85,86,87,88,89,91,92,93,94,95,96'  6X     90241  01150000
+   DC X'97,98,99,A2,A3,A4,A5,A6,A7,A8,A9,C0,6A,D0,A1,07'  7X     90241  01160000
+   DC X'20,21,22,23,24,15,06,17,28,29,2A,2B,2C,09,0A,1B'  8X     90241  01170000
+   DC X'30,31,1A,33,34,35,36,08,38,39,3A,3B,04,14,3E,E1'  9X     90241  01180000
+   DC X'41,42,43,44,45,46,47,48,49,51,52,53,54,55,56,57'  AX     90241  01190000
+   DC X'58,59,62,63,64,65,66,67,68,69,70,71,72,73,74,75'  BX     90241  01200000
+   DC X'76,77,78,80,8A,8B,8C,8D,8E,8F,90,9A,9B,9C,9D,9E'  CX     90241  01210000
+   DC X'9F,A0,AA,AB,AC,AD,AE,AF,B0,B1,B2,B3,B4,B5,B6,B7'  DX     90241  01220000
+   DC X'B8,B9,BA,BB,BC,BD,BE,BF,CA,CB,CC,CD,CE,CF,DA,DB'  EX     90241  01230000
+   DC X'DC,DD,DE,DF,EA,EB,EC,ED,EE,EF,FA,FB,FC,FD,FE,FF'  FX     90241  01240000
+         MEXIT ,                                                 90241  01250000
+.NOTITOE AIF   ('&TYPE' NE 'ETOI').NOTETOI                       90241  01260000
+         SPACE 1                                                 90241  01270000
+*        TRANSLATE TABLES FROM APPENDIX E, GC26-4003-2           90241  01280000
+*        0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F          91312  01290000
+&N DC X'00,01,02,03,9C,09,86,7F,97,8D,8E,0B,0C,0D,0E,0F'  0X     90241  01300000
+   DC X'10,11,12,13,9D,85,08,87,18,19,92,8F,1C,1D,1E,1F'  1X     90241  01310000
+   DC X'80,81,82,83,84,0A,17,1B,88,89,8A,8B,8C,05,06,07'  2X     90241  01320000
+   DC X'90,91,16,93,94,95,96,04,98,99,9A,9B,14,15,9E,1A'  3X     90241  01330000
+   DC X'20,A0,A1,A2,A3,A4,A5,A6,A7,A8,5B,2E,3C,28,2B,21'  4X     90241  01340000
+   DC X'26,A9,AA,AB,AC,AD,AE,AF,B0,B1,5D,24,2A,29,3B,5E'  5X     90241  01350000
+   DC X'2D,2F,B2,B3,B4,B5,B6,B7,B8,B9,7C,2C,25,5F,3E,3F'  6X     90241  01360000
+   DC X'BA,BB,BC,BD,BE,BF,C0,C1,C2,60,3A,23,40,27,3D,22'  7X     90241  01370000
+   DC X'C3,61,62,63,64,65,66,67,68,69,C4,C5,C6,C7,C8,C9'  8X     90241  01380000
+   DC X'CA,6A,6B,6C,6D,6E,6F,70,71,72,CB,CC,CD,CE,CF,D0'  9X     90241  01390000
+   DC X'D1,7E,73,74,75,76,77,78,79,7A,D2,D3,D4,D5,D6,D7'  AX     90241  01400000
+   DC X'D8,D9,DA,DB,DC,DD,DE,DF,E0,E1,E2,E3,E4,E5,E6,E7'  BX     90241  01410000
+   DC X'7B,41,42,43,44,45,46,47,48,49,E8,E9,EA,EB,EC,ED'  CX     90241  01420000
+   DC X'7D,4A,4B,4C,4D,4E,4F,50,51,52,EE,EF,F0,F1,F2,F3'  DX     90241  01430000
+   DC X'5C,9F,53,54,55,56,57,58,59,5A,F4,F5,F6,F7,F8,F9'  EX     90241  01440000
+   DC X'30,31,32,33,34,35,36,37,38,39,FA,FB,FC,FD,FE,FF'  FX     90241  01450000
+         MEXIT ,                                                 90241  01460000
+.NOTETOI AIF   ('&TYPE' NE 'UPPER').NOTUPP                      GP13007 01470000
+*        0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F         GP13007 01480000
+&N DC X'00,01,02,03,04,05,06,07,08,09,0A,0B,0C,0D,0E,0F'  0X    GP13007 01490000
+   DC X'10,11,12,13,14,15,16,17,18,19,1A,1B,1C,1D,1E,1F'  1X    GP13007 01500000
+   DC X'20,21,22,23,24,25,26,27,28,29,2A,2B,2C,2D,2E,2F'  2X    GP13007 01510000
+   DC X'30,31,32,33,34,35,36,37,38,39,3A,3B,3C,3D,3E,3F'  3X    GP13007 01520000
+   DC X'40,41,42,43,44,45,46,47,48,49,4A,4B,4C,4D,4E,4F'  4X    GP13007 01530000
+   DC X'50,51,52,53,54,55,56,57,58,59,5A,5B,5C,5D,5E,5F'  5X    GP13007 01540000
+   DC X'60,61,62,63,64,65,66,67,68,69,6A,6B,6C,6D,6E,6F'  6X    GP13007 01550000
+   DC X'70,71,72,73,74,75,76,77,78,79,7A,7B,7C,7D,7E,7F'  7X    GP13007 01560000
+   DC X'80,C1,C2,C3,C4,C5,C6,C7,C8,C9,8A,8B,8C,8D,8E,8F'  8X    GP13007 01570000
+   DC X'90,D1,D2,D3,D4,D5,D6,D7,D8,D9,9A,9B,9C,9D,9E,9F'  9X    GP13007 01580000
+   DC X'A0,E1,E2,E3,E4,E5,E6,E7,E8,A9,AA,AB,AC,AD,AE,AF'  AX    GP13007 01590000
+   DC X'B0,B1,B2,B3,B4,B5,B6,B7,B8,B9,BA,BB,BC,BD,BE,BF'  BX    GP13007 01600000
+   DC X'C0,C1,C2,C3,C4,C5,C6,C7,C8,C9,CA,CB,CC,CD,CE,CF'  CX    GP13007 01610000
+   DC X'D0,D1,D2,D3,D4,D5,D6,D7,D8,D9,DA,DB,DC,DD,DE,DF'  DX    GP13007 01620000
+   DC X'E0,E1,E2,E3,E4,E5,E6,E7,E8,E9,EA,EB,EC,ED,EE,EF'  EX    GP13007 01630000
+   DC X'F0,F1,F2,F3,F4,F5,F6,F7,F8,F9,FA,FB,FC,FD,FE,FF'  FX    GP13007 01640000
+.NOTUPP  AIF   ('&TYPE' NE 'LOWER').NOTCASE                     GP13007 01650000
+*        0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F         GP13007 01660000
+&N DC X'00,01,02,03,04,05,06,07,08,09,0A,0B,0C,0D,0E,0F'  0X    GP13007 01670000
+   DC X'10,11,12,13,14,15,16,17,18,19,1A,1B,1C,1D,1E,1F'  1X    GP13007 01680000
+   DC X'20,21,22,23,24,25,26,27,28,29,2A,2B,2C,2D,2E,2F'  2X    GP13007 01690000
+   DC X'30,31,32,33,34,35,36,37,38,39,3A,3B,3C,3D,3E,3F'  3X    GP13007 01700000
+   DC X'40,41,42,43,44,45,46,47,48,49,4A,4B,4C,4D,4E,4F'  4X    GP13007 01710000
+   DC X'50,51,52,53,54,55,56,57,58,59,5A,5B,5C,5D,5E,5F'  5X    GP13007 01720000
+   DC X'60,61,62,63,64,65,66,67,68,69,6A,6B,6C,6D,6E,6F'  6X    GP13007 01730000
+   DC X'70,71,72,73,74,75,76,77,78,79,7A,7B,7C,7D,7E,7F'  7X    GP13007 01740000
+   DC X'80,81,82,83,84,85,86,87,88,89,8A,8B,8C,8D,8E,8F'  8X    GP13007 01750000
+   DC X'90,91,92,93,94,95,96,97,98,99,9A,9B,9C,9D,9E,9F'  9X    GP13007 01760000
+   DC X'A0,A1,A2,A3,A4,A5,A6,A7,A8,A9,AA,AB,AC,AD,AE,AF'  AX    GP13007 01770000
+   DC X'B0,B1,B2,B3,B4,B5,B6,B7,B8,B9,BA,BB,BC,BD,BE,BF'  BX    GP13007 01780000
+   DC X'C0,81,82,83,84,85,86,87,88,89,CA,CB,CC,CD,CE,CF'  CX    GP13007 01790000
+   DC X'D0,91,92,93,94,95,96,97,98,99,DA,DB,DC,DD,DE,DF'  DX    GP13007 01800000
+   DC X'E0,A1,A2,A3,A4,A5,A6,A7,A8,E9,EA,EB,EC,ED,EE,EF'  EX    GP13007 01810000
+   DC X'F0,F1,F2,F3,F4,F5,F6,F7,F8,F9,FA,FB,FC,FD,FE,FF'  FX    GP13007 01820000
+.NOTCASE MNOTE 8,'INVALID TYPE=&TYPE'                           GP13007 01830000
+         MNOTE 8,'  ONLY ATOE, ETOA, ITOE, ETOI, UPPER, LOWER VALID'    01840000
+         MEXIT ,                                                 90241  01850000
+.PIZMEAL ANOP  ,                                                 90241  01860000
+&N       DC    256&FILL .      FILLER CODE                              01870000
+         ORG   &N+C' '                                                  01880000
+         AIF   (&TRT).BLKOK                                             01890000
+         DC    C' ' .        BLANK                                      01900000
+         AGO   .BLKCM                                                   01910000
+.BLKOK   DC    X'00'         BLANK                                      01920000
+.BLKCM   AIF   ('&CODE' NE '').GOTCODE                                  01930000
+&C60     SETB  ('&CRT' EQ '2260' OR '&CRT' EQ '2265')                   01940000
+&C70     SETB  ('&CRT' EQ '3270')                                       01950000
+.GOTCODE ANOP  ,                                                        01960000
+&C60     SETB  ('&CODE' EQ '2260' OR '&CODE' EQ '2265' OR &C60)         01970000
+&C70     SETB  ('&CODE' EQ '3270' OR &C70)                              01980000
+&PN      SETB  ('&CODE' EQ 'PN' OR '&CODE' EQ 'P11')            GP04040 01990000
+&TN      SETB  ('&CODE' EQ 'TN' OR '&CODE' EQ 'T11')            GP04040 02000000
+         AIF   (&C60 OR &C70 OR &PN OR &TN).OKCODE                      02010000
+         MNOTE 8,'CODE=''&CODE'' NOT SUPPORTED'                         02020000
+         MEXIT ,                                                        02030000
+.OKCODE  ANOP  ,                                                        02040000
+&I       SETA  N'&OPT                                                   02050000
+         AIF   (&I LT 1).NOPT                                           02060000
+&J       SETA  1                                                        02070000
+.OPTLOOP AIF   ('&OPT(&J)' EQ 'FOLD').FOLD                              02080000
+         AIF   ('&OPT(&J)' EQ 'SVC').SVC                                02090000
+         AIF   ('&OPT(&J)' EQ 'ERR').ERR                                02100000
+         AIF   ('&OPT(&J)' EQ 'UP').UPR                                 02110000
+         AIF   ('&OPT(&J)' EQ 'LOW').LOW                                02120000
+         AIF   ('&OPT(&J)' EQ '3278').SET78                      86244  02130000
+         AIF   ('&OPT(&J)' EQ '').OPTINC                                02140000
+.BADOPT  MNOTE 8,'OPT=''&OPT(&J)'' NOT SUPPORTED'                       02150000
+.OPTINC  AIF   (&J GE &I).NOPT                                          02160000
+&J       SETA  &J+1                                                     02170000
+         AGO   .OPTLOOP                                                 02180000
+.FOLD    AIF   (&UP).BADOPT                                             02190000
+&FOLD    SETB  1                                                 86244  02200000
+         AGO   .OPTINC                                                  02210000
+.SVC     ORG   &N+X'C0'                                                 02220000
+         AIF   (&TRT).SVCOK                                             02230000
+         DC    C'+' .        DISPLAY X'C0' IN SVC NAME AS PLUS SIGN     02240000
+         AGO   .SVCCM                                                   02250000
+.SVCOK   DC    X'00'         BLANK                                      02260000
+.SVCCM   AGO   .OPTINC                                                  02270000
+.ERR     ANOP  ,                                                        02280000
+&ERR     SETB  (&C60)                                                   02290000
+         AGO   .OPTINC                                                  02300000
+.UPR     AIF   (&FOLD OR &LOW).BADOPT                                   02310000
+&UP      SETB  1                                                        02320000
+         AGO   .OPTINC                                                  02330000
+.LOW     AIF   (&UP).BADOPT                                             02340000
+&LOW     SETB  1                                                        02350000
+         AGO   .OPTINC                                                  02360000
+.SET78   AIF   (NOT &C70 AND NOT &TN).BADOPT                    GP04040 02370000
+&C78     SETB  1                                                 86244  02380000
+         AGO   .OPTINC                                           86244  02390000
+.NOPT    ANOP  ,                                                        02400000
+&LOW     SETB  (&LOW OR &FOLD OR &TN OR &C70)                           02410000
+&ERR     SETB  (&ERR OR &TN OR &PN OR &C70)                             02420000
+         AIF   (&C60 OR &PN).NOCENT                                     02430000
+&DISP(1) SETA  74            ADD CENT SIGN                              02440000
+&LEN(1)  SETA  7                                                        02450000
+&DISP(2) SETA  90            ADD EXC. MARK                              02460000
+&LEN(2)  SETA  8                                                        02470000
+         AIF   (NOT &C70 AND NOT &TN).NOCENT                    GP08145 02480000
+&DISP(3) SETA  106           ADD SPLIT BAR                       86244  02490000
+&LEN(3)  SETA  6                                                 86244  02500000
+         AIF   (NOT &C78 AND NOT &TN).NOCENT                    GP08145 02510000
+&DISP(10) SETA 192           LEFT BRACE                          86244  02520000
+&LEN(10)  SETA 10                                                86244  02530000
+&DISP(11) SETA 208           RIGHT BRACE                         86244  02540000
+&LEN(11)  SETA 10                                                86244  02550000
+&DISP(18) SETA 121           REVERSE QUOTE                       86244  02560000
+&LEN(18)  SETA 1                                                 86244  02570000
+&DISP(19) SETA 161           TILDE                               86244  02580000
+&LEN(19)  SETA 1                                                 86244  02590000
+&DISP(20) SETA 224           REVERSE SLASH                       86244  02600000
+&LEN(20)  SETA 1                                                 86244  02610000
+&DISP(21) SETA 186           LEFT/RIGHT BRACKET                 GP08114 02620000
+&LEN(21)  SETA 2                                                 86244  02630000
+.NOCENT  AIF   (&C60 AND NOT &ERR).NOERR                                02640000
+&LEN(4)  SETA  6             ADD QUOTE                                  02650000
+.NOERR   AIF   (&UP OR NOT &LOW).NOLC                                   02660000
+&DISP(5) SETA  129                                                      02670000
+&LEN(5)  SETA  9                                                        02680000
+&DISP(6) SETA  145                                                      02690000
+&LEN(6)  SETA  9                                                        02700000
+&DISP(7) SETA  162                                                      02710000
+&LEN(7)  SETA  8                                                        02720000
+         AIF   (NOT &TN OR &FOLD).NONUM                         GP13007 02730000
+&DISP(8) SETA  176                                                      02740000
+&LEN(8)  SETA  10                                                       02750000
+         AIF   (&TN).NONUM                                              02760000
+&ADD(8)  SETA  64                                                       02770000
+.NONUM   AIF   (NOT &FOLD).NOLC                                  86244  02780000
+&ADD(5)  SETA  64                                                       02790000
+&ADD(6)  SETA  64                                                       02800000
+&ADD(7)  SETA  64                                                       02810000
+.NOLC    AIF   (NOT &TN).NOGRA                                          02820000
+&LEN(13) SETA  11            ADD PLOTTING BAR TO 0-9            GP08145 02830000
+&DISP(14) SETA 139           TN GRAPHICS                                02840000
+&LEN(14) SETA  5                                                        02850000
+&DISP(15) SETA 155                                                      02860000
+&LEN(15) SETA  7                                                        02870000
+&DISP(16) SETA 171                                                      02880000
+&LEN(16) SETA  6                                                GP08145 02890000
+&DISP(17) SETA 186           LEFT BRACKET                       GP08114 02900000
+&LEN(17) SETA  6                                                        02910000
+.NOGRA   ANOP  ,                                                        02920000
+&I       SETA  1                                                        02930000
+.NEXT    AIF   (&LEN(&I) LT 1).DCL                                      02940000
+         ORG   &N+&DISP(&I)                                             02950000
+         AIF   (&TRT).LSTOK                                             02960000
+         DC    &LEN(&I)AL1(*-&N+&ADD(&I))                               02970000
+         AGO   .DCL                                                     02980000
+.LSTOK   DC    &LEN(&I)X'00'                                            02990000
+.DCL     AIF   (&I GE 20).ORG                                    86244  03000000
+&I       SETA  &I+1                                                     03010000
+         AGO   .NEXT                                                    03020000
+.ORG     ORG   &N+256 ,                                                 03030000
+.MEND    MEND  ,                                                 90241  03040000

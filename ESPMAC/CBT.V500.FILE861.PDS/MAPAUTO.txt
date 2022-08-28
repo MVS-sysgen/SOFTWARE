@@ -1,0 +1,47 @@
+         MACRO ,                                                        00010000
+&NM      MAPAUTO &PFX=AUR,&SECT=D                                       00020000
+         LCLC  &P                                                       00030000
+&P       SETC  '&PFX'                                                   00040000
+         AIF   ('&SECT' EQ 'D').USED                                    00050000
+         AIF   ('&NM' NE '').USENM                                      00060000
+MAPAUTO  DS    0A                                                       00070000
+         AGO   .COM                                                     00080000
+.USENM   ANOP  ,                                                        00090000
+&NM      DS    0A                                                       00100000
+         AGO   .COM                                                     00110000
+.USED    AIF   ('&NM' NE '').USECT                                      00120000
+MAPAUTO  DSECT ,                                                        00130000
+         AGO   .COM                                                     00140000
+.USECT   ANOP  ,                                                        00150000
+&NM      DSECT ,                                                        00160000
+.COM     ANOP  ,                                                        00170000
+.*   THIS IS THE DEFINITION ENTRY FOR AUTOMATIC COMMANDS                00180000
+.*   AN UNSOLICITED ATTENTION OF AN UNALLOCATED UCB, PREVIOUSLY         00190000
+.*   DEFINED HERE, RESULTS IN ISSUING THE MATCHING COMMAND.             00200000
+.*     NORMALLY USED TO ISSUE A START COMMAND FOR THE DEVICE,           00210000
+.*   OR TO ISSUE A VARY COMMAND.                                        00220000
+.*     A SEMI-COLON MAY BE USED TO ISSUE MULTIPLE COMMANDS FROM         00230000
+.*   ONE LINE                                                           00240000
+.*             FULL DETAILS IN THE AUTORDR MODULE                       00250000
+.*                                                                      00260000
+&P.LINK  DC    A(0)          NEXT ENTRY IN CHAIN                        00270000
+&P.UCB   DC    A(0)          UCB ADDRESS OF DEVICE                      00280000
+&P.ID    DC    CL4' '        DEVICE NAME, LEFT JUSTIFIED                00290000
+.*                                                                      00300000
+.*    COMPLETE IQE                                                      00310000
+&P.IQE   DC    A(0)   1/5    IQE LINK                                   00320000
+&P.IQPRM DC    A(0)   2/5    IQE PARM                                   00330000
+&P.IQIRB DC    A(0)   3/5    IQE'S IRB ADDRESS                          00340000
+&P.IQTCB DC    A(0)   4/5    IQE'S TCB ADDRESS                          00350000
+         DC    3A(0)  5/5      DCB, OUTLIM, ETC ?                       00360000
+.*                                                                      00370000
+&P.ATI   DC    X'00'         UCB'S ORIGINAL ATTENTION INDEX             00380000
+.*                                                                      00390000
+&P.FLAGS DC    X'00'         FLAGS                                      00400000
+&P.PEND  EQU   X'80'           START PENDING                            00410000
+&P.PIQE  EQU   X'40'           IQE ISSUED                               00420000
+.*                                                                      00430000
+&P.CMDLN DC    X'00'         LENGTH OF COMMAND BUFFER                   00440000
+&P.CMD   DC    CL64' '       COMMAND(S)                                 00450000
+&P.SIZE  EQU   *-&P.LINK                                                00460000
+         MEND  ,                                                        00470000

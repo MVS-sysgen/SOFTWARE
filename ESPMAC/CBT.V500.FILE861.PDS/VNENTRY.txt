@@ -1,0 +1,15 @@
+         MACRO                                                          00010000
+&NM      VNENTRY &LIST       ENTRY POINT FOR XCTLS                      00020000
+         LCLA  &I,&J                                                    00030000
+&J       SETA  N'&SYSLIST                                               00040000
+&NM      ONSPIE BUG99,X'7F'  TRAP PROGRAM CHECK INTERRUPTS              00050000
+         MVI   SQSPICA+5,X'FF'  REALLY TRAP ALL                         00060000
+&NM      LH    R15,BROFF                                                00070000
+         LH    R15,VNENTRY(R15)                                         00080000
+         B     0(R15,R12)    BRANCH                                     00090000
+VNENTRY  EQU   *                                                        00100000
+.LOOP    AIF   (&I GE &J).MEND                                          00110000
+&I       SETA  &I+1                                                     00120000
+         DC    AL2(L&SYSLIST(&I)-&SYSECT)                               00130000
+         AGO   .LOOP                                                    00140000
+.MEND    MEND  ,                                                        00150000

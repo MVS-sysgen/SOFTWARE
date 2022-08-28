@@ -1,0 +1,16 @@
+         MACRO ,                                                        00010000
+&NM      SETAM &AM           SET AMODE PER PARAMETER                    00020000
+         GBLC  &MACPLAB                                                 00030000
+  AIF   ('&AM' EQ '31' OR '&AM' EQ 'AM31' OR '&AM' EQ 'AMODE31').AM31   00040000
+  AIF   ('&AM' EQ '24' OR '&AM' EQ 'AM24' OR '&AM' EQ 'AMODE24').AM24   00050000
+&MACPLAB SETC  '&NM'                                                    00060000
+         AIF   ('&AM' EQ '' OR '&AM' EQ 'ANY').LBL                      00070000
+         MNOTE 4,'SETAM: INVALID MODE &AM'                              00080000
+.LBL     MACPARM MODE=LBL                                               00090000
+         MEXIT ,                                                        00100000
+.AM31    ANOP  ,                                                        00110000
+ &NM     AM31  WORK=R15                                                 00120000
+         MEXIT ,                                                        00130000
+.AM24    ANOP  ,                                                        00140000
+ &NM     AM24  WORK=R15                                                 00150000
+         MEND  ,                                                        00160000

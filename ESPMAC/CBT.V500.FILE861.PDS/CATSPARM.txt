@@ -1,0 +1,58 @@
+         MACRO ,                                                        00010000
+&NM      CATSPARM &PFX=CSP,&DSECT=YES                                   00020001
+         AIF   ('&DSECT' NE 'YES').ALTSECT                              00030004
+&PFX.DSECT DSECT ,                                                      00040000
+         AGO   .NODSECT ,                                               00050004
+.ALTSECT ANOP  ,                                                        00060004
+&PFX.DSECT  DS 0D            PLANT A LABEL                              00070004
+.NODSECT AIF   ('&NM' EQ '').NOLABEL                                    00080003
+&NM      DS    0F                                                       00090001
+.NOLABEL AIF   ('&NM' EQ '&PFX'.'PARM').NOLPARM                         00100009
+&PFX.PARM   DS 0F            DEFINE START OF PARM                       00110009
+.NOLPARM ANOP  ,                                                        00120009
+&PFX.@WORK  DC A(0)          ADDRESS OF DYNAMIC WORK AREA               00130000
+&PFX.@SCAT  DC A(0)          ADDRESS OF LOADED SUBCAT ROUTINE           00140020
+&PFX.@SCMP  DC A(0)          ADDRESS OF LOADED SUBCOMP ROUTINE          00150020
+&PFX.#SP    DC AL1(0)        WORK AREA SUBPOOL                          00160000
+&PFX.#SPL   DC AL3(0)        WORK AREA SIZE GOTTEN                      00170000
+&PFX.#LEN   DC H'0'          ZERO OR LENGTH OF REQUEST NAME             00180000
+&PFX.$FLGS  DC X'00'         PROCESSING FLAGS                           00190000
+&PFX.$FGCP  EQU X'80'          APPLY COMPARE MASK                       00200010
+&PFX.$FGUC  EQU X'40'          USER SUPPLIED CATALOG NAME (IN ...RCAT)  00210017
+&PFX.$FG1C  EQU X'20'          LIMIT TO ONE CATALOG                     00220017
+&PFX.$FGMC  EQU X'10'          CALLER HAS ALTERED MASK                  00230018
+&PFX.$FULL  EQU X'01'          RETURN ERROR INFORMATION, CATALOGS,...   00240011
+&PFX.$REQ   DC X'00'         REQUEST (0-CLOSE; 1-LOOKUP; 2-INITLOOP*    00250000
+*                              3-NEXT ENTRY)                            00260002
+&PFX.$RFX   EQU X'00'          CLOSE AND FREEMAIN                       00270002
+&PFX.$RF1   EQU X'01'          SINGLE DSN LOOKUP                        00280002
+&PFX.$RFI   EQU X'02'          INITIATE NULTIPLE LOOKUP                 00290002
+&PFX.$RFN   EQU X'03'          GET NEXT ENTRY                           00300002
+.*                                                                      00310002
+&PFX.@REQ   DC A(0)          LOOK/INIT: ITEM ADDRESS                    00320007
+&PFX.RCOD   DC F'0'          RETURN CODE                                00330006
+&PFX.REAS   DC F'0'          REASON CODE                                00340019
+&PFX.@RAW   DC A(0)          ADDRESS OF THE RAW DATA            GP03042 00350016
+&PFX.#RAW   DC A(0)          LENGTH OF THE RAW DATA             GP03042 00360017
+&PFX.MASK   DC CL44' '       DSN MASK FOR LOOP REQUEST                  00370018
+&PFX.MVOL   DC CL6' '        VOL MASK FOR LOOP REQUEST          GP03043 00380018
+&PFX.RCAT   DC CL44' '       CATALOG FOUND IN                           00390007
+&PFX.RTYP   DC CL01' '  1/2  RETURNED ENTRY TYPE CODE           GP03042 00400013
+&PFX.RTYN   DC CL07' '  2/2  RETURNED ENTRY TYPE NAME/ABBREV    GP03042 00410013
+&PFX.RDSN   DC CL44' '       RETURNED DSNAME                            00420000
+&PFX.#VOL   DC X'0'          RETURNED NO. OF VOLUMES                    00430000
+&PFX.RDTYS  DC 0XL(5*4)'0'   RETURNED DEVICE TYPE(S)                    00440014
+&PFX.RDTY   DC 5XL4'0'         RETURNED DEVICE TYPE(S)                  00450014
+&PFX.RVOLS  DC 0CL(5*6)' '   RETURNED VOLUME SERIAL(S)                  00460014
+&PFX.RVOL   DC 5CL6' '         RETURNED VOLUME SERIAL(S)                00470014
+&PFX.RDAC   DC CL08' '       DATA CLASS                                 00480000
+&PFX.RMGC   DC CL08' '       MANAGEMENT CLASS                           00490000
+&PFX.RSTC   DC CL08' '       STORAGE CLASS                              00500000
+&PFX.RGRP   DC CL08' '       SMS GROUP                                  00510000
+&PFX.ASTYP  DC CL(2*1)' '    ASSOCIATED TYPES                           00520015
+&PFX.ASSOC  DC 0CL(2*44)' '  ASSOCIATED NAMES                           00530014
+&PFX.ASSO1  DC CL44' '         FIRST NAME (DATA FOR CLUSTER)            00540012
+&PFX.ASSO2  DC CL44' '         SECOND NAME (INDEX FOR CLUSTER)          00550012
+&PFX.SIZE  EQU  *-&PFX.PARM   AREA SIZE                                 00560009
+&PFX.XCLR  EQU  &PFX.#LEN,*-&PFX.#LEN,X'00'  AREA TO CLEAR              00570022
+         MEND  ,                                                        00580000

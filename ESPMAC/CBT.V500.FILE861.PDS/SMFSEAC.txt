@@ -1,0 +1,85 @@
+         MACRO ,                                                        00010000
+&NM      SMFSEAC &P=SEAC                                ADDED ON 85270  00020000
+.*       THIS MACRO DEFINES THE RECORDS WRITTEN BY THE NCR/COMTEN       00030000
+.*       SEAC (STATISTICS AND EXTENDED ACCESS CONTROL) PROGRAMS.        00040000
+.*                                                                      00050000
+         AIF   ('&NM' EQ '').NONAME                                     00060000
+&NM      DS    0F            SEAC SMF RECORD                            00070000
+.NONAME  ANOP  ,                                                        00080000
+&P.RDW   DC    Y(&P.END-*,0)   RECORD DESCRIPTOR                        00090000
+&P.SYIN  DC    X'02'         SYSTEM ID (VS)                             00100000
+&P.TYPE  DC    AL1(&P.SMF#)  RECORD TYPE                                00110000
+&P.SMF#  EQU   X'C9'         DEFAULT RECORD TYPE 201                    00120000
+&P.TIME  DC    XL4'0'        TIME RECORDED                              00130000
+&P.DATE  DC    PL4'0'        DATE RECORDED                              00140000
+&P.SID   DC    CL4' '        SYSTEM/MODEL ID                            00150000
+&P.IDAT  DC    PL4'0'        DATE RECORD INITIALIZED                    00160000
+&P.ITIM  DC    XL4'0'        TIME RECORD INITIALIZED (1/1000 SECS)      00170000
+&P.TDAT  DC    PL4'0'        DATE RECORD CLOSED                         00180000
+&P.TTIM  DC    XL4'0'        TIME RECORD CLOSED      (1/1000 SECS)      00190000
+&P.VERS  DC    X'0'          SEAC VERSION                               00200000
+&P.RTYP  DC    X'00'         RECORD TYPE                                00210000
+&P.RTOK  EQU   0               NORMAL RECORD                            00220000
+&P.RTTR  EQU   1               TIME-RELEASED RECORD                     00230000
+&P.RTBU  EQU   2               BUSY RECORD                              00240000
+&P.RTSR  EQU   3               SECURITY RECORD                          00250000
+&P.HCH   DC    X'00'         HOST INTERFACE NUMBER                      00260000
+&P.HSCH  DC    X'00'         HOST SUBCHANNEL NUMBER                     00270000
+&P.EMU   DC    X'00'         CONTROLLING EMULATOR ID                    00280000
+&P.CMF   DC    X'00'         MIM FUNCTION # FOR ABOVE                   00290000
+&P.TLN   DC    XL2'0'        # OF PHYS LINE ON TERMINAL'S NODE          00300000
+         DC    FL4'0'          RESERVED                          85273  00310000
+         DC    FL4'0'          RESERVED                          85273  00320000
+&P.WTCT  DC    XL4'0'        # OF WRITE COMMANDS FROM HOST              00330000
+&P.RDCT  DC    XL4'0'        # OF READ/INHIBIT COMMANDS FROM HOST       00340000
+&P.ACFG  DC    X'00'         ACCESS CONTROL FLAG (FOR SEC.RCD)          00350000
+&P.SATT  DC    X'00'         # OF INVALID PASSWORDS ENTERED             00360000
+         DC    Y(0)            SPARE                             85273  00370000
+         DC    FL4'0'          SPARE                             85273  00380000
+&P.HCC   DC    XL4'0'        # DATA CHARACTERS SENT BY HOST             00390000
+&P.TCC   DC    XL4'0'        # DATA CHARACTERS SENT TO HOST             00400000
+         DC    FL4'0'          SPARE                             85273  00410000
+         DC    FL4'0'          SPARE                             85273  00420000
+         DC    FL4'0'          SPARE                             85273  00430000
+         DC    FL4'0'          SPARE                             85273  00440000
+         DC    FL4'0'          SPARE                             85273  00450000
+         DC    FL4'0'          SPARE                             85273  00460000
+&P.HSIT  DC    CL3' '        SENDING NODE'S NAME (FROM CMT GEN)         00470000
+         DC    C' '            SPARE                             85273  00480000
+&P.TSIT  DC    CL3' '        TERMINAL'S NODE'S NAME                     00490000
+         DC    C' '            SPARE                             85273  00500000
+&P.WRU   DC    CL8' '        WRU ANSWERBACK CHARACTERS                  00510000
+&P.TILS  DC    CL8' '        TILS SWITCHING CHARACTERS USED             00520000
+&P.LSET  DC    CL8' '        LINESET (FROM EXTEN= MACRO)                00530000
+&P.PASS  DS    0CL8' '       LAST INVALID PASSWORD                      00540000
+&P.USID  DC    CL8' '        USER                                       00550000
+&P.END   EQU   *               END OF LONGEST RECORD                    00560000
+.*                                                                      00570000
+.*       LOST DATA RECORD                                               00580000
+.*                                                                      00590000
+&P.RTLD  EQU   X'0F'           LOST DATA RECORD                         00600000
+         ORG   &P.HCH                                                   00610000
+&P.LDTY  DC    X'00'         REASON CODE                                00620000
+&P.LRNI  EQU   X'01'           SEACSMF NOT INITIALIZED (BAD TIME)       00630000
+&P.LRBS  EQU   X'02'           BUFFER SLOW-DOWN                         00640000
+&P.LRFI  EQU   X'03'           SEACSMF FAILD AFTER INITIALIZATION       00650000
+         DS    X                                                        00660000
+         DS    FL4                                                      00670000
+&P.SMFD  DC    PL4'0'        DATE FAILED                                00680000
+&P.SMFT  DC    XL4'0'        TIME FAILED                                00690000
+&P.USEK  DC    Y(0)          # OF LOST DATA USERS                       00700000
+&P.LOGK  DC    Y(0)          # OF LOST DATA LOGONS                      00710000
+&P.BUSK  DC    Y(0)          # LOST BUSY RECORDS                        00720000
+&P.UAAK  DC    XL2'0'        # LOST SECURITY RECORDS                    00730000
+         DS    2FL4                                                     00740000
+&P.LDBU  DC    Y(0)          # BUFFERS USED BY SEAC                     00750000
+&P.LDBM  DC    Y(0)          MAXIMUM BUFFERS GIVEN TO SEAC              00760000
+&P.LDBT  DC    Y(0)          BUFFER DEPLETION LEVEL                     00770000
+&P.LDBS  DC    Y(0)          BUFFER SLOWDOWN LEVEL                      00780000
+&P.LDRU  DC    Y(0)          ACTIVE SEAC RECORDS USED                   00790000
+&P.LDRM  DC    Y(0)          MAXIMUM SEAC RECORDS USED                  00800000
+&P.LDQU  DC    Y(0)          ACTIVE TRANSMIT QUEUE COUNT                00810000
+&P.LDQM  DC    Y(0)          MAXIMUM TRANSMIT QUEUE COUNT               00820000
+&P.LDSM  DC    FL4'0'        MAXIMUM SYSTEM SEAC RECORDS                00830000
+         ORG   &P.END        ENSURE PROPER LENGTH                       00840000
+         MEND  ,                                                        00850000

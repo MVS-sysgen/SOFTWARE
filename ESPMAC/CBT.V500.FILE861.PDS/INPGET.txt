@@ -1,0 +1,42 @@
+         MACRO                                                          00010000
+&NM      INPGET &IMAGE,&DEV=,&FILL=                      ADDED ON 81194 00020000
+         LCLA  &N                                               GP03034 00030001
+         LCLC  &L                                               GP03034 00040000
+&NM      INPCOM 0,0,3,,0,DEV=&DEV                                       00050000
+.*                                                              GP03034 00060000
+.*--------------------------------------------------------------------* 00070000
+.*                                                                    * 00080000
+.*  WHEN A POSITIONAL OPERNAD IS SPECIFIED, IT INDICATES MOVE MODE.   * 00090000
+.*  INPGET X     EXPANDS  MVC X{L'X},0(R1)                            * 00100000
+.*  INPGET (X,L) EXPANDS  MVC X{L},0(R1)                              * 00110000
+.*    NOTE THAT LENGTH OF X MUST BE LESS THAN OR EQUAL TO THE         * 00120000
+.*    WIDTH= PARAMETER ON THE CORRESPONDING INPWORK MACRO             * 00130000
+.*                                                                    * 00140000
+.*  WHEN FILL= IS SPECIFIED, A LONGER EXPANSION USING MVCL ALLOWS     * 00150000
+.*  DISPARATE LENGTHS                                                 * 00160000
+.*                                                                    * 00170000
+.*--------------------------------------------------------------------* 00180000
+&N       SETA  N'&IMAGE                                         GP03034 00190001
+         AIF   (&N LT 1).MEND                                   GP03034 00200001
+         AIF   (T'&FILL NE 'O').FILL                            GP03034 00210001
+         AIF   (&N EQ 1).DEFLEN                                 GP03034 00220001
+         MVC   &IMAGE(1)(&IMAGE(2)),0(R1)                       GP03034 00230000
+         MEXIT ,                                                GP03034 00240000
+.DEFLEN  MVC   &IMAGE(1),0(R1)                                  GP03034 00250000
+         MEXIT ,                                                GP03034 00260000
+.FILL    SAR   R0,R15        PRESERVE RETURN CODE               GP03034 00270000
+         LR    R14,R1        SET SOURCE RECORD ADDRESS          GP03034 00280000
+         LR    R15,R0        SET SOURCE LENGTH                  GP03034 00290000
+         AIF   (&N EQ 1).DEFILL                                 GP03034 00300001
+         MACPARM R0,&IMAGE(1)  LOAD ADDRESS                     GP03034 00310000
+         MACPARM R1,&IMAGE(2)  LOAD LENGTH                      GP03034 00320000
+         AGO   .FILLCOM                                         GP03034 00330000
+.DEFILL  MACPARM R0,&IMAGE     LOAD RECORD ADDRESS              GP03034 00340000
+&L       SETC  'L'''                                            GP03034 00350000
+         MACPARM R1,&L&IMAGE   LOAD LENGTH                      GP03034 00360000
+.FILLCOM AIF   ('&FILL' EQ '0' OR '&FILL' EQ 'X''0'''                  *00370000
+               OR '&FILL' EQ 'X''00''').FILLZER                 GP03034 00380000
+         ICM   R15,8,=AL1(&FILL)  INSERT FILL CHARACTER         GP03034 00390000
+.FILLZER MVCL  R0,R14        MOVE INPUT RECORD                  GP03034 00400000
+         EAR   R15,R0        RESTORE RETURN CODE                GP03034 00410000
+.MEND    MEND  ,                                                GP03034 00420000

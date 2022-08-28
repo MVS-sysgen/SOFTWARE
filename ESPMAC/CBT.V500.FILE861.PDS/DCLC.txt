@@ -1,0 +1,141 @@
+         MACRO                                                          00010000
+&NAME    DCLC  &AA,&DUMMY1,&DUMMY2,&CAPWORD=,&CAPLETR=,&PRINT=          00020000
+         GBLB  &DCLCLST      IF ON, PRINT COMMENTS SHOWING FLAGS        00030000
+         LCLA  &LENGTH,&AIN,&AOUT,&K,&USERLNG,&QUOTE1                   00040000
+         LCLB  &CW           IF ON , PROCESSING A CAPITAL WORD          00050000
+         LCLC  &CAPL,&CAPW,&CIN,&COUT,&DUPLC,&LNC,&T                    00060000
+         LCLC  &P(15),&Q(120)                                           00070000
+         ACTR  30*K'&AA+3    30 TIMES NO. OF CHARACTERS IN OPERAND      00080000
+.*360D-CM-000  DCLC          DEFINE-CONSTANT-LOWER-CASE    V 01/08/69 * 00090000
+.* BY  CHUCK MEYER, IBM, N.Y.PUBLISHING, 555 MADISON, NYC, 10022, USA * 00100000
+&DCLCLST SETB  ((&DCLCLST AND '&PRINT' NE 'OFF')  OR  '&PRINT' EQ 'ON') 00110000
+.*                                                                      00120000
+         AIF   (K'&AA LT 3).ERROR1                                      00130000
+         AIF   ('&AA'(K'&AA,1)  EQ  '''').OKPARAM                       00140000
+.ERROR1  AIF   ('&PRINT'  EQ  'ON'  OR  '&PRINT'  EQ  'OFF').MEND       00150000
+         MNOTE 4,'INVALID OR MISSING OPERAND.  DATA IGNORED   '         00160000
+         AIF   ('&NAME'  EQ  '').MEND                                   00170000
+&NAME    EQU   *             BUT AT LEAST YOUR -NAME- WILL BE DEFINED.  00180000
+         AGO   .MEND                                                    00190000
+.*                                                                      00200000
+.OKPARAM ANOP                                                           00210000
+.*   DETERMINE CAP-WORD,  BYTE WHICH WILL -FLAG- START OF CAPITAL WORD. 00220000
+&CAPW    SETC  '/'     SLASH     *STD-VALU*                             00230000
+         AIF   (K'&CAPWORD NE  1  AND  K'&CAPWORD  NE  3).OKCAPW        00240000
+&CAPW    SETC  '&CAPWORD'(1,1)    PICK UP FIRST POSITION                00250000
+         AIF   (K'&CAPWORD  NE  3).OKCAPW                               00260000
+&CAPW    SETC  '&CAPWORD'(2,1)   PICK UP SECOND POSITION                00270000
+.OKCAPW  ANOP                                                           00280000
+.*                                                                      00290000
+.*   DETERMINE CAP-LETTER,  BYTE TO -FLAG- NEXT LETTER AS A CAPITAL     00300000
+&CAPL    SETC  '<'   LESS-THAN SIGN    *STD-VALU*                       00310000
+         AIF   (K'&CAPLETR  NE  1  AND  K'&CAPLETR  NE  3).OKCAPL       00320000
+&CAPL    SETC  '&CAPLETR'(1,1)   PICK UP FIRST POSITION                 00330000
+         AIF   (K'&CAPLETR  NE  3).OKCAPL                               00340000
+&CAPL    SETC  '&CAPLETR'(2,1)    PICK UP SECOND POSITION               00350000
+.OKCAPL  ANOP                                                           00360000
+.*                                                                      00370000
+         AIF   (NOT  &DCLCLST).NONOTES    PRINT NOTES, IF REQUESTED     00380000
+         MNOTE *,'CAP-WORD   CHARACTER IS ''&CAPW'' .'                  00390000
+         MNOTE *,'CAP-LETTER CHARACTER IS ''&CAPL'' .'                  00400000
+.NONOTES ANOP                                                           00410000
+.*                                                                      00420000
+.QTLOOP  ANOP  ,   SCAN LEFT-TO-RIGHT FOR FIRST QUOTE                   00430000
+&QUOTE1  SETA  &QUOTE1+1     BUMP TO NEXT POSITION                      00440000
+         AIF   ('&AA'(&QUOTE1,1)  NE  '''').QTLOOP                      00450000
+.*  &QUOTE1  NOW  POINTS  TO  LEADING  QUOTE  IN  CONSTANT              00460000
+.*   CHECK FOR USER-SUPPLIED DUPLICATION-FACTOR                         00470000
+         AIF   ('&AA'(1,1) LT '0').NODUPL                               00480000
+.DUPLOOP AIF   ('&AA'(&AIN+1,1)  LT  '0').DUPEND                        00490000
+&AIN     SETA  &AIN+1                                                   00500000
+         AIF   (&AIN  LT  8).DUPLOOP                                    00510000
+.DUPEND  ANOP                                                           00520000
+&DUPLC   SETC  '&AA'(1,&AIN)   PICK UP USERS DUPLICATION-FACTOR         00530000
+.NODUPL  ANOP  ,   &AIN POINTS TO LAST DIGIT IN DUPL.FACTOR OR ZERO     00540000
+.*                                                                      00550000
+.*   CHECK FOR USER-SUPPLIED LENGTH ASSIGNMENT                          00560000
+.LNGLOOP ANOP  ,       LOOP TO FIND BEGINNING OF LENGTH FIELD           00570000
+&AIN     SETA  &AIN+1                                                   00580000
+         AIF   ('&AA'(&AIN,1)  EQ  '''').NOLNGTH                        00590000
+         AIF   ('&AA'(&AIN,1)  LT  '0'  AND  &AIN  LT  &QUOTE1).LNGLOOP 00600000
+.*  &AIN NOW POINTS TO FIRST DIGIT IN LENGTH ATTRIBUTE.                 00610000
+&LNC     SETC  '&AA'(&AIN,&QUOTE1-&AIN)       USERS-LENGTH IN CHARS     00620000
+&USERLNG SETA  &LNC          USERS-LENGTH IN NUMERICS                   00630000
+.NOLNGTH ANOP                                                           00640000
+.*                                                                      00650000
+.*   NOW WE CAN START SCANNING THE ACTUAL DATA                          00660000
+.*                                                                      00670000
+&AIN     SETA  &QUOTE1       SET INPUT POINTER TO FIRST QUOTE           00680000
+&LENGTH  SETA  K'&AA-&AIN-1    TENTATIVE LENGTH ATTRIBUTE               00690000
+.*                                                                      00700000
+.LOOP1   ANOP  ,   LOOP THRU HERE AS WE SCAN EACH INPUT CHARACTER       00710000
+&AIN     SETA  &AIN+1        BUMP INPUT-POINTER                         00720000
+&AOUT    SETA  &AOUT+1       BUMP OUTPUT-POINTER                        00730000
+         AIF   (&AIN  GE  K'&AA).ENDSCAN   IF LAST CHARACTER, ALL DONE. 00740000
+&CIN     SETC  '&AA'(&AIN,1)  SAVE THIS INPUT CHARACTER                 00750000
+&CW      SETB  ((&CW  AND  '&CIN'  NE  ' ')  OR  '&CIN'  EQ  '&CAPW')   00760000
+.*   TURN ON &CW IF THIS IS CAP-WORD CHAR, TURN OFF &CW IF THIS IS BLNK 00770000
+         AIF   ('&CIN'  EQ  '&CAPW'  OR  '&CIN'  EQ  'CAPL').CAPITAL    00780000
+         AIF   ('&CIN'  EQ  ''''   OR '&CIN'  EQ  '&&'(1,1)).QUOTE      00790000
+         AIF   ('&CIN'  LT  'A'  OR  '&CIN'  GT  'Z'  OR  &CW).SETSAME  00800000
+.*                                                                      00810000
+.*  &AIN NOW POINTS TO A CAPITAL LETTER ON INPUT, WHICH MUST BE         00820000
+.*  CONVERTED TO ITS LOWER-CASE EQUIVALENT.                             00830000
+.*   THE 26 LETTERS OF THE ALPHABET ARE LISTED HERE,                    00840000
+.*   ORDERED BY THEIR FREQUENCY OF OCCURANCE IN THE ENGLISH LANGUAGE .. 00850000
+.*              'ETAOSINRHLDCUMYBPWFGVKJXQZ'                            00860000
+.*             ERGO,  WE WILL BUILD OUR TABLE IN THAT ORDER.            00870000
+.*                                                                      00880000
+&K       SETA  1                                                        00890000
+.LOOP2   AIF   ('ETAOSINRHLDCUMYBPWFGVKJXQZ'(&K,1)  EQ  '&CIN').LCFOUND 00900000
+&K       SETA  &K+1                                                     00910000
+         AIF   (&K  LE  26).LOOP2                                       00920000
+         AGO   .SETSAME      WAS NOT ALPHABETIC                         00930000
+.LCFOUND ANOP  ,    &K POINTS TO POSITION IN TABLE FOR THIS LETTER      00940000
+&COUT    SETC  'etaosinrhldcumybpwfgvkjxqz'(&K,1)  LOWER CASE PUNCHES   00950000
+&Q(&AOUT) SETC '&COUT'       SET OUTPUT LETTER TO THIS L-C LETTER       00960000
+         AGO   .LOOP1        GET NEXT LETTER                            00970000
+.*                                                                      00980000
+.*                                                                      00990000
+.QUOTE   ANOP  ,   TO HANDLE PAIRED QUOTES AND PAIRED AMPERSANDS        01000000
+&Q(&AOUT) SETC '&CIN'        SET UP OUTPUT CHARACTER                    01010000
+&AOUT    SETA  &AOUT+1       BUMP OUTPUT-CHARACTER-POINTER              01020000
+.*                                                                      01030000
+.CAPITAL ANOP  ,   TO HANDLE CAP-LETR AND CAP-WORD CHARACTERS           01040000
+&LENGTH  SETA  &LENGTH-1     DOESN'T COUNT IN LENGTH                    01050000
+         AIF   (&AIN+1  GE  K'&AA).ENDSCAN    LAST CHARACTER  IN  LIT ? 01060000
+&AIN     SETA  &AIN+1        BUMP INPUT-CHARACTER-POINTER               01070000
+&CIN     SETC  '&AA'(&AIN,1)   PICK UP NEXT INPUT CHARACTER             01080000
+.*                                                                      01090000
+.SETSAME ANOP  ,   TO SET UP OUTPUT CHARACTER WITHOUT CHANGING IT       01100000
+&Q(&AOUT) SETC '&CIN'                                                   01110000
+         AGO   .LOOP1        GET NEXT LETTER                            01120000
+.*                                                                      01130000
+.ENDSCAN ANOP  ,  *  *  *  *  *  *  *  *  *  *  *  *  *  *  *  *  *  *  01140000
+.*  WE HAVE COMPLETED THE SCAN OF INPUT,  NOW PREPARE THE -DC-.      *  01150000
+.*                                                                   *  01160000
+         AIF   (&USERLNG  EQ  &LENGTH  OR  &USERLNG  EQ  0).OKLNGTH     01170000
+&T       SETC  '*'           SET UP MNOTE TO BE JUST A COMMENT          01180000
+         AIF   (&USERLNG  GT  &LENGTH).LNMNOTE                          01190000
+&T       SETC  '1'           MAKE IT AN ERROR,  TRUNCATION              01200000
+.LNMNOTE AIF   (NOT &DCLCLST).LNMNPRT  SKIP MNOTE IF PRINT OFF   87287  01210000
+         MNOTE &T,'YOUR ''CL&USERLNG'' SPEC. OVERRIDES ASSUMED LENGTH O*01220000
+               F &LENGTH..'                                             01230000
+.LNMNPRT ANOP  ,                                                 87287  01240000
+&LENGTH  SETA  &USERLNG      PICK UP USER'S LENGTH                      01250000
+.OKLNGTH ANOP                                                           01260000
+&AIN     SETA  1                                                        01270000
+&AOUT    SETA  1                                                        01280000
+.*  THE NEXT 5 LINES CONVERT THE 120 SUBSCRIPTED SET SYMBOLS            01290000
+.*  (EACH OF WHICH CONTAINS ONE BYTE OF DATA OR NULL)  INTO 15          01300000
+.*  SUBSCRIPTED SET SYMBOLS (EACH CONTAING 8 BYTES).                    01310000
+.LOOP3   ANOP                                                           01320000
+&P(&AOUT) SETC '&Q(&AIN)&Q(&AIN+1)&Q(&AIN+2)&Q(&AIN+3)&Q(&AIN+4)&Q(&AIN+01330000
+               +5)&Q(&AIN+6)&Q(&AIN+7)'    EIGHT AT A TIME              01340000
+&AIN     SETA  &AIN+8                                                   01350000
+&AOUT    SETA  &AOUT+1                                                  01360000
+         AIF   (&AOUT  LE  15).LOOP3    KEPP LOOKING                    01370000
+.*                                                                      01380000
+&NAME    DC   &DUPLC.CL&LENGTH'&P(1)&P(2)&P(3)&P(4)&P(5)&P(6)&P(7)&P(8)&01390000
+               &P(9)&P(10)&P(11)&P(12)&P(13)&P(14)&P(15)'               01400000
+.MEND    MEND                                                           01410000

@@ -1,0 +1,14 @@
+         MACRO ,                                                        00010000
+&N       OICC  &CODE,&REAS,&RESULT=                    NEW 2003.091 GYP 00020000
+         GBLC  &ZZCCNAM                                                 00030000
+         LCLC  &L                                                       00040000
+&L       SETC  'L'''                                                    00050000
+         AIF   ('&RESULT' EQ '').NONEW                                  00060000
+&ZZCCNAM SETC  '&RESULT'                                                00070000
+.NONEW   AIF   ('&ZZCCNAM' NE '').NODEF                                 00080000
+         MNOTE *,'OICC: RESULT= NOT SPECIFIED - DEFAULTED TO RETCODE'   00090000
+&ZZCCNAM SETC  'RETCODE'                                                00100000
+.NODEF   ANOP  ,                                                        00110000
+&N MACPARM &ZZCCNAM+&L&ZZCCNAM-1,&CODE,OP=OI,OPR=STC,NULL=SKIP,MODE=REV 00120000
+   MACPARM &ZZCCNAM+&L&ZZCCNAM+3,&REAS,OP=OI,OPR=STC,NULL=SKIP,MODE=REV 00130000
+         MEND  ,                                                        00140000

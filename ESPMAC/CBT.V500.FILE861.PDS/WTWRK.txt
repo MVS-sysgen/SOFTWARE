@@ -1,0 +1,107 @@
+         MACRO                                                          00002000
+&L       WTWRK &DUMMY,&MSGLEN=125,&REPLYLN=5,&NUMDOM=5,&ML=YES,        *00004000
+               &SCON=NO                                                 00006000
+         AIF   (&NUMDOM EQ 0).NODOM                                     00008000
+DOMTABLE DS    (&NUMDOM)A          IDS TO BE DELETED AFTER REPLY        00010000
+DOMTABLN EQU   4*&NUMDOM           LENGTH IN BYTES OF DOM ID TABLE      00012000
+DOMTABST EQU   DOMTABLE,DOMTABLN-4 FIRST N-1 ENTRIES IN DOM ID TABLE    00014000
+DOMLAST  EQU   *-4,4,C'A'          LAST ID IN DOM TABLE           78117 00016000
+.NODOM   AIF   ('&ML' EQ 'NO').NOML                                     00018000
+DESCPTR  DS    A                   SAVE ADDR OF DESC - USED FOR MLWTO   00020000
+.NOML    AIF   ('&SCON' EQ 'NO').NOSCON                                 00022000
+WTOREGS  DS    0F                  SAVE AREA IF SCONS ALLOWED           00024000
+WTOR0    DS    F                                                        00026000
+WTOR1    DS    F                                                        00028000
+WTOR2    DS    F                                                        00030000
+WTOR3    DS    F                                                        00032000
+WTOR4    DS    F                                                        00034000
+WTOR5    DS    F                                                        00036000
+WTOR6    DS    F                                                        00038000
+WTOR7    DS    F                                                        00040000
+WTOR8    DS    F                                                        00042000
+WTOR9    DS    F                                                        00044000
+WTOR10   DS    F                                                        00046000
+WTOR11   DS    F                                                        00048000
+WTOR12   DS    F                                                        00050000
+WTOR13   DS    F                                                        00052000
+WTOR14   DS    F                                                        00054000
+WTOR15   DS    F                                                        00056000
+WTOLA    LA    R6,0(,R15)                                               00058000
+.NOSCON  ANOP                                                           00060000
+WTORAREA DS    0C                  INCLUDES REPLY AREA AND ECB          00062000
+REPLY    DS    CL(&REPLYLN)                                             00064000
+WTORECB  DS    F                                                        00066000
+WTOAREA  DS    0C                  OVERLAY WTOS HERE                    00068000
+WTOR     DS    0C                                                       00070000
+WTORRPLY DS    AL4                 LENGTH OF REPLY AREA AND ITS ADDR    00072000
+WTORECBA DS    AL4                 ADDRESS OF WTOR ECB                  00074000
+WTORMSGL DS    AL2                                                      00076000
+WTORFLGS DS    AL2                                                      00078000
+WTORL    EQU   *-WTORAREA          AMOUNT TO ZERO                       00080000
+WTORMSG  DS    CL60                MAX MSG LENGTH                       00082000
+WTORROUT DS    CL4                                                      00084000
+         ORG   WTOAREA             OVERLAY FOR WTOS                     00086000
+WTO      DS    0C                                                       00088000
+WTOMSGL  DS    AL2                 1ST BYTE IS 0 FOR WTO                00090000
+WTOFLGS  DS    AL2                                                      00092000
+WTOL     EQU   *-WTOAREA           AMOUNT TO ZERO                       00094000
+WTOMSG   DS    CL(&MSGLEN)         MAX LENGTH OF WTO MSG                00096000
+WTOROUT  DS    CL4                                                78117 00098000
+         ORG                                                            00100000
+         SPACE 1                                                        00102000
+*              WTO PREFIX - END OF WTOR PREFIX                          00104000
+WT1      DSECT                                                          00106000
+WTLENGTH DS    Y                        LENGTH INCLUDING WTO PREFIX     00108000
+WTFLAG   DS    XL2                      MCS FLAGS FOR FIRST LINE        00110000
+$MCRTDS  EQU   128                      ROUTCDE/DESC FIELDS EXIST       00112000
+$MCREG0  EQU   64                                                       00114000
+$MCRESP  EQU   32                                                       00116000
+$MCREPLY EQU   8                                                        00118000
+$MCBRDCS EQU   4                                                        00120000
+$MCHRDCP EQU   2                                                        00122000
+$MCQREG0 EQU   1                                                        00124000
+$MCNOTIM EQU   128                                                      00126000
+$MCMLWTO EQU   64                                                       00128000
+$MCNOCPY EQU   4                                                        00130000
+WTLINTP2 EQU   WTFLAG,2,C'X'            LINE TYPE FOR SUBSEQUENT L78117 00132000
+WTTEXT   EQU   *,1,C'C'                                           78117 00134000
+         SPACE 1                                                        00136000
+WT2      DSECT                                                          00138000
+*              PORTION OF WTO FOLLOWING TEXT                            00140000
+WTDESC   DS    XL2                      DESCRIPTOR FOR FIRST LINE       00142000
+$DSSYSFA EQU   128                                                      00144000
+$DSIMMAC EQU   64                                                       00146000
+$DSEVNAC EQU   32                                                       00148000
+$DSSYSST EQU   16                                                       00150000
+$DSIMMCR EQU   8                                                        00152000
+$DSJOBST EQU   4                                                        00154000
+$DSAPPLP EQU   2                                                        00156000
+$DSOUTLN EQU   1                                                        00158000
+$DSDISMN EQU   128                      ID TO BE PUT INTO CONTROL LINE  00160000
+WTROUT   DS    XL2                                                      00162000
+WTLINTYP DS    XL2                      LINE TYPE FOR FIRST LINE        00164000
+$LTC     EQU   128                      CONTROL LINE                    00166000
+$LTL     EQU   64                       LABEL   LINE                    00168000
+$LTD     EQU   32                       DATA    LINE                    00170000
+$LTE     EQU   16                       END     LINE                    00172000
+WTAREAID DS    X                                                        00174000
+WTNUMLIN DS    X                                                        00176000
+         SPACE 1                                                        00178000
+WTPRM    DSECT                                                          00180000
+WPDESC   DS    XL2                                                      00182000
+WPTXLENG DS    AL1                      TEXT LENGTH-1 FOR MVC           00184000
+WPFLAG   DS    X                                                        00186000
+$UCMID   EQU   128                      ROUTE TO SPECIFIC CONSOLE       00188000
+$ML      EQU   64                       ANOTHER LINE FOLLOWS            00190000
+$WTOR    EQU   32                                                       00192000
+$PFX     EQU   16                                                       00194000
+$IMM     EQU   8                                                        00196000
+$SCON    EQU   4                                                        00198000
+$TPUT    EQU   2                                                        00200000
+WPTXDISP DS    Y                        OFFSET TO TEXT FROM MSGCSECT    00202000
+WPRETRN  EQU   *                                                        00204000
+WPLINTYP DS    XL2                                                      00206000
+WPSTOPER DS    XL2                                                      00208000
+WPRTRN2  EQU   *                                                        00210000
+&SYSECT  DSECT                                                          00212000
+         MEND                                                           00214000

@@ -1,0 +1,41 @@
+         MACRO ,                                                        00010000
+&NM      MVCLIT &TO,&FRO,&ULEN                                          00020000
+.********************************************************************** 00030000
+.*                                                                    * 00040000
+.*    MOVE DATA (LITERAL) FROM A FIELD TO A FIELD USING THE           * 00050000
+.*      LENGTH OF THE SECOND OPERAND                                  * 00060000
+.*                                                                    * 00070000
+.********************************************************************** 00080000
+         GBLA  &MACPLEN      RETURN SIGNIFICANT LENGTH OF STRING        00090000
+         GBLB  &MACPNUL      TRUE IF NULL STRING                        00100000
+         GBLB  &MACQUOT      TRUE IF ORIGINAL WAS QUOTED                00110000
+         GBLB  &MACPERR      TRUE IF ERROR                              00120000
+         GBLC  &MACQSTR      RETURN QUOTED STRING                       00130000
+         LCLA  &K                                                       00140000
+         LCLC  &C,&D,&L                                                 00150000
+       MACQOLIT &FRO         SEE WHAT WE HAVE FOR SOURCE                00160000
+&D       SETC  '&MACPLEN'                                               00170000
+         AIF   (NOT &MACPNUL).QERR                                      00180000
+         MNOTE 8,'MVCLIT: SOURCE IS REQUIRED'                           00190000
+         AGO   .FRODO                                                   00200000
+.QERR    AIF   (NOT &MACPERR).FRODO                                     00210000
+         MNOTE 8,'MVCLIT: SOURCE IS MALFORMED'                          00220000
+.FRODO   AIF   (&MACQUOT).QDEST        QUOTED ?                         00230000
+&L       SETC  'L'''                                                    00240000
+&D       SETC  '&L'.'&FRO'             NO; USE LENGTH ATTRIBUTE         00250000
+.QDEST   AIF   (T'&TO NE 'O').FRQREG   CHECK FOR REGISTER FORM          00260000
+         MNOTE 8,'MVCLIT: DESTINATION REQUIRED'                         00270000
+         MEXIT ,                                                        00280000
+.FRQREG  AIF   (T'&ULEN EQ 'O').CMPLEN                                  00290000
+&D       SETC  '&ULEN'                                                  00300000
+.CMPLEN  ANOP  ,                                                        00310000
+&K       SETA  K'&TO                                                    00320000
+         AIF   (&K LT 3).TOADD         DO AS ADDRESS FORM               00330000
+         AIF   ('&TO'(1,1) NE '(' OR '&TO'(&K,1) NE ')').TOADD          00340000
+         AIF   ('&TO'(2,1) EQ '(' OR '&TO'(&K-1,1) EQ ')').TOADD        00350000
+&C       SETC  '&TO'(2,&K-1)           STRIP (                          00360000
+&NM      MVC   0(&D,&C,&MACQSTR                                         00370000
+         MEXIT ,                                                        00380000
+.TOADD   ANOP  ,                                                        00390000
+&NM      MVC   &TO.(&D),&MACQSTR                                        00400000
+.MEND    MEND                                                           00410000

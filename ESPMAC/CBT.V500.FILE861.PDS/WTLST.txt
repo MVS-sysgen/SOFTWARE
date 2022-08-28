@@ -1,0 +1,42 @@
+         MACRO                                                          00001000
+&L       WTLST &DUM,&TYPE=DESC                                          00002000
+         GBLB  &WTFAIL                                                  00003000
+         LCLA  &I,&J,&UNIQUE                                            00004000
+         LCLB  &BIT(16)                                                 00005000
+         LCLC  &DIGIT                                                   00006000
+         AIF   (N'&SYSLIST(1) EQ 0).NOLIST                              00007000
+         AIF   (N'&SYSLIST(1) LE 16).LOOP1                              00008000
+         MNOTE 12,'&TYPE HAS MORE THAN 16 OPERANDS'                     00009000
+.FAIL    ANOP                                                           00010000
+&WTFAIL  SETB  1                                                        00011000
+         MEXIT                                                          00012000
+.NOLIST  MNOTE 12,'&TYPE IS A REQUIRED OPERAND'                         00013000
+         AGO   .FAIL                                                    00014000
+.NOTNUM  MNOTE 12,'&TYPE.(&I.) MUST BE NUMERIC'                         00015000
+         AGO   .FAIL                                                    00016000
+.RANGE   MNOTE 12,'&TYPE.(&I.) MUST BE IN THE RANGE 1-16'               00017000
+         AGO   .FAIL                                                    00018000
+.NOTU    MNOTE 12,'DESCRIPTORS CODES 1-7 MUST BE UNIQUE'                00019000
+         AGO   .FAIL                                                    00020000
+.LOOP1   ANOP                                                           00021000
+&I       SETA  &I+1                                                     00022000
+         AIF   (T'&SYSLIST(1,&I) NE 'N').NOTNUM                         00023000
+         AIF   (&SYSLIST(1,&I) LE 0 OR &SYSLIST(1,&I) GT 16).RANGE      00024000
+&BIT(&SYSLIST(1,&I)) SETB 1                                             00025000
+         AIF   (&SYSLIST(1,&I) GT 7 OR '&TYPE' NE 'DESC').END1          00026000
+&UNIQUE  SETA  &UNIQUE+1                                                00027000
+.END1    AIF   (&I LT N'&SYSLIST(1)).LOOP1                              00028000
+         AIF   (&UNIQUE GT 1).NOTU                                      00029000
+         AIF   ('&TYPE' NE 'DESC' OR NOT &BIT(8) OR &BIT(9)).OUTOK      00030000
+         MNOTE 8,'DESC=8(OUT OF LINE) REQUIRES DESC=9(ID ADDED)'        00031000
+         MNOTE *,'DESC=9 ADDED TO LIST - ASSEMBLY CONTINUES'            00032000
+&BIT(9)  SETB  1                                                        00033000
+.OUTOK   ANOP                                                           00034000
+&I       SETA  1                                                        00035000
+.LOOP2   ANOP                                                           00036000
+&J       SETA  1+8*&BIT(&I)+4*&BIT(&I+1)+2*&BIT(&I+2)+&BIT(&I+3)        00037000
+&DIGIT   SETC  '&DIGIT'.'0123456789ABCDEF'(&J,1)                        00038000
+&I       SETA  &I+4                                                     00039000
+         AIF   (&I LE 16).LOOP2                                         00040000
+&L       DC    X'&DIGIT'                                                00041000
+         MEND                                                           00042000

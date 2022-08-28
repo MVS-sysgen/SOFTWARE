@@ -1,0 +1,34 @@
+         MACRO ,                                                        00010000
+&NM      MAPSBALL &PFX=ALD,&DSECT=                                      00020000
+.********************************************************************** 00030000
+.*  THIS MACRO MAPS THE CALLING SEQUENCE FOR SUBALLOC                 * 00040000
+.********************************************************************** 00050000
+         LCLC  &P                                                       00060000
+&P       SETC  '&PFX'                                                   00070000
+&NM      MACMAPHD PFX=&PFX,DSECT=&DSECT                                 00080000
+.*                           MAPPING OF USER'S CALLING AREA             00090000
+&P.FUN   DC    C' '          FUNCTION CODE (A-ALLOC; U-UNALLOC)         00100000
+&P.VER   DC    C' '          VERSION CODE (FOR LATER EXPANSION?)        00110000
+&P.DSNAM DC    CL44' '       REQUESTED/RETURNED DATA SET NAME           00120000
+&P.MEMBR DC    CL8' '        MEMBER NAME OR BLANK OR HEX ZERO           00130000
+&P.DDNAM DC    CL8' '        REQUESTED/RETURNED DD NAME                 00140000
+&P.MGCL  DC    CL8' '        SMS - MANAGEMENT CLASS                     00150000
+&P.DACL  DC    CL8' '        SMS - DATA CLASS                           00160000
+&P.STCL  DC    CL8' '        SMS - STORAGE CLASS                        00170000
+&P.UNIT  DC    CL8' '        REQUESTED UNIT (OR BLANK)                  00180000
+&P.STATS DC    CL3' '        NEW/OLD/MOD/SHR                            00190000
+&P.NDISP DC    CL3' '        CAT/KEE/DEL/UNC/PAS                GP10191 00200000
+&P.CDISP DC    CL3' '        CAT/KEE/DEL/UNC/PAS                GP10191 00210000
+&P.SPC   DC    CL8' '        CYL/TRK/###(NUMERIC, BLOCKS)               00220000
+&P.PRIME DC    CL8' '        PRIMARY AMOUNT                             00230000
+&P.SECND DC    CL8' '        SECONDARY AMOUNT                           00240000
+&P.DIR   DC    CL8' '        DIRECTORY BLOCKS                           00250000
+&P.RETPD DC    CL4' '        RETENTION PERIOD IN DAYS                   00260000
+&P.DSORG DC    CL3' '        DSORG                                      00270000
+&P.RECFM DC    CL5' '        RECORD FORMAT                              00280000
+&P.LRECL DC    CL5' '        RECORD LENGTH OR 'X'                       00290000
+&P.BLKSZ DC    CL5' '        BLOCK SIZE                                 00300000
+&P.KYLEN DC    CL3' '        KEY LENGTH                                 00310000
+&P.VLSER DC    5CL6' '       VOLUME SERIALS                             00320000
+&P.SIZE  EQU   *-&P.FUN        SIZE                             GP10191 00330000
+         MEND  ,                                                        00340000

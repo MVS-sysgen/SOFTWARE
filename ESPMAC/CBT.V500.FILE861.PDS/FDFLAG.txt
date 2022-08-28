@@ -1,0 +1,19 @@
+         MACRO                                                          00010000
+&NM      FDFLAG &O1,&O2,&O3,&O4,&O5,&O6,&O7,&O8,&O9,&O10,&O11,&O12,&O13*00020001
+               ,&O14,&O15,&O16,&LEN=0,                                 *00030005
+               &TABLE='?',&SEP=C',',&SPACE=0                            00040001
+.*--------------------------------------------------------------------* 00050000
+.*   FDFLAG REQUESTS TABLE LOOKUP. THE TABLE IS DEFINED WITH MACRO    * 00060000
+.*     FLGTAB (FLAG BITS,TEXT,MLEN=L'FLAG)                            * 00070000
+.*     THE EXPANSION IS THE SAME AS FOR A REGULAR FD, FOLLOWED BY THE * 00080001
+.*     TABLE ADDRESS AND THE ATTRIBUTES:                              * 00090001
+.*   OPERANDS ARE: S(TABLE ADDRESS) AL1(SEP CHAR OR 0) AL1(ADDL SPC)  * 00100002
+.*--------------------------------------------------------------------* 00110000
+&NM      FD    &O1,&O2,&O3,&O4,&O5,&O6,&O7,&O8,&O9,&O10,&O11,&O12,&O13,*00120001
+               &O14,&O15,&O16,LEN=&LEN,TYPE=64                          00130005
+         AIF   ('&O1' EQ 'END' OR '&O1' EQ '*END').MEND                 00140003
+         AIF   ('&SEP' EQ 'NO' OR '&SEP' EQ 'NONE').NONO                00150003
+         DC    SL2(&TABLE),AL1(&SEP,&SPACE)                             00160004
+         AGO   .MEND                                                    00170003
+.NONO    DC    SL2(&TABLE),AL1(0,&SPACE)                                00180004
+.MEND    MEND  ,                                                        00190001

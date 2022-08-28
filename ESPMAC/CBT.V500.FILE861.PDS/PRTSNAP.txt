@@ -1,0 +1,4 @@
+         MACRO ,                                                        00010000
+&NM      PRTSNAP &LISTAD,&DEV=,&OPT=                    ADDED ON 83331  00020000
+&NM      PRTCOM PRTSNAP,FUN=9,A1=&LISTAD,DEV=&DEV,OPT=&OPT              00030000
+         MEND  ,                                                        00040000

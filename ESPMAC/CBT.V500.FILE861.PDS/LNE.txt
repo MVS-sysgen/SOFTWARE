@@ -1,0 +1,19 @@
+         MACRO                                                          00001000
+         LNE   &LNE                                                     00002000
+         GBLA  &PCCLINE,&PCCPOS,&PCCLTYP                                00003000
+         LCLC  &I                                                       00004000
+&PCCPOS  SETA  1                                                        00005000
+         AIF   (T'&LNE EQ 'O' OR '&LNE' EQ 'NEXT').NEXT                 00006000
+         AIF   (T'&LNE EQ 'N').FIXED                                    00007000
+         AIF   ('&LNE'(1,2) EQ '*+').INC                                00008000
+         MNOTE 8,'OPERAND OF LNE IS NOT ''NEXT'', N, OR *+N'            00009000
+.NEXT    ANOP                                                           00010000
+&PCCLINE SETA  &PCCLINE+1+&PCCLTYP                                      00011000
+         MEXIT                                                          00012000
+.FIXED   ANOP                                                           00013000
+&PCCLINE SETA  &LNE                                                     00014000
+         MEXIT                                                          00015000
+.INC     ANOP                                                           00016000
+&I       SETC  '&LNE'(3,K'&LNE-2)                                       00017000
+&PCCLINE SETA  &PCCLINE+&I                                              00018000
+         MEND                                                           00019000

@@ -1,0 +1,154 @@
+         MACRO                                                          00010000
+&NM      VLOOK &T=,&B=*,&R=,&PFX=,&X=R5,&Y=R6,&Z=R4,                   *00020000
+               &STRIP=,&ABBR=,&FULL=                      ADDED GP13190 00030000
+         GBLB  &ZZ@BLUK                              ADAPTED FROM BLOOK 00040000
+         GBLC  &MACPLAB,&ZZ@BLUF                                        00050000
+.********************************************************************** 00060000
+.*                                                                   ** 00070000
+.*    Verb lookup routine; see BTAB macro for matching verb defs     ** 00080000
+.*    T     - address of BTAB definitions                            ** 00090000
+.*    X     - pointer for scanning                             (R5)  ** 00100000
+.*    Y     - register pointing at last byte of text           (R6)  ** 00110000
+.*    Z     - register for BTAB scanning                       (R4)  ** 00120000
+.*    R     - address of text                                        ** 00130000
+.*    B     - base address for (b)ddd branching; B=A (absolute)      ** 00140000
+.*            branches to BTAB with BASE=0; B=* (default) branches   ** 00150000
+.*            from CSECT (as does B= )                               ** 00160000
+.*    PFX   - 0-4 character label prefix (default VERB)              ** 00170000
+.*    STRIP - (default) skip leading blanks                          ** 00180000
+.*            =NEVER    process at current input address             ** 00190000
+.*    ABBR  - when specified, accepts matches for abbreviated verbs  ** 00200000
+.*            of any length from original to ABBR value (no default) ** 00210000
+.*            ABBR=3 for 'COMMAND' would match COMMAND, COMMAN,      ** 00220000
+.*            COMMA, COMM, and COM                                   ** 00230000
+.*    FULL  - one or more trailing characters inhibiting shorter     ** 00240000
+.*            compares. No default; common are = and (               ** 00250000
+.*            e.g., FULL='=' (valid are FULL=alphanum; FULL='chars'; ** 00260000
+.*            FULL=C'chars'; and FULL=X'hexchars')                   ** 00270000
+.*                                                                   ** 00280000
+.********************************************************************** 00290000
+.*                                                                   ** 00300000
+.*    X returns next byte after match, or last text + 1 for no match ** 00310000
+.*    R14 is a return register; R15-R1 are work registers.           ** 00320000
+.*      code branches to R15 on match, R14 otherwise.                ** 00330000
+.*                                                                   ** 00340000
+.*    Y unchanged.                                                   ** 00350000
+.*    Z returns last process table entry.                            ** 00360000
+.*                                                                   ** 00370000
+.********************************************************************** 00380000
+.*                                                                   ** 00390000
+.*    VLOOK expands an in-line subroutine, called by other           ** 00400000
+.*    references. To use in an assembly with multiple, not mutually  ** 00410000
+.*    addressable CSECTs, use a unique PFX in each.                  ** 00420000
+.*                                                                   ** 00430000
+.********************************************************************** 00440000
+         LCLC  &L,&D,&LAB,&D1,&D2,&D3                                   00450000
+         LCLA  &I,&J,&K                                                 00460000
+&L       SETC  'L'''                                                    00470000
+         AIF   ('&ZZ@BLUF' NE '').OLDLAB                                00480000
+&ZZ@BLUF SETC  'VERB'        DEFAULT LABEL                              00490000
+.OLDLAB  ANOP  ,                                                        00500000
+         AIF   ('&PFX' EQ '' OR '&PFX' EQ '&ZZ@BLUF').DONLAB            00510000
+&ZZ@BLUF SETC  '&PFX'                                                   00520000
+&ZZ@BLUK SETB  0             EXPAND CODE WITH NEW LABELS                00530000
+.DONLAB  ANOP  ,                                                        00540000
+&LAB     SETC  '&ZZ@BLUF'                                               00550000
+&NM      MACPARM &Z,&T,NULL==X'FF'                                      00560000
+&D       SETC  '('.'&Y'.')'                                             00570000
+         AIF   ('&D' EQ '&R' OR '&R' EQ '&Y').NOEND                     00580000
+         MACPARM &Y,&R+&L&R-1                                           00590000
+.NOEND   AIF   (&ZZ@BLUK).NOTONCE                                       00600000
+&ZZ@BLUK SETB  1                                                        00610000
+         B     &LAB.END      BRANCH AROUND                              00620000
+&LAB.LOOK SLR  R15,R15       ZERO IC REGISTER                           00630000
+         AIF   ('&STRIP' EQ 'NEVER').NODEBLK                            00640000
+&LAB.1   CLI   0(&X),C' '    LOOK FOR NON-BLANK INPUT                   00650000
+         BNE   &LAB.2        OK                                         00660000
+         LA    &X,1(,&X)     SKIP TO NEXT BYTE                          00670000
+         CR    &X,&Y         REACHED END OF INPUT BUFFER                00680000
+         BNH   &LAB.1        NO, LOOK FOR NON-BLANK                     00690000
+         BR    R14           RETURN, BUFFER EXHAUSTED                   00700000
+         AGO   .YESBLNK                                                 00710000
+.NODEBLK B     &LAB.2        NO DEBLANKING                              00720000
+.YESBLNK ANOP  ,                                                        00730000
+&LAB.CHEK CLC  4(0,&Z),0(&X) MATCHING VERB ?                            00740000
+&LAB.3   LA    &Z,5(R15,&Z)  BUMP TO NEXT TABLE ENTRY                   00750000
+&LAB.2   CLI   0(&Z),X'FF'   END OF TABLE ?                             00760000
+         BER   R14           YES, VERB NOT FOUND                        00770000
+         IC    R15,0(,&Z)    LENGTH - 1  OF TABLE ENTRY                 00780000
+         EX    R15,&LAB.CHEK  SAME VERB ?                               00790000
+         AIF   ('&ABBR' EQ '').NOABBR                                   00800000
+         BE    &LAB.MAT                                                 00810000
+         LA    R0,1(,R15)    COPY LENGTH                                00820000
+         SH    R0,=AL2(&ABBR)    SHORTER ALLOWED ?                      00830000
+         BNP   &LAB.3               NO; TRY NEXT                        00840000
+         AIF   ('&FULL' EQ '').LABNKC      SKIP IF NO KEYWORDS          00850000
+&D       SETC  '&FULL'                                                  00860000
+&D1      SETC  'C'''                                                    00870000
+&D2      SETC  ''''                                                     00880000
+&K       SETA  K'&FULL                                                  00890000
+&J       SETA  1             STRIDE                                     00900000
+         AIF   ('&FULL' EQ '''').LABNKS                                 00910000
+         AIF   (&K LT 3).LABNKS                                         00920000
+         AIF   ('&D'(1,2) EQ 'X''').HEXSTR       HEX                    00930000
+         AIF   ('&D'(1,2) EQ 'C''').TXTSTR       TEXT                   00940000
+         AIF   ('&D'(1,1) NE '''').LABNKS       PLAIN STRING            00950000
+&D       SETC  '&D'(2,&K-2)                                             00960000
+&K       SETA  K'&D                                                     00970000
+         AGO   .LABNKS                                                  00980000
+.TXTSTR  ANOP  ,             TEXT NOTATION   C' '                       00990000
+&D       SETC  '&D'(3,&K-3)                                             01000000
+&K       SETA  K'&D                                                     01010000
+         AGO   .LABNKS                                                  01020000
+.HEXSTR  ANOP  ,             HEX NOTATION                               01030000
+&D1      SETC  'X'''                                                    01040000
+&D       SETC  '&D'(3,&K-3)                                             01050000
+&K       SETA  K'&D                                                     01060000
+&J       SETA  2             STRIDE                                     01070000
+.LABNKS  LA    R1,4(R15,&Z)  POINT TO LAST BYTE OF VERB                 01080000
+&I       SETA  1                                                        01090000
+         AIF   (&K GE &J).LABNKL                                        01100000
+         MNOTE 4,'VLOOK: MALFORMED FULL=&FULL'                          01110000
+         AGO   .LABNKC                                                  01120000
+.LABNKL  ANOP  ,                                                        01130000
+&D3      SETC  '&D'(&I,&J)                                              01140000
+         AIF   (&J NE 1 OR ('&D3' NE '''' AND '&D3' NE '&&')).LABNDB    01150000
+.*TEST   AIF   ('&D'(&I,&J+1) NE '&D3').LABOOPS                         01160000
+&I       SETA  &I+1                                                     01170000
+.LABOOPS ANOP  ,             USER ERROR                                 01180000
+&D3      SETC  '&D3'.'&D3'                                              01190000
+.LABNDB  CLI   0(R1),&D1&D3&D2    SPECIAL?                              01200000
+         BE    &LAB.3          YES; NO ABBR                             01210000
+&I       SETA  &I+&J                                                    01220000
+         AIF   (&I LE &K).LABNKL      TRY AGAIN                         01230000
+.LABNKC  LR    R1,R15                                                   01240000
+&LAB.ALP BCTR  R1,0                                                     01250000
+         EX    R1,&LAB.CHEK  MATCH ?                                    01260000
+         BE    &LAB.MA1        YES; GET OUT                             01270000
+         BCT   R0,&LAB.ALP   SHORTER ALLOWED ?                          01280000
+         B     &LAB.3          NO; TRY NEXT                             01290000
+         AGO   .DOABBR                                                  01300000
+.NOABBR  BNE   &LAB.3        NO, KEEP LOOKING                           01310000
+.DOABBR  ANOP  ,                                                        01320000
+&LAB.MA1 LR    R15,R1        SET FOR CORRECT INPUT POSITION             01330000
+&LAB.MAT LA    &X,1(R15,&X)  POINT TO FIRST BYTE PAST VERB              01340000
+         ICM   R15,7,1(&Z)   LOAD DISPLACEMENT ADDRESS                  01350000
+         AIF   ('&B' EQ '').RELDEF                                      01360000
+         AIF   ('&B' EQ '*').RELDEF                                     01370000
+         AIF   ('&B'(1,1) EQ '(').REL                                   01380000
+         AIF   ('&B' EQ 'A').ABS                                        01390000
+         MNOTE 8,'B NOT A OR (REG)'                                     01400000
+.ABS     BR    R15                                                      01410000
+         AGO   .BDONE                                                   01420000
+.REL     B     0(R15,&B(1))                                             01430000
+         AGO   .BDONE                                                   01440000
+.RELDEF  B     &SYSECT.(R15)                                            01450000
+.BDONE   ANOP  ,                                                        01460000
+&LAB.END DS    0H                                                       01470000
+.NOTONCE AIF   ('&STRIP' EQ 'NO' OR '&STRIP' EQ 'NEVER').STRIPPD        01480000
+         MACPARM R14,&LAB.LOOK,OP=BAL                                   01490000
+         AGO   .MEND                                                    01500000
+.STRIPPD AIF   ('&STRIP' EQ 'NEVER').STRIPPR                            01510000
+         MACPARM R15,0       CLEAR R15 FIRST (AM31,RM24)                01520000
+.STRIPPR MACPARM R14,&LAB.LOOK,OP=BAL                                   01530000
+.MEND    MEND  ,                                                        01540000

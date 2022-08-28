@@ -1,0 +1,44 @@
+         MACRO ,                                                 88255  00010000
+&LAB     WTERM &AD,&LN,&MODE=EDIT                          ADDED 88150  00020000
+         LCLC  &MD,&NM,&MN,&L                                    88255  00030000
+         LCLA  &ML                                               88150  00040000
+&MN      SETC  'TPUT'                                            88255  00050000
+&NM      SETC  '&LAB'                                            88150  00060000
+         AIF   ('&AD'(1,1) EQ '''').LIT                          88150  00070000
+         AIF   ('&AD'(1,1) EQ '(').REG                           88150  00080000
+&NM      LA    R1,&AD        LOAD MESSAGE ADDRESS                88150  00090000
+         AGO   .BLN          PROCESS LENGTH OPERAND              88150  00100000
+.LIT     ANOP  ,                                                 88150  00110000
+&NM      LA    R1,=C&AD      LOAD MESSAGE ADDRESS                88150  00120000
+         AIF   ('&LN' NE '').BLN                                 88150  00130000
+&ML      SETA  K'&AD-2                                           88150  00140000
+         LA    R0,&ML        LOAD MESSAGE LENGTH                 88150  00150000
+         AGO   .BCAL                                             88150  00160000
+.REG     AIF   ('&AD' EQ '(1)' OR '&AD' EQ '(R1)').LEN           88150  00170000
+&NM      LR    R1,&AD(1)     LOAD MESSAGE ADDRESS                88150  00180000
+.BLN     ANOP  ,                                                 88150  00190000
+&NM      SETC  ''            LABEL ALREADY EXPANDED              88150  00200000
+.LEN     AIF   ('&LN' NE '').LNP                                        00210000
+&L       SETC  'L'''                                                    00220000
+&NM      LA    R0,&L&AD                                                 00230000
+         AGO   .BCAL                                                    00240000
+.LNP     AIF   ('&LN'(1,1) EQ '(').REGL                          88150  00250000
+&NM      LA    R0,&LN        LOAD MESSAGE LENGTH                 88150  00260000
+         AGO   .BCAL         PROCESS CALL                        88150  00270000
+.REGL    AIF   ('&LN' EQ '(0)' OR '&LN' EQ '(R0)').CALL          88150  00280000
+&NM      LR    R0,&LN(1)     LOAD MESSAGE LENGTH                 88150  00290000
+.BCAL    ANOP  ,                                                 88150  00300000
+&NM      SETC  ''                                                88150  00310000
+.CALL    AIF   ('&MODE' EQ 'EDIT' OR '&MODE' EQ 'ASIS' OR              *00320000
+                '&MODE' EQ 'CONTROL').MOK                        88150  00330000
+         AIF   ('&MODE' EQ 'DARK' OR '&MODE' EQ 'PROMPT').PUTGET 88255  00340000
+&MD      SETC  'EDIT'        SET DEFAULT                         88150  00350000
+         MNOTE 4,'INVALID MODE OPERAND - &MODE'                  88150  00360000
+         AGO   .KALL                                             88150  00370000
+.PUTGET  ANOP  ,                                                 88255  00380000
+&MN      SETC  'PTGT'        USE PUTGET INSTEAD OF PUTLINE       88255  00390000
+.MOK     ANOP  ,                                                 88150  00400000
+&MD      SETC  '&MODE'(1,4)  TRUNCATE                            88150  00410000
+.KALL    ANOP  ,                                                 88150  00420000
+&NM      SUBCALL &MN&MD      PROCESS OUTPUT SERVICE              88255  00430000
+         MEND  ,                                                 88255  00440000

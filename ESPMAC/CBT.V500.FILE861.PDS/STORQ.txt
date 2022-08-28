@@ -1,0 +1,43 @@
+         MACRO ,                                        ADDED ON 79226  00010000
+&NM      STORQ &IN=,&LEN=,&OUT=,&ERR=EXCSOP,                           *00020000
+               &WK0=R0,&WK1=R1,&WK2=R2,&WK3=R3,&WK4=R4,&WK5=R5          00030000
+.********************************************************************** 00040000
+.*                                                                   ** 00050000
+.*   USED BY EXHIBIT COMMANDS TO PARSE A QUOTED STRING               ** 00060000
+.*                                                                   ** 00070000
+.********************************************************************** 00080000
+         LCLC  &T                                                       00090000
+&T       SETC  'STQ'.'&SYSNDX'                                          00100000
+&NM      LA    &WK0,1        CONSTANT ONE                               00110000
+         MACPARM &WK1,&OUT                                              00120000
+         MACPARM &WK2,&LEN                                              00130000
+         MACPARM &WK5,&IN                                               00140000
+         LR    &WK3,&WK2     SAVE FULL LENGTH                           00150000
+         LNR   &WK4,&WK5     SET MINUS FOR UNQUOTED                     00160000
+         CLI   0(&WK5),C''''  QUOTED ?                                  00170000
+         BE    &T.A-2        YES                                        00180000
+         CLI   0(&WK5),C'"'   REAL QUOTE ?                              00190000
+         BNE   &T.A+2        NO                                         00200000
+         LR    &WK4,&WK5     SAVE LOCATION OF QUOTE                     00210000
+&T.A     AR    &WK5,&WK0     GET NEXT BYTE                              00220000
+         LTR   &WK4,&WK4     DOING QUOTED STRING ?                      00230000
+         BP    &T.C          YES                                        00240000
+         CLI   0(&WK5),C' '  END OF INPUT ?                             00250000
+         BE    &T.D          YES                                        00260000
+         CLI   0(&WK5),C','  ALTERNATE END                              00270000
+         BE    &T.D          YES                                        00280000
+&T.B     LTR   &WK2,&WK2     ROOM FOR ANOTHER ?                         00290000
+         BNP   &ERR          NO; FAIL                                   00300000
+         MVC   0(1,&WK1),0(&WK5)  MOVE ONE                              00310000
+         AR    &WK1,&WK0     UP ONE                                     00320000
+         BCTR  &WK2,0        ADJUST LENGTH                              00330000
+         B     &T.A          SKIP AND TEST AGAIN                        00340000
+&T.C     CLC   0(1,&WK5),0(&WK4)  QUOTE ?                               00350000
+         BNE   &T.B          NO; COPY                                   00360000
+         AR    &WK5,&WK0     SKIP FIRST DOUBLED QUOTE            80328  00370000
+         CLC   0(1,&WK5),0(&WK4)  DOUBLED ?                      89166  00380000
+         BE    &T.B          AND MOVE SECOND                            00390000
+         SR    &WK5,&WK0      FINAGLE FOR NEXT ADD                      00400000
+&T.D     AR    &WK5,&WK0     SKIP SEPARATION CHARACTER                  00410000
+         SR    &WK3,&WK2     SET STRING LENGTH                          00420000
+         MEND  ,                                                        00430000

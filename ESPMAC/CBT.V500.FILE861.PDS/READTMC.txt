@@ -1,0 +1,42 @@
+         MACRO ,                                                        00010000
+&NM      READTMC &FUN,&PARM,&BUFNO=,&TEST=,&EXT=NO    UPDATED ON 81173  00020000
+         GBLC  &MACPLAB                                                 00030000
+         GBLB  &TMC@EXT                                          81173  00040000
+         LCLA  &I                                                       00050000
+&MACPLAB SETC  '&NM'         INIT LABEL                                 00060000
+         AIF   ('&EXT' EQ 'NO').NTEXT                            81173  00070000
+&TMC@EXT SETB  1                                                 81173  00080000
+.NTEXT   AIF   ('&FUN' NE '').HAVEFUN                            81173  00090000
+         MNOTE 8,'***** FUNCTION REQUIRED : OPEN/CLOSE/VOL/DSN'         00100000
+         MEXIT ,                                                        00110000
+.HAVEFUN AIF   ('&FUN' EQ 'OPEN' OR '&BUFNO' EQ '').BUFOK               00120000
+         MNOTE 0,'***** BUFNO VALID FOR ''OPEN'' ONLY; IGNORED'         00130000
+.BUFOK   AIF   ('&FUN' EQ 'CLOSE').DOC2                                 00140000
+&I       SETA  1                                                        00150000
+         AIF   ('&FUN' EQ 'OPEN').DOC0                                  00160000
+&I       SETA  2                                                        00170000
+         AIF   ('&FUN' EQ 'VOL').DOC0                            93025  00180000
+&I       SETA  3                                                        00190000
+         AIF   ('&FUN' EQ 'DSN' OR '&FUN' EQ 'DSNB').DOC0               00200000
+&I       SETA  4                                                 93025  00210000
+         AIF   ('&FUN' EQ 'TMC' OR '&FUN' EQ 'RAW').DOC0         93025  00220000
+         MNOTE 8,'***** FUNCTION &FUN INVALID; USE OPEN/CLOSE/VOL/DSN'  00230000
+         MEXIT ,                                                        00240000
+.DOC0    AIF   ('&PARM' EQ '').ZR1                                      00250000
+         MACPARM R1,&PARM    LOAD BUFFER ADDRESS (BXLE FOR OPEN)        00260000
+         AGO   .DOC1                                                    00270000
+.ZR1     MACPARM R1,0        CLEAR R1 (LOCATE MODE)                     00280000
+.DOC1    AIF   (&I NE 1).DOC2                                           00290000
+         AIF   ('&BUFNO' EQ '' OR '&BUFNO' EQ '0').DOC2                 00300000
+&MACPLAB ICM   R1,8,=AL1(&BUFNO)  LOAD NO. OF BUFFERS                   00310000
+&MACPLAB SETC  ''                                                       00320000
+.DOC2    MACPARM R0,&I       SET FUNCTION CODE                          00330000
+         AIF   (&TMC@EXT).DOEXT                                  81173  00340000
+&MACPLAB L     R15,=V(@TMSREAD)                                         00350000
+         AGO   .EXTCOM                                           81173  00360000
+.DOEXT   ANOP  ,                                                 81173  00370000
+&MACPLAB L     R15,@TMSREAD                                             00380000
+.EXTCOM  BALR  R14,R15                                           81173  00390000
+         AIF   ('&TEST' EQ '' OR '&TEST' EQ 'NO').MEND                  00400000
+         CH    R15,=H'4'     TEST RETURN CODE                           00410000
+.MEND    MEND  ,                                                        00420000

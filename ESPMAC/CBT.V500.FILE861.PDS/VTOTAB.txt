@@ -1,0 +1,34 @@
+         MACRO                                                          00010000
+&NM     VTOTAB &BIT,&ITEM,&LEN                                          00020000
+         LCLA  &I,&K,&L                                                 00030000
+         AIF   ('&BIT' EQ '*END').END                                   00040000
+         AIF   ('&LEN' EQ '').DEF                                       00050000
+         AIF   ('&ITEM'(1,1) EQ '''').EXLQ                              00060000
+&NM      DC    AL1(&BIT,&LEN-1),CL(&LEN)'&ITEM'                         00070000
+         MEXIT                                                          00080000
+.EXLQ    ANOP                                                           00090000
+&NM      DC    AL1(&BIT,&LEN-1),CL(&LEN)&ITEM                           00100000
+         MEXIT                                                          00110000
+.DEF     ANOP                                                           00120000
+&I       SETA  K'&ITEM                                                  00130000
+         AIF   ('&ITEM'(1,1) EQ '''').IMLQ                              00140000
+&NM      DC    AL1(&BIT,&I-1),CL&I'&ITEM'                               00150000
+         MEXIT                                                          00160000
+.IMLQ    ANOP                                                           00170000
+&L       SETA  &I-2                                                     00180000
+&I       SETA  &I-1                                                     00190000
+&K       SETA  2                                                        00200000
+.LOOP    AIF   (&K GE &I).EXPQ                                          00210000
+         AIF   ('&ITEM'(&K,2) EQ '''''').DOUB                           00220000
+&K       SETA  &K+1                                                     00230000
+         AGO   .LOOP                                                    00240000
+.DOUB    ANOP                                                           00250000
+&K       SETA  &K+2                                                     00260000
+&L       SETA  &L-1                                                     00270000
+         AGO   .LOOP                                                    00280000
+.EXPQ    ANOP                                                           00290000
+&NM      DC    AL1(&BIT,&L-1),CL&L&ITEM                                 00300000
+         MEXIT                                                          00310000
+.END     ANOP                                                           00320000
+&NM      DC    AL1(0,255) .    END OF LIST                              00330000
+         MEND                                                           00340000

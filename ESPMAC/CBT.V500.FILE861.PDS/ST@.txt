@@ -1,0 +1,18 @@
+         MACRO ,                                                        00010000
+&NM      ST@   &R,&ADDR,&MVI=                                           00020000
+         AIF   ('&ADDR'(1,1) EQ '(').REG                                00030000
+&NM      STCM  &R(1),7,1+&ADDR .   STORE ADDRESS BYTES                  00040000
+         AIF   ('&MVI' EQ '').MEND                                      00050000
+         AIF   ('&MVI'(1,1) EQ '(').MR                                  00060000
+         MVI   &ADDR,&MVI .    SET NEW HIGH BYTE                        00070000
+         AGO   .MEND                                                    00080000
+.MR      STC   &MVI(1),&ADDR .   SET NEW HIGH BYTE                      00090000
+         AGO   .MEND                                                    00100000
+.REG     ANOP  ,                                                        00110000
+&NM      STCM  &R(1),7,1&ADDR .   STORE ADDRESS BYTES                   00120000
+         AIF   ('&MVI' EQ '').MEND                                      00130000
+         AIF   ('&MVI'(1,1) EQ '(').SR                                  00140000
+         MVI   0&ADDR,&MVI .    SET NEW HIGH BYTE                       00150000
+         AGO   .MEND                                                    00160000
+.SR      STC   &MVI(1),0&ADDR .   SET NEW HIGH BYTE                     00170000
+.MEND    MEND  ,                                                        00180000

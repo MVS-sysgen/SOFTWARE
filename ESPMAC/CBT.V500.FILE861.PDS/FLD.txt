@@ -1,0 +1,97 @@
+         MACRO                                                          00001000
+&L       FLD   &TYP,&LEN,&LAB,&BLEN,&SEP=1                              00002000
+.*             TYP IS V, H, S, OR T                                     00003000
+.*             LEN IS THE DECIMAL LENGTH FOR H AND V,.*                 00004000
+.*                    THE COLUMN NUMBER FOR T,                          00005000
+.*                    AND THE NUMBER OF COLUMNS FOR S.                  00006000
+.*             LAB IS THE LABEL OR LABEL LENGTH FOR H AND V             00007000
+.*             BLEN IS THE NUMBER OF BLANKS TO ALLOW AFTER THE FIELD    00008000
+.*             SEP, FOR H ONLY, IS THE NUMBER OF BLANKS BETWEEN         00009000
+.*                              THE LABEL AND THE FIELD                 00010000
+         GBLA  &PCCLINE,&PCCPOS,&PCCLTYP                                00011000
+         GBLB  &DBMAC                                                   00012000
+         LCLA  &L2,&L3,&LN                                              00013000
+         LCLC  &KLUDGE                                                  00014000
+         AIF   (NOT &DBMAC).NOSNAP                                      00015000
+         MNOTE *,'PCCPOS=&PCCPOS PCCLINE=&PCCLINE'                      00016000
+.NOSNAP  ANOP                                                           00017000
+         AIF   ('&TYP' EQ 'H').H        IS IT HORIZONTAL FIELD?         00018000
+         AIF   ('&TYP' EQ 'V').V        IS IT VERTICAL FIELD?           00019000
+         AIF   ('&TYP' EQ 'T').T        IS IT TAB?                      00020000
+         AIF   ('&TYP' EQ 'S').S        IS IT SPACE?                    00021000
+         MNOTE 8,'1ST OPERAND NOT H, V, S, OR T'                        00022000
+         MEXIT                                                          00023000
+.*                                                                      00024000
+.*                                                                      00025000
+.*                                                                      00026000
+.S       AIF   ('&LEN'(1,1) EQ '-').SBACK                               00027000
+         AIF   (&PCCPOS+&LEN GT 80).SPACEU                              00028000
+&PCCPOS  SETA  &PCCPOS+&LEN                                             00029000
+         MEXIT                                                          00030000
+.SBACK   ANOP                                                           00031000
+&KLUDGE  SETC  '&LEN'(2,K'&LEN-1)                                       00032000
+         AIF   (NOT &DBMAC).NOSNAP1                                     00033000
+         MNOTE *,'KLUDGE=&KLUDGE'                                       00034000
+.NOSNAP1 ANOP                                                           00035000
+         AIF   (&PCCPOS-&KLUDGE LE 0).BACKU                             00036000
+&PCCPOS  SETA  &PCCPOS-&KLUDGE                                          00037000
+         MEXIT                                                          00038000
+.BACKU   MNOTE 8,'BACKSPACE PAST START OF LINE - POS SET TO 1'          00039000
+&PCCPOS  SETA  1                                                        00040000
+         MEXIT                                                          00041000
+.*                                                                      00042000
+.*                                                                      00043000
+.*                                                                      00044000
+.T       AIF   (&LEN GT 80).TABU                                        00045000
+&PCCPOS  SETA  &LEN                                                     00046000
+         MEXIT                                                          00047000
+.TABU    MNOTE 4,'TAB PAST POSITION 80 TREATED AS LNE NEXT'             00048000
+.SPACEU  LNE                                                            00049000
+         MEXIT                                                          00050000
+.*                                                                      00051000
+.*                                                                      00052000
+.*                                                                      00053000
+.H       ANOP                                                           00054000
+&PCCLTYP SETA  0                                                        00055000
+         AGO   .TSTLAB                                                  00056000
+.*                                                                      00057000
+.*                                                                      00058000
+.*                                                                      00059000
+.V       ANOP                                                           00060000
+&PCCLTYP SETA  1                                                        00061000
+.TSTLAB  AIF   (T'&LAB EQ 'N').LABN                                     00062000
+         AIF   (T'&LAB EQ 'O').TSTBLEN                                  00063000
+&L2      SETA  K'&LAB                                                   00064000
+         AIF   ('&LAB'(1,1) NE '''').TSTBLEN                            00065000
+&L2      SETA  &L2-2                                                    00066000
+         AGO   .TSTBLEN                                                 00067000
+.LABN    ANOP                                                           00068000
+&L2      SETA  &LAB                                                     00069000
+.TSTBLEN AIF   (T'&BLEN EQ 'O').NOBLEN                                  00070000
+&L3      SETA  &BLEN                                                    00071000
+.NOBLEN  AIF   ('&TYP' EQ 'V' AND &PCCPOS+&L2 LE 81                    *00072000
+               AND &PCCPOS+&LEN LE 81                                  *00073000
+               OR &PCCPOS+&L2+&LEN LE 81).NOSKIP                        00074000
+         LNE                                                            00075000
+.NOSKIP  AIF   ('&TYP' EQ 'H').HORG                                     00076000
+&LN      SETA  &L2                                                      00077000
+         AIF   (&LN GE &LEN).VORG                                       00078000
+&LN      SETA  &LEN                                                     00079000
+.VORG    AIF   (&L2 EQ 0).NOVL                                          00080000
+         ORG   BUF+(&PCCLINE-1)*80+&PCCPOS+&LN-&L2-1                    00081000
+L&L      DS    CL&L2                                                    00082000
+.NOVL    ORG   BUF+&PCCLINE*80+&PCCPOS+&LN-&LEN-1                       00083000
+B&L      DS    CL&LEN                                                   00084000
+&PCCPOS  SETA  &PCCPOS+&LN+&L3                                          00085000
+         MEXIT                                                          00086000
+.HORG    ORG   BUF+(&PCCLINE-1)*80+&PCCPOS-1                            00087000
+         AIF   (&L2 EQ 0).NOHL                                          00088000
+L&L      DS    CL&L2                                                    00089000
+         AIF   ('&SEP' EQ '' OR '&SEP' EQ '0').NOHL                     00090000
+&L2      SETA  &L2+&SEP                                                 00091000
+         DS    CL&SEP                                                   00092000
+.NOHL    AIF   (&LEN EQ 0).NOHB                                         00093000
+B&L      DS    CL&LEN                                                   00094000
+.NOHB    ANOP                                                           00095000
+&PCCPOS  SETA  &PCCPOS+&L2+&LEN+&L3                                     00096000
+         MEND                                                           00097000

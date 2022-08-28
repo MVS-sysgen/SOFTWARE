@@ -1,0 +1,184 @@
+         MACRO ,                                                        00010000
+&NM      #OPMSG &ADDR,&LEN,&TYPE=MSG,  WRITE A MESSAGE (WTO)           *00020000
+               &LIST=,&PARM=CALLPARM   MESSAGE WITH TEXT INSERTION      00030000
+         GBLC  &MACPLAB                                                 00040000
+         LCLA  &K,&I,&J,&N,&M,&O                                        00050000
+         LCLB  &TF                                                      00060000
+         LCLC  &RA,&RL,&L    DEFINE ADDRESS AND LENGTH REGISTERS        00070000
+         LCLC  &TEXT         USER SPECIFIED ADDRESS             GP12319 00080000
+&RA      SETC  'R1'          SET NORMAL USE                             00090000
+&RL      SETC  'R0'                                                     00100000
+&L       SETC  'L'''                                                    00110000
+&TEXT    SETC  '&ADDR'                                          GP12319 00120000
+&MACPLAB SETC  '&NM'         SET NAME FIELD                             00130000
+&N       SETA  N'&LIST                                                  00140000
+&TF      SETB  ('&TYPE' EQ 'MSG')                               GP12319 00150000
+.*--------------------------------------------------------------------* 00160000
+.*                                                                    * 00170000
+.*  #OPMSG GENERATES A CALL TO THE WTO SUBROUTINE SUBWTO              * 00180000
+.*                                                                    * 00190000
+.*  TEXT  SPECIFIES TEXT DATA NOT EXCEEDING 100 BYTES IN LENGTH,      * 00200000
+.*    A) AS A QUOTED STRING                                           * 00210000
+.*    B) ADDRESS OF A BCON VARIABLE AL1(LEN-1),C(LEN)'TEXT'           * 00220000
+.*    C) ADDRESS OF A HCON VARIALBE AL2(LEN),C(LEN)'TEXT'             * 00230000
+.*    D) ADDRESS OF A VCON VARIALBE AL2(LEN+4,0),C(LEN)'TEXT'         * 00240000
+.*    E) ADDRESS OF TEXT STRING TERMINATED BY A NULL (X'00')          * 00250000
+.*    F) ADDRESS OF A TEXT STRING; WITH AN EXPLICIT LENGTH            * 00260000
+.*         SPECIFIED AS THE NEXT PARAMETER                            * 00270000
+.*                                                                    * 00280000
+.*  TYPE=INIT OR TYPE=NAME DEFINES THE TEXT (UP TO 32 BYTES)          * 00290000
+.*    AS A PREFIX TO SUBSEQUENT MESSAGES                              * 00300000
+.*                                                                    * 00310000
+.*  TYPE=END (OR A TEXT SPECIFICATION OF *END) REQUESTS SUBWTO        * 00320000
+.*    TO CLEAN UP AND RELEASE STORAGE                                 * 00330000
+.*                                                                    * 00340000
+.*  TYPE=MSG (DEFAULT) SPECIFIES A MESSAGE TO BE WRITTEN TO THE       * 00350000
+.*    OPERATOR                                                        * 00360000
+.*                                                                    * 00370000
+.*  TYPE=MSG WITH LIST=(A,L,A,L...) SPECIFIES A MESSAGE WITH TEXT     * 00380000
+.*    INSERTION (THE FIRST OPERAND IS PARSED FOR | SEPARATORS THAT    * 00390000
+.*    ARE REPLACED BY THE CORRESPONDING A,L VARIABLES.                * 00400000
+.*    A) THE FIRST OPERAND IS IN THE LIST, UNLESS EXPLICIT TEXT       * 00410000
+.*       IS SPECIFIED AS THE FIRST POSITIONAL PARAMETER               * 00420000
+.*    B) "L" MUST BE A SELF-DEFINING OR ABSOLUTE TERM < 256  OR       * 00430000
+.*       "L" MAY BE THE ADDRESS OF A #FMT MF=L MACRO DEFINING THE     * 00440000
+.*       INPUT DATA TYPE, LEN, AND CONVERSION/FORMATTING OPTIONS.     * 00450000
+.*                                                                    * 00460000
+.*  PARM=CALLPARM DEFINES A REMOTE PARAMETER LIST TO BE USED (NEEDS   * 00470000
+.*    TWO WORDS PER TEXT AND INSERTION VARIABLE                       * 00480000
+.*                                                                    * 00490000
+.*  TYPE=TEXT WITH LIST= BYPASSES THE WTO, BUT RETURNS THE MESSAGE    * 00500000
+.*    ADDRESS IN R1: H'LEN',CL(LEN)'TEXT'                             * 00510000
+.*                                                                    * 00520000
+.*--------------------------------------------------------------------* 00530000
+         AIF   ('&TEXT' EQ '*END').CLOSE                                00540000
+         AIF   ('&TYPE' EQ 'CLOSE' OR '&TYPE' EQ 'END').CLOSE           00550000
+         AIF   ('&TYPE' NE 'INIT' AND '&TYPE' NE 'NAME').DOMSG          00560000
+&RA      SETC  'R0'          EXCHANGE ASSIGNMENTS                       00570000
+&RL      SETC  'R1'                                                     00580000
+         AIF   (T'&ADDR NE 'O').DOMSG                           GP12319 00590000
+         MACPARM &RL,2+&TF   SIGNAL NO TEXT PARAMETER           GP12319 00600000
+         MACPARM &RA,257     MUST BE NON-ZERO; > 255            GP12319 00610000
+         AGO   .COMBAS                                          GP12319 00620000
+.DOMSG   AIF   (&N EQ 0).GOMSG                                          00630000
+.*--------------------------------------------------------------------* 00640000
+.*  PROCESS A MESSAGE LIST (TEXT/LEN OPTIONAL IF N'&LIST>2)           * 00650000
+.*--------------------------------------------------------------------* 00660000
+&M       SETA    1           OFFSET IN LIST=                            00670000
+         MACPARM R1,&PARM    LOAD PARAMETER LIST                        00680000
+         MACPARM R1,=X'80000000',OP=O  MAKE LIST FLAG                   00690000
+         MACPARM R0,&TF      SET FLAG (0-WTO; 1-NO WTO,RETURN MSG ADD)  00700000
+.*--------------------------------------------------------------------* 00710000
+.*  CASE 1A - EXPLICIT TEXT/LEN SUPPLIED - STASH FIRST                * 00720000
+.*--------------------------------------------------------------------* 00730000
+         AIF   ('&TEXT' EQ '').LSTADD                                   00740000
+         AIF   ('&TEXT'(1,1) EQ '''').LSTRNG                            00750000
+         MACPARM R15,&TEXT,OP=LA LOAD ADDRESS OF NAME OR REGISTER       00760000
+         MACPARM R15,0(,R1),OP=ST STORE ADDRESS IN CALL LIST            00770000
+         MACPARM R15,&LEN,NULL=0  SET EXPLICIT LENGTH OR 0              00780000
+         MACPARM R15,4(,R1),OP=ST STORE LENGTH IN CALL LIST             00790000
+&O       SETA   &O+8         NEXT AVAILABLE LIST OFFSET                 00800000
+         AGO   .LSTADD                                                  00810000
+.*--------------------------------------------------------------------* 00820000
+.*  CASE 1B - EXPLICIT QUOTED TEXT SUPPLIED                           * 00830000
+.*--------------------------------------------------------------------* 00840000
+.LSTRNG  ANOP  ,                                                        00850000
+&K       SETA  K'&TEXT-2     LENGTH OF QUOTED STRING (EXC AMPSND/QOT)   00860000
+&I       SETA  2             FIRST BYTE TO EXAMINE                      00870000
+&J       SETA  &K            LAST BYTE (PAIR) TO EXAMINE                00880000
+.LSTLOOP AIF   (&I GT &J).LSTEXP                                        00890000
+         AIF   ('&TEXT'(&I,2) EQ '''''' OR '&TEXT'(&I,2) EQ '&&').LSTPR 00900000
+&I       SETA  &I+1          TRY AGAIN                                  00910000
+         AGO   .LSTLOOP                                                 00920000
+.LSTPR   ANOP  ,                                                        00930000
+&I       SETA  &I+2          SKIP THE PAIR                              00940000
+&K       SETA  &K-1          AND CORRECT THE LENGTH                     00950000
+         AGO   .LSTLOOP                                                 00960000
+.LSTEXP  LA    R15,=C&TEXT   LOAD THE STRING ADDRESS                    00970000
+         MACPARM R15,0(,R1),OP=ST STORE ADDRESS IN CALL LIST            00980000
+         MACPARM R15,&K,OP=LA LOAD THE LENGTH OF THE STRING             00990000
+         MACPARM R15,4(,R1),OP=ST STORE LENGTH IN CALL LIST             01000000
+&O       SETA   &O+8         NEXT AVAILABLE LIST OFFSET                 01010000
+.*--------------------------------------------------------------------* 01020000
+.*  CASE 2  - LOOP THROUGH SUPPLIED ADDRESS/LEN PAIRS AND STASH       * 01030000
+.*--------------------------------------------------------------------* 01040000
+.LSTADD  AIF   (&M GT &N).LSTEND  DONE - SET VL BIT IN LIST             01050000
+&RA      SETC  '&LIST(&M)'                                              01060000
+&RL      SETC  '&LIST(&M+1)'                                            01070000
+         AIF   ('&RA' NE '').HAVERA                                     01080000
+&RA      SETC  '0'           NULL ADDRESS - NO SUBSTITUTION             01090000
+.HAVERA  AIF   ('&RL' NE '').HAVERL                                     01100000
+&RL      SETC  '0'           NULL ADDRESS - NO SUBSTITUTION             01110000
+.*--------------------------------------------------------------------* 01120000
+.*  CASE 2A - EXPLICIT TEXT/LEN SUPPLIED                              * 01130000
+.*--------------------------------------------------------------------* 01140000
+.HAVERL  AIF   ('&RA'(1,1) EQ '''').ENTRNG                              01150000
+         MACPARM R15,&RA,OP=LA LOAD ADDRESS OF NAME OR REGISTER         01160000
+         MACPARM R15,&O.(,R1),OP=ST STORE ADDRESS IN CALL LIST          01170000
+         MACPARM R15,&RL,NULL=0   SET EXPLICIT LENGTH OR 0              01180000
+         MACPARM R15,&O+4(,R1),OP=ST STORE LENGTH IN CALL LIST          01190000
+&O       SETA   &O+8         NEXT AVAILABLE LIST OFFSET                 01200000
+&M       SETA   &M+2                                                    01210000
+         AGO   .LSTADD                                                  01220000
+.*--------------------------------------------------------------------* 01230000
+.*  CASE 2B - EXPLICIT QUOTED TEXT SUPPLIED                           * 01240000
+.*--------------------------------------------------------------------* 01250000
+.ENTRNG  ANOP  ,                                                        01260000
+&K       SETA  K'&RA-2       LENGTH OF QUOTED STRING (EXC AMPSND/QOT)   01270000
+&I       SETA  2             FIRST BYTE TO EXAMINE                      01280000
+&J       SETA  &K            LAST BYTE (PAIR) TO EXAMINE                01290000
+.ENTLOOP AIF   (&I GT &J).ENTEXP                                        01300000
+         AIF   ('&RA'(&I,2) EQ '''''' OR '&RA'(&I,2) EQ '&&').ENDPR     01310000
+&I       SETA  &I+1          TRY AGAIN                                  01320000
+         AGO   .ENTLOOP                                                 01330000
+.ENDPR   ANOP  ,                                                        01340000
+&I       SETA  &I+2          SKIP THE PAIR                              01350000
+&K       SETA  &K-1          AND CORRECT THE LENGTH                     01360000
+         AGO   .ENTLOOP                                                 01370000
+.ENTEXP  LA    R15,=C&RA     LOAD THE STRING ADDRESS                    01380000
+         MACPARM R15,&O.(,R1),OP=ST STORE ADDRESS IN CALL LIST          01390000
+         MACPARM R15,&K,OP=LA LOAD THE LENGTH OF THE STRING             01400000
+         MACPARM R15,&O+4(,R1),OP=ST STORE LENGTH IN CALL LIST          01410000
+&O       SETA   &O+8         NEXT AVAILABLE LIST OFFSET                 01420000
+&M       SETA   &M+2                                                    01430000
+         AGO   .LSTADD                                                  01440000
+.LSTEND  ANOP  ,                                                        01450000
+&O       SETA  &O-4          POSITION TO LAST WORD IN LIST              01460000
+         MACPARM &O.(R1),X'80',OP=OI                                    01470000
+         AGO   .COMBAS  DONE - INVOKE SUBWTO                            01480000
+.*--------------------------------------------------------------------* 01490000
+.*  PROCESS A NORMAL MESSAGE                                          * 01500000
+.*--------------------------------------------------------------------* 01510000
+.GOMSG   AIF   ('&TEXT'(1,1) EQ '''').MSGSTR                            01520000
+         MACPARM &RA,&TEXT,OP=LA LOAD ADDRESS OF NAME OR REGISTER       01530000
+         AIF   ('&LEN' EQ '').NOLEN                                     01540000
+         MACPARM &RL,&LEN    LOAD TEXT LENGTH                           01550000
+         AGO   .COMBAS                                                  01560000
+.NOLEN   MACPARM &RL,&RL,OP=SLR,OPR=SLR,MODE=EVEN  SIGNAL INIT CALL     01570000
+         AGO   .COMBAS                                                  01580000
+.MSGSTR  ANOP  ,                                                        01590000
+&K       SETA  K'&TEXT-2     LENGTH OF QUOTED STRING (EXC AMPSND/QOT)   01600000
+&I       SETA  2             FIRST BYTE TO EXAMINE                      01610000
+&J       SETA  &K            LAST BYTE (PAIR) TO EXAMINE                01620000
+.MSGLOOP AIF   (&I GT &J).MSGEXP                                        01630000
+         AIF   ('&TEXT'(&I,2) EQ '''''' OR '&TEXT'(&I,2) EQ '&&').MSGPR 01640000
+&I       SETA  &I+1          TRY AGAIN                                  01650000
+         AGO   .MSGLOOP                                                 01660000
+.MSGPR   ANOP  ,                                                        01670000
+&I       SETA  &I+2          SKIP THE PAIR                              01680000
+&K       SETA  &K-1          AND CORRECT THE LENGTH                     01690000
+         AGO   .MSGLOOP                                                 01700000
+.*--------------------------------------------------------------------* 01710000
+.*  SET R0=R1=0 TO SIGNAL TERMINATION                                 * 01720000
+.*--------------------------------------------------------------------* 01730000
+.CLOSE   MACPARM R0,0        CLEAR R0                                   01740000
+         MACPARM R1,0        AND R1                                     01750000
+         AGO   .COMBAS       TO SIGNAL END                              01760000
+.*--------------------------------------------------------------------* 01770000
+.*  LOAD R0 AND R1 APPROPRIATELY; CALL SUBWTO FOR SERVICE             * 01780000
+.*--------------------------------------------------------------------* 01790000
+.MSGEXP  MACPARM &RL,&K,OP=LA LOAD THE LENGTH OF THE STRING             01800000
+         LA    &RA,=C&TEXT   LOAD THE STRING ADDRESS                    01810000
+.COMBAS  MACPARM R15,=V(SUBWTO),OP=L                                    01820000
+         BASR  R14,R15       INVOKE IT                                  01830000
+         MEND  ,                                                        01840000

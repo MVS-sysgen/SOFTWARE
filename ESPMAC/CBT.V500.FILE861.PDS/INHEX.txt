@@ -1,0 +1,45 @@
+         MACRO                                                          00010000
+&NM      INHEX &OUT,&IN,&LIN,&MAKE=                             GP03011 00020000
+         GBLB  &INLINE(50)                                              00030000
+         GBLC  &ZZIXMAK                                         GP03016 00040000
+         LCLC  &L                                                       00050000
+&INLINE(5) SETB 1                                                       00060000
+&L       SETC  'L'''                                                    00070000
+         AIF   ('&MAKE' EQ '').NORIDE                           GP03016 00080000
+&ZZIXMAK SETC  '&MAKE'                                          GP03016 00090000
+.NORIDE  AIF   ('&ZZIXMAK' NE '').BRANCH                        GP03016 00100000
+&ZZIXMAK SETC  'UPD'         DEFAULT FORMATTING                 GP03016 00110000
+.BRANCH  AIF   ('&ZZIXMAK' EQ 'DEB').DEB                        GP03011 00120000
+         AIF   ('&ZZIXMAK' EQ 'OUT').OUT                         89260  00130000
+         AIF   ('&ZZIXMAK' EQ 'OUTC').OUT                       GP06353 00140000
+         AIF   ('&LIN' NE '').UPDLIN                            GP06282 00150000
+&NM      UNPK  UPD(&L&OUT+1),&IN.(&L&OUT/2+1)                           00160000
+         TR    UPD(&L&OUT),HEXTAB                                       00170000
+         MVC   &OUT,UPD                                                 00180000
+         MEXIT ,                                                 89260  00190000
+.UPDLIN  ANOP  ,                                                GP06282 00200000
+&NM      UNPK  UPD(2*&LIN+1),&IN.(&LIN+1)                       GP06282 00210000
+         TR    UPD(2*&LIN),HEXTAB                               GP06282 00220000
+         MVC   &OUT.(2*&LIN),UPD                                GP06282 00230000
+         MEXIT ,                                                GP06282 00240000
+.OUT     AIF   ('&LIN' NE '').OUTLIN                            GP06282 00250000
+&NM      UNPK  &OUT.(&L&OUT+1),&IN.(&L&IN+1)                     89260  00260000
+         TR    &OUT,HEXTAB                                       89260  00270000
+         AIF   ('&ZZIXMAK' NE 'OUTC').MEND                      GP06353 00280000
+         MVI   &OUT+L'&OUT,C' '                                 GP06353 00290000
+         MEXIT ,                                                        00300000
+.OUTLIN  ANOP  ,                                                GP06282 00310000
+&NM      UNPK  DB(2*&LIN+1),&IN.(&LIN+1)                        GP06282 00320000
+         TR    DB(2*&LIN),HEXTAB                                GP06282 00330000
+         MVC   &OUT.(2*&LIN),DB                                 GP06282 00340000
+         MEXIT ,                                                GP06282 00350000
+.DEB     AIF   ('&LIN' NE '').DEBLIN                            GP03011 00360000
+&NM      UNPK  DBWDB(&L&OUT+1),&IN.(&L&OUT/2+1)                 GP03011 00370000
+         TR    DBWDB(&L&OUT),TABHEXTR                           GP03011 00380000
+         MVC   &OUT,DBWDB                                       GP03011 00390000
+         MEXIT ,                                                GP03011 00400000
+.DEBLIN  ANOP  ,                                                GP03011 00410000
+&NM      UNPK  DBWDB(2*&LIN+1),&IN.(&LIN+1)                     GP03011 00420000
+         TR    DBWDB(2*&LIN),TABHEXTR                           GP03011 00430000
+         MVC   &OUT.(2*&LIN),DBWDB                              GP03011 00440000
+.MEND    MEND                                                           00450000

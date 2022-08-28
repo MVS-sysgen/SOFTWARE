@@ -1,0 +1,78 @@
+         MACRO ,                                                        00010000
+&NM      $TCKCONV &STCKVAL=,&CONVVAL=,&TIMETYP=,&DATETYP=,&MF=S,&ZONE=G*00020000
+               MT                                                       00030000
+.********************************************************************** 00040000
+.*   THIS MACRO INVOKES LOCAL SUBROUTINE SUBSTCK TO PRODUCE OUTPUT    * 00050000
+.*   COMPATIBLE WITH THE STCKCONV MACRO IN ESA AND LATER SYSTEMS.     * 00060000
+.*   FOR USE UNDER THE XF ASSEMBLER, 8-BYTE KEYWORDS WERE SHORTENED   * 00070000
+.*   TO 7 BYTES. THE ZONE=GMT|LT OPTION WAS ADDED AS IN TIME MACRO.   * 00080000
+.*   STCKVAL=0 REQUESTS CURRENT TOD CLOCK VALUE.                      * 00090000
+.********************************************************************** 00100000
+         GBLC  &MACPLAB                                                 00110000
+         LCLB  &TB(8),&DB(9)  TIME & DATE FLAG BITS                     00120000
+         LCLC  &TV,&DV,&ERP                                             00130000
+&TB(8)   SETB  ('&TIMETYP' EQ 'BIN' OR '&TIMETYP' EQ 'MIC')             00140000
+&TB(7)   SETB  ('&TIMETYP' EQ 'DEC' OR '&TIMETYP' EQ 'MIC')             00150000
+&TB(3)   SETB  1             STCKCONV FLAG                              00160000
+&DB(8)   SETB  ('&DATETYP' EQ 'MMDDYYYY' OR '&DATETYP' EQ 'YYYYMMDD')   00170000
+&DB(7)   SETB  ('&DATETYP' EQ 'DDMMYYYY' OR '&DATETYP' EQ 'YYYYMMDD')   00180000
+&DB(2)   SETB  ('&ZONE' EQ 'LT')                                        00190000
+&DB(9)   SETB  ('&DATETYP' EQ 'YYYYDDD')                                00200000
+         AIF   ('&MF(1)' EQ 'L').LIST                                   00210000
+&MACPLAB SETC  '&NM'         DEFERRED INSTRUCTION LABEL                 00220000
+&ERP     SETC  'STCKVAL'                                                00230000
+         AIF   ('&STCKVAL' EQ '').MISSING                               00240000
+&ERP     SETC  'CONVVAL'                                                00250000
+         AIF   ('&CONVVAL' EQ '').MISSING                               00260000
+&ERP     SETC  'TIMETYP'                                                00270000
+         AIF   ('&TIMETYP' EQ '').MISSING                               00280000
+&ERP     SETC  'DATETYP'                                                00290000
+         AIF   ('&DATETYP' EQ '').MISSING                               00300000
+         AIF   ('&MF(1)' EQ 'S').INLINE                                 00310000
+         AIF   ('&MF(1)' EQ 'E').EXEC                                   00320000
+&ERP     SETC  'MF'                                                     00330000
+.MISSING MNOTE 8,'KEYWORD &ERP MISSING OR INVALID'                      00340000
+         MEXIT ,                                                        00350000
+.*                                                                      00360000
+.EXEC    MACPARM R1,&MF(2)                                              00370000
+         AIF   ('&STCKVAL' NE '0').EXECU                                00380000
+         MACPARM R14,4(,R1)  AVOID ALIGNMENT ERROR ASM MSG              00390000
+         STCK  0(R14)        GET CURRENT TIME                           00400000
+         AGO   .EXECC                                                   00410000
+.EXECU   MACPARM R14,&STCKVAL     GET TOD POINTER                       00420000
+         MVC   4(8,R1),0(R14)     COPY USER'S VALUE                     00430000
+.EXECC   XC    12(16,R1),12(R1)   CLEAR RETURN VALUE                    00440000
+&TV      SETC  '32*&TB(3)+2*&TB(7)+&TB(8)'                              00450000
+&DV      SETC  '64*&DB(2)+2*&DB(7)+&DB(8)'                              00460000
+         AIF   ('&DATETYP' EQ '').EXECND                                00470000
+         MVI   2(R1),&DV     SET DATE TYPE FLAGS                        00480000
+.EXECND  AIF   ('&TIMETYP' EQ '').EXECNT                                00490000
+         MVI   3(R1),&TV     SET TIME TYPE FLAGS                        00500000
+.EXECNT  AGO   .COMRET                                                  00510000
+.*                                                                      00520000
+.INLINE  CNOP  0,4                                                      00530000
+         MACPARM R1,*+4+28,OP=BAL                                       00540000
+         DC    7A(0)                                                    00550000
+         XC    12(16,R1),12(R1)   CLEAR RETURN VALUE                    00560000
+         AIF   ('&STCKVAL' NE '0').LINEU                                00570000
+         MACPARM R14,4(,R1)  AVOID ALIGNMENT ERROR ASM MSG              00580000
+         STCK  0(R14)        GET CURRENT TIME                           00590000
+         AGO   .LINEC                                                   00600000
+.LINEU   MACPARM R14,&STCKVAL     GET TOD POINTER                       00610000
+         MVC   4(8,R1),0(R14)     COPY USER'S VALUE                     00620000
+.LINEC   ANOP  ,                                                        00630000
+&TV      SETC  '32*&TB(3)+2*&TB(7)+&TB(8)'                              00640000
+&DV      SETC  '64*&DB(2)+2*&DB(7)+&DB(8)'                              00650000
+         MVI   2(R1),&DV     SET DATE TYPE FLAGS                        00660000
+         MVI   3(R1),&TV     SET TIME TYPE FLAGS                        00670000
+.COMRET  L     R15,=V(SUBSTCK)  GET SUBROUTINE ADDRESS                  00680000
+         BALR  R14,R15       CALL SUBROUTINE                            00690000
+         MACPARM R14,&CONVVAL  GET OUTPUT ADDRESS                       00700000
+         MVC   0(16,R14),12(R1)  RETURN RESULT                          00710000
+         MEXIT ,                                                        00720000
+.*                                                                      00730000
+.LIST    ANOP  ,                                                        00740000
+&TV      SETC  '32*&TB(3)+2*&TB(7)+&TB(8)'                              00750000
+&DV      SETC  '64*&DB(2)+2*&DB(7)+&DB(8)'                              00760000
+&NM      DC    0A(0),AL1(0,0,&TV,&DV),2A(0),2XL8'0'                     00770000
+.MEND    MEND  ,                                                        00780000

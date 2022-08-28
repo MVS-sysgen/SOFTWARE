@@ -1,0 +1,129 @@
+         MACRO                                                          00010000
+&L       WTCLR &TXT,&FLAG=(PFX,IMM),&DESC=2,&PAD=,                78310*00020000
+               &TYPE=BUILD,&MSGSECT=                              78310 00030000
+.*       TXT   TEXT TO BE DISPLAYED, DELIMITED BY APOSTROPHES           00040000
+.*       NAME  LABEL TO BE GENERATED ON DC                              00050000
+.*       FLAG  LIST OF ONE OR MORE OPTIONS:                             00060000
+.*             UCMID                    ROUTE TO SPECIFIC CONSOLE       00070000
+.*             ML                       MULTI-LINE WTO                  00080000
+.*             PFX                      PREFIX '&PFX' FROM WTBLD        00090000
+.*                                      SUFFIX '&SFX' FROM WTBLD        00100000
+.*             WTOR                     CONSTRUCT WTOR                  00110000
+.*             IMM                      ISSUE SVC 35                    00120000
+.*       PAD   SPACE TO BE ALLOWED FOLLOWING TEXT                       00130000
+.*       DESC  DESCRIPTOR FOR WTO/WTOR                                  00140000
+.*                                                                      00150000
+.*             AT LEAST ONE OF TXT, NAME MUST BE SPECIFIED              00160000
+.*                                                                      00170000
+.*       TYPE  TYPE OF OPERATION TO BE PERFORMED:                       00180000
+.*             BUILD                    BUILD NEW WTO/WTOR              00190000
+.*             EXTEND                   ADD TO EXISTING WTO/WTOR        00200000
+         GBLC  &WTOSECT,&MACPLAB                                  82171 00210000
+         LCLA  &I,&J,&ILINE,&ITXT                                       00220000
+         LCLB  &OPTS(5)                                                 00230000
+         LCLC  &LB,&LD,&LP,&LQ                                          00240000
+         LCLC  &ALFABET,&LTR                                            00250000
+         LCLC  &ENTRY                                                   00260000
+         LCLC  &FLAGS(5),&OPTION,&OPTSC                                 00270000
+&MACPLAB SETC  '&L'                                               82171 00280000
+         AIF   ('&WTOSECT' EQ '').SECTSET                         78310 00290000
+         AIF   ('&MSGSECT' EQ '&WTOSECT').SECTOK                  78310 00300000
+         AIF   ('&MSGSECT' EQ '').SECTOK                          78310 00310000
+         MNOTE 8,'MSGSECT=&MSGSECT INCONSISTENT'                  78310 00320000
+         MNOTE 8,'MSGSECT=&WTOSECT PREVIOUSLY SPECIFIED'          78310 00330000
+         AGO   .SECTOK                                            78310 00340000
+.SECTSET ANOP  ,                                                  78310 00350000
+&WTOSECT SETC  '&MSGSECT'                                         78310 00360000
+         AIF   ('&WTOSECT' NE '').SECTOK                          78310 00370000
+&WTOSECT SETC  'MSGCSECT'                                         78310 00380000
+.SECTOK  ANOP  ,                                                  78310 00390000
+&ITXT    SETA  1                                                        00400000
+&FLAGS(1) SETC 'UCMID'                                                  00410000
+&FLAGS(2) SETC 'ML'                                                     00420000
+&FLAGS(3) SETC 'WTOR'                                                   00430000
+&FLAGS(4) SETC 'PFX'                                                    00440000
+&FLAGS(5) SETC 'IMM'                                                    00450000
+&ALFABET SETC  'ABCDEFGHIJKLMNOPQRSTUVWXYZ'                             00460000
+&LD      SETC  '$'                                                      00470000
+&LQ      SETC  'L'''                                                    00480000
+.NXTLINE ANOP                                                           00490000
+&ILINE   SETA  (&ITXT+1)/2                                              00500000
+&LTR     SETC  '&ALFABET'(&ILINE,1)                                     00510000
+&OPTSC   SETC  '+$SCON'                                                 00520000
+         AIF   ('&SYSLIST(&ITXT)'(1,2) EQ 'S(').NAMEOK                  00530000
+&OPTSC   SETC  ''                                                       00540000
+&LB      SETC  '&SYSLIST(&ITXT,2)'                                      00550000
+         AIF   ('&SYSLIST(&ITXT,2)' NE '').NAMEOK                       00560000
+         AIF   ('&SYSLIST(&ITXT)' NE '').GENAME                         00570000
+         MNOTE 12,'PARAMETER # &ITXT INVALID'                           00580000
+         MNOTE *,'LINE &ILINE MUST SPECIFY EITHER NAME OR TEXT'         00590000
+         MEXIT                                                          00600000
+.*                                                                      00610000
+.GENAME  ANOP                                                           00620000
+&LB      SETC  '@&SYSNDX'.'&LTR'                                        00630000
+.NAMEOK  AIF   (N'&SYSLIST EQ 1 OR &ITXT GT 1).NOML                     00640000
+&OPTS(2) SETB  1                                                        00650000
+&OPTION  SETC  '$ML'                                                    00660000
+&LP      SETC  '+'                                                      00670000
+.NOML    AIF   ('&OPTSC' NE '' OR '&SYSLIST(&ITXT,1)' EQ '').GENOP      00680000
+&WTOSECT CSECT ,                                                  78310 00690000
+&LB      DC    C&SYSLIST(&ITXT,1)                                       00700000
+&SYSECT  CSECT ,                                                  78310 00710000
+.GENOP   AIF   (&ITXT GT 1).NOT1ST                                      00720000
+         AIF   (&I EQ N'&FLAG).OPTDONE                                  00730000
+&I       SETA  &I+1                                                     00740000
+&J       SETA  1                                                        00750000
+.GENLOOP AIF   ('&FLAG(&I)' EQ '&FLAGS(&J)').SETOPT                     00760000
+&J       SETA  &J+1                                                     00770000
+         AIF   (&J LE 5).GENLOOP                                        00780000
+         MNOTE 12,'&FLAG(&I) IS INVALID OPTION'                         00790000
+         MEXIT                                                          00800000
+.*                                                                      00810000
+.*             CHECK FOR OPTION PREVIOUSLY SET                          00820000
+.SETOPT  AIF   (&OPTS(&J)).GENOP                                        00830000
+.*             SET OPTION AND FLAG BIT                                  00840000
+&OPTION  SETC  '&OPTION'.'&LP'.'&LD&FLAG(&I)'                           00850000
+&OPTS(&J) SETB 1                                                        00860000
+&LP      SETC  '+'                                                      00870000
+         AGO   .GENOP                                                   00880000
+.OPTDONE AIF   ('&OPTION' NE '').TESTOPT                                00890000
+&OPTION  SETC  '0'                                                      00900000
+.*                                                                      00910000
+.TESTOPT AIF   (&OPTS(2) AND &OPTS(3)).BUM1ML                           00920000
+         AIF   (NOT &OPTS(3) OR '&TYPE' NE 'EXTEND').TESTYPE            00930000
+         MNOTE 12,'TYPE=EXTEND ILLEGAL WITH WTOR - TYPE=BUILD ASSUMED'  00940000
+&ENTRY   SETC  'WTOBUILD'                                               00950000
+         AGO   .BAL                                                     00960000
+.BUM1ML  MNOTE 12,'ML ILLEGAL WITH WTOR - MACRO TERMINATED'             00970000
+         MEXIT                                                          00980000
+.*                                                                      00990000
+.TESTYPE ANOP                                                           01000000
+&ENTRY   SETC  'WTOEXTND'                                               01010000
+         AIF   ('&TYPE' EQ 'EXTEND').BAL                                01020000
+&ENTRY   SETC  'WTOBUILD'                                               01030000
+         AIF   ('&TYPE' EQ 'BUILD').BAL                                 01040000
+         MNOTE 12,'TYPE=&TYPE INVALID - TYPE=BUILD ASSUMED'             01050000
+.BAL     AIF   ('&PAD' EQ '' OR '&PAD' EQ '0').NOPAD              82171 01060000
+         MACPARM R0,&PAD                                          82171 01070000
+&ENTRY   SETC  '&ENTRY'.'+2'                                            01080000
+.NOPAD   ANOP                                                           01090000
+         MACPARM R14,&ENTRY,OP=BAL                                      01100000
+         AIF   ('&TYPE' EQ 'EXTEND').NOT1ST                             01110000
+         WTLST &DESC,TYPE=DESC                                          01120000
+.NOT1ST  AIF   ('&OPTSC' NE '').DCSCON                                  01130000
+         DC    AL1(&LQ.&LB-1,&OPTION&OPTSC)                             01140000
+         DC    AL2(&LB-&WTOSECT)                                  78310 01150000
+         AGO   .TSTML                                                   01160000
+.DCSCON  DC    AL1(0,&OPTION&OPTSC)                                     01170000
+         DC    &SYSLIST(&ITXT)                                          01180000
+.TSTML   AIF   (NOT &OPTS(2)).BYBY                                      01190000
+         WTLTP &SYSLIST(&ITXT+1),&ILINE                                 01200000
+.*                                                                      01210000
+.BMPITXT ANOP                                                           01220000
+&ITXT    SETA  &ITXT+2                                                  01230000
+         AIF   (&ITXT LT N'&SYSLIST).NXTLINE                            01240000
+         AIF   (&ITXT GT N'&SYSLIST).DONE                               01250000
+         MNOTE 12,'NUMBER OF PARAMETERS MUST BE ODD'                    01260000
+         MNOTE *,'# &ITXT = &SYSLIST(&ITXT) IGNORED'                    01270000
+.DONE    DC    X'FFFF'                                                  01280000
+.BYBY    MEND                                                           01290000

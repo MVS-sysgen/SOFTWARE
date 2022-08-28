@@ -1,0 +1,29 @@
+         MACRO ,                                                        00010000
+&NM      SRST  &R,&S                                      ADDED GP04234 00020000
+         GBLC  &MACPLAB                                         GP08310 00030000
+.*                                                                      00040000
+.*    BACKLEVEL IMPLEMENTATION OF SRST FOR HERCULES                     00050000
+.*    DOES NOT SUPPORT ALL POSSIBLE USES, ONLY MY COMMON ONES           00060000
+.*    E.G., DOES NOT SUPPORT CASE WHERE R2 IS 0                         00070000
+.*          DOES NOT IGNORE HIGH BYTE/BIT                               00080000
+.*                                                                      00090000
+         LCLA  &I                                                       00100000
+&I       SETA  &SYSNDX                                                  00110000
+&NM      ST    &R,24(,R13)   SAVE                                       00120000
+         ST    &S,16(,R13)   CALLER'S                                   00130000
+         MVI   20(R13),3     PRESET FOR                                 00140000
+         MVI   21(R13),4     NO MATCH         CLC CC=2  L               00150000
+&MACPLAB SETC  'ZZS'.'&I'.'L'  LOOP TAG                                 00160000
+         AIF   ('&R' EQ '0' OR '&R' EQ 'R0').NOTEST                     00170000
+         MACPARM &R,&S,OP=CR,OPR=CR,MODE=EQU  DONE YET ?                00180000
+         BE    ZZS&I.X                                                  00190000
+.NOTEST  MACPARM R0,1,0(&S),OP=CLM,MODE=THREE                           00200000
+         BE    ZZS&I.Q                                                  00210000
+         LA    &S,1(,&S)                                                00220000
+         B     ZZS&I.L                                                  00230000
+ZZS&I.Q  MVI   21(R13),2     SET MATCH        CLC CC=1  H               00240000
+         ST    &S,24(,R13)   RETURN MATCH LOCATION                      00250000
+ZZS&I.X  L     &R,24(,R13)   RETURN R1 SAME OR UPDATED                  00260000
+         L     &S,16(,R13)   ORIGINAL R2                                00270000
+         CLC   21(,R13),20(R13)  SET CC = MATCH, HI - NO MATCH  GP08076 00280000
+         MEND  ,                                                        00290000

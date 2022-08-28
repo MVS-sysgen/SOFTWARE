@@ -1,0 +1,156 @@
+         MACRO ,                                                        00010000
+&NM      TMONSECT &IO=5,&US=2,&DSECT=YES                ADDED ON 86155  00020000
+         LCLC  &N                                                       00030000
+&N       SETC  'TMONSECT'                                               00040000
+         AIF   ('&NM' EQ '').DFLT                                       00050000
+&N       SETC  '&NM'                                                    00060000
+.DFLT    AIF   ('&DSECT' EQ 'YES' OR '&DSECT' EQ '').DSECT              00070000
+         AIF   ('&DSECT' EQ 'DSECT').DSECT                              00080000
+         AIF   ('&DSECT' EQ 'CSECT').CSECT                              00090000
+&N       DS    0D            TMON APPLICATION DATA RECORD  10/84        00100000
+         AGO   .COMMON                                                  00110000
+.CSECT   ANOP  ,                                                        00120000
+&N       CSECT ,             TMON APPLICATION DATA RECORD  10/84        00130000
+         AGO   .COMMON                                                  00140000
+.DSECT   ANOP  ,                                                        00150000
+&N       DSECT ,             TMON APPLICATION DATA RECORD  10/84        00160000
+.COMMON  ANOP  ,                                                        00170000
+TMDRDW   DC    Y(TMDRLEN,0)  SAM RECORD DESCRIPTOR                      00180000
+TMDALEN  DC    Y(TMDRLEN-4)  LENGTH WITHOUT SAM RDW                     00190000
+TMDRECID DC    C'D'          RECORD TYPE (DETAIL RECORD)                00200000
+TMDDETID EQU   C'D'            DETAIL RECORD ID                         00210000
+TMDSYSID DC    CL4' '        APPLICATION ID OF CICS SYSTEM              00220000
+TMDTRAID DC    CL8' '        TRANSACTION NAME                           00230000
+TMDTERM  DC    CL4' '        TERMINAL ID                                00240000
+TMDUSER  DC    CL3' '        OPERATOR ID                                00250000
+TMDPGM   DC    CL8' '        PROGRAM NAME OF FIRST IN TRANSACTION       00260000
+TMDACCT  DC    CL8' '        USER (ACCOUNT) FIELD                       00270000
+TMDRECDT DC    CL6' '        TERMINATION DATE (YYMMDD)                  00280000
+TMDABND  DC    CL4' '        CICS ABEND NAME                            00290000
+TMDTSKID DC    PL3'0'        TCA TASK ID                                00300000
+TMDFACFG DC    X'00'         FACILITY FLAG                              00310000
+TMDSELVL DC    X'00'         SECURITY LEVEL                             00320000
+TMDVEREL DC    X'00'         CICS VERSION/RELEASE                       00330000
+TMDMONVR DC    AL1(0)        TMON VERSION NUMBER                        00340000
+         DC    X'00'           RESERVED                                 00350000
+TMDTASK# DC    XL4'0'        TMON'S ORIGINATED TASK COUNT               00360000
+         DC    XL4'0'          RESERVED                                 00370000
+TMDTIMON DC    XL4'0'        ATTACH START TIME                          00380000
+TMDTIMOF DC    XL4'0'        DETACH TIME                                00390000
+TMDTIMRN DC    XL4'0'        PROCESSING TIME                            00400000
+TMDCPU   DC    XL4'0'        CPU TIME                                   00410000
+TMDWAIT  DC    XL4'0'        WAIT TIME                                  00420000
+TMDPAGIN DC    XL4'0'        PAGES PAGED IN                             00430000
+TMDPAGOT DC    XL4'0'        PAGES PAGED OUT                            00440000
+TMDSTHWM DC    XL4'0'        TCA/TIOA STORAGE HIGH-WATER MARK           00450000
+TMD#GETM DC    XL4'0'        NUMBER OF GETMAINS ISSUED                  00460000
+TMDHISTG DC    XL4'0'        HIGHEST NUMBER OF GETMAINS                 00470000
+TMDTRMIN DC    XL4'0'        TERMINAL INPUT COUNT                       00480000
+TMDTRMIL DC    XL4'0'        TERMINAL INPUT LENGTH                      00490000
+TMDTRMOT DC    XL4'0'        TERMINAL OUTPUT COUNT                      00500000
+TMDTRMOL DC    XL4'0'        TERMINAL OUTPUT LENGTH                     00510000
+TMDTYPE  DC    X'00'         DEVICE TYPE FROM TCTTE                     00520000
+TMDAID   DC    X'00'         TCTTE AID BYTE AT TASK START               00530000
+TMDFG1   DC    X'00'         FLAGS                                      00540000
+TMFMAXTK EQU   X'80'           MAX TASKS OCCURRED                       00550000
+TMFMAXAC EQU   X'40'           MAXIMUM ACTIVE OCCURRED                  00560000
+TMFSOS   EQU   X'20'           SOS OCCURRED                             00570000
+TMFSTGV  EQU   X'10'           STORAGE VIOLATION                        00580000
+TMFABND  EQU   X'08'           ABENDED                                  00590000
+TMFABNDM EQU   X'04'           ABENDED BY MONITOR                       00600000
+TMFSUSP  EQU   X'02'           SUSPENDED                                00610000
+TMFENQ   EQU   X'01'           CICS ENQUEUE USED                        00620000
+TMDFG2   DC    X'00'         MORE FLAGS                                 00630000
+TMFIBMTK EQU   X'80'           IBM TASK                                 00640000
+TMFCONTK EQU   X'40'           CONVERSATIONAL TASK                      00650000
+TMFPRTTK EQU   X'20'           PRINTER TASK                             00660000
+TMFATITK EQU   X'10'           ATI TASK                                 00670000
+TMFSWAIT EQU   X'08'           STRING WAIT                              00680000
+TMFBWAIT EQU   X'04'           BUFFER WAIT                              00690000
+TMFDMS   EQU   X'02'           DMS USED                                 00700000
+TMFUFO   EQU   X'01'           UFO USED                                 00710000
+TMDFG3   DC    X'00'         STILL MORE FLAGS                           00720000
+TMFBAL   EQU   X'80'           PROGRAM IN ASSEMBLER LANGUAGE            00730000
+TMFPLI   EQU   X'40'           PL/I                                     00740000
+TMFCOB   EQU   X'20'           COBOL                                    00750000
+TMFRPG   EQU   X'10'           RPG                                      00760000
+TMFPSPF  EQU   X'04'           PROGRAM SUBPOOL COMPRESSED               00770000
+TMFPFET  EQU   X'02'           PROGRAM FETCH USED                       00780000
+TMFABNDS EQU   X'01'           SYSTEM ABEND OCCURRED                    00790000
+TMDFG4   DC    X'00'         AND YET MORE FLAGS                         00800000
+TMFACP   EQU   X'80'           ACP                                      00810000
+TMFIRC   EQU   X'40'           IRC                                      00820000
+TMFISC   EQU   X'20'           ISC                                      00830000
+TMFEIP   EQU   X'10'           EIP                                      00840000
+TMFICP   EQU   X'08'           ICP                                      00850000
+TMFFCP   EQU   X'04'           FCP                                      00860000
+TMFTDP   EQU   X'02'           TDP                                      00870000
+TMFTSP   EQU   X'01'           TSP                                      00880000
+TMDFG5   DC    X'00'         ALMOST THE LAST FLAGS                      00890000
+TMFDLI   EQU   X'80'           DL/I                                     00900000
+TMFJCP   EQU   X'40'           JCP                                      00910000
+TMFBMS   EQU   X'20'           BMS                                      00920000
+TMFBIF   EQU   X'10'           BIF                                      00930000
+TMFPSB   EQU   X'08'           PSB SCHEDULED                            00940000
+TMFPRAY  EQU   X'04'           MANTIS USED                              00950000
+TMFNATCH EQU   X'02'           NATURAL USED                             00960000
+TMFSTAR  EQU   X'01'           GENER/OL USED                            00970000
+TMDFG6   DC    X'00'         LAST, BUT NOT LEAST, FLAGS                 00980000
+TMFDETL  EQU   X'80'           DETAIL RECORD                            00990000
+TMFSUMRY EQU   X'40'           SUMMARY RECORD                           01000000
+TMFSYSTM EQU   X'20'           SYSTEM DETAIL (TCP, KCP, JCP)            01010000
+TMFCISPT EQU   X'02'           CI SPLIT OCCURRED                        01020000
+TMFCASPT EQU   X'01'           CA SPLIT OCCURRED                        01030000
+TMDFCPTM DC    XL4'0'        FCP FILE TIME                              01040000
+TMDFCPCT DC    XL4'0'        FCP COUNT                                  01050000
+TMDDLITM DC    XL4'0'        DL1 CALLS TIMES                            01060000
+TMDDLICT DC    XL4'0'        DL1 COUNT                                  01070000
+TMDSTGTM DC    XL4'0'        TEMPSTG TIMES                              01080000
+TMDSTGCT DC    XL4'0'        TEMPSTG COUNT                              01090000
+TMDELATM DC    XL4'0'        TD (EXTRA) ELAPSED TIME                    01100000
+TMDELACT DC    XL4'0'        TD (EXTRA) COUNT                           01110000
+TMDFETTM DC    XL4'0'        PROGRAM FETCH TIME                         01120000
+TMDFETCT DC    XL4'0'        PROGRAM FETCH COUNT                        01130000
+TMDJURTM DC    XL4'0'        JOURNAL TIME                               01140000
+TMDJURCT DC    XL4'0'        JOURNAL COUNT                              01150000
+TMDIONUM DC    AL1(&IO)      NUMBER OF ENTRIES THAT FOLLOW              01160000
+TMDIOREC DS    0X            START OF I/O FILE ACCESS ENTRY             01170000
+TMDIOFIT DC    CL8' '        FILE/DBD NAME                              01180000
+TMDIOFG1 DC    X'00'         FILE TYPE FLAG                             01190000
+TMFISAM  EQU   X'80'           ISAM                                     01200000
+TMFBDAM  EQU   X'40'           BDAM                                     01210000
+TMFVSAM  EQU   X'20'           VSAM                                     01220000
+TMFIODLI EQU   X'10'           DL/I                                     01230000
+TMFIORMT EQU   X'08'           REMOTE ?                                 01240000
+TMFIOPSB EQU   X'04'           DL/I PSB                                 01250000
+TMFUSER  EQU   X'01'           USER DATABASE                            01260000
+TMDIOFG2 DC    X'00'         ACTION FLAGS                               01270000
+TMFADD   EQU   X'80'           ADD/INSERT                               01280000
+TMFUPDT  EQU   X'40'           UPDATE/REPLACE                           01290000
+TMFGET   EQU   X'20'           GET                                      01300000
+TMFPEEK  EQU   X'10'           BROWSE                                   01310000
+TMFOC    EQU   X'08'           OPEN/CLOSE                               01320000
+TMFVSSWT EQU   X'04'           VSAM STRING WAIT                         01330000
+TMFVSBWT EQU   X'02'           VSAM BUFFER WAIT                         01340000
+TMFSPLIT EQU   X'01'           VSAM SPLIT OCCURRED                      01350000
+TMDIOUCB DC    XL2'0'        FILE/DBD UCB CUU                           01360000
+TMDIOVOL DC    CL6' '        FILE/DBD VOLUME SERIAL                     01370000
+TMDIOTIM DC    XL4'0'        ACCESS TIME                                01380000
+TMDIOCT  DC    XL4'0'        ACCESS COUNT                               01390000
+TMDIOLEN EQU   *-TMDIOREC      LENGTH OF ONE ENTRY                      01400000
+         ORG   TMDIOREC      REDEFINE                                   01410000
+TMDIOENT DC    (&IO)XL(TMDIOLEN)'0'    FILE ACCESS TABLE ENTRIES        01420000
+TMDUSNUM DC    X'00'         NUMBER OF USER ENTRIES                     01430000
+TMDUSREC EQU   *             START OF USER RECORD ENTRY                 01440000
+TMDUSID  DC    X'00'         TMCT ID CODE                               01450000
+TMDUSFG1 DC    X'00'         FLAG                                       01460000
+TMFCLOCK EQU   X'80'           CLOCK ENTRY                              01470000
+TMFCOUNT EQU   X'40'           COUNTER ENTRY                            01480000
+TMDUSDAT DC    XL4'0'        ACCUMULATED DATA (TIMES OR COUNTS)         01490000
+TMDUSOCC DC    XL4'0'        NUMBER OF OCCURRENCES                      01500000
+TMDUSBEG DC    XL4'0'        START TIME                                 01510000
+TMDUSLEN EQU   *-TMDUSREC    LENGTH OF ONE ENTRY                        01520000
+         ORG   TMDUSREC      BUMP BACK                                  01530000
+TMDUSENT DC    (&US)XL(TMDUSLEN)'0'  INITIALIZE                         01540000
+TMDRLEN  EQU   *-TMDRDW      LENGTH OF RECORD                           01550000
+         MEND  ,                                                        01560000

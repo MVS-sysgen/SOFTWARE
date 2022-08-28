@@ -1,0 +1,69 @@
+         MACRO ,                                                        00010000
+&NM      ARMODE &OP,&@ALET,&AR=R14,&WK=R14                              00020000
+.*                                                                    * 00030000
+.*   ACCESS SPACE CONTROL SUPPORT                                     * 00040000
+.*                                                                    * 00050000
+.*   ARMODE 0 | P | PRI   SETS PRIMARY MODE                           * 00060000
+.*   ARMODE     S | SEC   SETS SECONDARY MODE                         * 00070000
+.*   ARMODE     H | HOME  SETS HOME SPACE MODE (PRIVILEGED)           * 00080000
+.*   ARMODE AR            SETS ACCESS REGISTER MODE                   * 00090000
+.*   ARMODE AR,@ALET,AR=N SETS AR#N FROM @ALET, THEN AR MODE          * 00100000
+.*   ARMODE ANY           CONTENTS OF WORD ANY TO WK, THEN SAC 0(WK)  * 00110000
+.*   ARMODE (R)           SAC 0(R)                                    * 00120000
+.*                                                                    * 00130000
+.*   ALL OF THE ABOVE ISSUE A SYSSTATE =P (PRIMARY), ELSE =AR         * 00140000
+.*                                                                    * 00150000
+.*   ARMODE SAVE          COPIES IAC MODE INTO WK REGISTER            * 00160000
+.*   ARMODE SAVE,WORD     IAC MODE INTO WK REGISTER AND STORE TO WORD * 00170000
+.*                                                                    * 00180000
+         GBLC  &MACPLAB                                                 00190000
+         GBLB  &MVSXA                                           GP04234 00200000
+         AIF   (&MVSXA).ENOUGH                                  GP04234 00210000
+&NM      MACPARM MODE=LBL                                       GP04234 00220000
+         MEXIT ,                                                GP04234 00230000
+.ENOUGH  ANOP  ,                                                GP04234 00240000
+&MACPLAB SETC  '&NM'                                                    00260000
+         LCLC  &EXP,&AEO                                                00270000
+         LCLA  &K                                                       00280000
+&EXP     SETC  '0'                                                      00290000
+&AEO     SETC  'P'                                                      00300000
+         AIF   (T'&OP NE 'O').HAVEOP                                    00310000
+         MNOTE 8,'ARMODE: FUNCTION OR OPERAND REQUIRED'                 00320000
+         MEXIT ,                                                        00330000
+.*                                                                      00340000
+.HAVEOP  AIF   ('&OP' EQ '0').SAC                                       00350000
+         AIF   ('&OP' EQ 'P').SAC                                       00360000
+         AIF   ('&OP' EQ 'PRI').SAC                                     00370000
+.*                                                                      00380000
+&AEO     SETC  'AR'                                                     00390000
+&EXP     SETC  'X''100'''                                               00400000
+         AIF   ('&OP' EQ 'S').SAC                                       00410000
+         AIF   ('&OP' EQ 'SEC').SAC                                     00420000
+.*                                                                      00430000
+&EXP     SETC  'X''300'''                                               00440000
+         AIF   ('&OP' EQ 'H').SAC                                       00450000
+         AIF   ('&OP' EQ 'HOME').SAC                                    00460000
+.*                                                                      00470000
+&EXP     SETC  'X''200'''                                               00480000
+         AIF   ('&OP' EQ 'AR').SAR                                      00490000
+         AIF   ('&OP' EQ 'SAVE').IAC                                    00500000
+.*  NOT A PREDEFINED OPERAND                                            00510000
+&K       SETA  K'&OP                                                    00520000
+         AIF   (&K LT 3).LOAD   ?                                       00530000
+         AIF   ('&OP'(1,1) NE '(' OR '&OP'(2,1) EQ '(').LOAD            00540000
+         AIF   ('&OP'(&K,1) NE ')' OR '&OP'(&K-1,1) EQ ')').LOAD        00550000
+         MACPARM 0(&OP(1)),OP=SAC,MODE=ONE                              00560000
+         AGO   .STATE                                                   00570000
+.LOAD    MACPARM &WK,&OP,OP=L  LOAD STORED VALUE (FROM IAC?)            00580000
+         MACPARM 0(&WK),OP=SAC,MODE=ONE  IF 0, NEED ASCENV=P            00590000
+         AGO   .STATE                                                   00600000
+.IAC     MACPARM &WK,OP=IAC,MODE=ONE                                    00610000
+         AIF   (T'&@ALET EQ 'O').MEND                                   00620000
+         MACPARM &WK,&@ALET,OP=ST,MODE=REV                              00630000
+         MEXIT ,                                                        00640000
+.SAR     AIF   (T'&@ALET EQ 'O').SAC                                    00650000
+         MACPARM &WK,@ALET,OP=L                                         00660000
+         MACPARM &AR,(&WK),OP=SAR,OPR=SAR,MODE=EQU                      00670000
+.SAC     MACPARM &EXP,OP=SAC,MODE=ONE                                   00680000
+.STATE   SYSSTATE ASCENV=&AEO                                           00690000
+.MEND    MEND  ,                                                        00700000

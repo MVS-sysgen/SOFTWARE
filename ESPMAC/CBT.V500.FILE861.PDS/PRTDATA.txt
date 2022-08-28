@@ -1,0 +1,32 @@
+         MACRO ,                                                        00010000
+&NM      PRTDATA &LIST,&DEV=,&TITLE=0                                   00020000
+         LCLA  &N,&I,&J,&K                                              00030000
+         LCLC  &LBL,&C,&T(10)                                           00040000
+&N       SETA  N'&SYSLIST                                               00050000
+&LBL     SETC  'ZZ'.'&SYSNDX'                                           00060000
+&NM      PRTLIST &LBL.L,DEV=&DEV,TITLE=&TITLE                           00070000
+         B     &LBL.X                                                   00080000
+&LBL.L   FDOPT NL                                                       00090000
+.LOOP    ANOP  ,                                                        00100000
+&I       SETA  &I+1                                                     00110000
+&K       SETA  N'&SYSLIST(&I)                                           00120000
+         AIF   (&K LT 1).LOOP                                           00130000
+&T(2)    SETC  ''                                                       00140000
+&T(3)    SETC  ''                                                       00150000
+&T(4)    SETC  ''                                                       00160000
+&T(5)    SETC  ''                                                       00170000
+&T(6)    SETC  ''                                                       00180000
+&T(7)    SETC  ''                                                       00190000
+&T(8)    SETC  ''                                                       00200000
+&T(9)    SETC  ''                                                       00210000
+&T(10)   SETC  ''                                                       00220000
+&J       SETA  0                                                        00230000
+.PLUP    ANOP  ,                                                        00240000
+&J       SETA  &J+1                                                     00250000
+&T(&J)   SETC  '&SYSLIST(&I,&J)'                                        00260000
+         AIF   (&J LT &K).PLUP                                          00270000
+.POUT    FD    &T(1),&T(2),&T(3),&T(4),&T(5),&T(6),&T(7),&T(8)          00280000
+         AIF   (&I LT &N).LOOP                                          00290000
+         FD    *END                                                     00300000
+&LBL.X   DS    0H                                                       00310000
+         MEND  ,                                                        00320000

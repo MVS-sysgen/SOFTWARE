@@ -1,0 +1,30 @@
+         MACRO ,                                                        00010000
+&NM      ESPIE &FUN,&OP1,&OP2,&MF=I,&PARAM=IGNORED                      00020000
+.*   MVS 3.8 REPLACEMENT FOR ESPIE, TO RUN EXISTING CODE                00030000
+.*   UNDER HERCULES                                                     00040000
+.*                                                                      00050000
+         AIF   ('&MF(1)' EQ 'L').LISTER                                 00060000
+         AIF   ('&FUN' EQ 'SET').GOSET                                  00070000
+         AIF   ('&FUN' EQ 'RESET').GORES                                00080000
+         MNOTE 8,'ESPIE: UNSUPPORTED FUNCTION &FUN'                     00090000
+         MEXIT ,                                                        00100000
+.GOSET   AIF   (N'&MF GT 1).GOSET2                                      00110000
+.* MNOTE 0,'SPIE  &OP1,&OP2,MF=&MF '                                    00120000
+&NM      SPIE  &OP1,&OP2,MF=&MF                                         00130000
+         MEXIT ,                                                        00140000
+.GOSET2  ANOP  ,                                                        00150000
+.* MNOTE 0,'SPIE  &OP1,&OP2,MF=(&MF(1),&MF(2)) '     *****DEBUG*****    00160000
+&NM      SPIE  &OP1,&OP2,MF=(&MF(1),&MF(2))                             00170000
+         MEXIT ,                                                        00180000
+.GORES   AIF   ('&OP1' EQ '0').GOCAN                                    00190000
+.* MNOTE 0,'SPIE  &MF(2),&OP1,MF=&MF(1) '                               00200000
+&NM      SPIE  MF=(E,&OP1)                                              00210000
+         MEXIT ,                                                        00220000
+.GOCAN   ANOP  ,                                                        00230000
+.* MNOTE 0,'SPIE  0,MF=&MF(1) '                                         00240000
+&NM      SPIE  0,MF=&MF(1)                                              00250000
+         MEXIT ,                                                        00260000
+.LISTER  ANOP  ,                                                        00270000
+.* MNOTE 0,'SPIE &OP1,&OP2,MF=L '                                       00280000
+&NM      SPIE &OP1,&OP2,MF=L                                            00290000
+         MEND  ,                                                        00300000

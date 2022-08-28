@@ -1,0 +1,11 @@
+         MACRO ,                                                        00010000
+         REGEQU  ,                                                      00020000
+         GBLA  &REGS                                                    00030000
+         AIF   (&REGS EQ 1).MEND  ONLY EXPAND ONCE                      00040000
+&REGS    SETA  1             MAINTAIN IBM COMPATIBILITY                 00050000
+         LCLA  &I                                                       00060000
+.LOUPE   AIF   (&I GT 15).MEND                                          00070000
+R&I      EQU   &I                                                       00080000
+&I       SETA  &I+1                                                     00090000
+         AGO   .LOUPE                                                   00100000
+.MEND    MEND                                                           00110000

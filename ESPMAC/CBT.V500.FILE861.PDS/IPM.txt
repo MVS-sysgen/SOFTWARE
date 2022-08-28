@@ -1,0 +1,14 @@
+         MACRO ,                                                        00010000
+&NM      IPM   &R,&WORK=R0                              ADDED ON 05189  00020000
+.*                                                                      00030000
+.*       THIS MODULE LOADS THE PROGRAM MASK THE HARD WAY, FOR MVS 3.8   00040000
+.*                                                                      00050000
+         AIF   ('&R' EQ '&WORK').FAST                                   00060000
+&NM      BALR  &WORK,0                                                  00070000
+         N     &R,=X'00FFFFFF'                                          00080000
+         N     &WORK,=X'3F000000'                                       00090000
+         OR    &R,&WORK                                                 00100000
+         MEXIT ,                                                        00110000
+.FAST    ANOP  ,             OK TO CLOBBER ADDRESS                      00120000
+&NM      BALR  &R,0                                                     00130000
+         MEND  ,                                                        00140000

@@ -1,0 +1,79 @@
+         MACRO ,                                        REPLACED 78029  00010000
+&ALIAS   RANDOM &R=R14,&SECT=,&SCALE=10                 REWRITE 2003358 00020000
+         GBLB  &MVS,&MVSSP,&MVSXA,&MVSESA,&OS390,&Z900          GP04234 00030000
+         GBLC  &MACPLAB                                         GP03358 00040000
+&MACPLAB SETC  '&ALIAS'                                         GP03358 00050000
+.*--------------------------------------------------------------------* 00060000
+.*   RANDOM - INLINE MACRO TO EXPAND RANDOM NUMBER GENERATION SUBRTNE * 00070000
+.*     NEEDS LTORG FOR THE CURRENT CSECT PRIOR TO END                 * 00080000
+.*                                                                    * 00090000
+.*     INVOKE AS BAS R14,RANDOM                                       * 00100000
+.*     XC RANDAU(4),RANDAU  TO RE-INITIALIZE                          * 00110000
+.*     RETURN IN GPR 0 INTEGER 0 TO 9 UNLESS SCALE IS REQUESTED       * 00120000
+.*                                                                    * 00130000
+.*     SECT= SPECIFIES DSECT NAME WHEN REFRESHABLE CODE IS NEEDED     * 00140000
+.*     (USE AFTER DEFINITION FOR THAT DSECT)                          * 00150000
+.*                                                                    * 00160000
+.*     WHEN USED WITH SCALE=(REG), THE REGISTER MAY BE ANY FLOATING   * 00170000
+.*     POINT REGISTER, BUT IF REGISTER 0, MUST BE WRITTEN AS (0) OR   * 00180000
+.*     (R0). THIS USAGE REQUIRES  LE REG,=E'MAXVAL'/BAS R14,RANDOM    * 00190000
+.*     FOR ALL CALLS.                                                 * 00200000
+.*--------------------------------------------------------------------* 00210000
+         LCLC  &MYSECT,&FPR                                     GP03358 00220000
+&MYSECT  SETC  '&SYSECT'                                        GP03358 00230000
+&FPR     SETC  'R0'          USE FLOATING POINT REGISTER 0      GP03358 00240000
+         AIF   ('&SCALE' EQ '').NOFREG                          GP03358 00250000
+         AIF   ('&SCALE'(1,1) NE '(').NOFREG                    GP03358 00260000
+         AIF   ('&SCALE' EQ '(0)').DOFREG                       GP03358 00270000
+         AIF   ('&SCALE' EQ '(R0)').DOFREG                      GP03358 00280000
+         AIF   ('&SCALE' EQ '(FR0)').DOFREG                     GP03358 00290000
+         AIF   ('&SCALE' EQ '(FPR0)').DOFREG                    GP03358 00300000
+         AGO   .NOFREG                                          GP03358 00310000
+.DOFREG  ANOP  ,                                                GP03358 00320000
+&FPR     SETC  'R6'          USE FLOATING POINT REGISTER 6      GP03358 00330000
+.NOFREG  AIF   (NOT &MVSESA).OLDSV                              GP03358 00340000
+RANDOM   MACPARM (&R),(0),OP=BAKR,OPR=BAKR                      GP03358 00350000
+         MACPARM (R15),(R1),RANDSAVE,MODE=THREE,OP=STM,OPR=STM  GP03358 00360000
+         AGO   .COMSV                                           GP04234 00370000
+.OLDSV   ANOP  ,                                                GP04234 00380000
+RANDOM   MACPARM (R14),(R1),RANDSAVD,MODE=THREE,OP=STM,OPR=STM  GP04234 00390000
+.COMSV   ICM   R1,15,RANDAU  CALLED BEFORE ?                    GP03358 00400000
+         BNZ   RANDOLD                                          GP03358 00410000
+         TIME  BIN                                                      00420000
+         AR    R1,R0                                                    00430000
+         N     R1,=X'3FFFFFFF'                                  GP03358 00440000
+         LA    R0,1                                                     00450000
+         OR    R1,R0                                                    00460000
+RANDOLD  M     R0,=F'13187'  WAS X'0001000D'                    GP03358 00470000
+         SRL   R1,8          KILL SIGN AND SOME                 GP03358 00480000
+         ST    R1,RANDAU     TEMP                               GP03358 00490000
+         ST    R1,RANDSAV0   TEMP                               GP03358 00500000
+         MVI   RANDSAV0,X'40' SET EXPONENT                      GP03358 00510000
+         LE    &FPR,RANDSAV0                                    GP03358 00520000
+         AIF   ('&SCALE' EQ '').NOSCALE                         GP03358 00530000
+         AIF   (T'&SCALE NE 'N').VAR                            GP03358 00540000
+         MACPARM &FPR,=E'&SCALE',OP=ME,OPR=MER                  GP03358 00550000
+         AGO   .NOSCALE                                         GP03358 00560000
+.VAR     MACPARM &FPR,&SCALE,OP=ME,OPR=MER                      GP03358 00570000
+.NOSCALE ANOP  ,                                                        00580000
+         AU    &FPR,=X'46000000' POSITION AS INTEGER            GP03358 00590000
+         STE   &FPR,RANDSAV0                                            00600000
+         MVI   RANDSAV0,0    KILL EXPONENT                              00610000
+         AIF   (NOT &MVSESA).OLDRS                              GP04234 00620000
+         LM    R15,R1,RANDSAVE                                  GP03358 00630000
+         PR    ,             ANSWER IN (0)                      GP03358 00640000
+         AGO   .COMRS                                           GP04234 00650000
+.OLDRS   LM    R14,R1,RANDSAVD                                  GP04234 00660000
+         BR    &R            RETURN ANSWER IN R0                GP04234 00670000
+.COMRS   SPACE 1                                                GP03358 00680000
+         AIF   ('&SECT' EQ '').NORENT                           GP03358 00690000
+&SECT    DSECT ,             REFRESHABLE (ZEROED INITIALLY)     GP03358 00700000
+.NORENT  ANOP  ,                                                GP03358 00710000
+RANDAU   DC    D'0'                                             GP03358 00720000
+RANDSAVD DC    F'0'   0/2    SAVE 14                            GP04234 00730000
+RANDSAVE DC    F'0'   1/2    SAVE 15                             *TSM*  00740000
+RANDSAV0 DC    2F'0'  2/2    SAVE 0,1                            *TSM*  00750000
+         AIF   ('&SECT' EQ '').NOREFR                           GP03358 00760000
+&MYSECT  CSECT ,             RESTORE USER'S SECTION             GP03358 00770000
+.NOREFR  ANOP  ,                                                GP03358 00780000
+         MEND  ,                                                        00790000

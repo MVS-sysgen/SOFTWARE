@@ -1,0 +1,159 @@
+         MACRO                                                          00010000
+&NAME    #SORT &FIELDS=(1,1,CH,A),&FIRST=,&LAST=,&LENGTH=               00020000
+         MNOTE *,'       #SORT     VERSION 001 04/29/76  04/29/76  GPW' 00030000
+.********************************************************************** 00040000
+.*                                                                    * 00050000
+.* #SORT                                                              * 00060000
+.*                                                                    * 00070000
+.* FUNCTION       GENERATE CODING TO SORT A TABLE IN ASCENDING OR     * 00080000
+.*                DESCENDING ORDER BASED ON A KEY FIELD IN EACH       * 00090000
+.*                ENTRY.                                              * 00100000
+.*                                                                    * 00110000
+.* DESCRIPTION    A BUBBLE SORT IS PERFORMED.  THE KEYS               * 00120000
+.*                OF CONSECUTIVE ITEMS ARE COMPARED.  THE ITEMS       * 00130000
+.*                ARE SWITCHED IF NECESSARY.  PROCESSING PROCEEDS     * 00140000
+.*                TO THE NEXT PAIR OF ENTRIES.  AT THE END OF ONE     * 00150000
+.*                PASS, AT LEAST THE HIGHEST KEY IS IN THE PROPER     * 00160000
+.*                POSITION.  THE LIST IS REDUCED TO A SUBLIST         * 00170000
+.*                FROM THE FIRST ENTRY TO THE LAST ENTRY WHICH        * 00180000
+.*                WAS SWITCHED AND THE SUBLIST IS THEN PROCESSED      * 00190000
+.*                AS WAS THE ORIGINAL LIST.  THIS CONTINUES UNTIL     * 00200000
+.*                THE ENTIRE LIST HAS BEEN SORTED.  IF AT ANY POINT,  * 00210000
+.*                PROCESSING THE LIST RESULTS IN NO ENTRIES BEING     * 00220000
+.*                SWITCHED, THE LIST IS IN ORDER AND PROCESSING       * 00230000
+.*                IS TERMINATED.                                      * 00240000
+.*                                                                    * 00250000
+.*                REGISTERS 0, 1, 14, AND 15 ARE USED BY THE          * 00260000
+.*                SORT AND MUST NOT BE SPECIFIED AS FIRST OR          * 00270000
+.*                LAST VALUES.                                        * 00280000
+.*                                                                    * 00290000
+.* SYNTAX         NAME     #SORT FIELDS=(KEYPOS,KEYLEN,FMT,ORDER),    * 00300000
+.*                               FIRST=SYMBOL1,                       * 00310000
+.*                               LAST=SYMBOL2,                        * 00320000
+.*                               LENGTH=NUM                           * 00330000
+.*                                                                    * 00340000
+.*                NAME   - SPECIFIES THE SYMBOLIC TAG TO BE           * 00350000
+.*                         ASSIGNED TO THE FIRST INSTRUCTION          * 00360000
+.*                         GENERATED.  THIS OPERAND IS OPTIONAL.      * 00370000
+.*                                                                    * 00380000
+.*                FIELDS - SPECIFIES THE SORT PARAMETERS.             * 00390000
+.*                         KEYPOS - SPECIFIES THE RELATIVE KEY        * 00400000
+.*                                  POSITION IN THE RECORD.           * 00410000
+.*                         KEYLEN - SPECIFIES THE LENGTH OF THE KEY.  * 00420000
+.*                         FMT    - SPECIFIES THE FORMAT OF THE       * 00430000
+.*                                  DATA TO BE SORTED.  THE ONLY      * 00440000
+.*                                  VALID FORMAT IS CHARACTER (CH).   * 00450000
+.*                         ORDER  - SPECIFIES IF THE LIST IS TO BE    * 00460000
+.*                                  SORTED IN ASCENDING ORDER (A),    * 00470000
+.*                                  OR DESCENDING ORDER (D).  THE     * 00480000
+.*                                  DEFAULT IS A.                     * 00490000
+.*                                                                    * 00500000
+.*                FIRST  - SPECIFIES THE SYMBOLIC NAME OF THE FIRST   * 00510000
+.*                         ENTRY IN THE TABLE OR A REGISTER WHICH     * 00520000
+.*                         CONTAINS THE ADDRESS OF THE FIRST ENTRY.   * 00530000
+.*                         IF A SYMBOLIC NAME IS SPECIFIED, IT MUST   * 00540000
+.*                         BE ADDRESSABLE.  IF A REGISTER IS          * 00550000
+.*                         SPECIFIED, IT MUST BE ENCLOSED IN          * 00560000
+.*                         PARENTHESES.  THIS PARAMETER IS REQUIRED.  * 00570000
+.*                                                                    * 00580000
+.*                LAST   - SPECIFIES THE SYMBOLIC NAME OF THE LAST    * 00590000
+.*                         ENTRY IN THE TABLE OR A REGISTER WHICH     * 00600000
+.*                         CONTAINS THE ADDRESS OF THE LAST ENTRY.    * 00610000
+.*                         IF A SYMBOLIC NAME IS SPECIFIED, IT MUST   * 00620000
+.*                         BE ADDRESSABLE.  IF A REGISTER IS          * 00630000
+.*                         SPECIFIED, IT MUST BE ENCLOSED IN          * 00640000
+.*                         PARENTHESES.  THIS PARAMETER IS REQUIRED.  * 00650000
+.*                                                                    * 00660000
+.*                LENGTH - SPECIFIES THE LENGTH OF THE ENTRIES IN     * 00670000
+.*                         THE TABLE.  THIS PARAMETER IS REQUIRED.    * 00680000
+.*                                                                    * 00690000
+.*       MINOR CHANGES TO ALLOW SYMBOLIC VALUES FOR ALL FIELDS  G.P.  * 00700000
+.*                                                                    * 00740000
+.* ERRORS         INVALID NUMBER OF ENTRIES IN FIELDS PARAMETER - 8   * 00750000
+.*                FORMAT TYPE NOT SUPPORTED                     - 8   * 00760000
+.*                FIRST VALUE NOT SPECIFIED                     - 8   * 00770000
+.*                LAST  VALUE NOT SPECIFIED                     - 8   * 00780000
+.*                LENGTH VALUE NOT SPECIFIED                    - 8   * 00790000
+.*                                                                    * 00800000
+.* EXAMPLE        SORT A TABLE OF ENTRIES WHERE THE FIRST 8 BYTES     * 00810000
+.*                ARE THE KEYS.  THE LENGTH OF EACH ENTRY IS 50       * 00820000
+.*                BYTES.                                              * 00830000
+.*                                                                    * 00840000
+.*                         #SORT FIELDS=(1,8,CH,A),LENGTH=50,         * 00850000
+.*                               FIRST=BEGIN,LAST=END                 * 00860000
+.*                                                                    * 00870000
+.*                BEGIN    DC    CL8'A',CL42'ENTRY 1'                 * 00880000
+.*                         DC    CL8'D',CL42'ENTRY 2'                 * 00890000
+.*                         DC    CL8'X',CL42'ENTRY 3'                 * 00900000
+.*                         DC    CL8'$',CL42'ENTRY 4'                 * 00910000
+.*                         DC    CL8'Q',CL42'ENTRY 5'                 * 00920000
+.*                END      DC    CL8'M',CL42'ENTRY 6'                 * 00930000
+.*                                                                    * 00940000
+.* GLOBALS                                                            * 00950000
+.*                                                                    * 00960000
+.*                NONE                                                * 00970000
+.*                                                                    * 00980000
+.* MACROS USED                                                        * 00990000
+.*                                                                    * 01000000
+.*                NONE                                                * 01010000
+.*                                                                    * 01020000
+.********************************************************************** 01030000
+.*                                                                      01040000
+         LCLC  &X,&Y,&Z,&LEN,&HI,&I                             GP08303 01050000
+         LCLA  &N                                               GP08303 01060000
+.*                                                                      01070000
+&I       SETC  '#SOR'.'&SYSNDX'(2,3)                                    01080000
+&N       SETA  N'&FIELDS                                                01090000
+&HI      SETC  'H'                                                      01100000
+         AIF   (&N LT 3 OR &N GT 4).ERR1                        GP08303 01110000
+         AIF   ('&FIELDS(3)' NE 'CH').ERR2                              01120000
+         AIF   (&N EQ 3).SETREGS                                GP08303 01130000
+         AIF   ('&FIELDS(&N)' NE 'D').TESTA                             01140000
+&HI      SETC  'L'                                                      01150000
+         AGO   .SETREGS                                                 01160000
+.TESTA   AIF   ('&FIELDS(&N)' EQ 'A').SETREGS                           01170000
+         MNOTE *,'*** SORT TYPE NOT A OR D - A ASSUMED'                 01180000
+.SETREGS ANOP                                                           01190000
+&LEN     SETC  '&LENGTH'                                        GP08303 01200000
+&X       SETC  '&FIELDS(1)'.'-1'       OFFSET WITHIN RECORD     GP08303 01210000
+&Y       SETC  '&FIELDS(2)'            LENGTH OF SORT-KEY       GP08303 01220000
+&Z       SETC  '&X'.'+'.'&LEN'         OFFSET WITHIN NEXT REC.  GP08303 01230000
+         AIF   ('&FIRST'  EQ '').ERR3                                   01240000
+         AIF   ('&LAST'   EQ '').ERR4                                   01250000
+         AIF   ('&LENGTH' EQ '').ERR5                                   01260000
+.*                                                                      01270000
+&NAME    LA    R0,&LENGTH              LOAD LENGTH OF AN ENTRY          01280000
+         AIF   ('&LAST'(1,1) EQ '(').RFORM1                             01290000
+         LA    R1,&LAST                LOAD LAST ENTRY ADDRESS          01300000
+         AGO   .CONT1                                                   01310000
+.RFORM1  LR    R1,&LAST                LOAD LAST ENTRY ADDRESS          01320000
+.CONT1   ANOP                                                           01330000
+&I.A     SR    R14,R14                 CLEAR LAST SWITCH ADDRESS        01340000
+         AIF   ('&FIRST'(1,1) EQ '(').RFORM2                            01350000
+         LA    R15,&FIRST              LOAD FIRST ENTRY ADDRESS         01360000
+         AGO   .CONT2                                                   01370000
+.RFORM2  LR    R15,&FIRST              LOAD FIRST ENTRY ADDRESS         01380000
+.CONT2   SR    R1,R0                   POINT TO PENULTIMATE             01390000
+         CR    R15,R1                  TEST AGAINST FIRST ENTRY         01400000
+         BH    &I.D                    IF HIGH, LIST SORTED             01410000
+&I.B     CLC   &X.(&Y,R15),&Z.(R15)    COMPARE KEYS                     01420000
+         BN&HI &I.C                                                     01430000
+         XC    0(&LEN,R15),&LEN.(R15)  SWITCH ENTRIES                   01440000
+         XC    &LEN.(&LEN,R15),0(R15)                                   01450000
+         XC    0(&LEN,R15),&LEN.(R15)                                   01460000
+         LR    R14,R15                 SAVE ADDRESS OF SWITCHED ENTRY   01470000
+&I.C     BXLE  R15,R0,&I.B             POINT TO NEXT ENTRY              01480000
+         LTR   R1,R14                  COPY AND TEST LAST SWITCHED ADDR 01490000
+         BNZ   &I.A                                                     01500000
+&I.D     EQU   *                                                        01510000
+         MEXIT                                                          01520000
+.ERR1    MNOTE 8,'INVALID NO. OF ENTRIES IN FIELDS PARAMETER'           01530000
+         MEXIT                                                          01540000
+.ERR2    MNOTE 8,'FORMAT TYPE IS NOT SUPPORTED'                         01550000
+         MEXIT                                                          01560000
+.ERR3    MNOTE 8,'FIRST ENTRY ADDRESS NOT SPECIFIED.'                   01570000
+         MEXIT                                                          01580000
+.ERR4    MNOTE 8,'LAST  ENTRY ADDRESS NOT SPECIFIED.'                   01590000
+         MEXIT                                                          01600000
+.ERR5    MNOTE 8,'LENGTH NOT SPECIFIED.'                                01610000
+         MEND                                                           01620000

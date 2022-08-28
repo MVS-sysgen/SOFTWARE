@@ -1,0 +1,327 @@
+         MACRO ,                                                        00010000
+&NM      DEBTRACE &LBL,&TEXT=,&REGS=,&HEX=,&MODE=S,     ADDED ON 85360 *00020000
+               &WK=R9,&DEV=1,&TCB=,         WTO VS @PRT  CHANGED 94011 *00030000
+               &ROUT=13,&DES=4,&BUGPARM=NO,                ADDED 95067 *00040000
+               &CTEXT=,&PACK=,                             ADDED 96081 *00050000
+               &PRTMODE=0,&DCB=0,   USER PRINT DCB/MODE    ADDED 99058 *00060000
+               &COUNT=,&CALL=DYN,&OPT=,                  CHANGED 98222 *00070000
+               &WA=DBTSAVE,                                ADDED 99114 *00080000
+               &LIST=                                      ADDED 95235  00090000
+.********************************************************************** 00100000
+.*>>>>>>>>> KEPT FOR OLD CODE ONLY - NEW CODE SHOULD USE DBT <<<<<<<<<* 00110000
+.********************************************************************** 00120000
+.*                                                                    * 00130000
+.*  THIS MACRO INVOKES EXTERNAL LOAD MODULE DEBTROLD TO PRODUCE       * 00140000
+.*  TRACING, REGISTER CONTENTS, AND VARIABLES. (DEBTROLD SHOULD BE IN * 00150000
+.*  A LINKLIB; AUTHORIZATION IS NOT REQUIRED). OUTPUT WILL BE BY WTO  * 00160000
+.*  UNLESS A DEBTRACE DD CARD IS SUPPLIED.                            * 00170000
+.*                                                                    * 00180000
+.*  REQUIRED:  IN A CSECT OR RSECT:   DEBTRACE MODE=C  DEFINES CODE   * 00190000
+.*             IN A CSECT OR DSECT:   DEBTRACE MODE=D  DEFINES DATA   * 00200000
+.*             IN A CSECT (¬RENT) :   DEBTRACE MODE=DC   BOTH         * 00210000
+.*    (NOTE: REQUIRED FORMS MUST NOT APPEAR PRIOR TO FIRST OPTIONAL)  * 00220000
+.*                                                                    * 00230000
+.*  OPTIONAL:  LABEL DEBTRACE ...                                     * 00240000
+.*                TAG OR ,  -  IDENTIFIER ON OUTPUT LISTING / CONSOLE * 00250000
+.*                                                                    * 00260000
+.*                REGS= (DEFAULT) | REGS=NO - NO REGISTERS            * 00270000
+.*                REGS=YES  -  REGISTERS R0 THROUGH R15               * 00280000
+.*                REGS=(R1,R2) - REGISTERS R1 THROUGH R2              * 00290000
+.*                REGS=SHORT   - R14 THROUGH R1                       * 00300000
+.*                                                                    * 00310000
+.*                TEXT=NAME -  TEXT STRING TO BE SHOWN                * 00320000
+.*                TEXT=(NAME,LEN) - TEXT W/EXPLICIT LENGTH            * 00330000
+.*                                                                    * 00340000
+.*                CTEXT=NAME - CONDITIONAL TEXT STRING TO BE SHOWN    * 00350000
+.*                CTEXT=(NAME,LEN) - TEXT W/EXPLICIT LENGTH           * 00360000
+.*                              OUTPUT IN HEX IF NOT PRINTABLE        * 00370000
+.*                                                                    * 00380000
+.*                HEX=NAME   -  DATA TO BE SHOWN IN HEXADECIMAL       * 00390000
+.*                HEX=(NAME,LEN) - TEXT W/EXPLICIT LENGTH             * 00400000
+.*                                                                    * 00410000
+.*                PACK=NAME  -  DATA TO BE CONVERTED FROM PACKED      * 00420000
+.*                PACK=(NAME,LEN) - TEXT W/EXPLICIT LENGTH (LEN IGNRD)* 00430000
+.*                                                                    * 00440000
+.*           LIST=((OP1,LN1,FM1),(OP2,LN2,FM2), ... )                 * 00450000
+.*                                                                    * 00460000
+.*                OP - ADDRESS EXPRESSION VALID IN S CONSTANT         * 00470000
+.*                LN - LENGTH EXPRESSION; DEFAULT IS L'OP             * 00480000
+.*                FM - TEXT | CTEXT | HEX | PACK - DEFAULT IS HEX     * 00490000
+.*                     OR ABBREVIATED   T | CT | H | P                * 00500000
+.*                                                                    * 00510000
+.*  THE REQUIRED FORMS MAY BE OMITTED WHEN PGMTRACE WILL ALSO BE USED * 00520000
+.*  AND ACTIVATED. IN THAT CASE THE FIRST OPTIONAL FORM MUST INCLUDE  * 00530000
+.*  CALL=TRC TO GENERATE SHORTER PARAMETER LISTS.                     * 00540000
+.*                                                                    * 00550000
+.********************************************************************** 00560000
+.*  MAINTENANCE:                                                      * 00570000
+.*                                                                    * 00580000
+.*  2000/01/03  GYP  REMOVED IN-LINE DEBUG CODE;                      * 00590000
+.*                   FIXED MODE=C AND MODE=D FOR USE WITH REENTRANT   * 00600000
+.*                     PROGRAMS.                                      * 00610000
+.*                                                                    * 00620000
+.********************************************************************** 00630000
+     GBLB  &BUGBEAR,&BUGTCB,&BUGSWCH,&BUGSWRT,&BUGFAR,&BUGEXT,&BUGDYN   00640000
+     GBLB  &BUGTRC           USED WITH ACTIVE PGMTRACE (ESPIE)  GP99113 00650000
+         GBLA  &MACP#        NUMBER OF SUBLIST PARAMETERS       GP04234 00660000
+         GBLC  &MACP1,&MACP2,&MACP3,&MACP4,&MACP5               GP04234 00670000
+         GBLC  &MACP6,&MACP7,&MACP8,&MACP9,&MACP10              GP04234 00680000
+         GBLC  &V                                                       00690000
+         LCLA  &LN,&I,&EN,&EM,&EO                               GP95235 00700000
+         LCLC  &L,&ET,&EL,&EK                                   GP95235 00710000
+&L       SETC  'L'''                                            GP95235 00720000
+&V       SETC  'DBT'.'&SYSNDX'                                          00730000
+&BUGFAR  SETB  (&BUGFAR OR ('&CALL' EQ 'FAR'))                   95079  00740000
+&BUGEXT  SETB  (&BUGEXT OR ('&CALL' EQ 'EXTRN'))                 95227  00750000
+&BUGDYN  SETB  (&BUGDYN OR ('&CALL' EQ 'DYN'))                  GP97261 00760000
+&BUGDYN  SETB  (&BUGDYN OR ('&CALL' EQ ''))  DROP LOCAL CODE    GP00004 00770000
+&BUGDYN  SETB  (&BUGDYN OR ('&CALL' EQ 'DYNAMIC'))              GP97261 00780000
+&BUGTRC  SETB  (&BUGTRC OR ('&CALL' EQ 'TRC'))                  GP99113 00790000
+&BUGTRC  SETB  (&BUGTRC OR ('&CALL' EQ 'TRACE'))                GP99113 00800000
+&BUGTRC  SETB  (&BUGTRC OR ('&CALL' EQ 'PGMTRACE'))             GP99113 00810000
+         AIF   (&BUGBEAR OR '&BUGPARM' EQ 'NO').DOSOME                  00820000
+         AIF   ('&NM' EQ '').MEND                                       00830000
+&NM      DS    0H            DEBUG SWITCH NOT ON                        00840000
+         AGO   .MEND                                                    00850000
+.DOSOME  ANOP  ,                                                 95067  00860000
+&BUGSWCH SETB  1                                                 95067  00870000
+         AIF   ('&MODE' EQ 'D' OR '&MODE' EQ 'M').DATA           95228  00880000
+         AIF   ('&MODE' EQ 'C').CODE                                    00890000
+         AIF   ('&MODE' EQ 'DC').CODE   EXPAND BOTH              95067  00900000
+         AIF   ('&MODE' EQ 'ON').SWON                            95079  00910000
+         AIF   ('&MODE' EQ 'OFF').SWOFF                          95079  00920000
+         AIF   ('&MODE' EQ 'CLOSE').SWEND  CLOSE AND QUIT       GP98222 00930000
+         AIF   (NOT &BUGTRC).NOTTRC                             GP99113 00940000
+&NM      DC    X'83CD',S(&WA,&V.X-*)             INVOKE TRACE   GP99113 00950000
+         AGO   .DONEBAS                                         GP99113 00960000
+.NOTTRC  ANOP  ,                                                GP99113 00970000
+&NM      STM   R0,R15,&WA    SAVE ALL REGISTERS                         00980000
+         AIF   ('&COUNT' EQ '').DONECNT                          95079  00990000
+.*  COUNT(3) - SKIP FIRST N CALLS                                95079  01000000
+         AIF   ('&COUNT(3)' EQ '').CNTNO3                        95079  01010000
+         ICM   R14,15,&V.3   LOAD SKIP COUNT                     95079  01020000
+         BNP   &V.C          LIMIT REACHED - PROCESS             95079  01030000
+         BCTR  R14,0         DECREMENT                           95079  01040000
+         STCM  R14,15,&V.3   SAVE FOR NEXT TIME                  95079  01050000
+         B     &V.X          AND SKIP CALL                       95079  01060000
+&V.3     DC    AL4(&COUNT(3))  INITIAL SKIP COUNT                95079  01070000
+&V.C     DS    0H                                                95079  01080000
+.CNTNO3  AIF   ('&COUNT(2)' EQ '').CNTNO2                        95079  01090000
+         AIF   ('&COUNT(2)' EQ '1').CNTNO2                       95079  01100000
+         AIF   ('&COUNT(2)' EQ '0').CNTNO2                       95079  01110000
+.*  COUNT(2) - PROCESS EVERY NTH CALL ONLY                       95079  01120000
+         ICM   R14,15,&V.2   LOAD COUNTER                        95079  01130000
+         BNP   &V.L          BAD - PROCESS CALL                  95079  01140000
+         BCT   R14,&V.N      NON-ZERO; SAVE AND SKIP             95079  01150000
+         MVC   &V.2,=AL4(&COUNT(2))  REFRESH                     95079  01160000
+         B     &V.L          AND GO                              95079  01170000
+&V.2     DC    AL4(1)        INTERVAL COUNTER (DO FIRST ONE)     95079  01180000
+&V.N     STCM  R14,15,&V.2   UPDATE COUNTER                      95079  01190000
+         B     &V.X          AND EXIT                            95079  01200000
+.CNTNO2  AIF   ('&COUNT(1)' EQ '').DONECNT                       95079  01210000
+         AIF   ('&COUNT(1)' EQ '0').DONECNT                      95079  01220000
+         ICM   R14,15,&V.1   LOAD LIMIT COUNT                    95079  01230000
+         BNP   &V.X          SKIP OUT IF NOT VALID               95079  01240000
+         BCTR  R14,0         DECREMENT                           95079  01250000
+         B     &V.M          SAVE, AND CONTINUE                  95079  01260000
+&V.1     DC    AL4(&COUNT(1))  MAXIMUM CALLS TO MAKE             95079  01270000
+&V.M     STCM  R14,15,&V.1   SAVE FOR NEXT TIME                  95079  01280000
+.DONECNT ANOP  ,                                                 95079  01290000
+&V.L     BAS   R1,&V.B                                           95079  01300000
+.DONEBAS AIF   ('&LBL' EQ '' AND (&BUGEXT OR &BUGDYN OR &BUGTRC)).NOLBL 01310000
+         DC    CL8'&LBL '                                               01320000
+.NOLBL   AIF   ('&REGS' EQ '' OR '&REGS' EQ 'NO').NOREGS         95079  01330000
+         AIF   ('&REGS' EQ 'R15' OR '&REGS' EQ 'SHORT'                 *01340000
+               OR '&REGS' EQ 'RET').RETREG                      GP97225 01350000
+         AIF   ('&REGS' EQ 'YES' OR '&REGS' EQ 'ALL').REGSALL   GP02246 01360000
+         AIF   (N'&REGS EQ 2).REGS2                             GP97225 01370000
+         DC    AL1(0,0),SL2(&REGS(1),&REGS(1))                  GP97225 01380000
+         AGO   .NOREGS                                          GP97225 01390000
+.REGS2   DC    AL1(0,0),SL2(&REGS(1),&REGS(2))                  GP97225 01400000
+         AGO   .NOREGS                                          GP97225 01410000
+.REGSALL DC    AL1(0,0),SL2(0,15)                               GP97225 01420000
+         AGO   .NOREGS                                          GP97225 01430000
+.RETREG  DC    SL2(0,14,1)    R15-R1 ONLY                       GP97225 01440000
+.NOREGS  AIF   ('&TEXT' EQ '').NOTEXT                                   01450000
+         AIF   (N'&TEXT GE 2).TEXT2                             GP97225 01460000
+         DC    AL1(1,0),SL2(&TEXT(1)),AL2(&L&TEXT(1))           GP97225 01470000
+         AGO   .NOTEXT                                          GP97225 01480000
+.TEXT2   DC    AL1(1,0),SL2(&TEXT(1),&TEXT(2))                          01490000
+.NOTEXT  AIF   ('&CTEXT' EQ '').NOCTEXT                         GP97225 01500000
+         AIF   (N'&CTEXT GE 2).CTEXT2                           GP97225 01510000
+         DC    AL1(2,0),SL2(&CTEXT(1)),AL2(&L&CTEXT(1))         GP97225 01520000
+         AGO   .NOCTEXT                                         GP97225 01530000
+.CTEXT2  DC    AL1(2,0),SL2(&CTEXT(1),&CTEXT(2))                GP97225 01540000
+.NOCTEXT AIF   ('&HEX' EQ '').NOHEX                             GP97225 01550000
+         AIF   (N'&HEX GE 2).HEX2                               GP97225 01560000
+         DC    AL1(3,0),SL2(&HEX(1)),AL2(&L&HEX(1))             GP97225 01570000
+         AGO   .NOHEX                                           GP97225 01580000
+.HEX2    DC    AL1(3,0),SL2(&HEX(1),&HEX(2))                    GP97225 01590000
+.NOHEX   AIF   ('&PACK' EQ '').NOPACK                           GP97225 01600000
+         AIF   (N'&PACK GE 2).PACK2                             GP97225 01610000
+         DC    AL1(4,0),SL2(&PACK(1)),AL2(&L&PACK(1))           GP97225 01620000
+         AGO   .NOPACK                                          GP97225 01630000
+.PACK2   DC    AL1(4,0),SL2(&PACK(1),&PACK(2))                  GP97225 01640000
+.NOPACK  AIF   ('&LIST' EQ '' OR N'&LIST LT 1).NOLIST           GP95235 01650000
+&LN      SETA  N'&LIST                                          GP95235 01660000
+.DOLIST  AIF   (&I GE &LN).NOLIST   DONE WITH LIST              GP95235 01670000
+&I       SETA  &I+1          BUMP LOOP INDEX                    GP95235 01680000
+&EN      SETA  K'&EK         GET LENGTH                         GP04234 01690000
+         MACLIST &LIST(&I)   GET SUBLIST ITEMS                  GP04234 01700000
+&EN      SETA  &MACP#        NUMBER OF ENTRIES (CHG FOR XF ASM) GP04234 01710000
+         AIF   (&EN LT 1).DOLIST  USER IN COMA?                 GP95235 01720000
+         AIF   (&EN LT 4).TOOLIST WARN                          GP95235 01730000
+         MNOTE 4,'MORE THAN 3 SUBPARMS IN &LIST(&I) '           GP95235 01740000
+.TOOLIST ANOP  ,                                                GP95235 01750000
+&EK      SETC  '&MACP1'                                         GP04234 01760000
+&EM      SETA  K'&EK         LENGTH OF FIRST OPERAND                    01770000
+&EO      SETA  0             PRESET FOR NORMAL ADDRESSING MODE          01780000
+&ET      SETC  '03'          PRESET FOR HEX DEFAULT             GP95235 01790000
+         AIF   (&EM GT 0).TPFX                                  GP04234 01800000
+&EK      SETC  '0'           ALLOW EXPANSION WITHOUT ERROR      GP04234 01810000
+&EM      SETA  1                                                GP04234 01820000
+         MNOTE 4,'DEBTRACE: PARAMETER &I REQUIRES AN ADDRESS'   GP04234 01830000
+.TPFX    AIF   (&EM LT 2).NOTA31                                GP04234 01840000
+         AIF   ('&EK'(1,1) NE '/').NOTIND                               01850000
+&EO      SETA  &EO+1         REQUEST INDIRECT ADDRESSING                01860000
+&EK      SETC  '&EK'(2,&EM-1)  DELETE LEADING CONTROL BYTE              01870000
+&EM      SETA  K'&EK         LENGTH OF FIRST OPERAND                    01880000
+.NOTIND  AIF   ('&EK'(&EM,1) NE '%').NOTA24                             01890000
+&EO      SETA  &EO+2         REQUEST FORCED 24-BIT ADDRESSING           01900000
+&EK      SETC  '&EK'(1,&EM-1)  DELETE TRAILING CONTROL BYTE             01910000
+&EM      SETA  K'&EK         LENGTH OF FIRST OPERAND                    01920000
+.NOTA24  AIF   ('&EK'(&EM,1) NE '?').NOTA31                             01930000
+&EO      SETA  &EO+4         REQUEST FORCED 31-BIT ADDRESSING           01940000
+&EK      SETC  '&EK'(1,&EM-1)  DELETE TRAILING CONTROL BYTE             01950000
+&EM      SETA  K'&EK         LENGTH OF FIRST OPERAND                    01960000
+.NOTA31  AIF   (&EN LT 3 OR '&MACP3' EQ 'HEX').HTYPE            GP95235 01970000
+         AIF   ('&MACP3' EQ 'X').HTYPE                          GP97225 01980000
+         AIF   ('&MACP3' EQ 'HEX').HTYPE                                01990000
+         AIF   ('&MACP3' EQ 'T').TTYPE                          GP98189 02000000
+         AIF   ('&MACP3' EQ 'TEXT').TTYPE                       GP95235 02010000
+         AIF   ('&MACP3' EQ 'TXT').TTYPE                                02020000
+         AIF   ('&MACP3' EQ 'C').CTYPE                          GP97225 02030000
+         AIF   ('&MACP3' EQ 'CT').CTYPE                                 02040000
+         AIF   ('&MACP3' EQ 'CTEXT').CTYPE                      GP97225 02050000
+         AIF   ('&MACP3' EQ 'PACK').PTYPE                       GP97225 02060000
+         AIF   ('&MACP3' EQ 'PACKED').PTYPE                     GP97225 02070000
+         AIF   ('&MACP3' EQ 'P').PTYPE                          GP97225 02080000
+         AIF   ('&MACP3' EQ 'PD').PTYPE                                 02090000
+         AIF   ('&MACP3' EQ 'D').PTYPE                          GP97225 02100000
+ MNOTE 4,'TYPE MUST BE TEXT, CTEXT, HEX, OR PACKED, NOT &MACP3'         02110000
+         AGO   .HTYPE                                           GP95235 02120000
+.TTYPE   ANOP  ,                                                GP95235 02130000
+&ET      SETC  '01'          SET FOR TEXT                       GP95235 02140000
+         AGO   .HTYPE                                           GP95235 02150000
+.CTYPE   ANOP  ,                                                GP97225 02160000
+&ET      SETC  '02'          SET FOR CONDITIONAL TEXT, ELSE HEX GP97225 02170000
+         AGO   .HTYPE                                           GP97225 02180000
+.PTYPE   ANOP  ,                                                GP97225 02190000
+&ET      SETC  '04'          SET FOR PACKED                     GP97225 02200000
+.HTYPE   ANOP  ,                                                GP97225 02210000
+&EL      SETC  '&MACP2'                                         GP95235 02220000
+         AIF   ('&EL' NE '').HLEN                               GP95235 02230000
+&EL      SETC  '&L'.'&EK'                                               02240000
+.HLEN    DC    X'0800',CL8'&MACP1',AL1(&ET,&EO),S(&EK,&EL)              02250000
+         AGO   .DOLIST                                          GP95235 02260000
+.NOLIST  AIF   (&BUGFAR).FARCL                                   95079  02270000
+         AIF   (&BUGDYN).FARCL                                  GP97261 02280000
+         AIF   (&BUGTRC).TRCCL                                  GP99113 02290000
+         AIF   (&BUGEXT).EXTCL                                   95215  02300000
+&V.B     BAS   R14,DBTRACE                                       92271  02310000
+         AGO   .CMCAL                                            95079  02320000
+.EXTCL   ANOP  ,                                                 95215  02330000
+&V.B     L     R15,=V(DEBTRACE)    MEMBER DEBTROLD              GP05013 02340000
+         LA    R0,&WA        PASS ADDRESS OF WORK AREA           95215  02350000
+         AGO   .FARCM                                            95215  02360000
+.FARCL   ANOP  ,                                                 95079  02370000
+&V.B     L     R15,=A(DBTRACE)                                   95079  02380000
+.FARCM   BASR  R14,R15                                           95079  02390000
+.CMCAL   ANOP  ,                                                 95079  02400000
+&V.X     LM    R0,R15,&WA                                               02410000
+         AGO   .MEND                                                    02420000
+.TRCCL   ANOP  ,             INVOKE PGMTRACE VIA ESPIE          GP99113 02430000
+&V.X     DS    0H            END OF TRACE LIST                  GP99113 02440000
+         AGO   .MEND                                            GP99113 02450000
+.SWON    OI    DBTFLAG,DBTFLON  SET TRACING ON                   95079  02460000
+         AGO   .MEND                                             95079  02470000
+.SWEND   OI    DBTFLAG,DBTFLEND  CLOSE DCB AND STOP TRACE       GP98222 02480000
+.SWOFF   NI    DBTFLAG,255-DBTFLON  SET TRACING OFF              95079  02490000
+         AGO   .MEND                                             95079  02500000
+.CODE    AIF   (&BUGFAR OR &BUGEXT).TESTDC                      GP97262 02510000
+         AIF   ('&NM' EQ '').NONAME                                     02520000
+&NM      DS    0H                                                       02530000
+.NONAME  AIF   (NOT &BUGDYN).NOLODYN                            GP97262 02540000
+         AIF   ('&MODE' NE 'DC').NOPUP                          GP00004 02550000
+         PUSH  PRINT                                            GP00004 02560000
+         PUSH  USING                                            GP00004 02570000
+.*       PRINT GEN                                              GP00004 02580000
+         DROP  ,                                                GP00004 02590000
+         USING DBTRACE,R15                                      GP97265 02600000
+.NOPUP   ANOP  ,                                                GP00004 02610000
+DBTRACE  LA    R0,&WA        PASS ADDRESS OF WORK AREA          GP97262 02620000
+         STM   R12,R1,DBTLOCSV  SAVE BASE AND RETURN            GP97265 02630000
+         ICM   R15,15,@DEBTRAC  SEE IF PREVIOUSLY LOADED        GP97265 02640000
+         BNZR  R15           INVOKE; RETURN VIA R14 TO CALLER   GP97265 02650000
+         AIF   ('&MODE' NE 'DC').NODRP                          GP00004 02660000
+         BASR  R12,0         MAKE LOCAL BASE                    GP97262 02670000
+         DROP  R15                                              GP97265 02680000
+         USING *,R12                                            GP97265 02690000
+         AGO   .CMDRP                                           GP00004 02700000
+.NODRP   MVC   #DEBTRAC,=CL8'DEBTROLD'                          GP00004 02710000
+         MVI   DBTFLAG,&BUGSWCH*DBTFLON+DBTFLWID                GP00004 02720000
+.CMDRP   LOAD  EPLOC=#DEBTRAC  LOAD EXTERNAL MODULE             GP97261 02730000
+         ST    R0,@DEBTRAC   SAVE FOR NEXT TIME                 GP97261 02740000
+         AIF   ('&MODE' NE 'DC').NOCLB                          GP00004 02750000
+         ST    R0,DBTLOCSV+(15-12)*4  UPDATE TARGET ADDRESS     GP97265 02760000
+.NOCLB   LM    R12,R1,DBTLOCSV  RESTORE                         GP97265 02770000
+         BR    R15           RETURN TO CALLER VIA R14           GP97262 02780000
+         AIF   ('&MODE' NE 'DC').NOPOP                          GP00004 02790000
+         POP   USING                                            GP97262 02800000
+         POP   PRINT                                            GP97262 02810000
+.NOPOP   AGO   .TESTDC                                          GP97262 02820000
+.NOLODYN MNOTE 4,'INLINE EXPANSION NOT SUPPORTED - USE MACRO DEBINLIN'  02830000
+.TESTDC  AIF   ('&MODE' NE 'DC').MEND                            95067  02840000
+         AGO   .NODRTE                                           95067  02850000
+.DATA    AIF   ('&NM' EQ '').NODLBL                                     02860000
+&NM      DS    0D                                                       02870000
+.NODLBL  AIF   ('&ROUT' EQ '').NODRTE                            95067  02880000
+&BUGSWRT SETB  1                                                 95067  02890000
+.NODRTE  AIF   (&BUGFAR OR '&MODE' EQ 'M').MEND                  95230  02900000
+DBTPRESV DC    2F'0'  1/2    FOR SHORT FORMATTING                95230  02910000
+.NOSVPFX ANOP  ,                                                 95230  02920000
+&WA      DC    16F'0' 2/2    DEBUG SAVE AREA                    GP97265 02930000
+DBTFLAG  DC    AL1(&BUGSWCH*DBTFLON+DBTFLWID)  DEBUG FLAG       GP98222 02940000
+DBTFLTCB EQU   128             INCLUDE TCB ADDRESS IN MESSAGE           02950000
+DBTFLWTO EQU   64              USE WTO INSTEAD OF PRT            95240  02960000
+DBTFLWID EQU   32              USE WIDE FORMAT WHEN PRINTING    GP98222 02970000
+DBTFLPRO EQU   16              PRODUCTION MODE / NEED DD TO PRT GP99113 02980000
+DBTFLEND EQU   2               THIS IS A TERMINATION CALL       GP98222 02990000
+DBTFLON  EQU   1               DEBUG BIT                                03000000
+DBTFLAG2 DC    AL1(0)        ..RESERVED..                       GP99062 03010000
+DBTFLAG3 DC    AL1(0)        ..RESERVED..                       GP99062 03020000
+DBTFLAG4 DC    AL1(0)        ..RESERVED..                       GP99062 03030000
+DBTCNT1  DC    A(&COUNT(1)+0)  COUNT OPTION                      95228  03040000
+DBTCNT2  DC    A(&COUNT(2)+0)  COUNT OPTION                      95228  03050000
+DBTCNT3  DC    A(&COUNT(3)+0)  COUNT OPTION                      95228  03060000
+         MAPCMPRT PFX=DBT,DCB=&DCB,PRTMODE=&PRTMODE,DEV=&DEV    GP99113 03070000
+         AIF   (NOT &BUGDYN).NODYNS                             GP97261 03080000
+.BUGDYN  WXTRN DEBTRACE      SUPPORT LINKED-IN VERSION          GP97262 03090000
+@DEBTRAC DC    A(DEBTRACE)   ADDRESS OF LOADED DEBTRACE         GP97261 03100000
+#DEBTRAC DC    CL8'DEBTROLD'  LOAD MODULE NAME                  GP97261 03110000
+DBTLOCSV DC    6A(0)         SAVE AREA                          GP97265 03120000
+         AGO   .MEND                                            GP97262 03130000
+.NODYNS  AIF   (&BUGFAR OR '&MODE' EQ 'M').MEND                  95228  03140000
+DBTLOCSV DC    4F'0'         BASE SAVE                                  03150000
+DBTWTO   DC    Y(56,0)       VCON                                93357  03160000
+DBTWTOM  DC    C'MSG666 '    DEBUG HEADER                        93357  03170000
+DBTWTON  DC    CL8' ',C' '   USER'S LABEL                               03180000
+DBTWTOT  DC    CL36' '       USER'S HEX OR EBCDIC TEXT                  03190000
+         AIF   ('&TCB' NE 'YES' AND NOT &BUGTCB).NOTCB           94011  03200000
+         DC    C' '          EXTRA FOR UNPACK                    94011  03210000
+DBTWTCB  DC    CL8' '        CURRENT TCB ADDRESS                 94011  03220000
+.NOTCB   ANOP  ,                                                 94011  03230000
+DBTWTOC  DC    C' '          EXTRA FOR UNPACK                           03240000
+         AIF   (NOT &BUGSWRT).MEND  NO ROUTING CODE              95067  03250000
+         DC    XL3'0'        EXTRA FOR DESCRIPTOR/ROUTING CODES  95067  03260000
+.MEND    MEND  ,                                                        03270000

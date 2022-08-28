@@ -1,0 +1,7 @@
+         MACRO                                                          00010000
+&NM      PRTOPEN &WORK,&DEV=,&OPT=                                      00020000
+         LCLA  &I,&J                                                    00030000
+         LCLB  &A,&D,&W                                                 00040000
+&J       SETA  N'&OPT                                                   00050000
+&NM      PRTCOM PRTOPEN,FUN=2,A1=&WORK,DEV=&DEV,OPT=&OPT                00060000
+         MEND  ,                                                        00070000

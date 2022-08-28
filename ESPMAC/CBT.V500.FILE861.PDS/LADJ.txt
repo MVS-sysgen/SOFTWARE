@@ -1,0 +1,74 @@
+         MACRO ,                                                        00010000
+&NM      LADJ  &CH,&LEN,&WK=R15,&MASK=C' '  DELETE BLANKS               00020000
+.*--------------------------------------------------------------------* 00030000
+.*                                                                    * 00040000
+.*  THIS MACRO CREATES CODE TO LEFT-JUSTIFY A FIELD.                  * 00050000
+.*  &FIELD MUST NOT BE A REGISTER SPECIFICATION, BUT A RELOCATABLE    * 00060000
+.*  &LEN MAY BE ABSOLUTE, OR A REGISTER                               * 00070000
+.*    &FIELD+LEN MUST BE A TRAILING FILL CHARACTER (NORMALLY BLANK)   * 00080000
+.*  &WK IS A WORK REGISTER, NORMALLY R15                              * 00090000
+.*  &MASK SPECIFIES EITHER BLANK OR ZERO (C' ' OR C'0'). SHIFTING     * 00100000
+.*    STOPS WHEN OTHER THAN THE EXCLUDED BITS ARE ON.                 * 00110000
+.*                                                                    * 00120000
+.*--------------------------------------------------------------------* 00130000
+         GBLC  &MACPLAB                                         GP03245 00140000
+         LCLC  &L,&TAG,&FIELD                                   GP03016 00150000
+         LCLC  &D,&B         BASE/DISPLACEMENT                  GP12307 00160000
+         LCLA  &I,&J,&K                                         GP12307 00170000
+&TAG     SETC  'ZZJ'.'&SYSNDX'                                  GP03016 00180000
+&L       SETC  'L'''                                                    00190000
+&FIELD   SETC  '&CH'                                            GP12307 00200000
+&K       SETA  K'&CH                                            GP12307 00210000
+         AIF   ('&FIELD' EQ '').BOO                                     00220000
+         AIF   (&K LT 3).NOREG                                  GP12307 00230000
+         AIF   ('&CH'(1,1) NE '(' OR '&CH'(2,1) EQ '(').NOREG   GP12307 00240000
+       AIF ('&CH'(&K,1) NE ')' OR '&CH'(&K-1,1) EQ ')').NOREG   GP12307 00250000
+&FIELD   SETC  '0'.'&CH'     CHANGE (REG) TO 0(REG)             GP12304 00260000
+.NOREG   AIF   ('&LEN' EQ '').DEF                                       00270000
+         AIF   (T'&LEN NE 'N').MAC                              GP03016 00280000
+&NM      LA    &WK,&LEN-1    NO. OF BYTES TO MOVE                       00290000
+         AGO   .COM                                                     00300000
+.MAC     ANOP  ,                                                GP03016 00310000
+&NM      MACPARM &WK,&LEN                                       GP03016 00320000
+&MACPLAB MACPARM &WK,0,OP=BCTR,OPR=BCTR                         GP03016 00330000
+         AGO   .COM                                                     00340000
+.DEF     ANOP  ,                                                        00350000
+&NM      LA    &WK,&L&FIELD-1  NO. OF BYTES TO MOVE                     00360000
+.COM     ANOP  ,                                                GP12307 00370000
+&TAG.L   TM    &FIELD,X'FF'-&MASK LEADING BLANK OR ZERO ?       GP03016 00380000
+         BNZ   &TAG.X        RETURN                             GP03016 00390000
+         EX    &WK,&TAG.M    SHIFT LEFT ONE POSITION            GP03016 00400000
+         BCT   &WK,&TAG.L    REPEAT FOR ALL                     GP03016 00410000
+         B     &TAG.X        DONE                               GP03016 00420000
+&K       SETA  K'&FIELD                                         GP12307 00430000
+         AIF   ('&FIELD'(&K,1) NE ')').SYMBOL                   GP12307 00440000
+.*  PARSE xxx ( yyy ) - CHANGE TO xxx ( 1 , yyy )               GP12307 00450000
+&I       SETA  &K                                               GP12307 00460000
+&J       SETA  1                                                GP12307 00470000
+.LOOP    AIF   (&I LE 1).ERRTO                                  GP12307 00480000
+&I       SETA  &I-1                                             GP12307 00490000
+         AIF   ('&FIELD'(&I,1) EQ '(').HAVLEFT                  GP12307 00500000
+         AIF   ('&FIELD'(&I,1) EQ ')').HAVRITE                  GP12307 00510000
+         AGO   .LOOP                                            GP12307 00520000
+.HAVRITE ANOP  ,                                                GP12307 00530000
+&J       SETA  &J+1                                             GP12307 00540000
+         AGO   .LOOP                                            GP12307 00550000
+.HAVLEFT ANOP  ,                                                GP12307 00560000
+&J       SETA  &J-1                                             GP12307 00570000
+         AIF   (&J GT 0).LOOP                                   GP12307 00580000
+         AIF   (&I LE 1).SYMBOL   ((XYZ-RST))                   GP12307 00590000
+&D       SETC  '&FIELD'(1,&I-1)                                 GP12307 00600000
+&B       SETC  '&FIELD'(&I+1,&K-&I-1)                           GP12307 00610000
+&TAG.M   MVC   &D.(0,&B),1+&FIELD                               GP12307 00620000
+&TAG.X   DS    0H                                               GP12307 00630000
+         MEXIT ,                                                GP12307 00640000
+.SYMBOL  ANOP  ,             STASH LENGTH IN MVC                GP12307 00650000
+&TAG.M   MVC   &FIELD.(0),1+&FIELD     SHIFT LEFT               GP12307 00660000
+&TAG.X   DS    0H                                               GP03016 00670000
+         MEXIT ,                                                        00680000
+.ERRTO   MNOTE 4,'LADJ - FIELD NAME MALFORMED'                  GP12307 00690000
+         MEXIT ,                                                GP12307 00700000
+.BOO     MNOTE 4,'LADJ - FIELD NAME OMITTED'                            00710000
+         AIF   ('&NM' EQ '').MEND                               GP03016 00720000
+&NM      DS    0H            BUT AT LEAST DEFINE THE LABEL      GP03016 00730000
+.MEND    MEND  ,                                                        00740000

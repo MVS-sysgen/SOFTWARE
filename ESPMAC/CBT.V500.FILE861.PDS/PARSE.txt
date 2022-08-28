@@ -1,0 +1,73 @@
+         MACRO ,                                                        00010000
+&NM      PARSE &TEXT,&LEN,&OPT=COMMA,&PARM=PARPARM                      00020000
+         GBLC  &MACPLAB                                                 00030000
+         LCLC  &L                                                       00040000
+         LCLC  &ON(10),&OV(10),&O1,&O2                                  00050000
+         LCLC  &RN(10),&RV(10),&RQ                                      00060000
+         LCLA  &OM,&RM,&I,&J,&N                                         00070000
+&L       SETC  'L'''                                                    00080000
+&MACPLAB SETC  '&NM'                                                    00090000
+&ON(01)  SETC  'WORD'        REXX WORD LIST (BLANK SEPARATORS)          00100000
+&OV(01)  SETC  'PAR$TPBK'      BLANK SEPARATION                         00110000
+&ON(02)  SETC  'COMMA'       COMMA/BLANK SEPARATED LIST                 00120000
+&OV(02)  SETC  'PAR$TPBC'      BLANK, COMMA                             00130000
+&ON(03)  SETC  'KEYWORD'     COMMA/BLANK/KEYWORD=                       00140000
+&OV(03)  SETC  'PAR$TPKW'      BLANK, COMMA, (OPT.PARENTHESES), EQUAL   00150000
+&ON(04)  SETC  'LIST'        COMMA/BLANK/PARENTHESIZED LISTS            00160000
+&OV(04)  SETC  'PAR$TPLS'      BLANK, COMMA, PARENTHESES                00170000
+&ON(05)  SETC  'ITEM'        COMMA/BLANK/PARENTHESIZED LISTS            00180000
+&OV(05)  SETC  'PAR$TPLI'      BLANK, COMMA, PARENTHESES (SEPARATED)    00190000
+&OM      SETA  5             CURRENT MAXIMUM                            00200000
+&ON(06)  SETC  '        '    RESERVED                                   00210000
+&OV(06)  SETC  'PAR$TPBK'      RESERVED                                 00220000
+.*                                                                      00230000
+&RN(01)  SETC  'PARKEY'                                                 00240000
+&RV(01)  SETC  'PAR$PARK'                                               00250000
+&RN(02)  SETC  'SUBLIST'                                                00260000
+&RV(02)  SETC  'PAR$COSP'                                               00270000
+&RN(03)  SETC  'COLKEY'                                                 00280000
+&RV(03)  SETC  'PAR$COKW'                                               00290000
+&RN(04)  SETC  'UNQUOTE'                                                00300000
+&RV(04)  SETC  'PAR$COUQ'                                               00310000
+&RM      SETA  4             CURRENT MAXIMUM                            00320000
+&RN(05)  SETC  '        '                                               00330000
+&RV(05)  SETC  '        '                                               00340000
+&N       SETA  N'&OPT                                                   00350000
+         AIF   ('&TEXT' EQ '*END').DONE                                 00360000
+         AIF   ('&OPT' NE 'CLOSE').TEXT                                 00370000
+.DONE    MACPARM R1,(R1),OPR=SR,MODE=EQU                                00380000
+         AGO   .CALL                                                    00390000
+.TEXT    MACPARM R15,&TEXT                                              00400000
+         MACPARM R0,&LEN,NULL=&L&TEXT                                   00410000
+         MACPARM R1,&PARM                                               00420000
+         MACPARM R15,R0,PAR@TEXT-PARPARM(R1),MODE=THREE,OP=STM          00430000
+         AIF   (&N LT 1).CALL                                           00440000
+&O1      SETC  '&OPT(1)'                                                00450000
+         AIF   ('&O1' EQ '').SEESUB                                     00460000
+&I       SETA  1                                                        00470000
+.TRYOPT  AIF   ('&O1' EQ '&ON(&I)').HAVEOPT                             00480000
+&I       SETA  &I+1                                                     00490000
+         AIF   (&I LE &OM).TRYOPT                                       00500000
+.BADOPT  MNOTE 4,'PARSE: OPTION &O1 NOT RECOGNIZED; IGNORED'            00510000
+         AGO   .CALL                                                    00520000
+.HAVEOPT MACPARM PAR$TYPE-PARPARM(R1),&OV(&I),OP=MVI  SET CALL TYPE     00530000
+.SEESUB  AIF   (&N LT 2).CALL                                           00540000
+&J       SETA  1                                                        00550000
+.OPLOOP  AIF   (&J GE &N).EXPSUB                                        00560000
+&J       SETA  &J+1                                                     00570000
+&O1      SETC  '&OPT(&J)'                                               00580000
+         AIF   ('&O1' EQ '').OPLOOP                                     00590000
+&I       SETA  1                                                        00600000
+.TRYSUB  AIF   ('&O1' EQ '&RN(&I)').HAVESUB                             00610000
+&I       SETA  &I+1                                                     00620000
+         AIF   (&I LE &RM).TRYSUB                                       00630000
+         MNOTE 8,'PARSE: OPT &O1 NOT A VALID OPTION'                    00640000
+         AGO   .OPLOOP                                                  00650000
+.HAVESUB ANOP  ,                                                        00660000
+&RQ      SETC  '&RQ'.'+'.'&RV(&I)'                                      00670000
+         AGO   .OPLOOP                                                  00680000
+.EXPSUB  AIF   ('&RQ' EQ '').CALL  SKIP ALL NULLS                       00690000
+         MACPARM PAR$RQFG-PARPARM(R1),&RQ,OP=MVI  SET SUB OPTION        00700000
+.CALL    MACPARM R15,@PARSER,OP=L                                       00710000
+         MACPARM R14,(R15),OP=BALR,OPR=BALR                             00720000
+         MEND  ,                                                        00730000

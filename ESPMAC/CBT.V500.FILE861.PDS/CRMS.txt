@@ -1,0 +1,34 @@
+         MACRO ,                                                        00010000
+&NM      CRMS  &FUN,&R0,&R1,&OPT=                        UPDATED 90177  00020000
+         GBLC  &MACPLAB                                          90177  00030000
+         GBLB  &MVS,&MVSXA,&MVSESA,&OS390,&Z900                 GP04234 00040000
+         LCLC  &B                                                       00050000
+&MACPLAB SETC  '&NM'         SET LABEL GENERATION                90177  00060000
+         AIF   ('&FUN' EQ 'SRB' OR '&FUN' EQ 'SCHEDULE').SRB            00070000
+         AIF   ('&FUN' EQ 'INIT').INIT                                  00080000
+         AIF   ('&FUN' EQ 'GET').GET                                    00090000
+         AIF   ('&FUN' EQ 'FREE').FREE                                  00100000
+         MNOTE 8,'FUNCTION OPERAND REQUIRED'                            00110000
+         MEXIT ,                                                        00120000
+.FREE    ANOP  ,                                                        00130000
+&B       SETC  'EXWCRSFR'                                               00140000
+         AGO   .BAL                                                     00150000
+.GET     ANOP  ,                                                        00160000
+&B       SETC  'EXWCRSGT'                                               00170000
+         AGO   .L0                                                      00180000
+.INIT    ANOP  ,                                                        00190000
+&B       SETC  'EXWCRSIN'                                               00200000
+         MACPARM R1,&R1,NULL=SKIP                               GP02241 00210000
+.L0      MACPARM R0,&R0,NULL=SKIP                               GP02241 00220000
+         AGO   .BAL                                                     00230000
+.SRB     ANOP  ,                                                        00240000
+&B       SETC  'EXWCRSCH'                                               00250000
+         MACPARM R1,0        LOAD A ZERO                         90177  00260000
+         AIF   ('&OPT' EQ '').BAL                                90177  00270000
+         AIF   ('&OPT' EQ 'SPVR').SCH1                           90177  00280000
+         MNOTE 4,'*** UNSUPPORTED OPT= VALUE'                    90177  00290000
+         AGO   .BAL                                              90177  00300000
+.SCH1    MACPARM R1,0,OP=BCTR,OPR=BCTR  SET -1                   90177  00310000
+.BAL     ANOP  ,                                                 82200  00320000
+         MACPARM R14,&B,OP=BAL,OPR=BALR   CALL SCHEDULE SERVICES 90177  00330000
+         MEND  ,                                                        00340000

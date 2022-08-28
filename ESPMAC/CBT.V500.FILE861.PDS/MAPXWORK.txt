@@ -1,0 +1,384 @@
+         MACRO ,             USED SOLELY BY EXORCIST ROUTINES           00010000
+       MAPXWORK &SECT=D                                                 00020000
+         COPY OPTIONS                                                   00030000
+         AIF   ('&SECT' NE 'D').INLINEA                                 00040000
+EXORWORK DSECT ,                                                        00050000
+         AGO   .INLINEB                                                 00060000
+.INLINEA ANOP  ,                                                        00070000
+WORKHORS CSECT ,                                                        00080000
+.INLINEB ANOP  ,                                                        00090000
+         DC    CL8'CURR-PIE'                                            00100000
+CURRPIE  DC    F'0'          PIE ADDRESS                                00110000
+MYPIE    DC    F'0'                                                     00120000
+MIEGPR   DC    16F'0'        REGISTERS 0-15 AT TIME OF ERROR     93198  00130000
+MIEPSW   DC    F'0'          LEFT-HALF                                  00140000
+MIEADD   DC    F'0'          MODE BIT/ADDRESS                           00150000
+MIELNIC  DC    F'0'          LENGTH/INTERRUPT CODE                      00160000
+MIELEN   EQU   *-MYPIE                                                  00170000
+MIESAVLN EQU   *-CURRPIE                                                00180000
+         SPACE 1                                                        00190000
+         DC    CL8'PREV-PIE'                                            00200000
+CUTEYPIE DC    XL(MIESAVLN)'0'                                          00210000
+         SPACE 1                                                        00220000
+DDB      DC    D'0'                                                     00230000
+DDB2     DC    D'0'                                             GP05095 00240000
+DDB3     DC    D'0'                                             GP05095 00250000
+OLDREGS  DS    0XL(16*4)     LENGTH OF REGISTER AREA                    00260000
+OLDREG0  DC    A(0)          USER'S OLD REGISTER                        00270000
+OLDREG1  DC    A(0)          USER'S OLD REGISTER                        00280000
+OLDREG2  DC    A(0)          USER'S OLD REGISTER                        00290000
+OLDREG3  DC    A(0)          USER'S OLD REGISTER                        00300000
+OLDREG4  DC    A(0)          USER'S OLD REGISTER                        00310000
+OLDREG5  DC    A(0)          USER'S OLD REGISTER                        00320000
+OLDREG6  DC    A(0)          USER'S OLD REGISTER                        00330000
+OLDREG7  DC    A(0)          USER'S OLD REGISTER                        00340000
+OLDREG8  DC    A(0)          USER'S OLD REGISTER                        00350000
+OLDREG9  DC    A(0)          USER'S OLD REGISTER                        00360000
+OLDREG10 DC    A(0)          USER'S OLD REGISTER                        00370000
+OLDREG11 DC    A(0)          USER'S OLD REGISTER                        00380000
+OLDREG12 DC    A(0)          USER'S OLD REGISTER                        00390000
+OLDREG13 DC    A(0)          USER'S OLD REGISTER                        00400000
+OLDREG14 DC    A(0)          USER'S OLD REGISTER                        00410000
+OLDREG15 DC    A(0)          USER'S OLD REGISTER                        00420000
+CRTECB1  DC    A(0)          POST MAIN TASK FOR CRT I/O                 00430000
+CRTECB2  DC    A(0)          POST AT CRT I/O COMPLETION                 00440000
+DUMECB1  DC    F'0'          DUMMY ECB - STOP / MODIFY                  00450000
+DUMECB2  DC    F'0'          DUMMY ECB - CANCEL                         00460000
+CRTPARM  DS    0D            CRT SIZES FOR PHYSICAL/SIMULATED TERMINAL  00470000
+CRTLEN   DC    H'80'         LINE WIDTH                                 00480000
+CRTNUM   DC    AL2(&CRT/1635*12)  NUMBER OF LINES                       00490000
+CRTSIZ   DC    H'0'          PHYSICAL CRT - BUFFER SIZE                 00500000
+CRTPFX   DC    H'0'          PREFIX CHARACTER LENGTH                    00510000
+CRSPARM  DS    0D          TEST PROGRAM'S CRT VALUES                    00520000
+CRSLEN   DC    H'0'          LINE LENGTH                                00530000
+CRSNUM   DC    H'0'          LINE NUMBER                                00540000
+CRSSIZ   DC    H'0'          SCREEN SIZE                                00550000
+CRSPFX   DC    H'0'          PREFIX SIZE                                00560000
+SYMCCW   DC    X'06',AL3(WAITREPL),A(256)  PSEUDO-READ CCW              00570000
+CRTCCW   DC    D'0'          I/O REQUEST CCW                            00580000
+STEPDCB  DC    A(0,0)        STEPLIB (LOADLIB) DCB OPEN LIST    GP05005 00590000
+STEPDDN  DC    CL8'LOADLIB' .NAME OF STEPLIB (LOADLIB) DD               00600000
+STEPDCB2 DC    A(0,0)        EXORPSYM COPY OF STEPLIB OPEN LIST GP05005 00610000
+JOBQDCB  DC    A(0) .        DCB ADDRESS OF SYSJOBQE OR ZERO            00620000
+CL16     DC    CL16' '                                                  00630000
+BUFPARM  DC    CL8' '        BUFFER PRINT - HEADER                      00640000
+         SPACE 1                                                        00650000
+MILF     DC    X'0'          MILTEN PROCESSING FLAG                     00660000
+MFATTN   EQU   X'80'         WRITE CANCELLED BY ATTN                    00670000
+MFLONG   EQU   X'40'         NO ERASE/SUPPRESS TRAILING BLANK SUPPRESS  00680000
+MFNOND   EQU   X'20'         NON-DISPLAY FIELD - DON'T PRINT            00690000
+         SPACE 1                                                        00700000
+SYNTAX   DC    X'00'         SYSIN CONTROL BYTE                         00710000
+SYNFSKIP EQU   X'02'           SKIP ENTER-ONLY AFTER DUMP               00720000
+SYNFOPEN EQU   X'01'           SYSIN IS OPEN                            00730000
+         SPACE 1                                                        00740000
+CRF      DC    X'0'          CRT PROCESSING FLAG                        00750000
+CRFTSO   EQU   X'80'         TSO TERMINAL FOR SIMULATION                00760000
+CRFMIL   EQU   X'40'         MILTEN TERMINAL                            00770000
+CRFCRT   EQU   X'20'         CRT OUTPUT (ALONE OR WITH ABOVE)           00780000
+CRFSYN   EQU   X'10'         SYSIN SUPPLIED AND OPEN                    00790000
+CRFEND   EQU   X'08'         SYSIN END OF FILE READ                     00800000
+CRFEOF   EQU   X'04'         SYSIN TO CRT SWITCH SWITCH                 00810000
+CRFVTAM  EQU   X'02'         VTAM TERMINAL                       82291  00820000
+CRFDATA  EQU   X'01'         'WAITREPL' HAS USER INPUT BUFFER           00830000
+         SPACE 1                                                        00840000
+IOFLAG   DC    X'0'          I/O PROCESSING FLAG                        00850000
+IOPEND   EQU   X'80'         READ TI PENDING                            00860000
+IORED    EQU   X'40'         READ COMPLETED                             00870000
+IOCAN    EQU   X'20'         CANCEL READ ONLY - NO WRITE                00880000
+IOPNRIT  EQU   X'10'         SUPPRESS RITE                              00890000
+IOPATT   EQU   X'08'         ENABLE READ AFTER WRITE                    00900000
+IOWSF    EQU   X'04'         WSF ISSUED                          87116  00910000
+         SPACE 1                                                        00920000
+BFMODE   DC    X'0'          BUFFER PRINT OPTIONS                       00930000
+BFREAD   EQU   X'80'         READ INPUT BUFFER                          00940000
+BFCORE   EQU   X'40'         IN-CORE BUFFER / BOTH OFF - WRITE BUFFER   00950000
+BFCNTL   EQU   X'20'         CONTROL I/O - USE ACTUAL SIZES             00960000
+BFSF     EQU   X'08'         3270 - START FIELD FOUND DURING FORMAT     00970000
+         SPACE 1                                                        00980000
+COMMODE  DC    X'0'          CONTROL PROGRAM PROCESSING FLAG            00990000
+CFCNTL   EQU   X'80'         CP IN CONTROL                              01000000
+CFTEST   EQU   X'40'         TEST TASK RUNNING                          01010000
+CFATTN   EQU   X'20'         TEST IN ATTENTION WAIT                     01020000
+CFEXIT   EQU   X'10'         END OF JOB FLAG                            01030000
+CFPORD   EQU   X'04'         PRINT SCREEN DETAIL ORDERS/ATTR     90150  01040000
+CFCHECK  EQU   X'02'         CHECK WRITE BUFFER CONTENTS         90150  01050000
+CFDATA   EQU   X'01'         BUFFER HAS DATA FOR USER READ              01060000
+CFNOTEST EQU   255-CFTEST-CFATTN-CFDATA  TEST RESET FLAGS               01070000
+         SPACE 1                                                        01080000
+HEXTRA   DC    C'0123456789ABCDEF'                                      01090000
+HEXTRT   EQU   HEXTRA-C'0'                                              01100000
+         SPACE 1                                                        01110000
+STAEFLGS DC    X'00'         TEST SUBTASK ESTAE CONTROLS        GP05286 01120000
+SFEXIT   EQU   X'80'           EXIT WAS ENTERED                 GP05286 01130000
+STAMFLGS DC    X'00'         MAIN TASK ESTAE CONTROLS           GP05286 01140000
+*FEXIT   EQU   X'80'           EXIT WAS ENTERED                 GP05286 01150000
+SFS322   EQU   X'40'                                            GP05286 01160000
+         SPACE 1                                                        01170000
+         DS    0F                                                       01180000
+BUF      DC    XL72'0',CL4' '   HANGOVER - OLD BUFFER FOR XCTL / LOAD   01190000
+STIT     WTO   '#  ',MF=L    SUB-TITLE                                  01200000
+STITD    WTO   '@  ',MF=L    DELAYED/CONDITIONAL SUB-TITLE              01210000
+PRITE    DC    0A(0),AL2(137,0)                                         01220000
+MRITE    DC    CL133' '                                                 01230000
+         ORG   MRITE+5                                                  01240000
+MWRITE   DC    C'WRITE AT LINE '                                        01250000
+MLINEAD  DC    C'  ',C'   **'                                           01260000
+MBUF     DC    CL80' ',C'**'                                            01270000
+         ORG                                                            01280000
+READMISS WTO   '0***** MISSING ATTN OR BAD CODE',MF=L                   01290000
+         SPACE 2                                                        01300000
+PLINE    DC    0A(0),AL2(137,0)                                         01310000
+MLINE    DC    CL133' '                                                 01320000
+MSAVE    DC    18F'0'                                                   01330000
+SVAR1    DC    18F'0'        TEST TASK TOP SAVE AREA                    01340000
+SVAR4    DC    18F'0'        SPIE PROCESSING SAVE                       01350000
+COMSAVE  DC    6F'0'                                                    01360000
+         SPACE 1                                                        01370000
+SAVEIT   DC    4A(0)         SPACE FOR CRITICAL REGISTERS               01380000
+SPIETRAP DC    A(0)          EXORDUMP, ETC. SPIE TRAP (WAS FRS)         01390000
+AYERETA  DC    A(0)                                                     01400000
+FWAITIME DC    F'25'         TIMER DELAY  1/4TH SECOND                  01410000
+MYDEB    DC    10A(0)                                                   01420000
+         SPACE 2                                                        01430000
+@KEYLAB  DC    A(0)          ADDRESS OF FUNCTION KEY (INTERRUPT) LABELS 01440000
+ENDCCW   CCW   5,ENDSMI,0,L'ENDSMI                                      01450000
+         AIF   ('&CRT' EQ '2260').END60                                 01460000
+ENDPFX   SCRN  (RESTMDT),SBA,(1,1),SF,(PROT,INT)  FINAL WRITES   78037  01470000
+         SCRN  '       EXH599I  CIAO   ',SF,(NONE),IC            78280  01480000
+ENDEND   EQU   *                                                        01490000
+ENDSMI   EQU   ENDPFX,(ENDEND-ENDPFX),C'C'                              01500000
+         AGO   .ENDCOM                                                  01510000
+.END60   ANOP  ,                                                        01520000
+ENDSMI   SMI   '0       EXH599I  CIAO     '                      78280  01530000
+.ENDCOM  SPACE 1                                                        01540000
+WORK     DC    3D'0'                                                    01550000
+AYESAVE  DC    6F'0'         PARTIAL SAVE AREA                   86219  01560000
+FAIMAT   DC    0A(0),AL2(FAIMATE-*,0),CL5' '                            01570000
+         DC    C'FAILING INSTRUCTION AT '                               01580000
+FAIMAD   DC    CL8' '                                            93198  01590000
+         DC    C' IS '                                                  01600000
+FAIMAI   DC    CL5' '         MNEMONIC                                  01610000
+         DC    C' '                                                     01620000
+FAIMAH   DC    CL4' ',C','                                              01630000
+         DC    CL10' '                                                  01640000
+FAIMATE  EQU   *                                                        01650000
+TRAPREGS DC    16F'0'        REGISTERS WHEN ONEXIT WAS ISSUED           01660000
+PSPIE    DC    0A(0),AL2(PSPIEX-*,0)                                    01670000
+MSPIE    DC    CL133'1'                                                 01680000
+         ORG   MSPIE+4                                                  01690000
+MSPIEDC  DC    C'PROGRAM CHECK     PSW = '                              01700000
+MPSW     DC    CL17' ',C'  LEN '                                GP13091 01710000
+MLNIC1   DC    CL4' ',CL2' '                                    GP13091 01720000
+MDCIC    DC    C'INT '                                          GP13091 01730000
+MLNIC2   DC    CL4' ',CL3' '                                    GP13091 01740000
+MRELOC   DC    C'AT LOC '                                               01750000
+MRAD     DC    CL8' ',C' IN '                                    93198  01760000
+MRPGM    DC    CL8' '                                                   01770000
+PSPIEX   EQU   *                                                        01780000
+         ORG   ,                                                GP01028 01790000
+         SPACE 2                                                        01800000
+SPIECCW  CCW   1,SPIESMI,0,L'SPIESMI                                    01810000
+OKCCW    CCW   1,DONSMI,0,L'DONSMI                                      01820000
+BADCCW   CCW   1,BADSMI,0,L'BADSMI                                      01830000
+SNAPCCW  CCW   1,SNAPSMI,0,L'SNAPSMI                                    01840000
+AHAPFX   SCRN  (RESTMDT,RESTKBY),SBA,(1,1),SF,(PROT,INT),' AHA  ? '     01850000
+         SCRN  SF,(NONE),IC                                             01860000
+AHAEND   EQU   *                                                        01870000
+         ORG   AHAPFX                                                   01880000
+AHASMI   DS    CL(AHAEND-AHAPFX)                                        01890000
+         SPACE 1                                                        01900000
+AHSOPFX  SCRN  (RESTMDT,RESTKBY),SBA,(1,1),SF,(PROT)                    01910000
+         SCRN  AHSOTXT:,CL80' ','    ECB = ',ECBCODE:,CL8' '            01920000
+         SCRN  SF,(PROT,INT),' AHA  ? ',SF,(NONE),IC                    01930000
+AHSOEND  EQU   *                                                        01940000
+         ORG   AHSOPFX                                                  01950000
+AHSOSMI  DS    CL(AHSOEND-AHSOPFX)                                      01960000
+         SPACE 1                                                        01970000
+SPIEPFX  SCRN  (NONE),SBA,(1,1),SF,(PROT)                               01980000
+         SCRN  SPIETXT:,CL80' ',IC                                      01990000
+SPIEEND  EQU   *                                                        02000000
+         ORG   SPIEPFX                                                  02010000
+SPIESMI  DS    CL(SPIEEND-SPIEPFX)                                      02020000
+         SPACE 1                                                        02030000
+NOSMI    DC    C'''ENTER'' ONLY'                                        02040000
+         SPACE 1                                                        02050000
+BADPFX   SCRN  (RESTMDT,RESTKBY),SBA,(1,1),SF,(PROT,INT)                02060000
+         SCRN  'INVALID CONTROL INPUT - REDO :',SF,(NONE),IC            02070000
+BADEND   EQU   *                                                        02080000
+         ORG   BADPFX                                                   02090000
+BADSMI   DS    CL(BADEND-BADPFX)                                        02100000
+         SPACE 1                                                        02110000
+DONPFX   SCRN  (RESTMDT,RESTKBY),SBA,(1,1),SF,(PROT,INT)                02120000
+         SCRN  'CONTROL REQUEST DONE :',SF,(NONE),IC                    02130000
+DONEND   EQU   *                                                        02140000
+         ORG   DONPFX                                                   02150000
+DONSMI   DS    CL(DONEND-DONPFX)                                        02160000
+         SPACE 1                                                        02170000
+SNAPPFX  SCRN  (RESTMDT,RESTKBY),SBA,(1,1),SF,(PROT,INT)                02180000
+         SCRN  'SNAP DONE  :',SF,(NONE),IC                              02190000
+SNAPEND  EQU   *                                                        02200000
+         ORG   SNAPPFX                                                  02210000
+SNAPSMI  DS    CL(SNAPEND-SNAPPFX)                                      02220000
+         SPACE 1                                                 86219  02230000
+         DS    0A                                               GP99042 02240000
+USRNMASK DC    X'7FFFFFFF'   USER'S MODE ADDRESSING MASK        GP99042 02250000
+USROMASK DC    X'80000000'   USER'S MODE ADDRESSING MASK        GP99042 02260000
+SPEXFLAG DC    X'00'         CONDITION FLAGS                    GP99042 02270000
+SPEXSERV EQU   X'80'           PROCESSING A SERVICE REQUEST     GP99042 02280000
+SPEXRET  EQU   X'40'           (NORMAL) RETURN VIA SPIE EXIT    GP99042 02290000
+SPEXRETU EQU   X'20'           (USER) RETURN VIA SPIE EXIT      GP99042 02300000
+SPEXNSYM EQU   X'10'           PSYM STEPLIB FAILED              GP02263 02310000
+SPEXING  EQU   X'01'           ALREADY PROCESSING A DUMP        GP99042 02320000
+SPEXTEST EQU   SPEXSERV+SPEXRET+SPEXRETU+SPEXING  TEST TASK RESET       02330000
+SNAPFLAG DC    X'00'         DUMP ELEMENTS:                     GP99042 02340000
+SNPPREG  EQU   X'20'           PRINT REGISTER LINE              GP99042 02350000
+SNPPREGS EQU   X'10'           PRINT REGISTERS VS. LOAD LIST    GP99042 02360000
+SNPPLOAD EQU   X'08'           PRINT LOAD LIST                  GP99042 02370000
+SNPPBUF  EQU   X'04'           PRINT DISPLAY BUFFER             GP99042 02380000
+SNPNOT   EQU   X'02'           SKIP INITIAL PAGE EJECT          GP05287 02390000
+SNPPPGM  EQU   X'01'           DUMP MEMORY/PROGRAMS             GP99042 02400000
+DBUGFLAG DC    X'00'         USER'S SPIE/SNAP OPTIONS           GP99042 02410000
+DBFSPALL EQU   X'80'           PRINT EPIE CONTENTS ON ALL ENTRIES       02420000
+DBFEXITP EQU   X'40'           PRINT ALL ONEXIT DATA            GP99042 02430000
+DBFEXITF EQU   X'20'           TREAT USER'S ONEXIT AS FAILURE   GP99042 02440000
+DBFEXITN EQU   X'10'           USER'S ONEXIT SKIPS OUTPUT       GP05310 02450000
+DBFNOSTA EQU   X'08'           DON'T ISSUE (E)STAE              GP05321 02460000
+DBFONCE  EQU   X'02'           NO RETRY AFTER EXTEST ERROR      GP03275 02470000
+DBFEXOR  EQU   X'01'           DEBUG EXORCIST CODE, TOO         GP99050 02480000
+AYESPC   DC    C'0'          DOUBLE-SPACE (OR SINGLE)            86219  02490000
+*        DATA, DATA, DATA AND GARBAGE                                   02500000
+*                                                                       02510000
+@TAPROOT DC    A(0)          EXORZAPS - BASE OF MEMBER INFORMATION      02520000
+@CURROOT DC    A(0)          EXORZAPS - ROOT ADDRESS FOR CURRENT MEMBER 02530000
+@CURRCHN DC    A(0)          EXORZAPS - CURRENT VER OR REP CHAIN ADDR   02540000
+MEMBER   DC    CL8' '        EXORZAPS - MEMBER NAME FROM LAST NAME CARD 02550000
+@TAPSIZE EQU   *-@TAPROOT      SIZE TO CLEAR IN SUBTASK                 02560000
+         SPACE 1                                                        02570000
+REGNEND  DC    A(0)          APPROX. END OF REGION               78363  02580000
+AYERET   DC    A(0)                                                     02590000
+@PGMTAB  DC    A(0)          ADDRESS OF PROGRAM TABLE                   02600000
+OFFEP    EQU   00,8,C'C'        OFFSET TO EPNAME OF CURRENT PGM         02610000
+OFFLD    EQU   16,8,C'C'        OFFSET TO EPNAME OF CURRENT LOAD        02620000
+OFFGM    EQU   32,8,C'C'        OFFSET TO EPNAME OF CURRENT GETMAIN     02630000
+OFFCS    EQU   48,8,C'C'        OFFSET TO EPNAME OF CURRENT CSA         02640000
+OFFBF    EQU  144,8,C'C'        OFFSET TO SCREEN BUFFER                 02650000
+OFFDYN   EQU  160,8,C'C'        OFFSET TO EPNAME OF SPIE DETECTED MOD   02660000
+@PGMTABX DC    A(0)          ADDRESS OF PROGRAM TABLE END               02670000
+@PGMTABD DC    A(0)          ADDRESS OF END OF DUMPED ENTRIES           02680000
+@MAPREG  DC    A(0)          ADDRESS OF REGISTER MAPPING TABLE          02690000
+@COMM    DC    A(0)          ADDRESS OF EXHBCOMM                        02700000
+@SQSP    DC    A(0)          ADDRESS OF EXHBSQSP                        02710000
+@WORK    DC    A(0)          ADDRESS OF EXHBWORK                        02720000
+@SRBFG   DC    A(0)          ADDRESS OF WEXFLAG                         02730000
+@ALLDN   DC    A(0)          ADDRESS OF ALLDONE IN EXORCIST             02740000
+@LOOPR   DC    A(0)          ADDRESS OF LOOPER  IN EXORCIST             02750000
+@BUF     DC    A(0)          BUFFER ADDRESS                             02760000
+@WKCMD   DC    A(0)          4K COMMAND WORK AREA               GP04234 02770000
+@WKSUB   DC    A(0)          4K SUB-CMD WORK AREA               GP04234 02780000
+CRTISAV  DC    4A(0)                                                    02790000
+FCLMVC   MVC   1(0,R1),0(R1)   CLEAR STORAGE                            02800000
+UDISPLAY DC    X'0'          USER VS. TEST MODE                  78284  02810000
+UDREQ    EQU   X'80'           DISPLAY REQUESTED                 78284  02820000
+UDRUN    EQU   X'40'           DISPLAY COMMAND ISSUED            78284  02830000
+UDBAD    EQU   X'04'           DISPLAY BOMBED                    78284  02840000
+SNIPFLAG DC    X'00'         SNAP ENTRY CONDITIONS                      02850000
+SNIPABND EQU   X'80'           FORMAT ABEND INFORMATION                 02860000
+SNIPDUMP EQU   X'40'           ENTERED FOR -DUMP COMMAND                02870000
+SNIPSNAP EQU   X'20'           ENTERED FOR -SNAP COMMAND                02880000
+SNIPSPIE EQU   X'10'           ENTERED FOR ESPIE                        02890000
+         DS    0F            ENSURE CORRECT REGISTER ALIGNMENT          02900000
+NEWREGS  DS    0XL(16*4)     LENGTH OF REGISTER AREA                    02910000
+NEWREG0  DC    A(0)          NEW USER REGISTER                          02920000
+NEWREG1  DC    A(0)          NEW USER REGISTER                          02930000
+NEWREG2  DC    A(0)          NEW USER REGISTER                          02940000
+NEWREG3  DC    A(0)          NEW USER REGISTER                          02950000
+NEWREG4  DC    A(0)          NEW USER REGISTER                          02960000
+NEWREG5  DC    A(0)          NEW USER REGISTER                          02970000
+NEWREG6  DC    A(0)          NEW USER REGISTER                          02980000
+NEWREG7  DC    A(0)          NEW USER REGISTER                          02990000
+NEWREG8  DC    A(0)          NEW USER REGISTER                          03000000
+NEWREG9  DC    A(0)          NEW USER REGISTER                          03010000
+NEWREG10 DC    A(0)          NEW USER REGISTER                          03020000
+NEWREG11 DC    A(0)          NEW USER REGISTER                          03030000
+NEWREG12 DC    A(0)          NEW USER REGISTER                          03040000
+NEWREG13 DC    A(0)          NEW USER REGISTER                          03050000
+NEWREG14 DC    A(0)          NEW USER REGISTER                          03060000
+NEWREG15 DC    A(0)          NEW USER REGISTER                          03070000
+NEWPSW   DC    0D'0',XL4'0'  NEW PSW, MASK AND STUFF                    03080000
+NEWIC    DC    A(0)          NEW INSTRUCTION COUNTER, WITH AMODE BIT    03090000
+NEWICOF  DC    A(0)          OFFSET TO NEWIC BEFORE USE                 03100000
+NEWAM    DC    A(0)          NEW AMODE BIT                              03110000
+OLDPSW   DC    0D'0',F'0'    LEFT PSW                                   03120000
+OLDIC    DC    A(0)          RIGHT PSW WITH AMODE BIT                   03130000
+OLDLNIC  DC    H'0,0'        LENGTH / INTERRUPT CODE                    03140000
+         DS    0F            ENSURE CORRECT REGISTER ALIGNMENT          03150000
+SNPREGS  DS    0XL(16*4)     LENGTH OF REGISTER AREA                    03160000
+SNPREG0  DC    A(0)          SNAP REQUEST REGISTER                      03170000
+SNPREG1  DC    A(0)          SNAP REQUEST REGISTER                      03180000
+SNPREG2  DC    A(0)          SNAP REQUEST REGISTER                      03190000
+SNPREG3  DC    A(0)          SNAP REQUEST REGISTER                      03200000
+SNPREG4  DC    A(0)          SNAP REQUEST REGISTER                      03210000
+SNPREG5  DC    A(0)          SNAP REQUEST REGISTER                      03220000
+SNPREG6  DC    A(0)          SNAP REQUEST REGISTER                      03230000
+SNPREG7  DC    A(0)          SNAP REQUEST REGISTER                      03240000
+SNPREG8  DC    A(0)          SNAP REQUEST REGISTER                      03250000
+SNPREG9  DC    A(0)          SNAP REQUEST REGISTER                      03260000
+SNPREG10 DC    A(0)          SNAP REQUEST REGISTER                      03270000
+SNPREG11 DC    A(0)          SNAP REQUEST REGISTER                      03280000
+SNPREG12 DC    A(0)          SNAP REQUEST REGISTER                      03290000
+SNPREG13 DC    A(0)          SNAP REQUEST REGISTER                      03300000
+SNPREG14 DC    A(0)          SNAP REQUEST REGISTER                      03310000
+SNPREG15 DC    A(0)          SNAP REQUEST REGISTER                      03320000
+SNPPSW   DC    0D'0',XL4'0'  SNAP PSW, MASK AND STUFF                   03330000
+SNPIC    DC    A(0)          SNAP INSTRUCTION COUNTER, WITH AMODE BIT   03340000
+SNPLNIC  DC    A(0)          SNAP PSW LENGTH/CODE                       03350000
+         DC    X'00'           SPARE                            GP05295 03360000
+SNPCMPC  DC    XL3'0'        ESTAE ABEND CODE                   GP05295 03370000
+CRTINUMB DC    A(0)                                              94073  03380000
+REGNSIZE DC    A(128*1024)   WORKING REGION SIZE                GP04234 03390000
+CRTIBAD  WTO   '-*** PROGRAM OR I/O ERROR ***',MF=L                     03400000
+MONECB   DC    F'0'                                                     03410000
+MONTCB   DC    F'0'                                                     03420000
+MONHEAD  DC    0A(0),AL2(MONHEADE-MONHEAD,0)                            03430000
+         DC    C'$            *****   EXORCISE DEBUG PROGRAM   *****  ' 03440000
+         DC    C'       '                                               03450000
+MONHEADT DC    C'TEST',C' #'                                            03460000
+MONHEADN DC    CL4' '                                                   03470000
+MONHEADE EQU   *                                                        03480000
+MONCNT   DC    PL2'0'                                                   03490000
+MONP1    DC    P'1'                                                     03500000
+MONMASK  DC    X'40202120'                                              03510000
+#XPRINT  DC    V(EXORPRNT)   PRINT ROUTINE MAIN ENTRY                   03520000
+@TRACE   DC    A(0)          FOR PGMTRACE CALLS                         03530000
+         DEBTRACE MODE=D,CALL=DYN,PRTMODE=DBTFXPRT              GP99116 03540000
+         ORG   DBT@UDCB      RESPECIFY THE EXORPRNT ADDRESS             03550000
+@XPRINT  DC    V(EXORPRNT)   PRINT ROUTINE MAIN ENTRY                   03560000
+         ORG   ,                                                        03570000
+FPREGS   DC    4D'0'         360/370 STYLE FLOATING REGS        GP11253 03580000
+TAILEND  EQU   *                                                        03590000
+         SPACE 3                                                        03600000
+         AIF   ('&SECT' NE 'D').INLBUFA                                 03610000
+BUFSECT  DSECT                                                          03620000
+         AGO   .INLBUFB                                                 03630000
+.INLBUFA ANOP                                                           03640000
+         ENTRY BUFSECT                                                  03650000
+BUFSECT  DS    0D                                                       03660000
+.INLBUFB ANOP                                                           03670000
+DATALEN  DC    F'0'          USER DATA LENGTH / 0-ENTER ONLY            03680000
+WAITREPL DC    CL256' '      3270 ATTN/INPUT BUFFER                     03690000
+DATAREPL DC    CL256' '      PROGRAM DATA INPUT                         03700000
+         DC    CL4' ' .      SPACE FOR TSO PREFIX CHARACTERS            03710000
+         AIF   ('&CRT' NE '3270').DBUF                                  03720000
+SCREEN   DC    X'C3114040'                                              03730000
+         AGO   .CBUF                                                    03740000
+.DBUF    ANOP                                                           03750000
+         DC    CL3' '                                                   03760000
+SCREEN   DC    C'0'          2260 WITH LNE DEFINITION                   03770000
+.CBUF    ANOP                                                           03780000
+BUFFER   DC    124CL80' '    BUFFER FOR 3290 (62*160)                   03790000
+MSGBUF   EQU   BUFFER+24*80,80,C'C'  MESSAGE LINE FOR 24*80 BUFFER      03800000
+         DC    64CL80' '     OVERFLOW FOR ORDERS                 93198  03810000
+         DC    CL4' '        PADDING                                    03820000
+PRTBUF   DC    124CL80' '    SIMULATION PROCESSING BUFFER        93198  03830000
+         MEND                                                           03840000

@@ -1,0 +1,24 @@
+         MACRO ,                                                        00010000
+&NM      SERVSORT &DSECT=YES,&PFX=SOP,&LOW=0,&HIGH=0,&SEQ=C'A',        *00020000
+               &COO=0,&COL=0,&LEN=0                     ADDED ON 82024  00030000
+         LCLC  &P,&NAME                                                 00040000
+&NAME    SETC  '&NM'                                                    00050000
+&P       SETC  'SOP'                                                    00060000
+         AIF   ('&NAME' NE '').HAVENM                                   00070000
+&NAME    SETC  'SERVSORT'                                               00080000
+.HAVENM  AIF   ('&DSECT' NE 'YES').NOSECT                               00090000
+&NAME    DSECT ,                                                        00100000
+         AGO   .TESTP                                                   00110000
+.NOSECT  AIF   ('&NM' EQ '').TESTP                                      00120000
+&NM      DS    0A .                                                     00130000
+.TESTP   AIF   ('&PFX' EQ '').HAVEP                                     00140000
+&P       SETC  '&PFX'                                                   00150000
+.HAVEP   ANOP  ,                                                        00160000
+&P.LOW   DC    A(&LOW)       LOWEST ENTRY ADDRESS                       00170000
+&P.FAD   EQU   X'80'         ON IN HIGH TO SIGNAL ADDRESS               00180000
+&P.HIGH  DC    A(&HIGH)      ADDRESS (-) / ELSE # OF ENTRIES            00190000
+&P.SEQ   DC    AL1(&SEQ)     SORT SEQUENCE (C'A' OR C'D')               00200000
+&P.COO   DC    AL1(&COO)     COMPARE OFFSET                             00210000
+&P.COL   DC    AL1(&COL)     COMPARE LENGTH                             00220000
+&P.LEN   DC    AL1(&LEN)     ENTRY LENGTH                               00230000
+         MEND  ,                                                        00240000

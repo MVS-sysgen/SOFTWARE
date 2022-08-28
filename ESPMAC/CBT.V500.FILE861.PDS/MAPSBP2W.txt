@@ -1,0 +1,28 @@
+         MACRO ,                                                        00010000
+&NM      MAPSBP2W &PFX=,&DSECT=NO                         ADDED GP02323 00020000
+.*--------------------------------------------------------------------* 00030000
+.*                                                                    * 00040000
+.*  THIS MAPPING MACRO IS USED BY SUBP2W TO DEFINE THE RETURN AREA.   * 00050000
+.*  AREA ADDRESS IS PASSED BACK IN R1                                 * 00060000
+.*                                                                    * 00070000
+.*  CURRENTLY USED BY HOB                                             * 00080000
+.*                                                                    * 00090000
+.*--------------------------------------------------------------------* 00100000
+         AIF   ('&DSECT' NE '' AND '&DSECT' NE 'YES').NODSECT           00110000
+         AIF   ('&NM' EQ '').NODSLAB                                    00120000
+&NM      DSECT ,                                                        00130000
+         AGO   .NOLABEL                                                 00140000
+.NODSLAB ANOP  ,                                                        00150000
+MAPSBP2W DSECT ,                                                        00160000
+         AGO   .NOLABEL                                                 00170000
+.NODSECT AIF   ('&NM' EQ '').NOLABEL                                    00180000
+&NM      DS    0D                                                       00190000
+.NOLABEL ANOP  ,                                                        00200000
+&PFX.MONTH1   DC C'MONTH1'     MONTH/WEEK OF MONTH                      00210000
+&PFX.MONTHL   DC C'MONTHL'     SAME AS MONTH1 IN LAST 7 DAYS/MO         00220000
+&PFX.MONDH1   DC C'DAYNN'      DAY OF MONTH                             00230000
+&PFX.MONDHL   DC C'DAY32'      LAST DAY OF MONTH                        00240000
+&PFX.WEEKNO   DC C'WEEKXX'     WEEK OF YEAR                             00250000
+&PFX.WEEKDAY  DC X'07',CL9'SATURDAY'  SET TO CURRENT DAY                00260000
+&PFX.JULDATE  DS P'1989123'    JULIAN DATE FOR RUN                      00270000
+         MEND  ,                                                        00280000

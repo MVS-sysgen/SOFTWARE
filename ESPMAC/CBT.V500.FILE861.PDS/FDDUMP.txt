@@ -1,0 +1,9 @@
+         MACRO ,                                                        00010000
+&NM      FDDUMP &ADR,&LEN,&OPT1,&OPT2,&OPT3           ADDED ON GP13228  00020000
+.*                                                                      00030000
+.*   FDDUMP is a macro that invokes FDSNAP to produce the most          00040000
+.*   frequently used form of dump (two hex columns + text)              00050000
+.*                                                                      00060000
+&NM      FDSNAP &ADR,64,DUAL,NOABS,OFFSET,&OPT1,&OPT2,&OPT3,           *00070000
+               BASE=&ADR,LEN=&LEN                                       00080000
+         MEND  ,                                                        00090000

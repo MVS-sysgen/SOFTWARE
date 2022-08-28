@@ -1,0 +1,37 @@
+         MACRO ,                                                        00010000
+         MAPPDS &PDSBLDL=NO   EXPAND SPECIAL DIRECTORY MAPPINGS         00020000
+.*       THIS MACRO SHOULD BE PLACED IMMEDIATELY FOLLOWING REQUEST      00030000
+.*       FOR IHAPDS PDSBLDL=NO TO MAP LOCAL/SPECIAL DIRECTORY ENTRY     00040000
+.*       FORMATS.                                       ADDED ON 82122  00050000
+*        USER DATA FOR SPF ENTRIES                                      00060000
+*                                                                       00070000
+         ORG   PDS2USRD      REDEFINE USER DATA                         00080000
+SPFVERL  DS    X             VERSION NUMBER                             00090000
+SPFMODL  DS    X             MODIFICATION LEVEL                         00100000
+SPFFLGS  DS    X             FLAGS                              GP04234 00110000
+SPFGSCLM EQU   X'80'           SCLM OWNED                       GP04234 00120000
+SPFMDSEC DS    PL1           TIME MODIFIED - SECONDS            GP04234 00130000
+SPFCRTDT DS    PL4           CREATION DATE                              00140000
+SPFMODDT DS    PL4           MODIFICATION DATE                          00150000
+SPFMODTM DS    XL2           MODIFICATION TIME (PACKED, NO SIGN)        00160000
+SPFCURLN DS    XL2           CURRENT LINE COUNT                         00170000
+SPFINILN DS    XL2           INITIAL LINE COUNT                         00180000
+SPFMODLN DS    XL2           NUMBER MODIFIED                            00190000
+SPFUID   DS    CL7           USER ID                                    00200000
+         DS    C' '            RESERVED (BLANK)                         00210000
+         DS    CL2' '          RESERVED (BLANK)                         00220000
+SPFUDLEN EQU   (*-PDS2USRD+1)/2   HALF-WORD LENGTH OF ENTRY             00230000
+         SPACE 2                                                        00240000
+*        USER DATA PORTION FOR IEBUPDTX CHAINED ENTRIES                 00250000
+*                                                                       00260000
+         ORG   PDS2USRD                                                 00270000
+DTXSSI   DS    XL4           SSI OR FF200000                            00280000
+DTXMODNM DS    CL8           PRODUCTION MEMBER NAME                     00290000
+DTXID    DS    CL2           LIBRARY ID                                 00300000
+DTXMODNO DS    PL2           MODULE NUMBER                              00310000
+DTXVER   DS    PL2           VERSION NUMBER                             00320000
+DTXUDLEN EQU   (*-PDS2USRD+1)/2   HALF-WORD LENGTH OF SHORT ENTRY       00330000
+DTXTIMES DS    XL4           (OPTIONAL) TIME STAMP YYDDDHHF             00340000
+DTXUDLTM EQU   (*-PDS2USRD+1)/2   HALF-WORD LENGTH OF SPECIAL ENTRY     00350000
+         ORG   ,                                                        00360000
+         MEND  ,                                                        00370000

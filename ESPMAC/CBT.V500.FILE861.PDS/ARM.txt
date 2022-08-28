@@ -1,0 +1,61 @@
+         MACRO ,                                                        00010000
+&NM      ARM   &ACT,&AR=                                                00020000
+.*--------------------------------------------------------------------* 00030000
+.*                                                                    * 00040000
+.*   THIS MACRO SETS AR MODE ON OR OFF, SETS MATCHING GLOBAL,         * 00050000
+.*   AND OPTIONALLY LOADS/STORES CONTIGUOUS ACCESS REGISTERS          * 00060000
+.*                                                                    * 00070000
+.*   ARM  ON                 BEGIN ACCESS REGISTER MODE               * 00080000
+.*   ARM  OFF                END ACCESS REGISTER MODE                 * 00090000
+.*                                                                    * 00100000
+.*     OPTIONAL:  AR=ADDR          LAM/STAM AR0,AR15,ADDR             * 00110000
+.*     OPTIONAL:  AR=(R,ADDR)      LAM/STAM AR0,AR15,ADDR             * 00120000
+.*     OPTIONAL:  AR=(RS,RT,ADDR)  LAM/STAM RS,RT,ADDR                * 00130000
+.*                                                                    * 00140000
+.*--------------------------------------------------------------------* 00150000
+         GBLB  &MVSXA                                           GP04234 00160000
+         LCLC  &R1,&R2,&ADDR                                            00170000
+         LCLB  &EXPAR                                                   00180000
+         LCLA  &K                                                       00190000
+&K       SETA  N'&AR                                                    00200000
+         AIF   (&K EQ 0).NOK                                            00210000
+&EXPAR   SETB  1                                                        00220000
+         AIF   (&K EQ 1).OK1                                            00230000
+         AIF   (&K EQ 2).OK2                                            00240000
+         AIF   (&K EQ 3).OK3                                            00250000
+&EXPAR   SETB  0                                                        00260000
+  MNOTE 8,'ARM: TOO MANY OPERANDS AR=&AR'                               00270000
+         AGO   .NOK                                                     00280000
+.OK1     ANOP  ,                                                        00290000
+&R1      SETC  'R0'                                                     00300000
+&R2      SETC  'R15'                                                    00310000
+&ADDR    SETC  '&AR(1)'                                                 00320000
+         AGO   .NOK                                                     00330000
+.OK2     ANOP  ,                                                        00340000
+&R1      SETC  '&AR(1)'                                                 00350000
+&R2      SETC  '&AR(1)'                                                 00360000
+&ADDR    SETC  '&AR(2)'                                                 00370000
+         AGO   .NOK                                                     00380000
+.OK3     ANOP  ,                                                        00390000
+&R1      SETC  '&AR(1)'                                                 00400000
+&R2      SETC  '&AR(2)'                                                 00410000
+&ADDR    SETC  '&AR(3)'                                                 00420000
+.NOK     AIF   (&MVSXA).ENOUGH                                  GP04234 00430000
+&NM      MACPARM MODE=LBL                                       GP04234 00440000
+         MEXIT ,                                                GP04234 00450000
+.ENOUGH  AIF   ('&ACT' EQ 'ON' OR '&ACT' EQ 'S' OR '&ACT' EQ 'SEC' OR  *00460000
+               '&ACT' EQ '512' OR '&ACT' EQ 'X''200''').ARON            00470000
+         AIF   ('&ACT' EQ 'OFF' OR'&ACT' EQ 'P' OR '&ACT' EQ 'PRI' OR  *00480000
+               '&ACT' EQ '0' OR '&ACT' EQ 'X''0''').AROF                00490000
+ MNOTE 8,'ARM: INVALID ACTION &ACT; SPECIFY ON OR OFF'                  00500000
+.ARON    AIF   (NOT &EXPAR).NOLAM                                       00510000
+&NM      MACPARM &R1,&R2,&ADDR,OP=LAM,MODE=THREE                        00520000
+.NOLAM   MACPARM 512,OP=SAC,MODE=ONE                                    00530000
+         SYSSTATE ASCENV=AR                                             00540000
+         MEXIT ,                                                        00550000
+.AROF    ANOP  ,                                                        00560000
+&NM      MACPARM 0,OP=SAC,MODE=ONE                                      00570000
+         SYSSTATE ASCENV=P                                              00580000
+         AIF   (NOT &EXPAR).NOSTAM                                      00590000
+         MACPARM &R1,&R2,&ADDR,OP=LAM,MODE=THREE                        00600000
+.NOSTAM  MEND  ,                                                        00610000

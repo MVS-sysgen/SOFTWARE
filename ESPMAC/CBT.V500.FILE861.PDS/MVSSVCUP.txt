@@ -1,0 +1,715 @@
+         MACRO                                                          00010000
+&NM      MVSSVCUP &SVC,&FUNC,&TYPE=,&EP=,&LOCKS=,&NPRMPT=,&MF=,        *00020000
+               &APF=,&AR=,&EPNAME=,&RELATED=                            00030000
+.********************************************************************** 00040000
+.*   THIS IS AN MVS 3.8J IMPLEMENTATION OF THE SVCUPDTE FACILITY      * 00050000
+.*   NEW-FANGLED PARAMETERS ARE IGNORED                               * 00060000
+.*   CODE IS IMPLEMENTED IN SUBROUTINE SUBSVCUP                       * 00070000
+.*   TRIED TO STAY COMPATIBLE WITH IBM                                * 00080000
+.********************************************************************** 00090000
+         ACTR    100               LIMIT LOOPING TO 100 ITERATIONS      00100000
+         GBLC  &MACPLAB      GENERATE LABEL AS NEEDED                   00110000
+.*                                                                      00120000
+         LCLA &REQLOCK,&INDEX1,&INDEX2,&TEMP,&SVCNUM,&FUNCNUM,&TYPENUM,*00130000
+               &APFNUM,&NPNUM,&NCMS,&NDISP,&NLOCAL,&NSRM,&NSALLOC,&NNP,*00140000
+               &NAPF,&SVCFLAG,&SVCOFF,&DELETE,&REPLACE,&EXTRACT         00150000
+         LCLA  &ARNUM,&NAR                                              00160000
+.*                                                                      00170000
+.*            APFNUM               APF CODE                             00180000
+.*            ARNUM                AR CODE                              00190000
+.*            DELETE               FUNCTION CODE VALUE FOR DELETE       00200000
+.*            EXTRACT              FUNCTION CODE VALUE FOR EXTRACT      00210000
+.*            FUNCNUM              FUNCTION NUMBER                      00220000
+.*            INDEX1               GENERAL INDEX                        00230000
+.*            INDEX2               GENERAL INDEX                        00240000
+.*            NAPF                 VALUE OF THE APF BIT IN SVC ENTRY    00250000
+.*            NAR                  VALUE OF AR BIT IN SVC ENTRY         00260000
+.*            NCMS                 VALUE OF THE CMS BIT IN SVC ENTRY    00270000
+.*            NDISP                VALUE OF THE DISP BIT IN SVC ENTRY   00280000
+.*            NLOCAL               VALUE OF THE LOCAL BIT IN SVC ENTRY  00290000
+.*            NNP                  VALUE OF THE NON-PREMPT BIT          00300000
+.*            NSRM                 VALUE OF THE SRM BIT IN SVC @ZMC3226 00310000
+.*                                 ENTRY                       @ZMC3226 00320000
+.*            NSALLOC              VALUE OF THE SALLOC BIT IN SVC ENTRY 00330000
+.*            REPLACE              REPLACE FUNCTION CODE VALUE          00340000
+.*            SVCOFF               OFFSET OF THE SVC NUMBER IN PARM     00350000
+.*            NPNUM                NON-PREEMPTIBILITY CODE              00360000
+.*            REQLOCK              LOCKS BYTE                           00370000
+.*            SVCNUM               SVC NUMBER                           00380000
+.*            SVCFLAG              SVC NUMBER SUPPLIED INDICATOR        00390000
+.*            TEMP                 TEMPORARY                            00400000
+.*            TYPENUM              SVC TYPE NUMBER                      00410000
+.*                                                                      00420000
+         LCLC &VERSION,&CHARS,&ACHAR,&BADENT,&LAB1,&EPOFF               00430000
+         LCLC &EPNOFF                                                   00440000
+         LCLC &EPCHAR                                                   00450000
+         LCLC &EPMSG                                                    00460000
+         LCLC &INCONS      STRING FOR INCONSISTENT OPERANDS             00470000
+         LCLC &INSPEC(10)  ARRAY OF KEYWORD ATTRIBUTES                  00480000
+         LCLC &BADSPEC(10) ARRAY OF KEYWORD NAMES FOR MESSAGE           00490000
+.*                                                                      00500000
+.*            ACHAR                SINGLE CHARACTER TEMPORARY           00510000
+.*            BADENT               SET TO 'YES' INDICATES FATAL ERROR   00520000
+.*            CHARS                MULTIPLE CHARACTER TEMPORARY         00530000
+.*            EPCHAR               TEMP VARIABLE: EP OR EPNAME          00540000
+.*            EPMSG                TEMP VARIABLE: ENTRY-POINT MSG       00550000
+.*            EPOFF                OFFSET OF ENTRY POINT IN PARM LIST   00560000
+.*            EPNOFF               OFFSET OF EPNAME IN PARM LIST        00570000
+.*            MACDATE              DATE MACRO LAST MODIFIED             00580000
+.*            VERSION              SVCUPDTE VERSION NUMBER              00590000
+.*                                                                      00600000
+&BADENT  SETC  'NO'                   NO ERROR DETECTED YET             00610000
+&EPOFF   SETC    '4'                  OFFSET OF THE ENTRY POINT IN LIST 00620000
+&EPNOFF  SETC    '12'                 OFFSET OF THE EPNAME IN LIST      00630000
+&LAB1    SETC  'ZZ'.'&SYSNDX'.'L' GENERATED LABEL                       00640000
+&NAPF    SETA    8                    VALUE OF THE APF BIT IN SVC ENTRY 00650000
+&NAR     SETA    4                    VALUE OF AR BIT IN SVC ENTRY      00660000
+&NCMS    SETA   64                    VALUE OF THE CMS                  00670000
+&NDISP   SETA    8                    VALUE OF THE DISP                 00680000
+&NLOCAL  SETA  128                    VALUE OF THE LOCAL                00690000
+&NNP     SETA    2                    VALUE OF THE NON-PREMPT           00700000
+&NSRM    SETA   32                    VALUE OF THE SRM         @ZMC3226 00710000
+&NSALLOC SETA   16                    VALUE OF THE SALLOC               00720000
+&REPLACE SETA    1                    REPLACE FUNCTION CODE             00730000
+&DELETE  SETA    2                    DELETE FUNCTION CODE              00740000
+&EXTRACT SETA    3                    EXTRACT FUNCTION CODE             00750000
+&SVCOFF  SETA    3                    OFFSET OF THE SVC NUMBER IN       00760000
+.*                                    THE PARAMETER LIST                00770000
+&VERSION SETC   '1'                   INITIALIZE TO VERSION 1  @YA11662 00780000
+.********************************************************************** 00790000
+.*                   VALIDATE MF PARAMETER                            * 00800000
+.********************************************************************** 00810000
+         AIF   (T'&MF EQ 'O' OR                                        -00820000
+               '&MF(1)' EQ 'E' AND N'&MF EQ 2 OR                       -00830000
+               '&MF' EQ 'L' AND N'&MF EQ 1).L0020                       00840000
+.*       MSG: "INVALID MF OPERAND SPECIFIED- "                          00850000
+         IHBERMAC 1001,MF,&MF                                           00860000
+&BADENT  SETC  'YES'                  FATAL ERROR DETECTED              00870000
+.L0020   ANOP                                                           00880000
+         AIF   ('&MF(1)' NE 'E').L0040                                  00890000
+.*                                                                      00900000
+.*       IS THIS AN EXECUTE FORM OF THE MACRO?                          00910000
+.*          YES: MAKE SURE THERE WERE NO UNNECESSARY PARAMETERS         00920000
+.*                                                                      00930000
+&INSPEC(1)  SETC T'&TYPE                                                00940000
+&BADSPEC(1) SETC 'TYPE'                                                 00950000
+&INSPEC(2)  SETC T'&LOCKS                                               00960000
+&BADSPEC(2) SETC 'LOCKS'                                                00970000
+&INSPEC(3)  SETC T'&NPRMPT                                              00980000
+&BADSPEC(3) SETC 'NPRMPT'                                               00990000
+&INSPEC(4)  SETC T'&APF                                                 01000000
+&BADSPEC(4) SETC 'APF'                                                  01010000
+&INSPEC(5)  SETC T'&AR                                                  01020000
+&BADSPEC(5) SETC 'AR'                                                   01030000
+.*                                                                      01040000
+.* FIRST TEST IF REPLACE, DELETE, OR EXTRACT SPECIFIED                  01050000
+.*                                                                      01060000
+&INCONS  SETC  ''              CLEAR ERROR STRING                       01070000
+         AIF   (T'&FUNC EQ 'O').L0022    IF A FUNCTION SPECIFIED        01080000
+         AIF   ('&FUNC' EQ 'REPLACE' OR '&FUNC' EQ 'DELETE' OR         *01090000
+               '&FUNC' EQ 'EXTRACT').L0022                              01100000
+&INCONS  SETC '&FUNC'                   THEN MOVE TO ERROR MESSAGE      01110000
+.L0022   ANOP                                                           01120000
+.*                                                                      01130000
+.* LOOP THROUGH INPUT DATA IN ARRAY AND FORMAT MESSAGE STRING           01140000
+.*                                                                      01150000
+&INDEX1  SETA 0                                                         01160000
+.L0025   ANOP                                                           01170000
+&INDEX1  SETA (&INDEX1+1)                    BUMP LOOP                  01180000
+         AIF  (&INDEX1 GT 5).L0034                                      01190000
+.*                                                                      01200000
+.*       TEST FOR A KEYWORD SPECIFICATION                               01210000
+.*         BY CHECKING ARRAY ENTRY NOT EQUAL TO "OMITTED"               01220000
+.*                                                                      01230000
+         AIF   ('&INSPEC(&INDEX1)' EQ 'O').L0032  TEST KEY              01240000
+.*    INCONSISTENT KEYWORD DETECTED -- PUT KEY INTO ERROR MESSAGE       01250000
+         AIF   ('&INCONS' EQ '').L0030       IF NOT 1ST ERROR           01260000
+&INCONS  SETC  '&INCONS'.','.'&BADSPEC(&INDEX1)'  THEN ADD KEY          01270000
+         AGO   .L0032                                                   01280000
+.L0030   ANOP                                                           01290000
+&INCONS  SETC  '&BADSPEC(&INDEX1)'           ELSE ASSIGN 1ST KEY        01300000
+.L0032   ANOP                                                           01310000
+         AGO   .L0025                        LOOP TILL DONE             01320000
+.*                                                                      01330000
+.*       END OF TEST LOOP - PRINT MNOTE IF NECESSARY                    01340000
+.*                                                                      01350000
+.L0034   ANOP                                                           01360000
+         AIF   ('&INCONS' EQ '').L0040                                  01370000
+.*                                                                      01380000
+.*       MSG: "XX,YY,ZZ OPERAND INCONSISTENT-IGNORED."                  01390000
+         IHBERMAC 147,&INCONS                                           01400000
+.L0040   ANOP                                                           01410000
+.*                                                                      01420000
+.*  SCREEN 'EXTRACT' REQUESTS                                           01430000
+.*                                                                      01440000
+         AIF   ('&FUNC' EQ 'EXTRACT').L0300       YES: BRANCH           01450000
+.*                                                                      01460000
+.*  CHECK FOR EXTRACT REQUEST WITH SVC PARAMETER CODED WRONG            01470000
+.*                                                                      01480000
+         AIF   ('&SVC' NE 'EXTRACT').L0050        NO: BRANCH            01490000
+&FUNCNUM SETA   &EXTRACT                                                01500000
+.*       MSG: "EXTRACT PARAMETER SPECIFIED IN WRONG POSITION."          01510000
+       MNOTE 12,'EXTRACT PARAMETER SPECIFIED IN WRONG POSITION.'        01520000
+&BADENT  SETC  'YES'                      FATAL ERROR DETECTED          01530000
+         AGO   .L0440                                                   01540000
+.L0050   ANOP                                                           01550000
+.********************************************************************** 01560000
+.*                                                                    * 01570000
+.*                   VALIDATE SVC PARAMETER                           * 01580000
+.*                                                                    * 01590000
+.********************************************************************** 01600000
+.*                                                                      01610000
+.*       IF THE SVC NUMBER IS NOT VALID INDICATE ERROR                  01620000
+.*                                                                      01630000
+.*            MF     OMITTED   REGISTER   SELF-DEFINING TERM DECIMAL#   01640000
+.*            --     --------  --------   ------------------ --------   01650000
+.*         STANDARD   ERROR       OK               OK          OK       01660000
+.*            L         OK       ERROR             OK          OK       01670000
+.*            E         OK        OK              ERROR       ERROR     01680000
+.*                                                                      01690000
+.*       IS THERE A SUB-PARAMETER LIST FOR THE SVC PARAMETER?           01700000
+         AIF   (N'&SVC GT 1).L0140                  YES: ERROR          01710000
+.*                                                                      01720000
+.*       IS THE SVC NUMBER SUPPLIED?                                    01730000
+         AIF   (T'&SVC  NE 'O').L0060               YES: CONTINUE       01740000
+.*       THE SVC NUMBER IS OMITTED                                      01750000
+&SVCFLAG SETA  1                                    REMEMBER FACT       01760000
+.*       IS IT ANY CASE OTHER THAN THE MF STANDARD CASE?                01770000
+         AIF   (T'&MF   NE 'O').L0200               YES: VALID          01780000
+.*       MSG: "SVC OPERAND REQUIRED, NOT SPECIFIED"                     01790000
+         IHBERMAC 1006,SVC                          NO:  INVALID        01800000
+&BADENT  SETC  'YES'                                                    01810000
+         AGO   .L0200                                                   01820000
+.*                                                                      01830000
+.*       IF THIS THE REGISTER FORM OF THE SVC PARAMETER?                01840000
+.L0060   AIF   ('&SVC'(1,1) NE '(').L0080      NO: TRY OTHER CASES      01850000
+.*       THIS IS THE REGISTER FORM - IS IT THE RIGHT MF TYPE?           01860000
+         AIF   ('&MF' NE 'L').L0200                 YES: NOT MF=L       01870000
+         AGO   .L0140                               NO:  ERROR          01880000
+.*                                                                      01890000
+.*       CHECK TO SEE IF THIS IS A SELF-DEFINING TERM                   01900000
+.*                                                                      01910000
+.L0080   AIF   ('&SVC'(1,1) GE '0' AND '&SVC'(1,1) LE '9').L0100        01920000
+         AIF   ('&SVC'(1,1) LT 'A' OR  '&SVC'(1,1) GT 'Z').L0140        01930000
+         AIF   ('&MF(1)' EQ 'E').L0140           MF=E CASE INVALID      01940000
+         AGO   .L0200                                                   01950000
+.*                                                                      01960000
+.*       CHECK TO SEE IF THE SVC NUMBER IS NUMERICALLY VALID            01970000
+.*                                                                      01980000
+.L0100   AIF   ('&MF(1)' EQ 'E').L0140    NUMBER INVALID FOR MF=E       01990000
+&INDEX1  SETA  1                          START WITH FIRST CHARACTER    02000000
+&CHARS   SETC  '&SVC'                     TEMPORARY STRING              02010000
+.L0120   AIF   (K'&SVC GT 3).L0140        TOO MANY DIGITS?              02020000
+&ACHAR   SETC  '&CHARS'(&INDEX1,1)        GET A CHARACTER FROM STRING   02030000
+         AIF   ('&ACHAR' LT '0' OR '&ACHAR' GT '9').L0140  DECIMAL?     02040000
+&INDEX1  SETA  &INDEX1+1                  YES: INDICATE NEXT CHARACTER  02050000
+         AIF   (&INDEX1 LE K'&SVC).L0120  ALL CHARACTERS DONE?          02060000
+&SVCNUM  SETA  &SVC                       YES: CONVERT STRING TO NUMBER 02070000
+         AIF   (&SVCNUM GE 0 AND &SVCNUM LE 255).L0160  TOO BIG?        02080000
+.*       MSG: "INVALID SVC OPERAND SPECIFIED- "                         02090000
+.L0140   IHBERMAC 1001,SVC,&SVC           YES: TELL USER                02100000
+&BADENT  SETC  'YES'                      FATAL ERROR DETECTED          02110000
+         AGO   .L0200                                                   02120000
+.L0160   ANOP                                                           02130000
+.*                                                                      02140000
+.*       CHECK TO SEE IF THE SVC NUMBER IS                              02150000
+.*       RESERVED FOR AN ESR TABLE                                      02160000
+.*                                                                      02170000
+         AIF   (&SVCNUM EQ 109).L0180                                   02180000
+         AIF   (&SVCNUM EQ 116).L0180                                   02190000
+         AIF   (&SVCNUM EQ 122).L0180                                   02200000
+         AIF   (&SVCNUM EQ 137).L0180                                   02210000
+         AGO   .L0200                                                   02220000
+.L0180   ANOP                                                           02230000
+       MNOTE 12,'SVC &SVC MAY NOT BE UPDATED. IT IS RESERVED FOR ESR.'  02240000
+&BADENT  SETC  'YES'                      FATAL ERROR DETECTED          02250000
+.L0200   ANOP                                                           02260000
+         AIF   ('&MF(1)' EQ 'E').L0440    IF MF=E SKIP                  02270000
+.********************************************************************** 02280000
+.*                                                                    * 02290000
+.*                   VALIDATE FUNCTION PARAMETER                      * 02300000
+.*                                                                    * 02310000
+.********************************************************************** 02320000
+         AIF    ('&FUNC' NE 'REPLACE').L0220                            02330000
+&FUNCNUM SETA   &REPLACE                                                02340000
+         AGO    .L0340                                                  02350000
+.*                                                                      02360000
+.*         IF ITS A 'DELETE' THEN ENSURE NO EXTRA PARAMETERS            02370000
+.*                                                                      02380000
+.L0220   AIF    ('&FUNC' NE 'DELETE').L0240                             02390000
+&FUNCNUM SETA   &DELETE                                                 02400000
+&INSPEC(1)  SETC T'&TYPE                                                02410000
+&BADSPEC(1) SETC 'TYPE'                                                 02420000
+&INSPEC(2)  SETC T'&LOCKS                                               02430000
+&BADSPEC(2) SETC 'LOCKS'                                                02440000
+&INSPEC(3)  SETC T'&NPRMPT                                              02450000
+&BADSPEC(3) SETC 'NPRMPT'                                               02460000
+&INSPEC(4)  SETC T'&APF                                                 02470000
+&BADSPEC(4) SETC 'APF'                                                  02480000
+&INSPEC(5)  SETC T'&EP                                                  02490000
+&BADSPEC(5) SETC 'EP'                                                   02500000
+&INSPEC(6)  SETC T'&EPNAME                                              02510000
+&BADSPEC(6) SETC 'EPNAME'                                               02520000
+&INSPEC(7)  SETC T'&AR                                                  02530000
+&BADSPEC(7) SETC 'AR'                                                   02540000
+.*                                                                      02550000
+.* LOOP THROUGH INPUT DATA IN ARRAY AND FORMAT MESSAGE STRING           02560000
+.*                                                                      02570000
+&INDEX1  SETA 0                INITIALIZE LOOP COUNTER                  02580000
+&INCONS  SETC  ''              CLEAR ERROR STRING                       02590000
+.L0224   ANOP                                                           02600000
+&INDEX1  SETA (&INDEX1+1)                    BUMP LOOP                  02610000
+         AIF  (&INDEX1 GT 7).L0236                                      02620000
+.*                                                                      02630000
+.*       TEST FOR A KEYWORD SPECIFICATION                               02640000
+.*         BY CHECKING ARRAY ENTRY NOT EQUAL TO "OMITTED"               02650000
+.*                                                                      02660000
+         AIF   ('&INSPEC(&INDEX1)' EQ 'O').L0232  TEST KEY              02670000
+.*    INCONSISTENT KEYWORD DETECTED -- PUT KEY INTO ERROR MESSAGE       02680000
+         AIF   ('&INCONS' EQ '').L0228       IF NOT 1ST ERROR           02690000
+&INCONS  SETC  '&INCONS'.','.'&BADSPEC(&INDEX1)'  THEN ADD KEY          02700000
+         AGO   .L0232                                                   02710000
+.L0228   ANOP                                                           02720000
+&INCONS  SETC  '&BADSPEC(&INDEX1)'           ELSE ASSIGN 1ST KEY        02730000
+.L0232   ANOP                                                           02740000
+         AGO   .L0224                        LOOP TILL DONE             02750000
+.*                                                                      02760000
+.*       END OF TEST LOOP - PRINT MNOTE IF NECESSARY                    02770000
+.*                                                                      02780000
+.L0236   ANOP                                                           02790000
+         AIF   ('&INCONS' EQ '').L0960                                  02800000
+.*                                                                      02810000
+.*       MSG: "XX,YY,ZZ OPERAND INCONSISTENT-IGNORED."                  02820000
+         IHBERMAC 147,&INCONS                                           02830000
+         AGO   .L0960                                                   02840000
+.L0240   ANOP                                                           02850000
+&BADENT  SETC  'YES'                 FATAL ERROR DETECTED               02860000
+         AIF   (T'&FUNC EQ 'O').L0260                                   02870000
+.*       MSG: "INVALID FUNCTION OPERAND SPECIFIED- "                    02880000
+         IHBERMAC 1001,FUNCTION-CODE,&FUNC                              02890000
+         AGO   .L0340                                                   02900000
+.L0260   ANOP                                                           02910000
+.*       MSG: "FUNCTION-CODE OPERAND REQUIRED, NOT SPECIFIED"           02920000
+.L0280   IHBERMAC 1006,FUNCTION-CODE                                    02930000
+         AGO   .L0340                                                   02940000
+.L0300   ANOP                                                           02950000
+.*                                                                      02960000
+.*         FOR AN 'EXTRACT' ENSURE NO EXTRA PARAMETERS                  02970000
+.*                                                                      02980000
+&FUNCNUM SETA   &EXTRACT                                                02990000
+&VERSION SETC   '2'       EXTRACT IS A VERSION 2 SPECIFICATION @YA11662 03000000
+&SVCFLAG SETA  1                                                        03010000
+         AIF    (T'&SVC EQ 'O').L0320               SVC SPECIFIED?      03020000
+.*       MSG: "SVCNUM AND EXTRACT OPTIONS ARE MUTUALLY EXCLUSIVE"       03030000
+       MNOTE 12,'SVCNUM AND EXTRACT OPTIONS ARE MUTUALLY EXCLUSIVE.'    03040000
+&BADENT  SETC  'YES'                      FATAL ERROR DETECTED          03050000
+.L0320   ANOP                                                           03060000
+&INSPEC(1)  SETC T'&TYPE                                                03070000
+&BADSPEC(1) SETC 'TYPE'                                                 03080000
+&INSPEC(2)  SETC T'&LOCKS                                               03090000
+&BADSPEC(2) SETC 'LOCKS'                                                03100000
+&INSPEC(3)  SETC T'&NPRMPT                                              03110000
+&BADSPEC(3) SETC 'NPRMPT'                                               03120000
+&INSPEC(4)  SETC T'&APF                                                 03130000
+&BADSPEC(4) SETC 'APF'                                                  03140000
+&INSPEC(5)  SETC T'&AR                                                  03150000
+&BADSPEC(5) SETC 'AR'                                                   03160000
+.*                                                                      03170000
+.* LOOP THROUGH INPUT DATA IN ARRAY AND FORMAT MESSAGE STRING           03180000
+.*                                                                      03190000
+&INDEX1  SETA 0                INITIALIZE LOOP COUNTER                  03200000
+&INCONS  SETC  ''              CLEAR ERROR STRING                       03210000
+.L0324   ANOP                                                           03220000
+&INDEX1  SETA (&INDEX1+1)                    BUMP LOOP                  03230000
+         AIF  (&INDEX1 GT 5).L0336                                      03240000
+.*                                                                      03250000
+.*       TEST FOR A KEYWORD SPECIFICATION                               03260000
+.*         BY CHECKING ARRAY ENTRY NOT EQUAL TO "OMITTED"               03270000
+.*                                                                      03280000
+         AIF   ('&INSPEC(&INDEX1)' EQ 'O').L0332  TEST KEY              03290000
+.*    INCONSISTENT KEYWORD DETECTED -- PUT KEY INTO ERROR MESSAGE       03300000
+         AIF   ('&INCONS' EQ '').L0328       IF NOT 1ST ERROR           03310000
+&INCONS  SETC  '&INCONS'.','.'&BADSPEC(&INDEX1)'  THEN ADD KEY          03320000
+         AGO   .L0332                                                   03330000
+.L0328   ANOP                                                           03340000
+&INCONS  SETC  '&BADSPEC(&INDEX1)'           ELSE ASSIGN 1ST KEY        03350000
+.L0332   ANOP                                                           03360000
+         AGO   .L0324                        LOOP TILL DONE             03370000
+.*                                                                      03380000
+.*       END OF TEST LOOP - PRINT MNOTE IF NECESSARY                    03390000
+.*                                                                      03400000
+.L0336   ANOP                                                           03410000
+         AIF   ('&INCONS' EQ '').L0440                                  03420000
+.*                                                                      03430000
+.*       MSG: "XX,YY,ZZ OPERAND INCONSISTENT-IGNORED."                  03440000
+         IHBERMAC 147,&INCONS                                           03450000
+         AGO   .L0440                                                   03460000
+.********************************************************************** 03470000
+.*                                                                    * 03480000
+.*                   VALIDATE SVC TYPE PARAMETER                      * 03490000
+.*                                                                    * 03500000
+.********************************************************************** 03510000
+.L0340   ANOP                                                           03520000
+         AIF   ('&TYPE' EQ '1' OR '&TYPE' EQ '2' OR                    -03530000
+               '&TYPE' EQ '3' OR '&TYPE' EQ '4' OR                     -03540000
+               '&TYPE' EQ '5' OR '&TYPE' EQ '6').L0380                  03550000
+&BADENT  SETC  'YES'                 FATAL ERROR DETECTED               03560000
+         AIF   (T'&TYPE EQ 'O').L0360      PARAMETER OMITTED?           03570000
+.*       MSG: "INVALID TYPE OPERAND SPECIFIED- "                        03580000
+         IHBERMAC 1001,TYPE,&TYPE          NO: JUST IN ERROR            03590000
+         AGO   .L0440                                                   03600000
+.L0360   ANOP                              YES: PARAMETER OMITTED       03610000
+.*       MSG: "TYPE OPERAND REQUIRED, NOT SPECIFIED"                    03620000
+         IHBERMAC 1006,TYPE                                             03630000
+         AGO   .L0440                                                   03640000
+.L0380   ANOP                                                           03650000
+&TYPENUM SETA  &TYPE                                                    03660000
+.L0400   ANOP                                                           03670000
+.*                                                                      03680000
+.*       IF ITS A TYPE 5 SVC DON'T ALLOW AN ENTRY POINT TO BE SPECIFIED 03690000
+.*                                                                      03700000
+         AIF   (&TYPENUM NE 5).L0440                                    03710000
+         AIF   (T'&EP EQ 'O' AND T'&EPNAME EQ 'O').L0580                03720000
+       MNOTE 12,'TYPE=5 AND EPNAME OPTIONS ARE MUTUALLY EXCLUSIVE'      03730000
+&BADENT  SETC  'YES'                 FATAL ERROR DETECTED               03740000
+         AGO   .L0580                                                   03750000
+.L0440   ANOP                                                           03760000
+.********************************************************************** 03770000
+.*                                                                    * 03780000
+.*                   VALIDATE ENTRY POINT PARAMETER                   * 03790000
+.*                   'EP' OR 'EPNAME'                                   03800000
+.*                                                                    * 03810000
+.********************************************************************** 03820000
+.*                                                                      03830000
+.*       CHECK ENTRY POINT -                                            03840000
+.*                                                                      03850000
+.*       MF        LABEL     REGISTER  OMITTED                          03860000
+.*       --        -----     --------  --------                         03870000
+.*        E        ERROR        OK        OK                            03880000
+.*        L         OK        ERROR       OK                            03890000
+.*   STANDARD       OK          OK      ERROR                           03900000
+.*                                                                      03910000
+.*                                                                      03920000
+.*                                                                      03930000
+.*       NEITHER "EP" OR "EPNAME" OPTIONS SPECIFIED?                    03940000
+.*                                                                      03950000
+         AIF   (T'&EP NE 'O' OR T'&EPNAME NE 'O').L0460  NO: OK         03960000
+         AIF   ('&MF' EQ 'L' OR '&MF(1)' EQ 'E').L0580   MF=L/E OK      03970000
+&BADENT  SETC  'YES'                              OTHERWISE: FATAL      03980000
+.*       MSG: "ENTRY-POINT OPERAND REQUIRED, NOT SPECIFIED"             03990000
+         IHBERMAC 1006,ENTRY-POINT                                      04000000
+         AGO   .L0580                        GO TO LOCK PROCESSING      04010000
+.L0460   ANOP                                                           04020000
+.*                                                                      04030000
+.*       BOTH "EP" AND "EPNAME" OPTIONS SPECIFIED?                      04040000
+.*                                                                      04050000
+         AIF   (T'&EP EQ 'O' OR T'&EPNAME EQ 'O').L0480  NO: OK         04060000
+&BADENT  SETC  'YES'                                    YES: FATAL      04070000
+.*     MSG: "BOTH "EP" AND "EPNAME" SPECIFIED. "                        04080000
+     MNOTE 12,'*** BOTH "EP" AND "EPNAME" SPECIFIED. '                  04090000
+         AGO   .L0580                        GO TO LOCK PROCESSING      04100000
+.L0480   ANOP                                                           04110000
+.*                                                                      04120000
+.*       DETERMINE WHICH ENTRY POINT OPTION WAS USED                    04130000
+.*                                                                      04140000
+         AIF   (T'&EP EQ 'O').L0500                    EP OPTION?       04150000
+&EPCHAR  SETC  '&EP'                     INITIALIZE MACRO VARIABLE      04160000
+&EPMSG   SETC  'EP'                      INITIALIZE MSG VARIABLE        04170000
+.*       ARE THERE ANY SUB-PARAMETERS?                                  04180000
+         AIF   (N'&EP GT 1).L0560                   YES: ERROR          04190000
+         AGO   .L0520                                                   04200000
+.L0500   ANOP                                                           04210000
+&EPCHAR  SETC  '&EPNAME'                 INITIALIZE MACRO VARIABLE      04220000
+&EPMSG   SETC  'EPNAME'                  INITIALIZE MSG VARIABLE        04230000
+&VERSION SETC  '2'         EPNAME IS A VERSION 2 SPECIFICATION @YA11662 04240000
+.*       ARE THERE ANY SUB-PARAMETERS?                                  04250000
+         AIF   (N'&EPNAME GT 1).L0560               YES: ERROR          04260000
+.L0520   ANOP                                                           04270000
+.*                                                                      04280000
+.*       BREAK OUT PROCESSING DEPENDING ON MF TYPE                      04290000
+.*                                                                      04300000
+         AIF   (T'&MF EQ 'O').L0580                  STANDARD CASE      04310000
+         AIF   ('&MF' EQ 'L').L0540                  LIST CASE          04320000
+.*                                                                      04330000
+.*       HANDLE THE MF=E CASES                                          04340000
+.*                                                                      04350000
+         AIF   ('&EPCHAR'(1,1) EQ '(' ).L0580                           04360000
+         AGO   .L0560    ANYTHING OTHER THAN REGISTER FORM INVALID      04370000
+.L0540   ANOP                                                           04380000
+.*                                                                      04390000
+.*       HANDLE THE MF=L CASES                                          04400000
+.*                                                                      04410000
+         AIF   ('&EPCHAR'(1,1) NE '(').L0580                            04420000
+.*                                           REGISTER FORM INVALID      04430000
+.L0560   ANOP                                                           04440000
+.*                                                                      04450000
+.*       ISSUE MNOTE FOR INVALID ENTRY-POINT OPERAND                    04460000
+.*                                                                      04470000
+&BADENT  SETC  'YES'                       FATAL ERROR DETECTED?        04480000
+.*       MSG: "INVALID (EP,EPNAME) OPERAND SPECIFIED-XXX"               04490000
+         IHBERMAC 1001,&EPMSG,&EPCHAR                                   04500000
+.L0580   ANOP                                                           04510000
+         AIF   ('&MF(1)' EQ 'E').L0960                                  04520000
+.********************************************************************** 04530000
+.*                                                                    * 04540000
+.*               VALIDATE LOCKS PARAMETERS                            * 04550000
+.*                                                                    * 04560000
+.********************************************************************** 04570000
+.*                                                                      04580000
+.*       CHECK FOR VALID, NON-DUPLICATE LOCKS                           04590000
+.*             - TYPE 1 DEFAULTS TO HAVING THE LOCAL LOCK               04600000
+.*             - TYPE 3 + 4 MAY NOT HOLD ANY GLOBAL SPIN LOCK           04610000
+.*             - TYPE 6 MAY NOT HOLD ANY LOCK                           04620000
+.*                                                                      04630000
+         AIF   (&FUNCNUM EQ &EXTRACT).L0960  EXTRACT CHECKING DONE      04640000
+         AIF   (T'&LOCKS EQ 'O').L0840                                  04650000
+         AIF   (&TYPENUM NE  6 ).L0600                                  04660000
+         MNOTE 12,'*** A TYPE 6 SVC MAY NOT HAVE ANY LOCKS'             04670000
+&BADENT  SETC  'YES'                 FATAL ERROR DETECTED               04680000
+         AGO   .L0880                                                   04690000
+.*                                                                      04700000
+.*       IS THIS A DUPLICATE LOCK?                                      04710000
+.*                                                                      04720000
+.L0600   ANOP                                                           04730000
+&INDEX1  SETA   1                                                       04740000
+.L0620   AIF    (&INDEX1 GT N'&LOCKS).L0840   PROCESSED ALL LOCKS?      04750000
+&INDEX2  SETA   &INDEX1+1                  NO: PROCESS NEXT             04760000
+.L0640   AIF    (&INDEX2 GT N'&LOCKS).L0680   LAST LOCK IN LIST?        04770000
+         AIF    ('&LOCKS(&INDEX1)'  NE '&LOCKS(&INDEX2)').L0660         04780000
+.*                                             NO: IS IT A DUPLICATE?   04790000
+         MNOTE 12,'*** DUPLICATE LOCK-- &LOCKS(&INDEX1)'                04800000
+&BADENT  SETC  'YES'                       FATAL ERROR DETECTED         04810000
+         AGO   .L0820                                                   04820000
+.L0660   ANOP                                                           04830000
+&INDEX2  SETA  &INDEX2+1                   NEXT LOCK IN LIST            04840000
+         AGO   .L0640                                                   04850000
+.L0680   ANOP                                                           04860000
+.*                                                                      04870000
+.*       MAP THE LOCK NAME INTO ITS NUMERIC REPRESENTATION              04880000
+.*                                                                      04890000
+&TEMP    SETA  0                                                        04900000
+         AIF   ('&LOCKS(&INDEX1)' NE 'LOCAL').L0700                     04910000
+&TEMP    SETA  &NLOCAL                                                  04920000
+.L0700   AIF   ('&LOCKS(&INDEX1)' NE 'CMS').L0720                       04930000
+&TEMP    SETA  &NCMS                                                    04940000
+.L0720   AIF   ('&LOCKS(&INDEX1)' NE 'SRM').L0740                       04950000
+&TEMP    SETA  &NSRM                                           @ZMC3226 04960000
+.L0740   AIF   ('&LOCKS(&INDEX1)' NE 'SALLOC').L0760                    04970000
+&TEMP    SETA  &NSALLOC                                                 04980000
+.L0760   AIF   ('&LOCKS(&INDEX1)' NE 'DISP').L0780                      04990000
+&TEMP    SETA  &NDISP                                                   05000000
+.L0780   AIF   (&TEMP NE 0).L0800             VALID LOCK FOUND?         05010000
+.*       MSG: "INVALID LOCK OPERAND SPECIFIED- "                        05020000
+         IHBERMAC 1001,LOCK,&LOCKS(&INDEX1)   NO: INVALID LOCK          05030000
+&BADENT  SETC  'YES'                  FATAL ERROR DETECTED              05040000
+.L0800   ANOP                                                           05050000
+&REQLOCK SETA  &REQLOCK+&TEMP         ADD LOCK TO LOCKS VALUE           05060000
+.* CHECK FOR TYPE 3 OR TYPE 4 SVC REQUESTING A GLOBAL SPIN LOCK         05070000
+         AIF   (&TYPENUM NE 3 AND &TYPENUM NE 4).L0820   TYPE 3/4?      05080000
+         AIF   (&TEMP NE &NSRM AND &TEMP NE &NSALLOC                   -05090000
+               AND &TEMP NE &NDISP).L0820              SPIN LOCK?       05100000
+   MNOTE 12,'TYPE 3/4 SVC CANNOT GET SPIN (&LOCKS(&INDEX1)) LOCK.'      05110000
+&BADENT  SETC  'YES'                  FATAL ERROR DETECTED              05120000
+.L0820   ANOP                                                           05130000
+&INDEX1  SETA  &INDEX1+1              ITERATE IN LOOP                   05140000
+         AGO   .L0620                                                   05150000
+.*                                                                      05160000
+.*       DEFAULT THE LOCAL LOCK FOR TYPE 1 SVC                          05170000
+.*                                                                      05180000
+.L0840   AIF   (&TYPENUM NE 1).L0880  TYPE 1 SVC?                       05190000
+&TEMP    SETA  &REQLOCK/&NLOCAL/2*2   ZERO THE LOCAL BIT DOWN           05200000
+&TEMP    SETA  &REQLOCK/&NLOCAL-&TEMP ISOLATE THE LOCAL BIT             05210000
+         AIF   (&TEMP NE 0).L0880    LOCAL LOCK ALREADY SPECIFIED?      05220000
+&REQLOCK SETA  &REQLOCK+&NLOCAL       NO: DEFAULT IT                    05230000
+.********************************************************************** 05240000
+.*                                                                    * 05250000
+.*               VALIDATE APF PARAMETER                               * 05260000
+.*                                                                    * 05270000
+.********************************************************************** 05280000
+.L0880   ANOP                                                           05290000
+         AIF   (T'&APF EQ 'O' OR '&APF' EQ 'NO').L0920                  05300000
+         AIF   ('&APF' EQ 'YES').L0900                                  05310000
+.*       MSG: "APF KEYWORD MUST BE YES OR NO. "                         05320000
+         MNOTE 12,'APF KEYWORD MUST BE YES OR NO.'                      05330000
+&BADENT  SETC  'YES'                    FATAL ERROR DETECTED            05340000
+         AGO   .L0920                                                   05350000
+.L0900   ANOP                                                           05360000
+&APFNUM  SETA  &NAPF                                                    05370000
+.********************************************************************** 05380000
+.*                                                                    * 05390000
+.*               VALIDATE AR PARAMETER                                * 05400000
+.*                                                                    * 05410000
+.********************************************************************** 05420000
+.L0920   ANOP                                                           05430000
+         AIF   (T'&AR EQ 'O' OR '&AR' EQ 'NO').L0930                    05440000
+         AIF   ('&AR' EQ 'YES').L0925                                   05450000
+.*       MSG: "AR KEYWORD VALUE MUST BE YES OR NO."                     05460000
+         MNOTE 12,'AR KEYWORD VALUE MUST BE YES OR NO.'                 05470000
+&BADENT  SETC  'YES'                    FATAL ERROR DETECTED            05480000
+         AGO   .L0930                                                   05490000
+.L0925   ANOP                                                           05500000
+&ARNUM   SETA  &NAR  SET VALUE SO AR BIT=1 IN ATTRIBUTE BYTE            05510000
+.L0930   ANOP                                                           05520000
+.********************************************************************** 05530000
+.*                                                                    * 05540000
+.*               VALIDATE NON-PREEMPTIBILITY PARAMETER                * 05550000
+.*                                                                    * 05560000
+.********************************************************************** 05570000
+         AIF   (T'&NPRMPT EQ 'O' OR '&NPRMPT' EQ 'NO').L0960            05580000
+         AIF   ('&NPRMPT' EQ 'YES').L0940                               05590000
+.*       MSG: "NPRMPT KEYWORD MUST BE YES OR NO."                       05600000
+         MNOTE 12,'NPRMPT KEYWORD MUST BE YES OR NO.'                   05610000
+&BADENT  SETC  'YES'                    FATAL ERROR DETECTED            05620000
+.L0940   ANOP                                                           05630000
+&NPNUM   SETA  &NNP                                                     05640000
+.********************************************************************** 05650000
+.*                                                                    * 05660000
+.*               ARE THE PARAMETERS VALID?                            * 05670000
+.*                                                                    * 05680000
+.********************************************************************** 05690000
+.L0960   AIF   ('&BADENT' NE 'YES').L0980                               05700000
+         MNOTE 12,'*** ERROR(S) CAUSED MACRO EXPANSION TERMINATION'     05710000
+         AIF   (T'&NM EQ 'O').L1380                                     05720000
+&NM      DS    0H                                                       05730000
+         AGO   .L1380                                                   05740000
+.********************************************************************** 05750000
+.*                                                                    * 05760000
+.* GENERATE CODE TO FIND THE SVCUPDTE SERVICE IF THIS IS NOT MF=L     * 05770000
+.*                                                                    * 05780000
+.********************************************************************** 05790000
+.L0980   AIF   ('&MF' EQ 'L').L1040                                     05800000
+&NM      L     R15,=V(SUBSVCUP)   GET SERVICE ROUTINE                   05810000
+.********************************************************************** 05820000
+.*                                                                    * 05830000
+.*       GENERATE CODE TO LOAD R1 WITH PARAMETER LIST IF NOT MF=L     * 05840000
+.*                                                                    * 05850000
+.********************************************************************** 05860000
+.*                                                                      05870000
+.*       IF THIS IS THE EXECUTE FORM - USE THE GIVEN PARAMETER LIST     05880000
+.*                                                                      05890000
+         AIF   ('&MF(1)' NE 'E').L1020  IF THIS ISN'T MF=E              05900000
+         MACPARM R1,&MF(2)                                              05910000
+         AGO   .L1280                                                   05920000
+.*                                                                      05930000
+.*       IF THIS IS STANDARD FORM - THE PARAMETER LIST FOLLOWS          05940000
+.*                                                                      05950000
+.L1020   AIF   (T'&MF NE 'O').L1040                                     05960000
+         CNOP  0,4                     ENSURE ALIGNMENT FOR STD FORM    05970000
+         BAS   R1,&LAB1                SET POINTER TO PARAMETER LIST    05980000
+.********************************************************************** 05990000
+.*                                                                    * 06000000
+.*       GENERATE PARAMETER LIST IF THIS IS NOT MF=E                  * 06010000
+.*                                                                    * 06020000
+.********************************************************************** 06030000
+.L1040   AIF   ('&MF' NE 'L').L1060                                     06040000
+&NM      DS    0F                      FORCE WORD ALIGNMENT             06050000
+.L1060   ANOP                                                           06060000
+         DC    AL1(&VERSION)           SVCUPDTE VERSION NUMBER          06070000
+         DC    AL1(&FUNCNUM)           FUNCTION TO PERFORM              06080000
+         DC    AL1(&SVCFLAG)           SVC FLAG                         06090000
+*                                          0 - SVC NUMBER SUPPLIED      06100000
+*                                          1 - SVC NUMBER NOT GIVEN     06110000
+.*                                                                      06120000
+.*       IF THIS IS AN EXTRACT FUNCTION ZERO THE SVC NUMBER             06130000
+.*       FIELD IN THE PARAMETER LIST                                    06140000
+.*                                                                      06150000
+         AIF   (&FUNCNUM NE &EXTRACT).L1080                             06160000
+         DC    AL1(0)              SVC NUMBER NOT USED FOR EXTRACT      06170000
+         AGO   .L1140                                                   06180000
+.L1080   ANOP                                                           06190000
+.*                                                                      06200000
+.*       IF NO SVC PARAMETER SUPPLIED OR THE REGISTER FORM WAS USED     06210000
+.*       THEN USE ZERO IN THE PARAMETER LIST FOR THE SVC PARAMETER      06220000
+.*                                                                      06230000
+         AIF   (T'&SVC EQ 'O').L1100                                    06240000
+         AIF   ('&SVC'(1,1) EQ '(').L1100                               06250000
+         DC    AL1(&SVC)               SVC TO MODIFY                    06260000
+         AGO   .L1120                                                   06270000
+.L1100   ANOP                                                           06280000
+         DC    AL1(0)                  SVC NUMBER TO FILL IN LATER      06290000
+.L1120   ANOP                                                           06300000
+.*                                                                      06310000
+.*       IF THIS IS A DELETE FUNCTION THE REST OF THE LIST IS ZEROES    06320000
+.*                                                                      06330000
+         AIF   (&FUNCNUM NE &DELETE).L1140                              06340000
+         DC    16X'0'                  DUMMY ENTRY                      06350000
+         AGO   .L1280                                                   06360000
+.*                                                                      06370000
+.*       IF A ENTRY POINT IS NOT SUPPLIED OR REGISTER FORM IS USED      06380000
+.*       THEN USE ZERO AS THE ENTRY POINT                               06390000
+.*                                                                      06400000
+.L1140   AIF   (T'&EP EQ 'O').L1160                                     06410000
+         AIF   ('&EP'(1,1) EQ '(').L1160                                06420000
+         DC    AL4(&EP)                ENTRY POINT OF NEW SVC ROUTINE   06430000
+         AGO   .L1200                                                   06440000
+.L1160   AIF   (&TYPENUM EQ 5).L1180   TYPE 5 SVC?                      06450000
+         DC    AL4(1)                  ENTRY POINT NOT SPECIFIED        06460000
+         AGO   .L1200                                                   06470000
+.L1180   ANOP                                                           06480000
+         DC    AL4(0)                  ENTRY POINT NOT SPECIFIED        06490000
+.L1200   ANOP                                                           06500000
+.*                                                                      06510000
+.*       IF THIS IS AN EXTRACT FUNCTION ZERO THE TYPE AND ATTRIBUTE     06520000
+.*       FIELDS IN THE PARAMETER LIST                                   06530000
+.*                                                                      06540000
+         AIF   (&FUNCNUM NE &EXTRACT).L1220                             06550000
+         DC    AL1(0)                                                   06560000
+         DC    AL1(0)                                                   06570000
+         DC    AL1(0)                                                   06580000
+         DC    AL1(0)                    RESERVED                       06590000
+         AGO   .L1240                                                   06600000
+.L1220   ANOP                                                           06610000
+         DC    AL1(&TYPENUM)           SVC TYPE                         06620000
+&TEMP    SETA  &APFNUM+&ARNUM+&NPNUM   GENERATE ATTRIBUTE CONSTANT      06630000
+         DC    AL1(&TEMP)              SVC ATTRIBUTE BITS               06640000
+         DC    AL1(&REQLOCK)           SVC LOCKS                        06650000
+         DC    AL1(0)                  RESERVED                         06660000
+.L1240   ANOP                                                           06670000
+.*                                                                      06680000
+.*       IF AN EPNAME IS NOT SUPPLIED OR REGISTER FORM IS USED          06690000
+.*       THEN ZERO EPNAME FIELD IN PARAMETER LIST                       06700000
+.*                                                                      06710000
+         AIF   (T'&EPNAME EQ 'O').L1260                                 06720000
+         AIF   ('&EPNAME'(1,1) EQ '(').L1260                            06730000
+         DC    CL8'&EPNAME'            EPNAME OF NEW SVC ROUTINE        06740000
+         AGO   .L1280                                                   06750000
+.L1260   ANOP                                                           06760000
+         DC    8X'00'                  EPNAME NOT SPECIFIED             06770000
+.L1280   AIF   ('&MF' EQ 'L').L1380                                     06780000
+.********************************************************************** 06790000
+.*                                                                    * 06800000
+.*       GENERATE CODE TO DYNAMICALLY INSERT EP VALUE INTO            * 06810000
+.*       THE PARAMETER LIST FOR MF=E AND STANDARD                     * 06820000
+.*                                                                    * 06830000
+.********************************************************************** 06840000
+.L1300   ANOP                                                           06850000
+&LAB1    DS    0H                                                       06860000
+         AIF   (&FUNCNUM EQ &DELETE).L1340        END DELETE PROC       06870000
+         AIF   (T'&EP    EQ 'O').L1320    ENTRY POINT INCLUDED?         06880000
+         AIF   (T'&MF EQ 'O' AND '&EP'(1,1) NE '(').L1340               06890000
+         ST    &EP(1),&EPOFF.(0,1)     STORE ADDRESS IN PARAMETER LIST  06900000
+         AGO   .L1340                  GO PROCESS SVC NUMBER            06910000
+.********************************************************************** 06920000
+.*                                                                    * 06930000
+.*       GENERATE CODE TO DYNAMICALLY INSERT EPNAME VALUE INTO    *     06940000
+.*       THE PARAMETER LIST FOR MF=E AND STANDARD                     * 06950000
+.*                                                                    * 06960000
+.********************************************************************** 06970000
+.L1320   ANOP                                                           06980000
+         AIF   (T'&EPNAME EQ 'O').L1340     EPNAME INCLUDED?            06990000
+         AIF   (T'&MF EQ 'O' AND '&EPNAME'(1,1) NE '(').L1340  REG      07000000
+         MVC   &EPNOFF.(8,1),0(&EPNAME(1))  MOVE EPNAME INTO LIST       07010000
+.********************************************************************** 07020000
+.*                                                                    * 07030000
+.*       GENERATE CODE TO DYNAMICALLY INSERT SVC VALUES INTO          * 07040000
+.*       THE PARAMETER LIST FOR MF=E AND STANDARD                     * 07050000
+.*                                                                    * 07060000
+.********************************************************************** 07070000
+.L1340   ANOP                                                           07080000
+         AIF   (T'&SVC EQ 'O').L1360     SVC SUPPLIED?                  07090000
+         AIF   ('&SVC'(1,1) NE '(').L1360  YES: REGISTER FORM?          07100000
+         STH   &SVC(1),&SVCOFF-1(0,1)  RESET SVCFLAG & STORE SVC#       07110000
+.L1360   ANOP                                                           07120000
+         BALR  R14,R15       CALL UPDATE ROUTINE                        07130000
+.L1380   ANOP                                                           07140000
+         MEND                                                           07150000

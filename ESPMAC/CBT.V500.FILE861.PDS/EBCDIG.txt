@@ -1,0 +1,36 @@
+         MACRO ,                                                        00010000
+&NM      EBCDIG &VAL,&LEN                                               00020000
+.********************************************************************** 00030000
+.*                                                                      00040000
+.*   THIS MACRO CONVERTS AN ABSOLUTE NUMBER, VARIABLE, OR EXPRESSION    00050000
+.*   INTO AN EBCDIC CONSTANT OF LENGTH &LEN (NO WARNING ON OVERFLOW).   00060000
+.*   IT'S USEFUL FOR GENERATING CONTROL CARDS, ESPECIALLY FOR SORT.     00070000
+.*                                                                      00080000
+.*   FOR EXAMPLE:                                                       00090000
+.*     X EQU 15                                                         00100000
+.*       EBCDIG X,3   EXPANDS:                                          00110000
+.*       DC    AL1(240+0,240+1,240+5)  (MORE OR LESS)  C'015'           00120000
+.*                                                                      00130000
+.********************************************************************** 00140000
+         LCLA  &I,&J,&K                                                 00150000
+&I       SETA  9                                                        00160000
+&J       SETA  1000000000                                               00170000
+&K       SETA  100000000                                                00180000
+         AIF   (T'&VAL EQ 'O').BADVAL                                   00190000
+         AIF   (T'&LEN NE 'N').BADLEN                                   00200000
+         AIF   ('&NM' EQ '').NODC                                       00210000
+&NM      DC    0CL(&LEN)' '                                             00220000
+.NODC    AIF   (&LEN GT 9).BADLEN                                       00230000
+         AIF   (&LEN GT 0).OKLEN                                        00240000
+.BADLEN  MNOTE 8,'LENGTH (OPERAND 2) IS UNACCEPTABLE: &LEN '            00250000
+         MEXIT ,                                                        00260000
+.BADVAL  MNOTE 8,'VALUE (OPERAND 1) IS MISSING'                         00270000
+         MEXIT ,                                                        00280000
+.OKLEN   AIF   (&LEN LT &I).NOTLEN                                      00290000
+         DC    AL1(240+((&VAL)/&K-((&VAL)/&J)*10))                      00300000
+.NOTLEN  AIF   (&I EQ 1).MEND                                           00310000
+&I       SETA  &I-1                                                     00320000
+&J       SETA  &K                                                       00330000
+&K       SETA  &K/10                                                    00340000
+         AGO   .OKLEN                                                   00350000
+.MEND    MEND  ,                                                        00360000

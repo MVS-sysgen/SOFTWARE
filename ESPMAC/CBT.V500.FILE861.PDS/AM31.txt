@@ -1,0 +1,12 @@
+         MACRO ,                                                        00010000
+&NM      AM31  &WORK=R1                                 ADDED ON 90346  00020000
+         GBLB  &MVSXA                                           GP04234 00030000
+         GBLC  &SYSSPLV                                          93097  00040000
+         AIF   (NOT &MVSXA AND '&SYSSPLV' LT '2').TLAB           93097  00050000
+&NM      LA    &WORK,*+10    GET PAST BSM WITH BIT 0 ON                 00060000
+         O     &WORK,=X'80000000'  SET MODE BIT                         00070000
+         BSM   0,&WORK       CONTINUE IN 31-BIT MODE                    00080000
+         MEXIT ,                                                        00090000
+.TLAB    AIF   ('&NM' EQ '').MEND                                       00100000
+&NM      DS    0H            DEFINE LABEL ONLY                          00110000
+.MEND    MEND  ,                                                        00120000

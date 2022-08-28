@@ -1,0 +1,305 @@
+         MACRO ,                                                        00010000
+&NM    XDEVOPT &SW1=,&SW2=,&SW3=,&SW4=,&ULV=,&EXIT=,&ID=,&LAYOUT=,     *00020000
+               &LOOP=,&WAIT=,&INPUT=,&PRIV=,&DELAY=NO,&GROUP=DFL,      *00030000
+               &COLIN='46464646232300004646464623230000',        88364 *00040000
+               &COLOUT='11115555777700001111555577770000',       88364 *00050000
+               &EXPART=0,&IMPART=L,&COLREP='1234567',            88364 *00060000
+               &GAMES=NO,&DASKIP=,&TRAN=,&TRGE=,&PROMPT=        GP99106 00070000
+.*                                                                      00080000
+.*       MACRO ADDED 76060                                              00090000
+.*       PROVIDES SUPPORT FOR USER OPTIONS IN MODULES EXHPXXXX          00100000
+.*       SEE EXHAINIT, XDEVPFK AND EXHPDFLT FOR ADDITIONAL COMMENTS     00110000
+.*                                                                      00120000
+         COPY  GBLDEF                                                   00130000
+         GBLB  &PFKONE,&PFKEND,&OPTONE,&OPTEND                          00140000
+         GBLC  &OPTNAM(20),&OPTVAL(20),&OPTCOM(20)                      00150000
+         GBLC  &OPTCIN,&OPTCOT,&OPTCRP,&OPTEXP,&OPTIMP           88364  00160000
+         GBLA  &OPTMAX                                                  00170000
+         LCLC  &PRM                                                     00180000
+         LCLA  &I,&J,&K                                                 00190000
+         AIF   (&OPTONE).INIT                                           00200000
+&OPTONE  SETB  1                                                        00210000
+&OPTNAM(01) SETC 'LAYOUT'                                               00220000
+&OPTVAL(01) SETC 'DFLT'                                                 00230000
+&OPTCOM(01) SETC ''                                                     00240000
+&OPTNAM(02) SETC 'LOOP TIME'                                            00250000
+&OPTVAL(02) SETC '3'                                                    00260000
+&OPTCOM(02) SETC 'SECONDS'                                              00270000
+&OPTNAM(03) SETC 'WAIT TIME'                                            00280000
+&OPTVAL(03) SETC '30'                                                   00290000
+&OPTCOM(03) SETC 'SECONDS'                                              00300000
+&OPTNAM(04) SETC 'PRIVILEGES'                                           00310000
+&OPTVAL(04) SETC '00000000'                                             00320000
+&OPTCOM(04) SETC ''                                                     00330000
+&OPTNAM(05) SETC ''                                                     00340000
+&OPTVAL(05) SETC '00000000'                                             00350000
+&OPTCOM(05) SETC ''                                                     00360000
+&OPTNAM(06) SETC 'SCREEN REFRESH TIME'                                  00370000
+&OPTVAL(06) SETC '5'                                                    00380000
+&OPTCOM(06) SETC 'SECONDS'                                              00390000
+&OPTNAM(07) SETC 'SW2'                                                  00400000
+&OPTVAL(07) SETC '2'                                                    00410000
+&OPTCOM(07) SETC 'SECOND CYCLE UPDATES'                                 00420000
+&OPTNAM(08) SETC 'SW3'                                                  00430000
+&OPTVAL(08) SETC '12'                                                   00440000
+&OPTCOM(08) SETC 'THIRD LEVEL UPDATES'                                  00450000
+&OPTNAM(09) SETC 'SW4'                                                  00460000
+&OPTVAL(09) SETC '5'                                                    00470000
+&OPTCOM(09) SETC 'FOURTH LEVEL UPDATES'                                 00480000
+&OPTNAM(10) SETC 'USER EXIT LEVEL'                                      00490000
+&OPTVAL(10) SETC '3'                                                    00500000
+&OPTCOM(10) SETC '(SW NUMBER - 1)'                                      00510000
+&OPTNAM(11) SETC 'OPTION FLAGS'                                         00520000
+&OPTVAL(11) SETC '00000001'                                             00530000
+&OPTCOM(11) SETC ''                                                     00540000
+&OPTVAL(12) SETC ''                                              79156  00550000
+&OPTCOM(12) SETC 'LPA RESIDENT GROUP'                            79156  00560000
+&OPTNAM(13) SETC 'DASKIP'                                        82361  00570000
+&OPTVAL(13) SETC '00000000'                                      82361  00580000
+&OPTCOM(13) SETC 'DISPLAY ACTIVE SKIP OPTIONS'                   82361  00590000
+&OPTNAM(14) SETC 'TRAN'                                          82361  00600000
+&OPTVAL(14) SETC ''                                              82361  00610000
+&OPTCOM(14) SETC 'LPA/LSQA CRT TRANSLATE TABLES'                 82361  00620000
+&OPTMAX  SETA  14                                                82361  00630000
+.INIT    AIF   (NOT &PFKONE AND NOT &PFKEND).POK                        00640000
+         MNOTE 8,'OUT OF SEQUENCE'                                      00650000
+         MEXIT                                                          00660000
+.POK     ANOP  ,                                                        00670000
+.P1      AIF   ('&SW1' EQ '').P2                                        00680000
+      EXGCHECK &SW1,&OPTVAL(6),OPT=NUM                                  00690000
+         AIF   (NOT &OK).BOO1                                           00700000
+         AIF   (&DUPL).P2                                               00710000
+         AIF   (&SW1 LT 1 OR &SW1 GT 655).BOO1                          00720000
+&OPTVAL(6) SETC '&SW1'                                                  00730000
+         AGO   .P2                                                      00740000
+.BOO1    MNOTE 8,'INVALID OPTION  SW1=''&SW1'''                         00750000
+.P2      AIF   ('&SW2' EQ '').P3                                        00760000
+      EXGCHECK &SW2,&OPTVAL(7),OPT=NUM                                  00770000
+         AIF   (NOT &OK).BOO2                                           00780000
+         AIF   (&DUPL).P3                                               00790000
+         AIF   (&SW2 LT 1 OR &SW2 GT 255).BOO2                          00800000
+&OPTVAL(7) SETC '&SW2'                                                  00810000
+         AGO   .P3                                                      00820000
+.BOO2    MNOTE 8,'INVALID OPTION  SW2=''&SW2'''                         00830000
+.P3      AIF   ('&SW3' EQ '').P4                                        00840000
+      EXGCHECK &SW3,&OPTVAL(8),OPT=NUM                                  00850000
+         AIF   (NOT &OK).BOO3                                           00860000
+         AIF   (&DUPL).P4                                               00870000
+         AIF   (&SW3 LT 1 OR &SW3 GT 255).BOO3                          00880000
+&OPTVAL(8) SETC '&SW3'                                                  00890000
+         AGO   .P4                                                      00900000
+.BOO3    MNOTE 8,'INVALID OPTION  SW3=''&SW3'''                         00910000
+.P4      AIF   ('&SW4' EQ '').P5                                        00920000
+      EXGCHECK &SW4,&OPTVAL(9),OPT=NUM                                  00930000
+         AIF   (NOT &OK).BOO4                                           00940000
+         AIF   (&DUPL).P5                                               00950000
+         AIF   (&SW4 LT 1 OR &SW4 GT 255).BOO4                          00960000
+&OPTVAL(9) SETC '&SW4'                                                  00970000
+         AGO   .P5                                                      00980000
+.BOO4    MNOTE 8,'INVALID OPTION  SW4=''&SW4'''                         00990000
+.P5      AIF   ('&ULV' EQ '').P6                                        01000000
+      EXGCHECK &ULV,&OPTVAL(10),OPT=NUM                                 01010000
+         AIF   (NOT &OK).BOO5                                           01020000
+         AIF   (&DUPL).P6                                               01030000
+         AIF   (&ULV GT 255).BOO5                                       01040000
+&OPTVAL(10) SETC '&ULV'                                                 01050000
+         AGO   .P6                                                      01060000
+.BOO5    MNOTE 8,'INVALID OPTION  ULV=''&ULV'''                         01070000
+.P6      AIF   ('&EXIT' EQ '').P7                                       01080000
+      EXGCHECK NONE,&EXIT,OPT=YES                                       01090000
+         AIF   (NOT &OK).BOO6                                           01100000
+         AIF   ('&EXIT' EQ 'NO').P6NO                                   01110000
+&OPTVAL(11) SETC '&OPTVAL(11)'(1,4).'1'.'&OPTVAL(11)'(6,3)              01120000
+         AGO   .P7                                                      01130000
+.P6NO    ANOP  ,                                                        01140000
+&OPTVAL(11) SETC '&OPTVAL(11)'(1,4).'0'.'&OPTVAL(11)'(6,3)              01150000
+         AGO   .P7                                                      01160000
+.BOO6    MNOTE 8,'INVALID OPTION  EXIT=''&EXIT'''                       01170000
+.P7      AIF   ('&ID' EQ '').P8                                         01180000
+      EXGCHECK NONE,&ID,OPT=YES                                         01190000
+         AIF   (NOT &OK).BOO7                                           01200000
+         AIF   ('&ID' EQ 'NO').P7NO                                     01210000
+&OPTVAL(11) SETC '&OPTVAL(11)'(1,7).'1'                                 01220000
+         AGO   .P8                                                      01230000
+.P7NO    ANOP  ,                                                        01240000
+&OPTVAL(11) SETC '&OPTVAL(11)'(1,7).'0'                                 01250000
+         AGO   .P8                                                      01260000
+.BOO7    MNOTE 8,'INVALID OPTION  ID=''&ID'''                           01270000
+.P8      AIF   ('&LAYOUT' EQ '').P9                                     01280000
+      EXGCHECK DFLT,&LAYOUT,OPT=ALPHA                                   01290000
+         AIF   (NOT &OK).BOO8                                           01300000
+         AIF   (&DUPL).P9                                               01310000
+         AIF   (K'&LAYOUT NE 4).BOO8                                    01320000
+&OPTVAL(1) SETC '&LAYOUT'                                               01330000
+         AGO   .P9                                                      01340000
+.BOO8    MNOTE 8,'INVALID OPTION  LAYOUT=''&LAYOUT'''                   01350000
+.P9      AIF   ('&LOOP' EQ '').P10                                      01360000
+      EXGCHECK &OPTVAL(2),&LOOP,OPT=NUM                                 01370000
+         AIF   (NOT &OK).BOO9                                           01380000
+         AIF   (&DUPL).P10                                              01390000
+         AIF   (&LOOP LT 1 OR &LOOP GT 655).BOO9                        01400000
+&OPTVAL(2) SETC '&LOOP'                                                 01410000
+         AGO   .P10                                                     01420000
+.BOO9    MNOTE 8,'INVALID OPTION  LOOP=''&LOOP'''                       01430000
+.P10     AIF   ('&WAIT' EQ '').P11                                      01440000
+      EXGCHECK &OPTVAL(3),&WAIT,OPT=NUM                                 01450000
+         AIF   (NOT &OK).BOO10                                          01460000
+         AIF   (&DUPL).P11                                              01470000
+         AIF   (&WAIT LT 10 OR &WAIT GT 655).BOO10                      01480000
+&OPTVAL(3) SETC '&WAIT'                                                 01490000
+         AGO   .P11                                                     01500000
+.BOO10    MNOTE 8,'INVALID OPTION  WAIT=''&WAIT'''                      01510000
+.P11     AIF   ('&INPUT' EQ '').P12                                     01520000
+      EXGCHECK NONE,&INPUT,(YES,NO,KEYS,PSWD),OPT=LIST                  01530000
+         AIF   (NOT &OK).BOO11                                          01540000
+         AIF   (&DUPL).P12                                              01550000
+         AIF   ('&INPUT' EQ 'YES').P11YES                               01560000
+         AIF   ('&INPUT' EQ 'KEYS').P11KEYS                             01570000
+         AIF   ('&INPUT' EQ 'PSWD').P11PSWD                             01580000
+&OPTVAL(11) SETC '&OPTVAL(11)'(1,5).'1'.'&OPTVAL(11)'(7,2)              01590000
+         AGO   .P12                                                     01600000
+.P11YES  ANOP  ,                                                        01610000
+&OPTVAL(11) SETC '&OPTVAL(11)'(1,5).'0'.'&OPTVAL(11)'(7,2)              01620000
+         AGO   .P12                                                     01630000
+.P11KEYS ANOP  ,                                                        01640000
+&OPTVAL(4) SETC '&OPTVAL(4)'(1,2).'1'.'&OPTVAL(4)'(4,5)                 01650000
+         AGO   .P12                                                     01660000
+.P11PSWD ANOP  ,                                                        01670000
+&OPTVAL(4) SETC '&OPTVAL(4)'(1,1).'1'.'&OPTVAL(4)'(3,5).'1'             01680000
+         AGO   .P12                                                     01690000
+.BOO11    MNOTE 8,'INVALID OPTION  INPUT=''&INPUT'''                    01700000
+.P12     AIF   ('&PRIV' EQ '').P13                                      01710000
+&J       SETA  N'&PRIV                                                  01720000
+&I       SETA  0                                                        01730000
+.P12LOOP AIF   (&I GE &J).P13                                           01740000
+&I       SETA  &I+1                                                     01750000
+&PRM     SETC  '&PRIV(&I)'                                              01760000
+         AIF   ('&PRM' EQ '').P12LOOP                                   01770000
+      EXGCHECK NONE,&PRM,(SYS,CON,CAN,UNL,FAIL),OPT=LIST                01780000
+         AIF   (NOT &OK).BOO12                                          01790000
+         AIF   (&DUPL).P12LOOP                                          01800000
+         AIF   ('&PRM' EQ 'SYS').P12SYS                                 01810000
+         AIF   ('&PRM' EQ 'CON').P12CON                                 01820000
+         AIF   ('&PRM' EQ 'CAN').P12CAN                                 01830000
+         AIF   ('&PRM' EQ 'UNL').P12UNL                                 01840000
+.*       DROP THROUGH TO 'FAIL'                                         01850000
+&OPTVAL(4) SETC '1'.'&OPTVAL(4)'(2,7)                                   01860000
+         AGO   .P12LOOP                                                 01870000
+.P12SYS  ANOP  ,                                                        01880000
+&OPTVAL(4) SETC '&OPTVAL(4)'(1,6).'1'.'&OPTVAL(4)'(8,1)                 01890000
+         AGO   .P12LOOP                                                 01900000
+.P12CON  ANOP  ,                                                        01910000
+&OPTVAL(4) SETC '&OPTVAL(4)'(1,4).'1'.'&OPTVAL(4)'(6,3)                 01920000
+         AGO   .P12LOOP                                                 01930000
+.P12CAN  ANOP  ,                                                        01940000
+&OPTVAL(4) SETC '&OPTVAL(4)'(1,5).'1'.'&OPTVAL(4)'(7,2)                 01950000
+         AGO   .P12LOOP                                                 01960000
+.P12UNL  ANOP  ,                                                        01970000
+&OPTVAL(4) SETC '&OPTVAL(4)'(1,7).'1'                                   01980000
+         AGO   .P12LOOP                                                 01990000
+.BOO12    MNOTE 8,'INVALID OPTION  PRIV=''&PRM'''                       02000000
+         AGO   .P12LOOP                                                 02010000
+.P13     AIF   ('&DELAY' EQ 'NO').P14                            77117  02020000
+      EXGCHECK NONE,&DELAY,(YES,DELAY,IGNORE,END),OPT=LIST      GP11230 02030000
+         AIF   (NOT &OK).BOO13                                   77117  02040000
+         AIF   (&INDX EQ 4).DELEND                              GP11230 02050000
+&OPTVAL(5) SETC '1'.'&OPTVAL(5)'(2,7)                            77117  02060000
+         AIF   (&INDX NE 3).P14                                 GP11230 02070000
+&OPTVAL(5) SETC '11'.'&OPTVAL(5)'(3,6)                           79156  02080000
+         AGO   .P14                                              77117  02090000
+.DELEND  ANOP  ,             END TASK ON DISCONNECT (TN3270)    GP11230 02100000
+&OPTVAL(5) SETC '&OPTVAL(5)'(1,5).'1'.'&OPTVAL(5)'(7,2)         GP11230 02110000
+         AGO   .P14                                             GP11230 02120000
+.BOO13   MNOTE 8,'INVALID OPTION  DELAY=''&DELAY'''              77117  02130000
+.P14  EXGCHECK NONE,&GROUP,OPT=ALPHA,NULL=YES                    79156  02140000
+         AIF   (NOT &OK).BOO14                                   79156  02150000
+&OPTVAL(12) SETC ''                                              79156  02160000
+         AIF   ('&GROUP' EQ '').P15                              79156  02170000
+         AIF   (K'&GROUP NE 3).BOO14                             79156  02180000
+&OPTVAL(12) SETC '&GROUP'                                        79156  02190000
+         AGO   .P15                                              79156  02200000
+.BOO14   MNOTE 4,'INVALID LPA GROUP=''&GROUP'''                  79156  02210000
+.P15  EXGCHECK NONE,&GAMES,(NO,YES,GAMES),OPT=LIST,NULL=YES      79194  02220000
+         AIF   (NOT &OK).BOO15                                   79194  02230000
+         AIF   ('&GAMES' NE 'NO').P15A                           89020  02240000
+&OPTVAL(5) SETC '&OPTVAL(5)'(1,4).'1'.'&OPTVAL(5)'(6,3)          79194  02250000
+         AGO   .P15A                                             89020  02260000
+.BOO15   MNOTE 8,'INVALID OPTION  GAMES=''&GAMES'''              79194  02270000
+.P15A EXGCHECK NONE,&PROMPT,(NO,YES,ID),OPT=LIST,NULL=YES        89020  02280000
+         AIF   (NOT &OK).BOO15A                                  89020  02290000
+         AIF   ('&PROMPT' NE 'ID' AND '&PROMPT' NE 'YES').P16    89020  02300000
+&OPTVAL(5) SETC '&OPTVAL(5)'(1,3).'1'.'&OPTVAL(5)'(5,4)          89020  02310000
+         AGO   .P16                                              89020  02320000
+.BOO15A  MNOTE 8,'INVALID OPTION  PROMPT=''&PROMPT'''            89020  02330000
+.P16     AIF   ('&DASKIP' EQ '').P17                             82361  02340000
+&J       SETA  N'&DASKIP                                         82361  02350000
+&I       SETA  0                                                 82361  02360000
+.P16LOOP AIF   (&I GE &J).P17                                    82361  02370000
+&I       SETA  &I+1                                              82361  02380000
+&PRM     SETC  '&DASKIP(&I)'                                     82361  02390000
+         AIF   ('&PRM' EQ '').P16LOOP                            82361  02400000
+ EXGCHECK NONE,&PRM,(IDLE,DRAIN,DRAINED,STC,TSU,START,TSO,TS,PRM,PERM),*02410000
+               OPT=LIST                                         GP99016 02420000
+         AIF   (NOT &OK).BOO16                                   82361  02430000
+         AIF   (&DUPL).P16LOOP                                   82361  02440000
+         AIF   ('&PRM' EQ 'IDLE').P16IDLE                        82361  02450000
+         AIF   ('&PRM' EQ 'DRAIN' OR '&PRM' EQ 'DRAINED').P16DRAN       02460000
+         AIF   ('&PRM' EQ 'STC' OR '&PRM' EQ 'START').P16STC     82361  02470000
+         AIF   ('&PRM' EQ 'TSO' OR '&PRM' EQ 'TS').P16TSU       GP99016 02480000
+.*       DROP THROUGH TO 'PRM'                                  GP99016 02490000
+&OPTVAL(13) SETC '&OPTVAL(13)'(1,4).'1'.'&OPTVAL(13)'(6,3)      GP99016 02500000
+         AGO   .P16LOOP                                         GP99016 02510000
+.P16TSU  ANOP  ,                                                GP99016 02520000
+&OPTVAL(13) SETC '&OPTVAL(13)'(1,3).'1'.'&OPTVAL(13)'(5,4)       82361  02530000
+         AGO   .P16LOOP                                          82361  02540000
+.P16STC  ANOP  ,                                                 82361  02550000
+&OPTVAL(13) SETC '&OPTVAL(13)'(1,2).'1'.'&OPTVAL(13)'(4,5)       82361  02560000
+         AGO   .P16LOOP                                          82361  02570000
+.P16IDLE ANOP  ,                                                 82361  02580000
+&OPTVAL(13) SETC '&OPTVAL(13)'(1,1).'1'.'&OPTVAL(13)'(3,6)       82361  02590000
+         AGO   .P16LOOP                                          82361  02600000
+.P16DRAN ANOP  ,                                                 82361  02610000
+&OPTVAL(13) SETC '1'.'&OPTVAL(13)'(2,7)                          82361  02620000
+         AGO   .P16LOOP                                          82361  02630000
+.BOO16    MNOTE 8,'INVALID OPTION  DASKIP=''&PRM'''              82361  02640000
+         AGO   .P16LOOP                                          82361  02650000
+.P17  EXGCHECK NONE,&TRAN,OPT=ALPHA,NULL=YES                     82361  02660000
+         AIF   (NOT &OK).BOO17                                   82361  02670000
+&OPTVAL(14) SETC ''                                              82361  02680000
+         AIF   ('&TRAN' EQ '').P17A                             GP99106 02690000
+         AIF   (K'&TRAN GT 4).BOO17                              82361  02700000
+&OPTVAL(14) SETC '&TRAN'                                         82361  02710000
+         AGO   .P17A                                            GP99106 02720000
+.BOO17   MNOTE 4,'INVALID LPA/LSQA TRAN=''&TRAN'''               82361  02730000
+.P17A EXGCHECK NONE,&TRGE,OPT=ALPHA,NULL=YES                    GP99106 02740000
+         AIF   (NOT &OK).BOO17A                                 GP99106 02750000
+&OPTVAL(15) SETC '&OPTVAL(14)'                                  GP99106 02760000
+         AIF   ('&TRGE' EQ '').P18                              GP99106 02770000
+         AIF   (K'&TRGE GT 4).BOO17A                            GP99106 02780000
+&OPTVAL(15) SETC '&TRGE'                                        GP99106 02790000
+         AGO   .P18                                             GP99106 02800000
+.BOO17A  MNOTE 4,'INVALID LPA/LSQA TRGE=''&TRAN'''              GP99106 02810000
+.P18     AIF   (K'&COLIN EQ 34).P19                              88364  02820000
+         MNOTE 8,'COLIN STRING INVALID'                          88364  02830000
+         AGO   .MEND                                             88364  02840000
+.P19     AIF   (K'&COLOUT EQ 34).P20                             88364  02850000
+         MNOTE 8,'COLOUT STRING INVALID'                         88364  02860000
+         AGO   .MEND                                             88364  02870000
+.P20     AIF   (K'&COLREP EQ 9).P21                              88364  02880000
+         MNOTE 8,'COLREP STRING INVALID'                         88364  02890000
+         AGO   .MEND                                             88364  02900000
+.P21     EXGCHECK NONE,&EXPART,(0,1,2,3,4,5),OPT=LIST            88364  02910000
+         AIF   (&OK).P22                                         88364  02920000
+         MNOTE 8,'INVALID EXPART'                                88364  02930000
+         AGO   .MEND                                             88364  02940000
+.P22     EXGCHECK NONE,&IMPART,(S,L,C,D),OPT=LIST                88364  02950000
+         AIF   (&OK).NEWOK                                       88364  02960000
+         MNOTE 8,'INVALID IMPART'                                88364  02970000
+         AGO   .MEND                                             88364  02980000
+.NEWOK   ANOP  ,                                                 88364  02990000
+&OPTCIN  SETC  '&COLIN'                                          88364  03000000
+&OPTCOT  SETC  '&COLOUT'                                         88364  03010000
+&OPTCRP  SETC  '&COLREP'                                         88364  03020000
+&OPTEXP  SETC  '&EXPART'                                         88364  03030000
+&OPTIMP  SETC  '&IMPART'                                         88364  03040000
+.MEND    MEND  ,                                                 88364  03050000

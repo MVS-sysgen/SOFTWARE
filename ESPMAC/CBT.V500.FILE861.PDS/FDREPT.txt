@@ -1,0 +1,29 @@
+         MACRO                                                          00010000
+&NM      FDREPT &N,&S                                   ADDED ON 82109  00020000
+         GBLA  &FDCNTR                                                  00030000
+         LCLA  &T,&C                                                    00040000
+         LCLC  &FDCHN                                                   00050000
+&FDCNTR  SETA  &FDCNTR+1                                                00060000
+&FDCHN   SETC  'ZFD'.'&FDCNTR'                                          00070000
+&C       SETA  &FDCNTR+1                                                00080000
+         AIF   ('&NM' EQ '').NONAME                                     00090000
+&NM      EQU   *                                                        00100000
+.NONAME  AIF   ('&N' NE 'END' AND '&N' NE '*END').PROCESS               00110000
+&FDCHN   DC    AL1(0)        END OF FD LIST                             00120000
+         MEXIT ,                                                        00130000
+.PROCESS ANOP  ,                                                        00140000
+&T       SETA  30                                                       00150000
+         AIF   (T'&S EQ 'O').BLANK                                      00160000
+         AIF   (T'&N EQ 'O').DFLT                                       00170000
+&FDCHN   DC    AL1(ZFD&C-*,&T),AL1(&N,&S)                               00180000
+         MEXIT ,                                                        00190000
+.DFLT    ANOP  ,                                                        00200000
+&FDCHN   DC    AL1(ZFD&C-*,&T),AL1(1,&S)                                00210000
+         MEXIT ,                                                        00220000
+.BLANK   ANOP  ,                                                        00230000
+         AIF   (T'&N EQ 'O').BLAND                                      00240000
+&FDCHN   DC    AL1(ZFD&C-*,&T),AL1(&N,C' ')                             00250000
+         MEXIT ,                                                        00260000
+.BLAND   ANOP  ,                                                        00270000
+&FDCHN   DC    AL1(ZFD&C-*,&T),AL1(1,C' ')                              00280000
+         MEND  ,                                                        00290000

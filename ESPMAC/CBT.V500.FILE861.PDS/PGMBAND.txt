@@ -1,0 +1,18 @@
+         MACRO ,                                                        00010000
+&NM      PGMBAND ,                                                      00020000
+.********************************************************************** 00030000
+.*                                                                    * 00040000
+.*   THIS IS THE COMPANION MACRO TO PGMBAKR, USED INSTEAD OF PR       * 00050000
+.*   UNDER OLDER SYSTEMS. ASSUMES RETURN VALUES ALREADY LOADED        * 00060000
+.*   INTO R15, R0, AND R1                                             * 00070000
+.*                                                                    * 00080000
+.********************************************************************** 00090000
+         GBLB  &ZZZBAKR      WAS BAKR USED ?                            00100000
+         AIF   (&ZZZBAKR).BAKR  YES; JUST DO PR                         00110000
+&NM      L     R2,4(,R13)    GET CALLER'S SAVE AREA                     00120000
+         STM   R15,R1,16(R2)   ENSURE RETURN VALUES SET         GP05018 00130000
+         PGMEXIT ,                                              GP05018 00140000
+         MEXIT ,                                                        00170000
+.BAKR    ANOP  ,                                                        00180000
+&NM      PR    ,             RESTORE AND RETURN                         00190000
+         MEND  ,                                                        00200000

@@ -1,0 +1,564 @@
+This library contains macros required for programs in CBT file 860.     00010000
+Use and distribution is limited as stated in member $$RIGHTS.           00020000
+Before assembling any programs, please configure the options in member  00030000
+SYSPARM to match your environment.                                      00040000
+                                                                        00050000
+$FCB2    Builds 3211 FCB definitions for SYS1.IMAGELIB                  00060000
+$FCB3    Builds 3800 FCB definitions for SYS1.IMAGELIB                  00070000
+$HEAD    MIM#3 macro to generate ASM headers, by C.J. Goelz             00080000
+$TCKCONV Replaces STCKCONV for MVS; slightly different keywords.        00090000
+#CNVRT   String functions (deblank, etc.) and date/time (ext @FORMATS)  00100000
+#FMT     Data conversion and formatting (external routine @FORMATS)     00110000
+#FOOT    Debug macro; sets footprint in a work area                     00120000
+#OPMSG   Produces a string, with text insertions, with RDW, and issues  00130000
+           WTOs (by default). Or use to just format text.               00140000
+#PRT     Simple printer macro, uses SUBPRT routine                      00150000
+#PRTWRK  Defines work area for #PRT                                     00160000
+#RDR     Simple input read macro, uses SUBRDR routine                   00170000
+#RDRWRK  Defines work area for #RDR                                     00180000
+#SORT    Bubble sort for simple table; by GPW ?                         00190000
+#TGET    Interface to SUBTGET routine; either GETLINE or WTOR issued.   00200000
+#TPUT    Interface to SUBTPUT routine; either PUTLINE or WTO issued.    00210000
+#TRACE   Interface to instruction trace routine PGMTRACE                00220000
+#TRAP    Interface to @SPIEDER to print PSW, registers, and storage.    00230000
+#TRC     Interface to PGMTRACE instruction tracing.                     00240000
+#TRCCLC  sample for using #TRC to trigger and stop tracing              00250000
+@OBTAIN  Interface to @OBTAINS rutine for authorized programs. Reads    00260000
+           VTOC by tracks, and stages when memory is availble.          00270000
+@PROTECT Interface for PROTECT SVC, with local mods.                    00280000
+@VOLRESB Alternative to @VOLREAD for unauthorized programs              00290000
+@VOLREST Work area for @VOLRESB                                         00300000
+AMODE    Dummy to allow assembly on MVS and older systems               00310000
+AM24     Sets AM24 on 31-bit; NoOp on older systems (replaced by SAM24) 00320000
+AM31     Sets AM31 on 31-bit; NoOp on older systems (replaced by SAM31) 00330000
+ARM      Sets Access Register Mode on or off; optionally saves or loads 00340000
+           the registers.                                               00350000
+ARMODE   Different ARM                                                  00360000
+AUTHBCDE Builds a CDE for arbitrary storage area; renamed from Gilbert  00370000
+           Saint-Flour's BUILDCDE macro.                                00380000
+A64D     Add 64-bit integer to 64-bit integer                           00390000
+A64F     Add 32-bit integer to 64-bit integer                           00400000
+BAKR     Very poor substitute for real BAKR; registers into save are    00410000
+BALS     Generates BAL or BAS depending on options.                     00420000
+BALSR    Generates BALR or BASR depending on options.                   00430000
+BANDAID  Invokes GSF's SYSDEBUG (as @BANDAID) or @SPIEDER debugging.    00440000
+BASS     Generates BAL or BAS depending on options.                     00450000
+BASCALL  Simple subroutine call with AMODE setting.                     00460000
+BASEND   PGMTRACE macro to end subroutine code.                         00470000
+BASHEAD  PGMTRACE macro to begin a subroutine.                          00480000
+BASR     Expands a BASR instruction for ASM X/F (use under Hercules)    00490000
+BASRETD  PGMTRACE macro to return from a subroutine.                    00500000
+BASSM    Generates BASSM or BAS depending on options.                   00510000
+BCON     Builds text preceded by 1-byte length. May have intervening    00520000
+           DCs if the END option is used.                               00530000
+BIGBEN   Prints current time on @PRINTER file 1 (if open).              00540000
+BIX      Branches to a list of up to 256 addresses depending on a       00550000
+           one-byte branch value (may be in register, gets masked,      00560000
+           and shifted, as specified).                                  00570000
+BLANKOUT Clears are to spaces with MVC or MVCL, depending on options.   00580000
+BLOOK    Generates in-line subroutine to perform a simple table (BTAB)  00590000
+           lookup, and branches on match. Spaces over leading blanks.   00600000
+BSM      Generates a BALR unless &MVSXA flag is set.                    00610000
+BTAB     Generates a look-up table or BLOOK and VLOOK routines.         00620000
+BUILDCDE Builds CDE for arbitrary storage (by GSF); fixed for MVS 3.8   00630000
+CATCALL  Invokes SUBCAT or SUBICF for catalog lookup (name or generic)  00640000
+CATSCAT  Expands user's work area for catalog functions.                00650000
+CATSPARM Expands SUBCAT/SUBICF calling parameters.                      00660000
+CATSWORK Expands SUBCAT/SUBICF work area.                               00670000
+CLRL     Clear storage to specified character; default is hex zero.     00680000
+CMASK    Generates code to compare a mask to a string; returns with     00690000
+           condition code set.                                          00700000
+CNVA     Converts a register address (24-bit) for display.  (INSECT)    00710000
+CNVD     Converts an integer for display (needs INSECT macro).          00720000
+CNVR     Converts a register value to hex display.          (INSECT)    00730000
+CNVX     Converts storage to hex display (limit 7 bytes in) (INSECT)    00740000
+CPOOL    Simple Cellpool substitute (see SUBCPOOL)                      00750000
+CRMEND   Cross-memory service end of relocated code.                    00760000
+CRMEXIT  Cross-memory service return code.                              00770000
+CRMHEAD  Cross-memory service start of relocated code.                  00780000
+CRMS     Cross-memory service invocation.                               00790000
+CRMSPIE  Cross-memory service error recovery.                           00800000
+CSADD    Add using Compare and Swap.                                    00810000
+CSDEC    Subtract using Compare and Swap.                               00820000
+CSIRWORK Maps IGGCSI00 return area.                                     00830000
+CSREP    Replace a word using Compare and Swap.                         00840000
+CSTART   Start of Exhibit conversational module (private)               00850000
+CVH      Converts register to integer mode display.         (INSECT)    00860000
+CVI      Converts integer register value to display.        (INSECT)    00870000
+DASDTYPE In-line code to provide DASD information from UCB.             00880000
+DBO      Very old debug macro; OS/360 & 370 only. See DEBTROLD program. 00890000
+           Superceded by #TRAP and @SPIEDER.                            00900000
+DBT      Debug macro for OS/390, using DEBTRACE program.                00910000
+DCBEXITD Generates DCB exit list entries for optional services in       00920000
+           Shmuel Metz's @DCBEXIT program.                              00930000
+DCIN     Makes a DC with the label defined on the last byte for MVCIN.  00940000
+DCLC     IBM macro generate mixed case text from upper-case only.       00950000
+           Use / to upper-case next word; < to upper-case next letter,  00960000
+           or define your own.                                          00970000
+DCON     Builds text preceded by 1-byte length-1. May have intervening  00980000
+           DCs if the END option is used.                               00990000
+DCS      Bill Godfrey's 3270 screen definition macro (fixed sizes only) 01000000
+DEBCNT   0C1 after n invocations.                                       01010000
+DEBDO    Skips to DEBEND unless debug mode is on (&BUGBEAR).            01020000
+DEBEND   Target for DEBDO.                                              01030000
+DEBEX    Causes 0C3.                                                    01040000
+DEBINLIN Obsolete DEBTRACE code that expanded in-line.                  01050000
+DEBPRT   Toggles debug printing on/off (in DEBTROLD and DEBTRACE).      01060000
+DEBSTOMP Sets one-byte progress indicator in user byte.                 01070000
+DEBTRACE Old DEBTROLD/DEBTRACE invocation macro.                        01080000
+DEBTRACY Inner macro for DBO/DBT.                                       01090000
+DELETEST Checks whether a 3/4-byte address is non-zero, and issues a    01100000
+           DELETE SVC for the same name.                                01110000
+DIAG     Expands a Diagnose instruction in R1,R3,code format.           01120000
+DISPLAY  (private) define 2260/3270 display areas.                      01130000
+DSTART   (private) beginning of a display module.                       01140000
+DSUBSECT (private) code for display modules'                            01150000
+DSUBSPAC (private) code for display modules.                            01160000
+DUMP     (private) old code for variable formatting to display.         01170000
+DYNSPACE Inner macro for ALLOC and FREE.                                01180000
+EBCDIG   Converts an absolute value, variable, or expression into an    01190000
+           integer EBCDIC assembly value. Typically used to have        01200000
+           assembler generated SORT control cards.                      01210000
+EBCHEX   Converts an absolute value, variable, or expression into a     01220000
+           hexadecimal EBCDIC assembly value.                           01230000
+ENDM     Program return macro by Shmuel Metz. Also see SAVEM.           01240000
+ESPCVT   (local CVT extension other than CVTUSER)                       01250000
+ESPHEAD  Program entry macro                                            01260000
+ESPIE    Expands as SPIE in older systems.                              01270000
+ESPPDS   Defines IHAPDS bits not in the MS mapping.                     01280000
+EXHM@ZAP (private)                                                      01290000
+EXHMADVN (private)                                                      01300000
+EXHMADVS (private)                                                      01310000
+EXHMCAML (private)                                                      01320000
+EXHMDIO  (private)                                                      01330000
+EXHMDUMP (private)                                                      01340000
+EXHMFSED (private)                                                      01350000
+EXHMFSUP (private)                                                      01360000
+EXHMGTFI (private)                                                      01370000
+EXHMGTFX (private)                                                      01380000
+EXHMKALA (private)                                                      01390000
+EXHMLINE (private)                                                      01400000
+EXHMSTAR (private)                                                      01410000
+EXHMSTAS (private)                                                      01420000
+EXHMTAPE (private)                                                      01430000
+EXHMUPDC (private)                                                      01440000
+EXHMUPDS (private)                                                      01450000
+FD       Field Definition for @PRINTER and @SCREENS.                    01460000
+FDBAR    FD for percentage bar.                                         01470000
+FDBR     FD to branch on condition in list of FDs.                      01480000
+FDBUMP   Increments registers in FD list.                               01490000
+FDCLC    Compares two strings and branches on condition in FD list.     01500000
+FDCLI    Compares byte to value and branches on condition in FD list.   01510000
+FDDUMP   Simple storage formatting (hex + EBCDIC) with offset.          01520000
+FDEXEC   Execute another FD sequence and return. May not nest.          01530000
+FDFD     Defines a field label and value; may expand based on system.   01540000
+FDFLAG   Prints text (defined by FLGTAB) matching flag bits.            01550000
+FDGOTO   Transfers control to another FD (no return).                   01560000
+FDIN     Define a 3270 input field.                                     01570000
+FDINP    Define a privileged 3270 input field.                          01580000
+FDLINE   Define a complete 3270 line (SCLINE service).                  01590000
+FDLITEM  Define fields in an FDLINE.                                    01600000
+FDLSET   Set an attribute in an FDLINE.                                 01610000
+FDLVAL   Inner macro for FDL macros.                                    01620000
+FDMODE   Switches address resolution in an FD list (24 or 31).          01630000
+FDOPT    Sets non-field options (e.g., new line, indent, carriage       01640000
+           control, field address {SBA}).                               01650000
+FDPRT    Same as FD but for printer (no color or high-lighting).        01660000
+FDREPT   Repeat a character.                                            01670000
+FDROOM   Start new line unless there is enough room on current line.    01680000
+FDSCAN   Combines several FD function - label, input field, options.    01690000
+FDSECT   Maps FD entry expansion.                                       01700000
+FDSNAP   Produces configurable storage displays.                        01710000
+FDSPACE  Inserts specified number of spaces on current line.            01720000
+FDTM     Test flags in a byte and branch in FD list.                    01730000
+FDUEX    Request a user exit to be taken.                               01740000
+FDUEXEND Define end of user exit code.                                  01750000
+FDUEXHED Define start of user exit code.                                01760000
+FDUEXRET Return from user exit.                                         01770000
+FETWORK  Map request and work area for SUBFETCH (replaces LOAD SVC).    01780000
+FIXD     Convert floating point to integer (no checking).               01790000
+FLD      Shmuel Metz's 3270 field definition macro.                     01800000
+FLGTAB   Define a table of text strings vs. flags. Used by FDFLAG.      01810000
+FLOATD   Convert register integer to floating point.                    01820000
+FSAWORK  Mapping of common portion of dynamic work area storage used    01830000
+           by @-routine services.                                       01840000
+GETCC    Place condition code bits into high byte of register.          01850000
+GETJESID (private) routine to get id for a JES2 job.                    01860000
+GETREG   Load a register from caller's save area, or from BAKR stack.   01870000
+HAREAD   (private) read blocks from hasp/JES2 spool packs.              01880000
+HASPQSCN (private) scan hasp/JES2 job queues.                           01890000
+HASPTEST (private) test that HASP/JES2 is up; initialize local stuff.   01900000
+HCON     Generate a string preceded by half-word length.                01910000
+HQUE     (private) define HASP/JES2 queue names for display.            01920000
+IAC      dummy for MVS; sets flags to zero.                             01930000
+INC      Increment or decrement a register or full-word value.          01940000
+INCH     Increment or decrement a register or half-word value.          01950000
+INDEC    Convert 1-4 byte integer in storage to display.                01960000
+INDSN    Convert input DSN with prefixing, etc. (local code).           01970000
+INEDIT   Convert packed to display              (local code).           01980000
+INHEX    Convert storage to hex display         (local code).           01990000
+INITDAP  (private)                                                      02000000
+INITIOWK (private)                                                      02010000
+INPCLOSE Close one or more input files in @INPREAD.                     02020000
+INPCOM   Inner macro for input functions.                               02030000
+INPFEOV  Force End Of Volume on input file.                             02040000
+INPFIND  Position to start of PDS member on input file.                 02050000
+INPGET   Get a record from @INPREAD.                                    02060000
+INPKEEP  Keep this for one subsequent INPGET.                           02070000
+INPKEEPM Keep current member.                                           02080000
+INPOPEN  Open one @INPREAD file (1-8).                                  02090000
+INPQMEM  Get member information (directory info).                       02100000
+INPREAD  Get a block from @INPREAD.                                     02110000
+INPWORK  Define an @INPREAD work area (one per file).                   02120000
+INSECT   Expands code for CV convert functions.                         02130000
+INSETS   Inner macro for INSECT/Conversion.                             02140000
+IPM      Loads program mask.                                            02150000
+JOBSEPLN Maps the job separator line of the MVS Tur(n)key system.       02160000
+LADJ     Left justifies a string that's followed by a space.            02170000
+LAE      Generates an LA under MVS.                                     02180000
+LAM      Generates a label, if any, under MVS.                          02190000
+LAT      Loads a 3/4 byte address and branches on zero or non-zero.     02200000
+LCSTR    Convert character string to lower case DC; no escapes.         02210000
+LDSUB    (private)                                                      02220000
+LIX      Operates similar to BIX, but returns resolved addresses on     02230000
+           indices; branches on missing or excessive values.            02240000
+LJIT     Locates the JIT on a HASP system.                              02250000
+LMVC     OS/360 equivalent of MVCL.                                     02260000
+LNE      Shmuel Metz's 3270 code - request a line.                      02270000
+LNKSTK   Map of linkage stack entry (for OS/390 and z/OS)               02280000
+LOCBYTE  Wrapper for SRST instruction, or expands code on OS/370.       02290000
+LOCLEN   Find length of a string with arbitrary ending character.       02300000
+           Suggested by an e-mail from Clement Clarke (author of JOL)   02310000
+LPALOOK  Locates a module in LPA, or loads it; returns address.         02320000
+LTCB     Loads current TCB; optionally with USING.                      02330000
+LTJID    Loads TJID of current task.                                    02340000
+LTJP     Loads JQE address for HASP.                                    02350000
+LTJQEP   Loads JQE point for HASP.                                      02360000
+LTP      Loads and tests nth parameter in a calling list.               02370000
+MACAD    Expands A-constant in CSECT/RSECT, or A(0) in DSECT.           02380000
+MACBDDDL Combines address and length: A,5 -> A(5)   dd(b),4 -> dd(4,b)  02390000
+MACBL    Expands a branch in CSECT/RSECT, or A(0) in DSECT.             02400000
+MACDC    Expands DC with or without label depending on global.          02410000
+MACDEFXT Kludgy alternative for D' attribute for ASM/XF.                02420000
+MACLIST  Converts macro list into 1-10 global values.                   02430000
+MACMAPHD Header macro to generate CSECT, DSECT, or 0D.                  02440000
+MACPARM  Generates instructions for macro operands, compensating for    02450000
+           register vs. address forms, strings, etc.                    02460000
+MACPLOP  Stores value in parameter list (ST for register; LA/ST other). 02470000
+MACQOLIT Analyzes string operand (unquoted, quoted, literal).           02480000
+MACQOTER Adds quotes to unquoted string, or removes quotes.             02490000
+MACSRVLD Inner macro to check whether a module was loaded by @SERVICE   02500000
+           (SERVLOAD macro); if not, loads address with =V(name).       02510000
+MAPAUTO  Maps AUTOCMD/AUTORDR request block.                            02520000
+MAPCMPR  Maps COMP3270 buffer compression routine parameter area.       02530000
+MAPCMPRT Maps common printer option area for debug routines DEBTRACE,   02540000
+           PGMTRACE, and others.                                        02550000
+MAPCOMM  (private) communications area mapping and code.                02560000
+MAPDEFMT Maps parameter and return area for SUBDEFMT (PDS directory).   02570000
+MAPDSCHK Maps parameter and return area for SUBDSCHK (DS validation).   02580000
+MAPEXK   (private) CSA area map.                                        02590000
+MAPEXR   (private) CSA area map.                                        02600000
+MAPEXTNT Maps extent entry as found in DSCB1 and DSCB3.                 02610000
+MAPFD    Maps FD and FDPRT expansions.                                  02620000
+MAPFDL   Maps FDLINE expansion.                                         02630000
+MAPFDS   Maps entry for @SCREENS (old TSO full-screen I/O).             02640000
+MAPFDW   Maps work area for 3270 full-screen functions (SC----).        02650000
+MAPFIW   Maps input field for 3270 full-screen functions (SC----).      02660000
+MAPINDEX Maps index entries in (local) IBM module data base.            02670000
+MAPINP   Maps expansion of INPWORK macro.                               02680000
+MAPINPWK Maps @INPREAD work area.                                       02690000
+MAPIOWK  (private) I/O work area and code.                              02700000
+MAPJOBDY (private) JES2 I/O area mapping.                               02710000
+MAPJOBWK (private) JES2 job display area mapping.                       02720000
+MAPLODCB (private) JES2 load module/DCB area mapping.                   02730000
+MAPMTS   (private) user data area mapping.                              02740000
+MAPMTV   (private) multi-user common vector table.                      02750000
+MAPPARSE Maps request area for @PARSER routine.                         02760000
+MAPPARST Maps @PARSER results, one entry for keyword or positional.     02770000
+MAPPDS   Maps PDS directory entries (usually placed after IHAPDS) for   02780000
+           SPF and IEBUPDTX entries.                                    02790000
+MAPPINGS Old GBLC tables for system mapping macro versus USING label.   02800000
+MAPPRT   Maps expansion of PRTWORK/PUNWORK macros.                      02810000
+MAPPRTWK Maps @PRINTER work area.                                       02820000
+MAPRDC   Maps return from Read Device Configuration CCWs (x'64', x'E4') 02830000
+MAPRES   (private) maps CSA communication area.                         02840000
+MAPSBALL Maps request parameters for SUBALLOC routine.                  02850000
+MAPSBAWK Maps SUBALLOC return area (code, reason, mesages).             02860000
+MAPSBP2W Maps SUBP2W return area (day, month, year, day of week).       02870000
+MAPSCR   Maps expansion of SCRWORK area.                                02880000
+MAPSCRWK Maps work area used by @SCREENS.                               02890000
+MAPSQSP  (private) maps CSA data area.                                  02900000
+MAPTSA   Maps common area for @SERVICE functions.                       02910000
+MAPVOLRD Maps @VOLREAD return area.                                     02920000
+MAPVTOCS (private) maps VTOC work area.                                 02930000
+MAPWORK  (private) common functions, pointers, and data.                02940000
+MAPXOPTS (private) maps option records.                                 02950000
+MAPXWORK (private) maps debugging work area.                            02960000
+MASKEQU  Defines mask bits using I and O rather than 0 and 1. E.g.,     02970000
+           ICM r0,IIOO,data to load high half-word.                     02980000
+MAX      Compares register to storage, and loads larger value. Use      02990000
+           with TYPE= for H, E, D, A, or F. A/F is the default.         03000000
+MAXH     Compares register with storage halfword; loads larger.         03010000
+MDEF     Defines a message (in MDEFHEAD/MDEFEND range).                 03020000
+MDEFDICT Builds a dictionary entry from MDEF text.                      03030000
+MDEFEND  Ends a message table.                                          03040000
+MDEFGBL  Defines globals for message processing.                        03050000
+MDEFHEAD Begins a mesage module (one per message range or language).    03060000
+MDEFPARM Message processing parameter area mapping (see XMSG).          03070000
+MIN      Compares register to storage, and loads smaller value. Use     03080000
+           with TYPE= for H, E, D, A, or F. A/F is the default.         03090000
+MINH     Compares register with storage halfword; loads smaller.        03100000
+MOTE     Shmuel Metz's MNOTE in open code.                              03110000
+MSECT    Expands macros requested by NEED or USE (also see MAPPINGS)    03120000
+MSORT    Expands code for shell sort.                                   03130000
+MTITL    Shmuel Metz's TITLE facility - define fixed part (see STITL)   03140000
+MVCLIT   Moves a literal to storage using literal's length.             03150000
+MVC2     Move data to storage using second operand's length.            03160000
+MVICC    Set a one-byte return code and optional one-byte reason code.  03170000
+MVSDSAB  Invokes GETDSAB or local SUBDSAB depending on options.         03180000
+MVSQUERY MVS substitute for CVSQUERY; calls SUBQUERY.                   03190000
+MVSSVCUP MVS substitute for SVCUPDTE; calls SUBSVCUP.                   03200000
+MVST     MVS substitute for MVST instruction.                           03210000
+MYLVL    Generates a global integer corresponding to the system level.  03220000
+NEED     Names a control block to be expanded by MSECT.                 03230000
+NUSE     Names a control bock to be expanded, and a USING register.     03240000
+OICCC    OR a one-byte return code and optional one-byte reason code.   03250000
+ONEXIT   (private) names a recovery exit.                               03260000
+ONSPIE   (private) sets/resets a SPIE recovery exit.                    03270000
+OPTIONGB Defines assembly option global variables (also see SYSPARM).   03280000
+PARFGSET Sets/resets parsed flags after @PARSER, using SUBVERB lookup.  03290000
+PARKEYAD Builds branch address tables, using SUBVERB lookup.            03300000
+PARKEYBX Builds BXLE words for table lookup (name, name2, ..., nameZ)   03310000
+PARKEYFG Builds flag off and on settings for text string (PARFGSET)     03320000
+PARMLOAD Loads PARM address/length in batch and TSO CP.                 03330000
+PARSE    Invokes @PARSER to examine a string, with options.             03340000
+PATCH    Creates a patch area (64 SL2(*) by default).                   03350000
+PFKEYS   Defines assembler globals with PFK names and AID value.        03360000
+PGMBAKR  Program header; uses PGMHEAD for MVS, or BAKR.                 03370000
+PGMBAND  Returns in PGMBAKR headed code. R15-R1 preloaded.              03380000
+PGMEXIT  Returns from a program entered via PGMHEAD.                    03390000
+PGMHEAD  Standard program entry; gets storage for save and work areas,  03400000
+           clears dynamic storage, sets base(s) and issues USINGS.      03410000
+PGMPATCH Creates a patch area of 129S(*).                               03420000
+PIT      (old) HASP PIT entry mapping.                                  03430000
+PRTBIG   Using @PRINTER files, produces big letters; up to three sizes. 03440000
+PRTCLOSE Closes one or more print/punch files.                          03450000
+PRTCOM   Inner macro to produce @PRINTER calling parameters.            03460000
+PRTDATA  Prints multiple items, each a valid FD operand.                03470000
+PRTF     Prints string given address and length and carriage control.   03480000
+PRTITEM  Prints a single FD item.                                       03490000
+PRTL     Prints a literal string.                                       03500000
+PRTLIST  Prints a list of FD items.                                     03510000
+PRTOPEN  Opens a single print file, with primary or alternate DD name.  03520000
+           Output may also be a TSO terminal or via WTO.                03530000
+PRTROOM  Schedules page eject unless specified number of lines fit.     03540000
+PRTS     Prints a null terminated string.                               03550000
+PRTSNAP  Prints memory in dump format.                                  03560000
+PRTSPACE Produces blank lines on current page.                          03570000
+PRTV     Print text preceded by an RDW, e.g., WTO text.                 03580000
+PRTWORK  Defines printer file: DDname(s), lines/page, width, # titles.  03590000
+PSWSECT  (local) maps our MVT password records.                         03600000
+PUNWORK  Defines punch file.                                            03610000
+QUE      (private) HASP queue name table.                               03620000
+RANDOM   Expands a pseudo-random number routine.                        03630000
+READFDR  Calls @FDRREAD to get tracks and blocks from an FDR dump tape. 03640000
+READTMC  Calls @TMSREAD to get data from UCC-1/CA-1 tape library.       03650000
+REGEQU   Symbolic register definitions.                                 03660000
+RESCALL  (private) calls CSA resident code.                             03670000
+RESCODE  (private) expands CSA code and data.                           03680000
+RESTRICT (private) test permissions.                                    03690000
+RET31    Return macro for TSX call.                                     03700000
+RMODE    Allow assembly under MVS of newer modules.                     03710000
+RP       Generates RP expansion for assembler XF.                       03720000
+RSECT    Allow assembly under MVS of newer modules; builds CSECT.       03730000
+SAC      Defines label, if any, under MVS, else ignored.                03740000
+SAVEM    Shmuel Metz's program entry macro (replaced by PGMHEAD).       03750000
+SAVEX    Inner macro for SAVEM and PGMHEAD. Supports non-standard       03760000
+           register saves, and setting AMODE.                           03770000
+SCANAL   (private) routine to analyze 3270 input.                       03780000
+SCBILD   (private) routine to build address and data list for SCLINE.   03790000
+SCINIT   (private) initialize 3270 I/O.                                 03800000
+SCITEM   (private) routine to format one display item (FD entry)        03810000
+SCLINE   (private) routine to display FDLINE data and read input.       03820000
+SCLIST   (private) routine to format an FD list.                        03830000
+SCLOOP   (private) routine to take user exits in an FD list.            03840000
+SCMOVE   (private) routine to move input data to storage, after SCANAL. 03850000
+SCPAGE   (private) routine to display a page and read input.            03860000
+SCRANAL  routine to analyze 3270 input.                                 03870000
+SCRCLOSE close @SCREENS processing.                                     03880000
+SCRCOM   Inner macro to generate parms for @SCREENS.                    03890000
+SCREDIT  removes backspaces, unprintables, and leading/trailing blanks. 03900000
+SCRINIT  initialize 3270 I/O.                                           03910000
+SCRITEM  routine to format one display item (FD entry)                  03920000
+SCRLIST  routine to format an FD list.                                  03930000
+SCRLOOP  routine to take user exits in an FD list.                      03940000
+SCRMARK  checks for errors and incomplete fields.                       03950000
+SCRMOVE  routine to move input data to storage, after SCANAL.           03960000
+SCRN     Shmuel Metz's 3270 definition macro.                           03970000
+SCROPEN  opens 3270 for processing in @SCREENS.                         03980000
+SCRPAGE  routine to display a page and read input.                      03990000
+SCRSCAN  scans input from line mode terminal.                           04000000
+SCRWORK  defines work area for @SCREENS.                                04010000
+SERVCALC replacement for TRKCALC; supports DASD not in sysgen.          04020000
+SERVCALL function call to the @SERVICE routine.                         04030000
+SERVCOMP Expand WYLBUR line compression work area.                      04040000
+SERVDEFS Expands fields (address and data) for preceding @SERVICEs.     04050000
+SERVFLAG Maps @SERVICE function name to request values/flags.           04060000
+SERVICE  Invokes @SERVICE as an SVC if in LPA; uses SERVCALL otherwise. 04070000
+SERVINIT Initializes @SERVICE functions.                                04080000
+SERVJES  Calls @SERVICE for JES2 related functions.                     04090000
+SERVLOAD Loads named modules, and has SERVDEFS build address DCs.       04100000
+SERVPDS  Formats PDS directory entry for display.                       04110000
+SERVSORT Expands area for @SERVICE sorting and binary lookup functions. 04120000
+SERVTERM Closes files, calls termination entries for loaded modules,    04130000
+           releases storage, and deletes loaded modules in @SERVICE.    04140000
+SERVTREE Defines work area for SUBTREE (balanced tree builder).         04150000
+SERVWORK Acquires or frees work areas on save area chain for @SERVICEs. 04160000
+SETAM    Another SAM24/SAM31 substitute.                                04170000
+SETCC    Sets condition if higher than current one.                     04180000
+SHOWHELP (private) displays DC array.                                   04190000
+SIZER    Cause assembly error when module exceeds specified size.       04200000
+SMFSEAC  (local) mapping for NCR/Comten 369n written accounting data.   04210000
+SMI      (private) expands prompt message.                              04220000
+SMPIOWK  (private) mapping of work area for SMP reader (V1 and V2).     04230000
+SPFITS   (private) test if items fits on line.                          04240000
+SPINDENT (private) indent lines.                                        04250000
+SPINIT   (private) initialize 3270 screen builder in INSECT/DSUBSECT.   04260000
+SPLEVEL  backward compatibility macro MVS assemblies.                   04270000
+SPLINE   (private) conditionally start a new line.                      04280000
+SPLINEUP (private) unconditionally start a new line.                    04290000
+SPMOVE   (private) move data to screen line.                            04300000
+SRST     functional replacement for SRST instruction.                   04310000
+ST@      store register in 3 or 4 byte field, with optional high byte.  04320000
+STAM     generates a label, if needed, under MVS.                       04330000
+STITL    Shmuel Metz's title function, part 2. Replaces right size.     04340000
+STMAX    Compare register to storage and store the larger value.        04350000
+STMIN    Compare register to storage and store the smaller value.       04360000
+STOMP    Debug macro to record a program milestone.                     04370000
+STORAGE  MVS version; invokes GETMAIN or FREEMAAIN.                     04380000
+STORQ    Removes framing quotes and halves doubled ones.                04390000
+SUBCALL  Calls subroutine without using a V constant; accepts literal   04400000
+           string as argument (passes address).                         04410000
+SUBENT   (local) subroutine entry in program with stack.                04420000
+SUBEX    (local) vectored return.                                       04430000
+SUBHEAD  (local) subroutine entry in program with stack.                04440000
+SUBRET   (local) return from SUBHEADed routine.                         04450000
+SVCJFCB  calls SVCMJFCB to modify a JFCB (OS/360).                      04460000
+SWAP     exchanges two areas.                                           04470000
+SWAPR    exchanges two registers.                                       04480000
+SWATCH   Provides stopwatch functions using TIMEUSED or local code (MVS)04490000
+SYSPARM  ---===>>> SET LOCAL ENVIRONMENT AND ASSEMBLY OPTIONS <<<===--- 04500000
+SYSPOLD  older SYSPARM.                                                 04510000
+SYSPOUT  older SYSPARM.                                                 04520000
+S64D     Subtract 64-bit value from 64-bit number.                      04530000
+S64F     Subtract 32-bit value from 64-bit number.                      04540000
+S99FAIL  Invokes DAIRFAIL/IKJEFT18 for SVC 99 error messages.           04550000
+TIC      Shortcut for Transfer-In-Channel CCW.                          04560000
+TMONSECT (old MVT) mapping record for CICS monitor.                     04570000
+TMSREC   Mapping for local UCC-1/CA-1 tape library record.              04580000
+TRACEPGM For tracing PGMTRACE problems (needs work).                    04590000
+TRANHEAD (private) translation table header.                            04600000
+TRENT    Generates DC and ORG for TR and TRT tables.                    04610000
+TRINV    Translate table that reverses bits (Kenneth Wilkerson).        04620000
+TRTAB    Expands tables for TR and TRT. Predefined are PN, TN, 2260,    04630000
+           3270, 3278, Upper case, and Lower case.                      04640000
+TRTSMF   (local) table of SMF record types with coded disposition.      04650000
+TSX      Calls subroutine with BASSM or BALR, and sets AMODE.           04660000
+TTYDEFIN (local) defines control strings for Wylbur devices.            04670000
+TTYFLAGS (local) defines indices for terminals defined by TTYDEFIN.     04680000
+TTYSEQ   (local) retrieves a control string entry from TTYDEFIN table.  04690000
+UCBDEVN  Converts either UCBNAME or device number to 3 or 4 byte entry. 04700000
+UNFRAG   (private) unfragments MVT region.                              04710000
+UNITSKIP (private) during UCB lookup, skip specially defined units.     04720000
+UNITY    Build table of UCBTBYT3/4 with device name.                    04730000
+USE      (local) request control block expansion by MSECT.              04740000
+USERHMT  (local) maps control area for Unisys An system sending action  04750000
+           messages to the mainframe.                                   04760000
+VCON     Builds text preceded by RDW field. May have intervening        04770000
+           DCs if the END option is used.                               04780000
+VERBTAB  Builds (short) string lookup table for BLOOK and VLOOK.        04790000
+VFORM    (private) storage formatting interface.                        04800000
+VLOOK    Similar to BLOOK, but accepts abbreviations (DEL for DELETE).  04810000
+VNENTRY  (private) XCTL support.                                        04820000
+VNEXITY  (private) XCTL support.                                        04830000
+VOLREAD  Interface to @VOLREAD routine; read and writes VTOC and data.  04840000
+VTAB     (local) build interface table for display routine.             04850000
+VTOBYTE  prints string with text corresponding to bits on in a flag.    04860000
+VTOCHAR  prints string with text corresponding to bits on in storage.   04870000
+VTOTAB   builds table with flag and matching text for VTOBYTE/VTOCHAR.  04880000
+WTBLD    builds WTO text with various options (single line, multi-line) 04890000
+WTCLR    WTO facility by Shmuel Metz. Initializes WTO interface.        04900000
+WTERM    writes message to terminal.                                    04910000
+WTLST    defines text, with descriptor codes.                           04920000
+WTLTP    sets line type flags for multi-line WTO.                       04930000
+WTPVT    defines common WTO prefix and resets display area.             04940000
+WTU      Write-To-User - issues WTO or TPUT depending on console id.    04950000
+WTWRK    Defines work area for Shmuel's WTO facility.                   04960000
+         (private)                                                      04970000
+XATTACH  (private) issues ATTACH or DETACH.                             04980000
+XCALL    (private) calls subroutine in non-zero key (usually TBPKF).    04990000
+XCURCON  (private) converts current cursor address to line/indent #s.   05000000
+XCURSE   (private) sets cursor display address in FDW area for SCLINE.  05010000
+XCURSOR  (private) sets cursor display address in FDW area.             05020000
+XDBT     (private) conditional debug expansion; also see XTRAP.         05030000
+XDEFAID  (private) defines table of key names per AID byte.             05040000
+XDEFCMD  (private) builds lookup table of AID vs. command.              05050000
+XDELETE  (private) deletes a module.                                    05060000
+XDEVOPT  (private) defines display options for a 3270 group or device.  05070000
+XDEVPFK  (private) defines AID vs. command prior to XDEVOPT.            05080000
+XDEVSKIP (private) skips specially defined units form UCB lops.         05090000
+XDROP    (private) debug mode - drops register use.                     05100000
+XDSN     (private) treats input as DSN; prefixes; separates mmeber name.05110000
+XECHO    (private) clears screen buffer; echos input; sets up registers.05120000
+XFIND    (private)                                                      05130000
+XFORMAT  (private) inner macro to expand display conversion code.       05140000
+XFREE    (private) frees specific or function storage.                  05150000
+XGET     (private) obtains storage.                                     05160000
+XHEX     (private) converts (short) storage to hex display.             05170000
+XJESRD   (private) reads JES2 spool blocks by MTTR.                     05180000
+XLINE    (private) places data into display buffer; skips to new line;  05190000
+           converts data to hex display; sets title; etc.               05200000
+XLOAD    (private) loads a module.                                      05210000
+XLOOK    (private) table lookup (also see BLOOK).                       05220000
+XMASK    (private) compares a mask to a string.                         05230000
+XMSG     (private) formats a canned message, with optional parameter    05240000
+            conversion and insertion. See MDEF macros for tables.       05250000
+XOPT     (private) manipulate options control block.                    05260000
+XPAGE    (private) display a 3270 page with prompt and get input.       05270000
+XPARM    (private) invoke (mini) parser to get and examine next operand.05280000
+XPATCH   (private) another patch generator - rounds module to 2K size.  05290000
+XPDCHECK (private) test string for a valid packed decimal number.       05300000
+XPOUT    (private) similar to XPAGE, but with default MORE prompt.      05310000
+XPRINT   (private) debugger - print a line.                             05320000
+XPUTGET  (private) display page, get response, and check common commands05330000
+XQUEUE   (private) manipulate entries on a queue.                       05340000
+XRAND    (private) call or initialize (pseudo) random number generator. 05350000
+XREAD    (private) issue read to 3270.                                  05360000
+XRENT    (private) initializes pre-allocated 4K work area.              05370000
+XREQUIRE (private) checks authorization and environmental prerequisites.05380000
+XRITE    (private) writes 3270 buffer.                                  05390000
+XROOM    (private) for debug printing reserves room on current page.    05400000
+XSCLINE  (private) writes page defined by XLINEs, and reads response.   05410000
+XSDELETE (private) deletes modules brought in by XSLOAD.                05420000
+XSLOAD   (private) loads subroutines.                                   05430000
+XSNAP    (private) debug printer of PSW, registers, and storage.        05440000
+XSPACE   (private) spaces lines on debug print.                         05450000
+XTAB     (private) AID lookup table that defines XCTL suffices.         05460000
+XTHINK   (private) sets and resets wait time from current to maximum.   05470000
+XTRANS   (private) translates text for input or output, data or control.05480000
+XTRAP    (private) debug interface to display PSW, registers, storage.  05490000
+XUCBLOOP (private) loops through all system UCBs.                       05500000
+XUSE     (private) debug - declare using register and matching DSECT.   05510000
+XWAIT    (private) wait for 3270 attention.                             05520000
+XXCTL    (private) XCTL to another module; specify trailing name bytes. 05530000
+XXHEAD   (private) generates header code for FD user exit.              05540000
+XXHEND   (private) generates exit code for FD exit, and sets cursor.    05550000
+XXHHEX   (private) checks input field for valid hexadecimal.            05560000
+XXHINT   (private) checks input field for valid integer.                05570000
+XXTRKEY  (private) generates AID vs. command entry tables.              05580000
+X4CMD    (local) generates command tables for Xerox 4050.               05590000
+X4050    (local) generates Xerox 4050 DJDEs and work area.              05600000
+YCON     Builds text preceded by 2-byte length. May have intervening    05610000
+           DCs if the END option is used.                               05620000
+YREGS    another mnemonic register definition (R1-R15)                  05630000
+ZI       reset flag bits (ZI ,value instead of NI ,255-value).          05640000

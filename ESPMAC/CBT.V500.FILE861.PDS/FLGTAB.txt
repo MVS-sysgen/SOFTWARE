@@ -1,0 +1,68 @@
+         MACRO                                                          00010000
+&NM      FLGTAB &MASK,&TEXT,&LEN,&MLEN=                                 00020000
+.*--------------------------------------------------------------------* 00030000
+.*                                                                    * 00040000
+.*  THIS MACRO GENERATES A TABLE OF FLAG BITS AND MATCHING TEXT       * 00050000
+.*  &MLEN (ON THE FIRST ENTRY) SPECIFIES THE BIT MASK LENGTH IN BYTES * 00060000
+.*  &TEXT SPECIFIES THE QUOTED OR UNQUOTED TEXT FOR THAT BIT MASK     * 00070000
+.*  &LEN OPTIONALLY OVERRIDES THE CALCULATED TEXT LENGTH              * 00080000
+.*                                                                    * 00090000
+.*--------------------------------------------------------------------* 00100000
+         GBLC  &ZZFGTLN      REMEMBER LENGTH GLOBALLY                   00110000
+         LCLA  &I,&K,&L                                                 00120000
+         LCLB  &QUO                                                     00130000
+         LCLC  &Q1,&Q2                                                  00140000
+.*                                                                      00150000
+.*  CHECK END REQUEST                                                   00160000
+.*                                                                      00170000
+         AIF   ('&MASK' EQ '*END').END                                  00180000
+.*                                                                      00190000
+&QUO     SETB  ('&TEXT'(1,1) EQ '''')                                   00200000
+         AIF   (&QUO).NOFRAME                                           00210000
+&Q1      SETC  ''''                                                     00220000
+&Q2      SETC  ''''                                                     00230000
+.*                                                                      00240000
+.*  SET GLOBAL LENGTH AS NEEDED                                         00250000
+.*                                                                      00260000
+.NOFRAME AIF   ('&MLEN' EQ '').NOTMLEN                                  00270000
+&ZZFGTLN SETC  '&MLEN'                                                  00280000
+.NOTMLEN AIF   ('&ZZFGTLN' NE '').GOTMLEN                               00290000
+&ZZFGTLN SETC  '1'           DEFAULT MASK LENGTH IS 1                   00300000
+.*                                                                      00310000
+.*  WHEN USER SPECIFIES A LENGTH, JUST EXPAND THE REQUEST               00320000
+.*                                                                      00330000
+.GOTMLEN AIF   ('&LEN' EQ '').COMLEN                                    00340000
+&NM      DC    AL1(&LEN-1),AL(&ZZFGTLN)(&MASK),CL(&LEN)&Q1&TEXT&Q2      00350000
+         MEXIT ,                                                        00360000
+.*                                                                      00370000
+.*  CALCULATE THE LENGTH OF THE TEXT ITEM                               00380000
+.*                                                                      00390000
+.COMLEN  AIF   (&QUO).QUOADJ                                            00400000
+&L       SETA  K'&TEXT                                                  00410000
+&I       SETA  &L                                                       00420000
+&K       SETA  1                                                        00430000
+         AGO   .LOOP                                                    00440000
+.QUOADJ  ANOP  ,                                                        00450000
+&L       SETA  K'&TEXT-2                                                00460000
+&I       SETA  &L-1                                                     00470000
+&K       SETA  2                                                        00480000
+.*                                                                      00490000
+.*  SCAN FOR DOUBLE QUOTES, AND DECREMENT LENGTH BY ONE                 00500000
+.*                                                                      00510000
+.LOOP    AIF   (&K GE &I).EXPQ                                          00520000
+         AIF   ('&TEXT'(&K,2) EQ '''''').DOUB                           00530000
+&K       SETA  &K+1                                                     00540000
+         AGO   .LOOP                                                    00550000
+.DOUB    ANOP                                                           00560000
+&K       SETA  &K+2                                                     00570000
+&L       SETA  &L-1                                                     00580000
+         AGO   .LOOP                                                    00590000
+.*                                                                      00600000
+.*  GENERATE WITH FORCED LENGTH                                         00610000
+.*                                                                      00620000
+.EXPQ    ANOP                                                           00630000
+&NM      DC    AL1(&L-1),AL(&ZZFGTLN)(&MASK),CL(&L)&Q1&TEXT&Q2          00640000
+         MEXIT ,                                                        00650000
+.END     ANOP  ,                                                        00660000
+&NM      DC    AL1(255)      END OF FLAG TABLE ENTRIES                  00670000
+         MEND  ,                                                        00680000

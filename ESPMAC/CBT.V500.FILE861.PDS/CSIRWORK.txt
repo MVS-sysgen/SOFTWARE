@@ -1,0 +1,69 @@
+         MACRO ,                                                        00010000
+&NM      CSIRWORK ,                                      ADDED: GP00043 00020000
+.********************************************************************** 00030000
+.*                                                                   ** 00040000
+.*  THIS MACRO MAPS THE RETURN AREA FROM THE IGGCSI00 SERVICE.       ** 00050000
+.*  (COULDN'T FIND AN IBM VERSION AS OF OS/390 2.8)                  ** 00060000
+.*                                                                   ** 00070000
+.********************************************************************** 00080000
+         AIF   ('&NM' NE '').UNAME                                      00090000
+CSIRWORK DSECT ,                                                        00100000
+         AGO   .COMMON                                                  00110000
+.UNAME   ANOP  ,                                                        00120000
+&NM      DS    0D                                                       00130000
+.COMMON  ANOP  ,                                                        00140000
+CSIUSRLN DC    F'4096'       USER PROVIDED WORK AREA SIZE               00150000
+CSIREQLN DC    F'0'          MINIMUM REQUIRED LENGTH                    00160000
+CSIUSDLN DC    F'0'          ACTUAL LENGTH USED                         00170000
+CSINUMFD DC    H'0'          NUMER OF SPECIFIED FIELD NAMES + 1         00180000
+CSIRWENT EQU   *             START OF DIFFERENT ENTRY TYPES             00190000
+         SPACE 1                                                        00200000
+         ORG   CSIRWENT      DEFINE FOR ICF CATALOG                     00210000
+CSICFLG  DS    X             CATALOG FLAG                               00220000
+CSINTICF EQU   X'80'           UNSUPPORTED - NON-ICF CAT                00230000
+CSINOENT EQU   X'40'           NO ENTRIES FOUND                         00240000
+CSINTCMP EQU   X'20'           INCOMPLETE RESPONSE                      00250000
+CSICERR  EQU   X'10'           CAT.ERR. - NOTHING PROCESSED             00260000
+CSICERRP EQU   X'08'           CAT.ERR. - PARTIALLY PROCESSED           00270000
+CSICTYPE DS    C             CATALOG TYPE (ICF - '0')                   00280000
+CSICNAME DS    CL44          CATALOG NAME                               00290000
+CSICRETN DS    0XL4          RETURN CODES                               00300000
+CSICRETM DS    CL2             CAT. MODULE ID                           00310000
+CSICRETR DS    X               REASON CODE                              00320000
+CSICRETC DS    X               RETURN CODE                              00330000
+CSICLENG EQU   *-CSICFLG     SIZE OF ENTRY                              00340000
+         SPACE 1                                                        00350000
+         ORG   CSIRWENT      DEFINE FOR OTHERS                          00360000
+CSIEFLG  DS    X             ENTRY FLAG                                 00370000
+CSIPMENT EQU   X'80'           PRIMARY ENTRY                            00380000
+CSIENTER EQU   X'40'           ERROR - CODE AFTER NAME                  00390000
+CSIEDATA EQU   X'20'           DATA ARE RETURNED FOR THIS ENTRY         00400000
+CSIETYPE DS    C             ENTRY TYPE                                 00410000
+CSIETYP0 EQU   C'0'            ICF CATALOG                              00420000
+CSIETYPA EQU   C'A'            NON-VSAM DATA SET                        00430000
+CSIETYPB EQU   C'B'            GENERATION DATA GROUP                    00440000
+CSIETYPC EQU   C'C'            CLUSTER                                  00450000
+CSIETYPD EQU   C'D'            DATA COMPONENT                           00460000
+CSIETYPH EQU   C'G'            ALTERNATE INDEX                          00470000
+CSIETYPG EQU   C'H'            GENERATION DATA SET                      00480000
+CSIETYPI EQU   C'I'            INDEX                                    00490000
+CSIETYPR EQU   C'R'            PATH                                     00500000
+CSIETYPX EQU   C'X'            ALIAS                                    00510000
+CSIETYPU EQU   C'U'            USER CATALOG CONNECTOR                   00520000
+CSIETYPL EQU   C'L'            ATL LIBRARY ENTRY                        00530000
+CSIETYPW EQU   C'W'            ATL VOLUME ENTRY                         00540000
+CSIENAME DS    CL44          ENTRY NAME                                 00550000
+CSIERETN DS    0XL4          RETURN CODES                               00560000
+CSIERETM DS    CL2             CAT. MODULE ID                           00570000
+CSIERETR DS    X               REASON CODE                              00580000
+CSIERETC DS    X               RETURN CODE                              00590000
+CSIELENG EQU   *-CSIEFLG     SIZE OF ENTRY ON ERROR                     00600000
+         ORG   CSIERETN                                                 00610000
+CSITOTLN DS    HL2           LENGTH OF ENTRY AFTER CSIENAME END         00620000
+         DS    HL2             RESERVED                                 00630000
+CSILENFD DS    0HL2          FIELD LENGTH ARRAY                         00640000
+CSILENF1 DS    HL2             LENGTH OF FIRST ENTRY                    00650000
+.*                                                                      00660000
+.*  DATA, IF ANY, FOLLOW A(CSITOTLN+2)+2*CSINUMFD                       00670000
+.*                                                                      00680000
+         MEND  ,                                                        00690000

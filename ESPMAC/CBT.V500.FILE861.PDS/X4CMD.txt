@@ -1,0 +1,21 @@
+         MACRO ,                                                        00010000
+&NM      X4CMD &TEXT,&ACTION=XEROX                               89143  00020000
+         LCLA  &K                                                       00030000
+         LCLB  &F0,&F1,&F2,&F3,&F4,&F5,&F6,&F7                          00040000
+         AIF   ('&TEXT' EQ '*END').NULL                          89143  00050000
+&F7      SETB  ('&ACTION' EQ 'XEROX' OR '&ACTION' EQ 'WTO')      89160  00060000
+&F6      SETB  ('&ACTION' EQ 'TEXT' OR '&ACTION' EQ 'WTO')       89160  00070000
+&K       SETA  K'&TEXT                                                  00080000
+         AIF   (&K LT 2).NOQ                                            00090000
+         AIF   ('&TEXT'(1,1) NE '''').NOQ                               00100000
+         AIF   ('&TEXT'(&K,1) NE '''').NOQ                              00110000
+&K       SETA  &K-2                                                     00120000
+         AIF   (&K LT 1).NULL                                    89143  00130000
+&NM      DC    AL1(&K),B'&F0&F1&F2&F3&F4&F5&F6&F7',C&TEXT               00140000
+         MEXIT ,                                                        00150000
+.NOQ     AIF   (&K LT 1).NULL                                    89143  00160000
+&NM      DC    AL1(&K),B'&F0&F1&F2&F3&F4&F5&F6&F7',C'&TEXT'             00170000
+         MEXIT ,                                                 89143  00180000
+.NULL    ANOP  ,                                                 89143  00190000
+&NM      DC    AL1(&K),B'&F0&F1&F2&F3&F4&F5&F6&F7'                      00200000
+         MEND  ,                                                        00210000

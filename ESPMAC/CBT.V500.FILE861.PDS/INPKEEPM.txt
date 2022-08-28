@@ -1,0 +1,4 @@
+         MACRO                                                          00010000
+&NM      INPKEEPM &COUNT,&DEV=                           ADDED ON 90233 00020000
+&NM      INPCOM 0,0,7,,0,DEV=&DEV                                       00030000
+         MEND                                                           00040000

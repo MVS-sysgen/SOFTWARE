@@ -1,0 +1,18 @@
+         MACRO ,                                                        00010000
+&NM    MAPCMPRT &PFX=CPR,&DCB=0,&PRTMODE=0,&DEV=1                       00020000
+.*  THIS MACRO MAPS THE COMMON PRINTER DEFINITION SHARED BY PGMTRACE,   00030000
+.*    DEBTRACE, EXORCIST, AND ?                                         00040000
+         LCLC  &P                                                       00050000
+&P       SETC  '&PFX'                                                   00060000
+&P.@UDCB DC    A(&DCB)       USER (OPEN) PRINT DCB                      00070000
+&P.FGMOD DC    AL1(&PRTMODE)  USER OUTPUT DCB/PRT MODE                  00080000
+&P.F@LCL EQU   0                 ADDR IS LOCAL DCB                      00090000
+&P.F@WTO EQU   1                 ISSUE WTO (NARROW)                     00100000
+&P.F@DCB EQU   2                 ADDR IS AN OPEN (PRINT) DCB            00110000
+&P.F@EXT EQU   3                 ADDR IS FOR USER EXIT                  00120000
+&P.FXPRT EQU   4                 ADDR IS FOR XPRINT                     00130000
+&P.F@PRT EQU   5                 ADDR IS FOR @PRINTER                   00140000
+&P.FGOPT DC    AL1(0)        ..RESERVED..                               00150000
+&P.FGSPR DC    AL1(0)        ..RESERVED..                               00160000
+&P.F@DEV DC    AL1(&DEV)     @PRINTER DEVICE SELECTION BITS             00170000
+         MEND  ,                                                        00180000

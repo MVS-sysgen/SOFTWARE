@@ -1,0 +1,19 @@
+         MACRO                                                          00010000
+&NM      CVI   &R,&AD,&LEN                                  NEW GP09347 00020000
+.*   THIS MACRO CONVERTS AN INTEGER TO PRINTABLE FORM. EXPECTED         00030000
+.*   OUTPUT LENGTH IS 7. VALUES BELOW 1 MILLION ARE SHOWN WITH          00040000
+.*   A COMMA; LARGER VALUES AS TRUNCATED K WITH NO COMMAS.              00050000
+.*                                                                      00060000
+         GBLB  &INLINE(50)                                              00070000
+&INLINE(8) SETB 1            REQUEST ICONVERT EXPANSION                 00080000
+         LCLC  &L                                                       00090000
+&L       SETC  'L'''                                                    00100000
+         AIF   (T'&R EQ 'H').LH                                         00110000
+&NM      MACPARM R0,&R,OP=L                                             00120000
+         AGO   .COM                                                     00130000
+.LH      ANOP  ,                                                        00140000
+&NM      MACPARM R0,&R,OP=LH                                            00150000
+.COM     MACPARM R1,&AD                                                 00160000
+         MACPARM R15,&LEN,NULL=&LEN&AD                                  00170000
+         MACPARM R14,ICONVERT,OP=BAL                                    00180000
+         MEND                                                           00190000

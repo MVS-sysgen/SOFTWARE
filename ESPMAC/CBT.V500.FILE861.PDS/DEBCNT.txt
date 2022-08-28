@@ -1,0 +1,14 @@
+         MACRO ,                                                        00010000
+&NM      DEBCNT &N,&WK=R0                               ADDED ON 94225  00020000
+.*                                                                      00030000
+.*    THIS MACRO CAUSES AN 0C1 THE "N"TH TIME IT IS INVOKED             00040000
+.*                                                                      00050000
+         AIF   ('&N' EQ '0').ONCE                                       00060000
+&NM      ICM   &WK,15,*+8    LOAD TRAP COUNTER                          00070000
+         BCT   &WK,*+8       CONTINUE IF COUNT NOT REACHED              00080000
+         DC    AL4(&N)       COUNTER (BETTER NOT BE 0)                  00090000
+         STCM  &WK,15,*-4    UPDATE THE COUNTER                         00100000
+         MEXIT ,                                                        00110000
+.ONCE    ANOP  ,                                                        00120000
+&NM      DC    X'00',C'TRP'  BOMB FIRST TIME                            00130000
+         MEND  ,                                                        00140000

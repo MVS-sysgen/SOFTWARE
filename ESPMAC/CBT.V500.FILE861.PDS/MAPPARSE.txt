@@ -1,0 +1,53 @@
+         MACRO ,                                                        00010000
+&NM      MAPPARSE &DSECT=YES,&PFX=PAR                  NEW 2003.091 GYP 00020000
+.*--------------------------------------------------------------------* 00030000
+.*  THIS MACRO MAPS THE USER'S REQUEST PARAMETERS FOR @PARSER         * 00040000
+.*--------------------------------------------------------------------* 00050000
+         LCLC  &P                                                       00060000
+&P       SETC  '&PFX'                                                   00070000
+         AIF   ('&DSECT' NE 'YES').ALTSECT                              00080000
+&PFX.DSECT DSECT ,                                                      00090000
+         AGO   .NODSECT ,                                               00100000
+.ALTSECT ANOP  ,                                                        00110000
+&PFX.DSECT  DS 0D            PLANT A LABEL                              00120000
+.NODSECT AIF   ('&NM' EQ '').NOLABEL                                    00130000
+&NM      DS    0F                                                       00140000
+.NOLABEL AIF   ('&NM' EQ '&PFX'.'PARM').NOLPARM                         00150000
+&PFX.PARM   DS 0F            DEFINE START OF PARM                       00160000
+.NOLPARM ANOP  ,                                                        00170000
+.*--------------------------------------------------------------------* 00180000
+.*  USER'S INFO: TEXT ADDRESS/LENGTH/KEYWORDS/FLAGS/REQUESTS          * 00190000
+.*--------------------------------------------------------------------* 00200000
+&PFX.@TEXT  DC A(0)          ADDRESS OF TEXT TO BE PARSED               00210000
+&PFX.#TEXT  DC F'0'          LENGTH OF TEXT                             00220000
+&PFX.@KEYS  DC A(0)          ADDRESS OF KEYWORD TABLE (OPTIONAL)        00230000
+.*                                                                      00240000
+&PFX.$TYPE  DC X'00'         REQUEST FLAGS (PARSE OPT=)                 00250000
+&PFX.$TPBK  EQU X'00'          SEPARATE WORDS BY SPACES ONLY            00260000
+&PFX.$TPBC  EQU X'01'          SEPARATE BY COMMAS AND SPACES            00270000
+&PFX.$TPKW  EQU X'02'          SEPARATE BY =, COMMAS, SPACES            00280000
+&PFX.$TPLS  EQU X'03'          SEPARATE BY =, COMMAS, SPACES, LISTS     00290000
+&PFX.$TPLI  EQU X'04'          SEPARATE BY =, COM, SPC, LIST ITEMS      00300000
+&PFX.$RQFG  DC X'00'         REQUEST PROCESSING FLAGS                   00310000
+&PFX.$PARK  EQU X'80'          TREAT XXX(YYY) AS KEYWORD=, NOT DSN(MEM) 00320000
+&PFX.$COSP  EQU X'40'          TREAT (XX,YY) AS SEPARATE TEXT STRINGS   00330000
+&PFX.$COKW  EQU X'20'          TREAT : COLON AS KEYWORD SEPARATOR       00340000
+&PFX.$COUQ  EQU X'10'          STORE QUOTED STRING IN UNQUOTED FORM     00350000
+&PFX.$COMI  EQU X'02'          TREAT MINUS AS END CHARACTER     GP08250 00360000
+&PFX.$COUP  EQU X'01'          UPPER CASE EVERYTHING            GP08095 00370000
+.*--------------------------------------------------------------------* 00380000
+.*  PARSER INFO: RESULT CHAIN/CONDCODE/REASON/FLAGS/COUNTS            * 00390000
+.*--------------------------------------------------------------------* 00400000
+            DS 0F                                                       00410000
+&PFX.CLRST  EQU *              START OF AREA CLEARED ON ENTRY           00420000
+&PFX.@TABL  DC A(0)          ADDRESS OF RESULT TABLE (MACRO MAPPARST)   00430000
+&PFX.#CODE  DC A(0)          RESULT CONDITION CODE                      00440000
+&PFX.#REAS  DC A(0)          RESULT REASON CODE                         00450000
+&PFX.$FLGS  DC X'00'         RETURN PROCESSING FLAGS                    00460000
+&PFX.#OPER  DC X'00'         RETURN NUMBER OF OPERANDS                  00470000
+&PFX.#OPOS  DC X'00'         RETURN NUMBER OF POSITIONALS               00480000
+&PFX.#OPKW  DC X'00'         RETURN NUMBER OF KEYWORDS                  00490000
+&PFX.CLEAR  EQU &PFX.CLRST,*-&PFX.CLRST,C'X'  AREA TO CLEAR             00500000
+.*  ABOVE AREA CLEAR IN PARSER INITIALIZATION                           00510000
+&PFX.SIZE  EQU  *-&PFX.PARM   AREA SIZE                                 00520000
+         MEND  ,                                                        00530000

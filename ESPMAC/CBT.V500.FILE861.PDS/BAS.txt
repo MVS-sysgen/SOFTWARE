@@ -1,0 +1,13 @@
+         MACRO ,                                                        00010000
+&NM      BAS   &R,&A                                    ADDED ON 04234  00020000
+.*                                                                      00030000
+.*       THIS MODULE GENERATES EITHER A BAL FOR MVS COMPATIBILIY        00040000
+.*       BAS NEEDS AT LEAST SP 2 (MVS/XA) OR HERCULES 370               00050000
+.*                                                                      00060000
+         GBLB  &MVT                                                     00070000
+&NM      BAL   &R,&A                                                    00080000
+         AIF   (&MVT).MEND                                              00090000
+         ORG   *-4                                                      00100000
+         DC    X'4D'         BAS                                        00110000
+         ORG   *+3                                                      00120000
+.MEND    MEND  ,                                                        00130000

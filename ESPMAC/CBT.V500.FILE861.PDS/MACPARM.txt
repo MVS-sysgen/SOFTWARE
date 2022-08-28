@@ -1,0 +1,329 @@
+         MACRO                                                          00010000
+&NM    MACPARM &OP1,         FIRST OPERAND (USUALLY R1 FOR LA/LR)      *00020000
+               &OP2,         SECOND OPERAND (R2/B2D2 OR R3 IF MODE=3   *00030000
+               &OP3,         THIRD OPERAND (B2D2 WHEN MODE=3)          *00040000
+               &OP4,         FOURTH OPERAND  (WHEN MODE=4)             *00050000
+               &OP=LA,       OPCODE WHEN OP2 IS NOT A REGISTER         *00060000
+               &OPM=,        OPCODE WHEN OP2 IS NEGATED AND NOT REG.   *00070000
+               &OPR=LR,      OPCODE WHEN OP2 IS REGISTER               *00080000
+               &OPMR=LCR,    OPCODE WHEN OP2 IS NEGATED REGISTER       *00090000
+               &QUOTE=,      OPCODE FOR QUOTED STRING/EXPLICIT LEN     *00100000
+               &MODE=,       ONE/THREE/REV/EQU/EVEN                    *00110000
+               &NAME=,       OUTER MACRO FOR MNOTES                    *00120000
+               &OMIT=NO,     SKIP COMPLETELY IF BLANK                  *00130000
+               &NULL=  SKIP, YES, OR OPERAND TO USE FOR NULL &OP2       00140000
+.*                                                              GP00196 00150000
+.*   THIS IS AN INNER MACRO USED TO CONVERT MACRO PARAMETERS TO         00160000
+.*     INSTRUCTIONS APPROPRIATE TO THE OPERAND TYPE.                    00170000
+.*                                                                      00180000
+.*   THIS MACRO WAS SUGGESTED BY A MUCH OLDER VERSION (LODE/LODESTAR)   00190000
+.*     BY SEYMOUR (SHMUEL) J. METZ THAT HANDLED TWO OPERANDS ONLY.      00200000
+.*     NONE OF THE ORIGINAL CODE IS USED HEREIN.                        00210000
+.*                                                                      00220000
+.*   WITH DEFAULTS, IT EXPANDS:                                         00230000
+.*    MACPARM R5,WORD      AS   LA R5,WORD                              00240000
+.*    MACPARM R5,(R5)      AS   NOTHING (LABEL IS SAVED IN MACPLAB)     00250000
+.*    MACPARM R5,(R4)      AS   LR R5,R4                                00260000
+.*                                                                      00270000
+.*   IN ORDER TO BE RECOGNIZED AS MATCHING, REGISTER SPECIFICATIONS     00280000
+.*    SHOULD BE MADE IN ABSOLUTE FORM (0)-(15), OR MNEMONIC (R0)-(R15). 00290000
+.*    OP1 NORMALLY DOES NOT NEED THE PARENTHESES.                       00300000
+.*                                                                      00310000
+.*   TO AVOID CONFLICTS WITH REGISTER SPECIFICATIONS, EXPRESSIONS MUST  00320000
+.*    EITHER BEGIN WITHOUT A PARENTHESIS, OR WITH TWO: ((B-A)/(C-A))    00330000
+.*                                                                      00340000
+.*    OP2 PARAMETER IS AN EXPRESSION OR (REG)                           00350000
+.*       EITHER FORM MAY BE PREFIXED BY A MINUS SIGN                    00360000
+.*       LA REQUESTS MAY BE PREFIXED BY / TO USE L =A(OP2)              00370000
+.*       LA REQUESTS MAY BE PREFIXED BY * TO USE L ,OP2                 00380000
+.*       FOR A NEGATED SECOND OPERAND, THE EXPANSION WILL USE           00390000
+.*       &OPMR FOR REGISTER, &OPM IF SPECIFIED, OR &OP/LNR              00400000
+.*    MODE=REV      FOR &OPR, REVERSE REGISTERS                         00410000
+.*    MODE=EQU      IF FIRST=SECOND OPERAND, EXPAND ANYWAY              00420000
+.*    MODE=NONE     EXPAND OP= ONLY; EITHER NO OPERAND OR OPT.  GP03144 00430000
+.*                    OPERAND. (MAY BE ENCLOSED IN QUOTES)      GP03144 00440000
+.*    MODE=ONE      SINGLE OPERAND (E.G., BX, BXR TYPE)                 00450000
+.*    MODE=THREE    THREE OPERAND TYPE; EXPANDS &OP &OP1,&OP2,&OP3      00460000
+.*    MODE=FOUR     FOUR OPERAND TYPE; EXPANDS &OP &OP1,&OP2,&OP3,&OP4  00470000
+.*    MODE=EVEN     EXPAND (TWO OPERAND FORM) EVEN WHEN SAME    GP01028 00480000
+.*    MODE=LBL      NO OPERANDS - EXPANDS PENDING LABEL(S)              00490000
+.*                    OPERAND 1 - OPTIONAL ALIGNMENT (E.G., 0F) GP03144 00500000
+.*    NULL=         OMITTED PARM CAUSES ASSEMBLY ERROR (?)              00510000
+.*    NULL=YES      NULL FINAL PARAMETER EXPANDS WITHOUT PARM           00520000
+.*    NULL=TERM     EXPANSION USES SUPPLIED TERM IF PARM=NULL           00530000
+.*    NULL=SKIP     NULL FINAL PARAMETER SKIPS EXPANSION                00540000
+.*    NAME=         (OPTIONAL) NAME OF OUTER MACRO FOR MNOTES           00550000
+.*                                                                      00560000
+.*    QUOTE=(LA,8)  TURNS  'TEXT' INTO   LA RX,=CL(8)'TEXT' (MODE 2)    00570000
+.*                                                                      00580000
+         GBLC  &MACPLAB,&MACPSIZ,&MACQSTR                       GP08090 00590000
+         GBLB  &MACPERR,&MACPNUL,&MVS,&MVSXA,&MVSESA            GP00196 00600000
+         GBLB  &MACQUOT                                         GP08090 00610000
+         GBLA  &MACPLEN                                         GP08090 00620000
+         LCLA  &K,&I,&J                                         GP08090 00630000
+         LCLB  &MINUS,&MOD0,&MOD1,&MOD3,&MOD4,&MODQ,&MODR,&MODV         00640000
+         LCLB  &FGR1,&FGR2   ON WITH REGISTER OPERAND                   00650000
+         LCLC  &FD1,&FD2,&FD3,&FD4,&LBL,&OPRR,&MNONM,&OPLA,&L   GP08090 00660000
+         AIF   ('&OMIT' EQ '').NO  SKIP COMPLETELY IF NULL      GP06277 00670000
+&MNONM   SETC  'MACPARM:'                                               00680000
+&MACPERR SETB  0             RESET RETURN FLAG                  GP00196 00690000
+&MACPNUL SETB  0             RESET RETURN FLAG                  GP00196 00700000
+&OPLA    SETC  '&OP'         MAY NEED UPDATING                  GP08090 00710000
+&MACPSIZ SETC  ''                                               GP08090 00720000
+         AIF   ('&NM' EQ '').NONAME                                     00730000
+&MNONM   SETC  '&NAME'.'/MACPARM:'                                      00740000
+.NONAME  ANOP  ,                                                        00750000
+&MOD0    SETB  ('&MODE' EQ 'NONE' OR '&MODE' EQ '0')            GP03144 00760000
+&MOD1    SETB  ('&MODE' EQ 'ONE' OR '&MODE' EQ '1')                     00770000
+&MOD3    SETB  ('&MODE' EQ 'THREE' OR '&MODE' EQ '3')                   00780000
+&MOD4    SETB  ('&MODE' EQ 'FOUR' OR '&MODE' EQ '4')            GP00196 00790000
+&MODQ    SETB  ('&MODE' EQ 'EQU' OR '&MODE' EQ 'EQUAL')                 00800000
+&MODR    SETB  ('&MODE' EQ 'REV' OR '&MODE' EQ 'REVERSE')               00810000
+&MODV    SETB  ('&MODE' EQ 'EVEN' OR '&MODE' EQ 'SAME')         GP01028 00820000
+.*                                                                      00830000
+.*  TEST FOR UNUSED LABEL EXPANSION ONLY                                00840000
+.*                                                                      00850000
+&LBL     SETC  '&NM'         INDICATE LOCAL LABEL UNUSED                00860000
+         AIF   ('&MODE' NE 'LBL' AND '&MODE' NE 'LABEL').NOTLBL         00870000
+&FD1     SETC  '&OP1(1)'     ALLOW USER TO SPECIFY ALIGNMENT    GP03144 00880000
+         AIF   ('&FD1' NE '').XAV                               GP03144 00890000
+&FD1     SETC  '0H'          DEFAULT ALIGNMENT                  GP03144 00900000
+.XAV     AIF   ('&MACPLAB' EQ '').XNM                                   00910000
+         AIF   ('&MACPLAB' EQ '&LBL').X1LBL                             00920000
+&MACPLAB DS    &FD1                                             GP03144 00930000
+.X1LBL   ANOP  ,                                                        00940000
+&MACPLAB SETC  ''                                                       00950000
+.XNM     AIF   ('&LBL' EQ '').XNOP                                      00960000
+&NM      DS    &FD1                                             GP03144 00970000
+&LBL     SETC  ''            LOCAL LABEL EXPANDED                       00980000
+.XNOP    AIF   (T'&OP2 EQ 'O' AND T'&OP3 EQ 'O'                        *00990000
+               AND T'&OP4 EQ 'O').MEXIT                                 01000000
+         MNOTE 4,'&MNONM POSITIONAL PARAMETERS IGNORED'                 01010000
+&MACPERR SETB  1             RETURN ERROR                       GP00196 01020000
+.MEXIT   MEXIT ,                                                        01030000
+.*                                                                      01040000
+.*  TEST FOR CORRECT MODE OPERAND                                       01050000
+.*                                                                      01060000
+.NOTLBL  AIF   ('&MODE' EQ '' OR &MOD0 OR &MOD1 OR &MOD3 OR &MODQ      *01070000
+               OR &MODR OR &MODV).MODG                          GP03144 01080000
+         MNOTE 8,'&MNONM INVALID MODE=&MODE '                           01090000
+&MACPERR SETB  1             RETURN ERROR                       GP00196 01100000
+.*                                                                      01110000
+.*  CHECK LOCAL VS. GLOBAL LABEL, EXPAND GLOBAL AND RELOAD              01120000
+.*                                                                      01130000
+.MODG    AIF   ('&MACPLAB' EQ '' OR '&LBL' EQ '').N2LBL                 01140000
+&MACPLAB DS    0H                                                       01150000
+         AGO   .PROPLBL      PROPAGATE LOCAL LABEL                      01160000
+.N2LBL   AIF   ('&MACPLAB' NE '').NOLAB                                 01170000
+.PROPLBL ANOP  ,                                                        01180000
+&MACPLAB SETC  '&LBL'        NO GLOBAL LABEL - USE LOCAL                01190000
+&LBL     SETC  ''                                                       01200000
+.*                                                                      01210000
+.*  TEST FOR CORRECT NUMBER OF PARAMETERS, AND SUBSTITUTE &NULL         01220000
+.*                                                                      01230000
+.NOLAB   AIF   (NOT &MOD0).NOTNONE   OPCODE ONLY ?              GP03144 01240000
+&FD1     SETC  '&OP1'                                           GP03144 01250000
+         AIF   ('&FD1' EQ '').DONONE                            GP03144 01260000
+         AIF   ('&FD1'(1,1) NE '"').DONONE                      GP03144 01270000
+&FD1     SETC  '&FD1'(2,K'&FD1-2)                               GP03144 01280000
+.DONONE  ANOP  ,                                                GP03144 01290000
+&MACPLAB &OP   &FD1                                             GP03144 01300000
+         AIF   (T'&OP2 EQ 'O' AND T'&OP3 EQ 'O'                        *01310000
+               AND T'&OP4 EQ 'O').GO                            GP03144 01320000
+         MNOTE 4,'&MNONM POSITIONAL PARAMETERS IGNORED'         GP03144 01330000
+&MACPERR SETB  1             RETURN ERROR                       GP03144 01340000
+         AGO   .GO                                              GP03144 01350000
+.NOTNONE ANOP  ,                                                        01360000
+&FD1     SETC  '&OP1'                                                   01370000
+&FD2     SETC  '&OP2'                                                   01380000
+&FD3     SETC  '&OP3'                                                   01390000
+&FD4     SETC  '&OP4'                                           GP00196 01400000
+         AIF   (T'&OP1 NE 'O').HAVE1                                    01410000
+&MACPNUL SETB  1             RETURN NULL FLAG                   GP00196 01420000
+         AIF   (NOT &MOD1).NOTONE                                       01430000
+         AIF   ('&NULL' EQ '').NOTONE                                   01440000
+         AIF   ('&NULL' EQ 'YES').HAVE1  NOTHING ELSE TO DO     GP01009 01450000
+         AIF   ('&NULL' EQ 'SKIP').MEXIT  SKIP OUT WITHOUT      GP01009 01460000
+&FD1     SETC  '&NULL'                                                  01470000
+         AGO   .HAVE1                                                   01480000
+.NOTONE  MNOTE 8,'&MNONM FIRST POSITIONAL OPERAND REQUIRED'             01490000
+&MACPERR SETB  1             RETURN ERROR                       GP00196 01500000
+         AGO   .MEXIT                                                   01510000
+.HAVE1   AIF   (&MOD1).HAVEALL                                          01520000
+         AIF   (T'&OP2 NE 'O').HAVE2                                    01530000
+&MACPNUL SETB  1             RETURN NULL FLAG                   GP00196 01540000
+         AIF   (&MOD3).NOTTWO                                           01550000
+         AIF   ('&NULL' EQ '').NOTTWO                                   01560000
+         AIF   ('&NULL' EQ 'YES').HAVE2  NOTHING ELSE TO DO     GP01009 01570000
+         AIF   ('&NULL' EQ 'SKIP').MEXIT  SKIP OUT WITHOUT      GP01009 01580000
+&FD2     SETC  '&NULL'                                                  01590000
+         AGO   .HAVE2                                                   01600000
+.NOTTWO  MNOTE 8,'&MNONM SECOND POSITIONAL OPERAND REQUIRED'            01610000
+&MACPERR SETB  1             RETURN ERROR                       GP00196 01620000
+         AGO   .MEXIT                                                   01630000
+.HAVE2   AIF   (NOT &MOD3).HAVE3                                GP00196 01640000
+         AIF   (T'&OP3 NE 'O').HAVE3                            GP00196 01650000
+&MACPNUL SETB  1             RETURN NULL FLAG                   GP00196 01660000
+         AIF   ('&NULL' EQ '').NOTHREE                                  01670000
+         AIF   ('&NULL' EQ 'YES').HAVEALL  NOTHING ELSE TO DO   GP01009 01680000
+         AIF   ('&NULL' EQ 'SKIP').MEXIT  SKIP OUT WITHOUT      GP01009 01690000
+&FD3     SETC  '&NULL'                                                  01700000
+         AGO   .HAVEALL                                                 01710000
+.NOTHREE MNOTE 8,'&MNONM THIRD POSITIONAL OPERAND REQUIRED'             01720000
+&MACPERR SETB  1             RETURN ERROR                       GP00196 01730000
+         AGO   .MEXIT                                                   01740000
+.HAVE3   AIF   (NOT &MOD4).HAVEALL                              GP00196 01750000
+         AIF   (T'&OP4 NE 'O').HAVEALL                          GP00196 01760000
+&MACPNUL SETB  1             RETURN NULL FLAG                   GP00196 01770000
+         AIF   ('&NULL' EQ '').NOFOUR                           GP00196 01780000
+         AIF   ('&NULL' EQ 'YES').HAVEALL  NOTHING ELSE TO DO   GP01009 01790000
+         AIF   ('&NULL' EQ 'SKIP').MEXIT  SKIP OUT WITHOUT      GP01009 01800000
+&FD4     SETC  '&NULL'                                          GP00196 01810000
+         AGO   .HAVEALL                                         GP00196 01820000
+.NOFOUR  MNOTE 8,'&MNONM FOURTH POSITIONAL OPERAND REQUIRED'    GP03207 01830000
+&MACPERR SETB  1             RETURN ERROR                       GP00196 01840000
+         AGO   .MEXIT                                           GP00196 01850000
+.*                                                                      01860000
+.*  CHANGE OP1 AND OP2 (UNLESS MOD1 OR MOD3) TO PREFERRED FORM          01870000
+.*    IF MODE 3, GO TO EXPAND IT                                        01880000
+.*                                                                      01890000
+.HAVEALL AIF   (&MOD3).DO3   SIMPLE EXPANSION OF THREE OPERANDS         01900000
+         AIF   (&MOD4).DO4   SIMPLE EXPANSION OF FOUR OPERANDS  GP00196 01910000
+         AIF   (NOT &MOD1).CLNOP1                                       01920000
+&K       SETA  K'&FD1                                                   01930000
+         AIF   (&K LT 2 OR '&FD1'(1,1) NE '-').CLNOP1                   01940000
+&MINUS   SETB  1                                                        01950000
+&FD1     SETC  '&FD1'(2,&K-1)                                           01960000
+&K       SETA  K'&FD1                                                   01970000
+.CLNOP1  ANOP  ,                                                        01980000
+         AIF   (&K LT 3).NORG1                                          01990000
+         AIF   ('&FD1'(1,1) NE '(' OR '&FD1'(&K,1) NE ')').NORG1        02000000
+         AIF   ('&FD1'(2,1) EQ '(').NOSY1        ((EXPRESSION)) ?       02010000
+&FGR1    SETB  1             FLAG OP1 AS REGISTER EXPRESSION            02020000
+&FD1     SETC  '&FD1'(2,&K-2)                                           02030000
+&K       SETA  K'&FD1                                                   02040000
+.*  LOOK FOR SINGLE OR DOUBLE DIGIT - PREFIX BY R                       02050000
+.NORG1   AIF   (&K LT 1 OR &K GT 2).NOSY1                               02060000
+         AIF   ('&FD1'(1,1) LT '0').NOSY1  LEAVE IF NOT NUMERIC         02070000
+&FD1     SETC  'R'.'&FD1'    MAKE SYMBOLIC REGISTER                     02080000
+.*                                                                      02090000
+.*  HAVE OP1 CLEANED FROM (N) TO RN; GO TO EXPAND MODE 1                02100000
+.*    ELSE TEST AND CLEAN OPERAND 2                                     02110000
+.*                                                                      02120000
+.NOSY1   AIF   (&MOD1).DO1                                              02130000
+&K       SETA  K'&FD2                                                   02140000
+&OPRR    SETC  '&OPR'                                                   02150000
+         AIF   (&K LT 2 OR '&FD2'(1,1) NE '-').NONEG2                   02160000
+&MINUS   SETB  1                                                        02170000
+&FD2     SETC  '&FD2'(2,&K-1)                                           02180000
+&K       SETA  K'&FD2                                                   02190000
+&OPRR    SETC  '&OPMR'                                                  02200000
+.NONEG2  AIF   (&K LT 3).NORG2                                          02210000
+         AIF   ('&FD2'(1,1) NE '''' OR T'&QUOTE EQ 'O').NOQUO2  GP08090 02220000
+         AIF   ('&FD2'(&K,1) NE '''').NOQUO2                    GP08090 02230000
+         MACQOLIT &FD2,LEN=&QUOTE(2)                            GP08090 02240000
+         AIF   (&MACPERR OR &MACPNUL).NOQUO2                    GP08090 02250000
+&FD2     SETC  '&MACQSTR'                                       GP08090 02260000
+&MACPSIZ SETC  '&MACPLEN'    RETURN LENGTH                      GP08090 02270000
+         AIF   ('&QUOTE(1)' EQ '').LOPP                         GP08090 02280000
+&OPLA    SETC  '&QUOTE(1)'                                      GP08090 02290000
+         AGO   .LOPP                                            GP08090 02300000
+.NOQUO2  AIF   ('&FD2'(1,1) NE '(' OR '&FD2'(&K,1) NE ')').NORG2        02310000
+         AIF   ('&FD2'(2,1) EQ '(').NORG2        ((EXPRESSION)) ?       02320000
+&FD2     SETC  '&FD2'(2,&K-2)                                           02330000
+&K       SETA  K'&FD2                                                   02340000
+&FGR2    SETB  1             FLAG OP1 AS REGISTER EXPRESSION            02350000
+         AIF   ('&FD2'(1,1) LT '0').NOSY2  LEAVE IF NOT NUMERIC         02360000
+         AIF   (&K LT 1 OR &K GT 2).NOSY2                               02370000
+&FD2     SETC  'R'.'&FD2'    MAKE SYMBOLIC REGISTER                     02380000
+.*                                                                      02390000
+.*  REG: CHECK FOR NEG PREFIX, MODE=EQU, ELSE IF OP1=OP2, NO EXPANSION  02400000
+.*                                                                      02410000
+.NOSY2   AIF   ('&FD2' NE '&FD1' OR &MINUS OR &MODV).LR         GP01028 02420000
+         AIF   (NOT &MODQ).NO                                           02430000
+.LR      AIF   (NOT &MODR).NOREV                                        02440000
+&MACPLAB &OPRR &FD2,&FD1                                                02450000
+         AGO   .GO                                                      02460000
+.*                                                                      02470000
+.*  REG: NORMAL FORM, (EXPANDS MINUS, ALSO - OPR OR OPMR IN OPRR)       02480000
+.*                                                                      02490000
+.NOREV   ANOP  ,                                                        02500000
+&MACPLAB &OPRR &FD1,&FD2                                                02510000
+         AGO   .GO                                                      02520000
+.*                                                                      02530000
+.*  NOT REG: CHECK FOR LA AND SPECIAL CASES                             02540000
+.*                                                                      02550000
+.NORG2   ANOP  ,                                                GP08090 02560000
+&MACPSIZ SETC  '&L'.'&FD2'   RETURN LENGTH FOR USUAL CASE       GP08090 02570000
+         AIF   ('&OPLA' EQ 'LA' AND '&FD2' EQ '0').SR                   02580000
+         AIF   ('&OPM' NE '' AND &MINUS).OPM                            02590000
+.*                                                                      02600000
+.*  LA OP1,/OP2   GENERATES L OP1,=A(OP2)                               02610000
+.*                                                                      02620000
+         AIF   ('&OPLA' NE 'LA' OR '&FD2'(1,1) NE '/').LOP              02630000
+&FD2     SETC  '&FD2'(2,K'&FD2-1)                                       02640000
+&MACPLAB L     &FD1,=A(&FD2)                                            02650000
+         AGO   .LOPCO                                                   02660000
+.*                                                                      02670000
+.*  LA OP1,*OP2   GENERATES L OP1,OP2                                   02680000
+.*                                                                      02690000
+.LOP     AIF   ('&OPLA' NE 'LA' OR '&FD2'(1,1) NE '*').LOPP             02700000
+         AIF   (K'&FD2 EQ 1).LOPP                                       02710000
+&FD2     SETC  '&FD2'(2,K'&FD2-1)                                       02720000
+&MACPLAB L     &FD1,&FD2                                                02730000
+         AGO   .LOPCO                                                   02740000
+.LOPP    ANOP  ,                                                        02750000
+&MACPLAB &OPLA &FD1,&FD2                                                02760000
+.LOPCO   AIF   (NOT &MINUS).GO                                          02770000
+         &OPMR &FD1,&FD1                                                02780000
+         AGO   .GO                                                      02790000
+.*                                                                      02800000
+.*  USER SPECIFIED OPM AND -OP2                                         02810000
+.*                                                                      02820000
+.OPM     ANOP  ,                                                        02830000
+&MACPLAB &OPM  &FD1,&FD2                                                02840000
+         AGO   .GO                                                      02850000
+.*                                                                      02860000
+.*  SINGLE OPERAND INSTRUCTION - EXPAND, CHECK FOR -OP1                 02870000
+.*                                                                      02880000
+.DO1     AIF   (&FGR1).DO1REG                                           02890000
+         AIF   ('&OPM' NE '' AND &MINUS).DO1NEG                         02900000
+&MACPLAB &OP   &FD1                                                     02910000
+         AIF   (NOT &MINUS).GO                                          02920000
+         &OPMR &FD1                                                     02930000
+         AGO   .GO                                                      02940000
+.DO1NEG  ANOP  ,                                                        02950000
+&MACPLAB &OPM  &FD1                                                     02960000
+         AGO   .GO                                                      02970000
+.DO1REG  AIF   (&MINUS).DO1MIN                                          02980000
+&MACPLAB &OPR  &FD1                                                     02990000
+         AGO   .GO                                                      03000000
+.DO1MIN  ANOP  ,                                                        03010000
+&MACPLAB &OPMR &FD1                                                     03020000
+         AGO   .GO                                                      03030000
+.*                                                                      03040000
+.*  EXPAND THREE OPERAND INSTRUCTIONS - NO SPECIAL CHECKING             03050000
+.*                                                                      03060000
+.DO3     ANOP  ,                                                        03070000
+&MACPLAB &OPLA &FD1,&FD2,&FD3                                           03080000
+         AGO   .GO                                                      03090000
+.*                                                              GP00196 03100000
+.*  EXPAND FOUR OPERAND INSTRUCTIONS - NO SPECIAL CHECKING      GP00196 03110000
+.*                                                              GP00196 03120000
+.DO4     ANOP  ,                                                GP00196 03130000
+&MACPLAB &OPLA &FD1,&FD2,&FD3,&FD4                              GP00196 03140000
+         AGO   .GO                                              GP00196 03150000
+.*                                                                      03160000
+.*  ON SOME OLD MACHINES LA,0 WAS SLOWER AND LONGER. RETAIN SR ?        03170000
+.*                                                                      03180000
+.SR      ANOP                                                           03190000
+&MACPLAB SR    &FD1,&FD1                                                03200000
+.*                                                                      03210000
+.*  INSTRUCTION(S) EXPANDED; CLEAR LABEL                                03220000
+.*                                                                      03230000
+.GO      ANOP  ,                                                        03240000
+&MACPLAB SETC  ''                                                       03250000
+.*                                                                      03260000
+.*  NOTHING EXPANDED - MAINTAIN LABELS                                  03270000
+.*                                                                      03280000
+.NO      MEND  ,                                                        03290000

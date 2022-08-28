@@ -1,0 +1,27 @@
+         MACRO ,             LOAD PARM TEXT ADDRESS/LENGTH              00010000
+&NM      PARMLOAD &R,&PTR=                                ADDED GP09247 00020000
+.********************************************************************** 00030000
+.*                                                                    * 00040000
+.*  GET PARM TEXT ADDRESS FOR MVS OR TSO CP INVOCATION                * 00050000
+.*    FIRST OPERAND SPECIFIES THE EVEN REGISTER OF AN EVEN/ODD PAIR   * 00060000
+.*      TO RECEIVE THE TEXT ADDRESS AND LENGTH.                       * 00070000
+.*    PTR= SPECIFIES THE REGISTER CONTAINING THE ADDRESS OF THE PARM  * 00080000
+.*      POINTER (AS RECEIVED BY MODULE ON ENTRY)                      * 00090000
+.*                                                                    * 00100000
+.********************************************************************** 00110000
+         GBLC  &SAVZPRM      PGMHEAD SAVED PARM                         00120000
+         LCLC  &OR1,&S       ORIGINAL POINTER                           00130000
+&OR1     SETC  '&PTR'                                                   00140000
+&S       SETC  '1+'.'&R'                                                00150000
+         AIF   ('&OR1' NE '').HAVEOR                                    00160000
+&OR1     SETC  '&SAVZPRM'    COPY FROM PGMHEAD MACRO                    00170000
+.HAVEOR  ANOP  ,                                                        00180000
+&NM      MACPARM &R,0(,&OR1),OP=L LOAD POINTER ADDRESS                  00190000
+         LH    &S,0(,&R)     GET LENGTH                                 00200000
+         CLI   2(&R),0       TSO CP CALL?                               00210000
+         BH    *+16          NO, USE OS FORM                            00220000
+         SH    &S,=H'4'      ALLOW FOR LENGTH LENGTH                    00230000
+         SH    &S,2(,&R)     ALLOW FOR PARSED COMMAND NAME              00240000
+         LA    &R,2(,&R)     SKIP SECOND LENGTH                         00250000
+         LA    &R,2(,&R)     SKIP FIRST LENGTH                          00260000
+         MEND  ,                                                        00270000

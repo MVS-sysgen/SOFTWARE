@@ -1,0 +1,36 @@
+         MACRO ,                                                        00010000
+&NM      LOCLEN &AD,&LN,&BYTE=C' '                     ADDED ON GP09333 00020000
+         LCLC  &L                                                       00030000
+&L       SETC  'L'''                                                    00040000
+.*  LOCLEN SUGGESTED BY FINDLBLK, AS PUBLISHED ON ASSEMBLER-LIST        00050000
+.*    BY CLEMENT VICTOR CLARKE                                          00060000
+.*                                                                      00070000
+&NM      MACPARM R15,&AD     LOAD STRING ADDRESS                        00080000
+         MACPARM R1,&LN,NULL=&L&AD   LOAD THE LENGTH                    00090000
+         MACPARM R0,=4&BYTE,OP=L     SEARCH ARGUMENT                    00100000
+         MACPARM R14,=H'-4',OP=LH    DECREMENT                          00110000
+         CH    R1,=H'4'      LONG ENOUGH FOR WORD TEST?                 00120000
+         BL    ZZ&SYSNDX.W   USE BYTE COMPARE                           00130000
+         AR    R1,R15        END ADDRESS                                00140000
+         AR    R1,R14        LAST WORD                                  00150000
+         CLM   R0,15,0(R1)   LAST FOUR MATCH ?                          00160000
+         BNE   ZZ&SYSNDX.X   NO; USE BYTE COMPARE                       00170000
+         NR    R1,R14        TRUNCATE TO WORD BOUNDARY                  00180000
+ZZ&SYSNDX.L C  R0,0(,R1)     WORD MATCHED?                              00190000
+         BNE   ZZ&SYSNDX.X   NO; USE BYTE COMPARE                       00200000
+         BXH   R1,R14,ZZ&SYSNDX.L   TRY AGAIN                           00210000
+ZZ&SYSNDX.V SR R1,R1                                                    00220000
+         B     ZZ&SYSNDX.Z   EXIT                                       00230000
+ZZ&SYSNDX.W LTR R1,R1        ANY USABLE LENGTH ?                        00240000
+         BNP   ZZ&SYSNDX.V   NO; RETURN 0                               00250000
+         AR    R1,R15        END ADDRESS                                00260000
+         AR    R1,R14        LAST WORD                                  00270000
+ZZ&SYSNDX.X LA R1,3(,R1)     ADVANCE TO END                             00280000
+         LH    R14,=H'-1'    DECREMENT BY 1                             00290000
+ZZ&SYSNDX.Y CLI 0(R1),&BYTE   MATCH ?                                   00300000
+         BNE   *+8           NO; DONE                                   00310000
+         BXH   R1,R14,ZZ&SYSNDX.Y  TRY AGAIN                            00320000
+         SR    R1,R15        CALCULATE LENGTH - 1                       00330000
+         SR    R1,R14        TRUE LENGTH                                00340000
+ZZ&SYSNDX.Z DS 0H                                                       00350000
+         MEND  ,                                                        00360000

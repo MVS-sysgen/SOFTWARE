@@ -1,0 +1,21 @@
+         MACRO ,                                                        00010000
+&NM      MACAD &LABEL                                  NEW 2009.081 GYP 00020000
+.*--------------------------------------------------------------------* 00030000
+.*   MACAD EXPANDS A LABELLED DC WITH EITHER AN ADDRESS CONSTANT OR   * 00040000
+.*     A WORD OF ZEROES.                                              * 00050000
+.*   USED AS AN INNER MACRO TO EXPAND DEFINITIONS OR MAPPING          * 00060000
+.*--------------------------------------------------------------------* 00070000
+         GBLB  &ZZLABYN                                                 00080000
+         LCLA  &I,&N                                                    00090000
+         LCLC  &STR,&LAB                                                00100000
+&N       SETA  N'&SYSLIST    GET NUMBER OF OPERANDS                     00110000
+         AIF   (NOT &ZZLABYN).SIMPLE                                    00120000
+&LAB     SETC  '&NM'                                                    00130000
+.DOLAB   AIF   (&I GE &N).MEND                                          00140000
+&I       SETA  &I+1                                                     00150000
+&LAB     DC    A(&SYSLIST(&I))                                          00160000
+&LAB     SETC  ''                                                       00170000
+         AGO   .DOLAB                                                   00180000
+.SIMPLE  ANOP  ,                                                        00190000
+&NM      DC    &N.A(0)                                                  00200000
+.MEND    MEND  ,                                                        00210000

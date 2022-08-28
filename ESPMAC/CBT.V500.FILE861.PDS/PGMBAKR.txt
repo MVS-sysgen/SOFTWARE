@@ -1,0 +1,39 @@
+         MACRO ,                                                        00010000
+&NM      PGMBAKR &OP1,&OP2,&BASE=R12,&AM=ANY,&ID=0,&BREG=               00020000
+.********************************************************************** 00030000
+.*                                                                    * 00040000
+.*   THIS MACRO INVOKES BAKR UNDER MVS ESA AND LATER, ELSE PGMHEAD    * 00050000
+.*   UNDER BAKR, NO SAVE AREA IS OBTAINED                             * 00060000
+.*                                                                    * 00070000
+.********************************************************************** 00080000
+         GBLB  &MVSESA,&ZZZBAKR,&MAPONCE                                00090000
+         LCLA  &K,&I         BASE COUNT                         GP04234 00100000
+         LCLC  &CASE,&CMU                                       GP04234 00110000
+         AIF   (&MVSESA).BAKR                                           00120000
+&NM      PGMHEAD &OP1,&OP2,NOENTRY,BASE=&BASE,AM=&AM,SETAM=&AM,CSECT=,I*00130000
+               D=&ID,BREG=&BREG                                 GP05018 00140000
+&ZZZBAKR SETB  0                                                        00150000
+         AGO   .COMMON                                                  00160000
+.BAKR    ANOP  ,                                                        00170000
+&NM      BAKR  ,                                                        00180000
+&ZZZBAKR SETB  1             NEED PR IN PGMBAND MACRO                   00190000
+&K       SETA  N'&BASE      MAX NUMBER OF BASES SPECIFIED       GP04234 00200000
+&CMU     SETC  '&BASE(1)'    SET THE FIRST ONE                  GP04234 00210000
+&CASE    SETC  '&BASE(1)'    SET THE FIRST ONE                  GP04234 00220000
+&K       SETA  N'&BASE                                          GP04234 00230000
+         AIF   (&K LT 2).DONEBAS                                GP04234 00240000
+&I       SETA  1                                                GP04234 00250000
+         LA    &BASE(&K),2048                                   GP04234 00260000
+.BASLOOP AIF   (&I GE &K).DONEBAS                               GP04234 00270000
+&I       SETA  &I+1                                             GP04234 00280000
+         AIF   ('&BASE(&I)' EQ '').BASLOOP                      GP04234 00290000
+         LA    &BASE(&I),2048(&BASE(&K),&BASE(&I-1))            GP04234 00300000
+&CMU     SETC  '&CMU'.','.'&BASE(&I)'                           GP04234 00310000
+         AGO   .BASLOOP                                         GP04234 00320000
+.DONEBAS USING &NM,&CMU                                         GP04234 00330000
+         SETAM &AM           SET MODE AS REQUESTED (OR NOT)             00340000
+.COMMON  AIF   (&MAPONCE).MEND                                          00350000
+&MAPONCE SETB  1                                                        00360000
+         YREGS ,                                                        00370000
+         MASKEQU ,                                                      00380000
+.MEND    MEND  ,                                                        00390000

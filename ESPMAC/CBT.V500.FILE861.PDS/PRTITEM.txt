@@ -1,0 +1,12 @@
+         MACRO                                                          00010000
+&NM      PRTITEM &LAD,&DEV=,&TITLE=0,&FOOTER=0,&OPT=             90309  00020000
+.*   CLONED FROM PRTLIST                                        GP99029 00030000
+         LCLA  &HF                                                      00040000
+         AIF   (&TITLE EQ 0 AND &FOOTER EQ 0).NOT                       00050000
+         AIF   (&TITLE LT 16 AND &FOOTER LT 16).OKT                     00060000
+         MNOTE 4,'*** NON-NUMERIC TITLE/FOOTER NOT SUPPORTED'           00070000
+.OKT     ANOP  ,                                                        00080000
+&HF      SETA  &TITLE*16+&FOOTER                                        00090000
+.NOT     ANOP  ,                                                        00100000
+&NM      PRTCOM PRTLIST,FUN=10,DEV=&DEV,B1=&HF,A1=&LAD,OPT=&OPT         00110000
+         MEND                                                           00120000

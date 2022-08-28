@@ -1,0 +1,6 @@
+         MACRO ,                                                        00010000
+&NM      BIGBEN ,                                                       00020000
+&NM      $TCKCONV STCKVAL=0,CONVVAL=DB3,TIMETYP=BIN,DATETYP=YYYYMMDD    00030000
+ PRTDATA ' At the tone the time will be',(DB3,TIME,PAD),'on',          *00040000
+               (DB3+8,2,X,PADL),'-',(DB3+10,1,X),'-',(DB3+11,1,X)       00050000
+         MEND  ,                                                        00060000

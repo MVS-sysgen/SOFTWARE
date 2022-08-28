@@ -1,0 +1,194 @@
+         MACRO ,                                                        00010000
+&NM      SERVWORK &ID,&LEN,&REG=R13,&OPT=GET,&OREG=R9,&BASE=R6,&PREG=   00020000
+.*--------------------------------------------------------------------* 00030000
+.*  SERVWORK IS USED BY RESIDENT FUNCTIONS (@SERVICE, @PRINTER, ETC.) * 00040000
+.*  TO MANAGE WORK AREAS.                                             * 00050000
+.*    OPT=GET LOCATES A WORK AREA FOR THE FUNCTION, OR OBTAINS IT     * 00060000
+.*      (R15=0 - OLD ADDRESS OF FSA HEADER IN R1; USER ADDRESS IN R0) * 00070000
+.*      (R15=4 - R1, R0 SAME; STORAGE OBTAINED ON THIS CALL)          * 00080000
+.*                                                                    * 00090000
+.*    OPT=SHARE OR OPT=SHR FUNCTIONS LIKE OPT=GET, EXCEPT THAT A WORK * 00100000
+.*      ARE OBTAINED PREVIOUSLY BY A HIGHER TASK WILL BE USED.        * 00110000
+.*                                                                    * 00120000
+.*    OPT=RELEASE FREES THE WORK AREA (LEN PARAMETER EITHER WORK AREA * 00130000
+.*      ADDRESS OR ZERO)                                              * 00140000
+.*                                                                    * 00150000
+.*    ID - RESERVED FOUR BYTE FUNCTION NAME (E.G., '@PAR'), OR        * 00160000
+.*      ADDRESS OF FOUR-BYTE NAME                                     * 00170000
+.*    LEN - FSALEN (FSAPFXL+USER LENGTH)                              * 00180000
+.*--------------------------------------------------------------------* 00190000
+         GBLC  &MACPLAB                                                 00200000
+         GBLC  &ZZZLNM(128)                                             00210000
+         GBLB  &ZZZLFG,&MVSESA                                          00220000
+         GBLA  &ZZZLNO                                                  00230000
+         LCLC  &WHO,&ARG                                                00240000
+         LCLA  &I,&N                                                    00250000
+         LCLC  &TAG                                             GP05019 00260000
+&TAG     SETC  'S@'.'&SYSNDX'                                   GP05019 00270000
+&WHO     SETC  'SUBSERVW'    GET/LOCATE STORAGE                         00280000
+&MACPLAB SETC  '&NM'                                                    00290000
+         AIF   (NOT &MVSESA).OLDSTYL                            GP05019 00300000
+         AIF   ('&OPT' NE 'SHR' AND '&OPT' NE 'SHARE').UNSHARE  GP03312 00310000
+&WHO     SETC  'SUBSERVS'    GET/LOCATE SHARED STORAGE          GP03312 00320000
+.UNSHARE AIF   ('&OPT' NE 'RELEASE').GET                        GP03312 00330000
+&WHO     SETC  'SUBSERVZ'    RELEASE STORAGE                            00340000
+.GET     AIF   (&ZZZLFG).INITDEF                                        00350000
+&ZZZLFG  SETB  1             SHOW DEFINED                               00360000
+.*--------------------------------------------------------------------* 00370000
+.*  DEFINE MODULE<->ORDINAL CORRESPONDENCE FOR MAPTSA WORK AREA       * 00380000
+.*    LISTED MODULES MAY OBTAIN A WORK AREA USING THE SERVWORK MACRO  * 00390000
+.*    WITH FAST ACCESS (FIXED OFFSET IN TSA). APPROXIMATELY SAME AS   * 00400000
+.*    MODULES IN @SERVICE LOADLIST                                    * 00410000
+.*--------------------------------------------------------------------* 00420000
+.*ZZLNM(000) SETC '@SERVICE'   MUST BE FIRST ONE BY DESIGN              00430000
+&ZZZLNM(001) SETC '@SCREENS'   MUST BE FIRST TWO BY DESIGN              00440000
+&ZZZLNM(002) SETC '@PRINTER'   MUST BE FIRST TWO BY DESIGN              00450000
+&ZZZLNM(003) SETC '@BANDAID'                                            00460000
+&ZZZLNM(004) SETC '@CATREAD'                                            00470000
+&ZZZLNM(005) SETC '@CVLREAD'                                            00480000
+&ZZZLNM(006) SETC '@DCBEXIT'                                            00490000
+&ZZZLNM(007) SETC '@FDRREAD'                                            00500000
+&ZZZLNM(008) SETC '@FORMATS'                                            00510000
+&ZZZLNM(009) SETC '@INPREAD'                                            00520000
+&ZZZLNM(010) SETC '@MESSAGE'                                            00530000
+&ZZZLNM(011) SETC '@OBTAINS'                                            00540000
+&ZZZLNM(012) SETC '@PARSER '                                            00550000
+&ZZZLNM(013) SETC '@PROTECS'                                            00560000
+&ZZZLNM(014) SETC '@SRVJES2'                                            00570000
+&ZZZLNM(015) SETC '@TMSREAD'                                            00580000
+&ZZZLNM(016) SETC '@VOLREAD'                                            00590000
+&ZZZLNM(017) SETC '@WRITER '                                            00600000
+&ZZZLNM(018) SETC 'DEBTRACE'                                            00610000
+&ZZZLNM(019) SETC 'LEXVOLT '                                            00620000
+&ZZZLNM(020) SETC 'PGMTRACE'                                            00630000
+&ZZZLNM(021) SETC 'SUBCAT  '                                            00640000
+&ZZZLNM(022) SETC 'SUBCOMP '                                            00650000
+&ZZZLNM(023) SETC 'SUBCOMP '                                            00660000
+&ZZZLNM(024) SETC 'SUBTIMER'                                            00670000
+&ZZZLNM(025) SETC 'SUBWTO  '                                            00680000
+&ZZZLNO  SETA  25                     NUMBER OF ENTRIES                 00690000
+.INITDEF AIF   ('&OPT' EQ 'EXPAND').MAKEDC                              00700000
+&ARG     SETC  '&ID'                                                    00710000
+         AIF   ('&ID'(1,1) NE '''').LOOKED                              00720000
+&N       SETA  K'&ID                                                    00730000
+&ARG     SETC  '&ID'(2,&N-2)                                            00740000
+.ARGNQ   ANOP  ,                                                        00750000
+&ARG     SETC  '&ARG'.'        '                                        00760000
+&ARG     SETC  '&ARG'(1,4)                                              00770000
+.LOOKLUP AIF   (&I GE &ZZZLNO).LOOKED                                   00780000
+&I       SETA  &I+1                                                     00790000
+         AIF   ('&ZZZLNM(&I)'(1,4) NE '&ARG').LOOKLUP                   00800000
+         MACPARM R0,&I                                                  00810000
+         AGO   .DONLIT                                                  00820000
+.LOOKED  AIF   ('&ID'(1,1) NE '''').NOTLIT                              00830000
+         MACPARM R0,=CL4&ID                                             00840000
+         AGO   .DONLIT                                                  00850000
+.NOTLIT  MACPARM R0,&ID                                                 00860000
+.DONLIT  AIF   ('&OPT' NE 'RELEASE').NEEDLEN                            00870000
+         MACPARM R1,&LEN,NULL=0   CLEAR IF NOT USER SPECIFIED           00880000
+         AGO   .COMLEN                                                  00890000
+.NEEDLEN MACPARM R1,&LEN     LOAD THE WORK AREA LENGTH                  00900000
+.COMLEN  MACPARM R15,=V(&WHO),OP=L                                      00910000
+         MACPARM R14,(R15),OPR=BALR                                     00920000
+         AIF  ('&REG' EQ '' OR '&OPT' NE 'GET').MEND                    00930000
+         MACPARM &REG(1),(R0),OP=LR  LOAD SAVE AREA (FSAWORK+FSAPFXL)   00940000
+         MEXIT ,                                                        00950000
+.OLDSTYL AIF   ('&OPT' EQ 'EXPAND').MEND                                00960000
+         AIF   ('&OPT' EQ 'SHR' OR '&OPT' EQ 'SHARE').OLDGET    GP05019 00970000
+         AIF   ('&OPT' EQ 'RELEASE').OLDREL                     GP05019 00980000
+.OLDGET  PUSH  USING                                            GP05019 00990000
+.*    REGISTER USE DURING SETUP                                         01000000
+.*    R1 - TEMP GETMAIN/OBTAIN RETURN                                   01010000
+.*    R2 - CHAIN ELEMENT (WORK AREA) ID                                 01020000
+.*    R3 - WORK AREA LENGTH                                             01030000
+.*    R4 - CURRENT TCB                                                  01040000
+.*    R6 - NEW WORK AREA ADDRESS                                        01050000
+.*    R7 - TEMP CHAIN CHASING                                           01060000
+.*                                                                      01070000
+&NM      LTCB  R4,USE=YES    GET MY TCB                         GP05019 01080000
+&MACPLAB SETC  ''                                               GP05019 01090000
+         AIF   ('&ID' NE '').OHVID                              GP05019 01100000
+&WHO     SETC  '&SYSECT'(1,4)                                   GP05019 01110000
+         L     R2,=CL4'&WHO'                                    GP05019 01120000
+         AGO   .OCMID                                           GP05019 01130000
+.OHVID   AIF   ('&ID'(1,1) NE '''').OICID                       GP05019 01140000
+         ICM   R2,15,=CL4&ID                                    GP05019 01150000
+         AGO   .OCMID                                           GP05019 01160000
+.OICID   MACPARM R2,15,&ID,OP=ICM,MODE=THREE                    GP05019 01170000
+.OCMID   L     R7,TCBFSA     POINT TO CHAIN HEAD                GP05019 01180000
+         N     R7,=X'00FFFFFF'  CLEAN FOR AM31                  GP05019 01190000
+         SR    R6,R6         CLEAR HIGH BYTE                            01200000
+         SR    R15,R15       PRESET RETURN CODE                         01210000
+&TAG.L   ICM   R6,7,1(R7)    LAST ENTRY ON CHAIN ?              GP05019 01220000
+         BZ    &TAG.G        YES; GET A WORK AREA               GP05019 01230000
+         USING FSAWORK,R6    DECLARE IT                                 01240000
+         CL    R2,FSAID      SAME ID ?                                  01250000
+         BE    &TAG.H        YES; USE IT                        GP05019 01260000
+         LR    R7,R6         SWAP                                       01270000
+         B     &TAG.L        TRY AGAIN                          GP05019 01280000
+&MACPLAB SETC  '&TAG.G'                                                 01290000
+         AIF   ('&PREG' EQ '').ONEND                            GP05020 01300000
+         MACPARM &PREG,(&PREG),OP=LTR,OPR=LTR,MODE=EVEN         GP05020 01310000
+         BZ    &TAG.Z        NO STORAGE IF CLOSE CALL           GP05020 01320000
+.ONEND   MACPARM R3,&LEN,NULL=FSALEN LN OF WORK AREA            GP05019 01330000
+         STORAGE OBTAIN,LENGTH=(R3),COND=YES,LOC=BELOW          GP05019 01340000
+         BXLE  R15,R15,&TAG.W  CLEAR IT                         GP05019 01350000
+&TAG.Z   LM    R14,R12,12(R13)  ERROR IN PROCESSING OR ENVIRONMENT      01360000
+         LA    R15,16        SET MAJOR ERROR                            01370000
+         SLR   R0,R0         INDICATE ENVIRONMENT (PGM ERROR)           01380000
+         BSM   0,R14         RETURN                             GP99026 01390000
+         SPACE 1                                                        01400000
+         DROP  R6                                                       01410000
+         USING FSAWORK,R7                                               01420000
+&TAG.W   LR    R6,R1         COPY THIS ONE TO PERMANENT REGISTER        01430000
+         LR    R14,R1        COPY FOR MVCL                      GP05019 01440000
+         LR    R15,R3                                           GP05019 01450000
+         SR    R1,R1                                            GP05019 01460000
+         MVCL  R14,R0        CLEAR GOTTEN AREA                  GP05019 01470000
+         MVC   FSALINK-FSAWORK(4,R6),FSALINK  CHAIN OLD AREA    GP05019 01480000
+         ST    R6,FSALINK    CHAIN THIS AHEAD OF OLD ONE        GP05019 01490000
+         DROP  R7                                                       01500000
+         USING FSAWORK,R6                                               01510000
+         ST    R2,FSAID      SET ID OF THIS AREA                        01520000
+         ST    R3,FSASPLEN   SAVE GETMAIN LENGTH                        01530000
+         ST    R4,FSATCB     AND TCB                                    01540000
+         LA    R15,4         FLAG NEW AREA                      GP05019 01550000
+&MACPLAB SETC  '&TAG.H'                                         GP05019 01560000
+         MACPARM &BASE,(R6)  PUT INTO USER'S REGISTER           GP05019 01570000
+         AIF   ('&REG' EQ '' OR '&OREG' EQ '').ONSAVE           GP05019 01580000
+         MACPARM &OREG,(&REG) PRESERVE OLD SAVE                 GP05019 01590000
+         LA    &REG,SAVEAREA  HARD-CODED NAME                   GP05019 01600000
+         ST    &REG,8(,&OREG) CHAIN                             GP05019 01610000
+         ST    &OREG,4(,&REG) LINK                              GP05019 01620000
+.ONSAVE  MACPARM MODE=LBL                                       GP05019 01630000
+         POP   USING         SKIP ALL BUT BLANKS                GP05019 01640000
+         MEXIT ,                                                        01650000
+.OLDREL  ANOP  ,                                                        01660000
+         PUSH  USING                                            GP05019 01670000
+&NM      LA    &OREG,0(,R13)   GET CLEAN SAVE AREA              GP05019 01680000
+         SH    &OREG,=AL2(SAVEAREA-FSAWORK)  BACK TO BEGINNING  GP05019 01690000
+         USING FSAWORK,&OREG                                    GP05019 01700000
+         L     R13,4(,R13)   GET CALLER'S SAVE AREA             GP05019 01710000
+         LM    R2,R3,FSASPLEN  GET LENGTH AND TCB BACK                  01720000
+         L     R3,TCBFSA-TCB(,R3)  POINT TO CHAIN HEAD                  01730000
+         N     R3,=X'00FFFFFF'                                  GP05019 01740000
+&TAG.L   CLM   &OREG,7,1(R3)    POINTER TO OUR AREA ?           GP05019 01750000
+         BE    &TAG.F        YES; UNCHAIN                       GP05019 01760000
+         ICM   R3,7,1(R3)    GET NEXT ENTRY                             01770000
+         BNZ   &TAG.L        CHECK IT                           GP05019 01780000
+         ABEND 222,DUMP      SHOULD NEVER HAPPEN ?                      01790000
+         SPACE 1                                                        01800000
+&TAG.F   MVC   0(4,R3),FSALINK  UNCHAIN OURS                            01810000
+         LR    R15,R2        GET SUBPOOL AND LENGTH             GP05019 01820000
+         SRL   R15,24        FIX SUBPOOL                        GP05019 01830000
+         N     R0,=X'00FFFFFF'   DELETE SUBPOOL                 GP05019 01840000
+         STORAGE RELEASE,ADDR=(&OREG),LENGTH=(R2),SP=(15),COND=YES      01850000
+         LM    R14,R12,12(R13)    RELOAD CALLER'S REGS          GP05019 01860000
+         SR    R15,R15       SET GOOD RETURN                    GP05019 01870000
+         BSM   0,R14         RETURN                             GP99026 01880000
+         POP   USING                                                    01890000
+         MEXIT ,                                                        01900000
+.MAKEDC  ANOP  ,                                                        01910000
+&NM      DC    &ZZZLNO.D'0'  FIXED OFFSET WORK AREA POINTERS            01920000
+         DC    (64-&ZZZLNO)D'0'   FUTURE EXPANSION                      01930000
+.MEND    MEND  ,                                                        01940000

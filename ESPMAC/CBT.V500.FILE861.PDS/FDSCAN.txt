@@ -1,0 +1,75 @@
+         MACRO ,                                                        00010000
+&NM      FDSCAN &STR,&FDW,&OPTS,&MOVE=                           87312  00020000
+.*                                                                      00030000
+.*       PROVIDED FOR COMPATIBILITY WITH 3270 FULL-SCREEN FACILITY      00040000
+.*                                                                      00050000
+         LCLA  &C,&I,&J,&K,&N,&Z                                        00060000
+         LCLB  &MORE,&POS,&KEY,&REQ,&ABBR                        87314  00070000
+         AIF   ('&STR' NE 'END' AND '&STR' NE '*END').PROCESS           00080000
+&NM      DC    X'FF00'       END OF LIST                                00090000
+         MEXIT ,                                                        00100000
+.PROCESS AIF   ('&MOVE' EQ '').NOMORE                                   00110000
+&MORE    SETB  1                                                        00120000
+.NOMORE  ANOP  ,                                                        00130000
+&N       SETA  N'&SYSLIST                                               00140000
+&J       SETA  &N-2                                              87360  00150000
+&I       SETA  3                                                        00160000
+.OPTLOOP AIF   (&I GT &N).PROCEED                                       00170000
+&POS     SETB  (&POS OR '&SYSLIST(&I)' EQ 'POS')                        00180000
+&KEY     SETB  (&KEY OR '&SYSLIST(&I)' EQ 'KEY')                        00190000
+&ABBR    SETB  (&ABBR OR '&SYSLIST(&I)' EQ 'LONG')                      00200000
+&REQ     SETB  (&REQ OR '&SYSLIST(&I)' EQ 'REQ')                 87314  00210000
+&POS     SETB  (&POS OR '&SYSLIST(&I)' EQ 'POS2')  CHAINED POS   87360  00220000
+&KEY     SETB  (&KEY OR '&SYSLIST(&I)' EQ 'POS2') CHAINED POS    87360  00230000
+&I       SETA  &I+1                                                     00240000
+         AIF   ('&SYSLIST(&I-1)' NE 'POS2').OPTLOOP              87360  00250000
+&J       SETA  &J+1          FINAGLE                             87360  00260000
+         AGO   .OPTLOOP                                                 00270000
+.PROCEED AIF   (&J NE (&POS+&KEY+&ABBR+&REQ)).PARMA              87360  00280000
+&C       SETA  128*&MORE+64*&POS+32*&KEY+2*&REQ+&ABBR            87314  00290000
+.* &K       SETA  0             DEFAULT FOR POSITIONAL           87360  00300000
+.*       AIF   (&POS).COMLEN  NOP'D FOR SCRMARK ERRMSG OPTION    87360  00310000
+         AIF   ('&STR' EQ '').PARMA                                     00320000
+&K       SETA  K'&STR-1                                                 00330000
+         AIF   ('&STR'(1,1) NE '''').COMLEN                             00340000
+&I       SETA  2                                                        00350000
+&J       SETA  &K-1                                                     00360000
+&K       SETA  &J                                                       00370000
+.LOOP    AIF   ('&STR'(&I,2) EQ '''''').SK2                             00380000
+         AIF   ('&STR'(&I,2) EQ '&&').SK2                               00390000
+&I       SETA  &I+1                                                     00400000
+         AGO   .INC                                                     00410000
+.SK2     ANOP  ,                                                        00420000
+&I       SETA  &I+2                                                     00430000
+&K       SETA  &K-1                                                     00440000
+.INC     AIF   (&I LE &J).LOOP                                          00450000
+&K       SETA  &K-1                                                     00460000
+         AIF   (&K GE 0).COMLEN                                         00470000
+.PARMA   MNOTE 8,'MISSING OR CONFLICTING PARAMETERS'                    00480000
+         MEXIT ,                                                        00490000
+.COMLEN  AIF   ('&STR'(1,1) EQ '''').TOAP                               00500000
+&NM      DC    AL1(&K,&C),SL2(&FDW),CL(&K+1)'&STR'                      00510000
+         AGO   .MORE                                                    00520000
+.TOAP    ANOP  ,                                                        00530000
+&NM      DC    AL1(&K,&C),SL2(&FDW),CL(&K+1)&STR                        00540000
+.MORE    AIF   ('&MOVE' EQ '').MEND                                     00550000
+&K       SETA  K'&MOVE-1                                                00560000
+         AIF   ('&MOVE'(1,1) EQ '''').MORQUO                            00570000
+         DC    AL1(&K),CL(&K+1)'&MOVE '                                 00580000
+         AGO   .MEND                                                    00590000
+.MORQUO  ANOP  ,                                                        00600000
+&I       SETA  2                                                        00610000
+&J       SETA  &K-1                                                     00620000
+&K       SETA  &J                                                       00630000
+.MOOP    AIF   ('&MOVE'(&I,2) EQ '''''').MK2                            00640000
+         AIF   ('&MOVE'(&I,2) EQ '&&').MK2                              00650000
+&I       SETA  &I+1                                                     00660000
+         AGO   .MNC                                                     00670000
+.MK2     ANOP  ,                                                        00680000
+&I       SETA  &I+2                                                     00690000
+&K       SETA  &K-1                                                     00700000
+.MNC     AIF   (&I LE &J).MOOP                                          00710000
+&K       SETA  &K-1                                                     00720000
+         AIF   (&K LT 0).MEND                                           00730000
+         DC    AL1(&K),CL(&K+1)&MOVE                                    00740000
+.MEND    MEND  ,                                                        00750000

@@ -1,0 +1,80 @@
+         MACRO                                                          00010000
+&NM      FDBUMP &O,&TYPE=H                             ADDED ON 2007006 00020000
+         GBLA  &FDCNTR                                                  00030000
+.********************************************************************** 00040000
+.*   THIS MACRO CAUSES REGISTERS IN AN FD LIST TO BE INCREMENTED      * 00050000
+.*   SEE LABEL MAKELLUP IN EXHASCRN OR @FORMATS FOR DETAILS           * 00060000
+.*   X'80' IS END OF OPERAND LIST BIT   X'7x' IS RESET ALL            * 00070000
+.*   X'0r' ONE BYTE POSITIVE INCREMENT  X'1r' HALF-WORD INCREMENT     * 00080000
+.*   X'3r' FULLWORD INCREMENT                                         * 00090000
+.********************************************************************** 00100000
+         LCLA  &C,&I,&J,&K,&L,&LD,&N,&T,&SA(17)                         00110000
+         LCLC  &O1,&O2,&O3,&RA(17),&VA(17),&FDCHN                       00120000
+&FDCNTR  SETA  &FDCNTR+1                                                00130000
+&FDCHN   SETC  'ZFD'.'&FDCNTR'                                          00140000
+&C       SETA  &FDCNTR+1                                                00150000
+&N       SETA  N'&SYSLIST                                               00160000
+&T       SETA  16+9                                                     00170000
+&LD      SETA  2             DEFAULT INCREMENT LENGTH                   00180000
+         AIF   ('&TYPE' EQ 'H' OR '&TYPE' EQ ' ').HAVELD                00190000
+&LD      SETA  1             DEFAULT INCREMENT LENGTH                   00200000
+         AIF   ('&TYPE' EQ 'X' OR '&TYPE' EQ 'B').HAVELD                00210000
+&LD      SETA  4             DEFAULT INCREMENT LENGTH                   00220000
+         AIF   ('&TYPE' EQ 'F' OR '&TYPE' EQ 'H').HAVELD                00230000
+&LD      SETA  2             DEFAULT INCREMENT LENGTH                   00240000
+.HAVELD  AIF   ('&NM' EQ '').NONAME                                     00250000
+&NM      EQU   *                                                        00260000
+.NONAME  AIF   ('&N' NE 'END' AND '&N' NE '*END').PROCESS               00270000
+&FDCHN   DC    AL1(0)        END OF FD LIST                             00280000
+         MEXIT ,                                                        00290000
+.PROCESS AIF   (&N GE 1 AND &N LE 17).DECODE                            00300000
+ MNOTE 8,'FDBUMP: INCORRECT NUMBER OF OPERANDS'                         00310000
+         MEXIT ,                                                        00320000
+.DECODE  AIF   (&I GE &N).EXPAND                                        00330000
+&I       SETA  &I+1                                                     00340000
+         AIF   ('&SYSLIST(&I)' NE 'RESET').VALUE                        00350000
+&J       SETA  &J+1          COUNT ACCEPTED OPERANDS                    00360000
+&RA(&J)  SETC  '15'                                                     00370000
+&SA(&J)  SETA  6                                                        00380000
+         AGO   .DECODE                                                  00390000
+.VALUE   AIF   (N'&SYSLIST(&I) EQ 2).SPLITT2                            00400000
+         AIF   (N'&SYSLIST(&I) EQ 3).SPLITT3                            00410000
+ MNOTE 8,'FDBUMP: INCORRECT NUMBER OF ARGUMENTS IN OPERAND &I'          00420000
+         AGO   .DECODE                                                  00430000
+.SPLITT2 ANOP  ,                                                        00440000
+&L       SETA  &LD           SET DEFAULT LENGTH                         00450000
+         AGO   .SPLITTR                                                 00460000
+.SPLITT3 AIF   ('&SYSLIST(&I,3)' EQ '1' OR '&SYSLIST(&I,3)' EQ '2'     *00470000
+               OR '&SYSLIST(&I,3)' EQ '4').SPLITL3                      00480000
+         MNOTE 'FDBUMP: LENGTH IN OPERAND &I NOT 1, 2, OR 4'            00490000
+&L       SETA  4             SHOULD BE VALID ?                          00500000
+         AGO   .SPLITTR                                                 00510000
+.SPLITL3 ANOP  ,                                                        00520000
+&L       SETA  &SYSLIST(&I,3)  OVERRIDE LENGTH                          00530000
+.SPLITTR ANOP  ,                                                        00540000
+&O1      SETC  '&SYSLIST(&I,1)'                                         00550000
+&O2      SETC  '&SYSLIST(&I,2)'                                         00560000
+         AIF   ('&O1&O2' NE '').STASH                                   00570000
+         MNOTE 8,'FDBUMP: OMITTED ARGUMENT IN OPERAND &I'               00580000
+         AGO   .DECODE                                                  00590000
+.STASH   ANOP  ,                                                        00600000
+&J       SETA  &J+1          COUNT ACCEPTED OPERANDS                    00610000
+&RA(&J)  SETC  '&O1'         PRESUMED REGISTER NUMBER                   00620000
+&SA(&J)  SETA  &L-1          CONTROL FUNCTION                           00630000
+&VA(&J)  SETC  '&O2'         INCREMENT                                  00640000
+         AGO   .DECODE       DO ANOTHER                                 00650000
+.EXPAND  AIF   (&J GT 0).EXPANDS                                        00660000
+         MNOTE 8,'FDBUMP: NO VALID ARGUMENTS FOUND'                     00670000
+         MEXIT ,                                                        00680000
+.EXPANDS ANOP  ,                                                        00690000
+&FDCHN   DC    AL1(ZFD&C-*,&T)  IDENTIFY AS FDBUMP                      00700000
+&I       SETA  0                                                        00710000
+.EXPANDL AIF   (&I GE &J).MEND                                          00720000
+&I       SETA  &I+1                                                     00730000
+&L       SETA  128*(&I/&J)   END LIST BIT                               00740000
+         AIF   (&SA(&I) EQ 6).RESET                                     00750000
+         DC    AL1(&L+16*&SA(&I)+&RA(&I)),AL(&SA(&I)+1)(&VA(&I))        00760000
+         AGO   .EXPANDL                                                 00770000
+.RESET   DC    AL1(&L+127)   RESET ALL REGISTERS                        00780000
+         AGO   .EXPANDL                                                 00790000
+.MEND    MEND  ,                                                        00800000

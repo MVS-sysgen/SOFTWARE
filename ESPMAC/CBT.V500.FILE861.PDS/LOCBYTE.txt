@@ -1,0 +1,42 @@
+         MACRO ,                                                        00010000
+&NM      LOCBYTE &TEXT,&WK=R14,&W2=R15,&BYTE=C' ',&LEN=,  ADDED GP03080*00020000
+               &END=                                            GP03199 00030000
+.*--------------------------------------------------------------------* 00040000
+.*                                                                    * 00050000
+.*  LOCBYTE SETS UP REGISTERS FOR A SEARCH STRING FOR BYTE (SRST)     * 00060000
+.*    OPERATION.                                                      * 00070000
+.*  &TEXT     SPECIFIES THE ADDRESS OF THE TEXT STRING TO BE SEARCHED * 00080000
+.*    USE EITHER LEN= OR END=                                         * 00090000
+.*  &END      SPECIFIES THE TEXT END ADDRESS + 1                      * 00100000
+.*  &LEN      SPECIFIES THE TEXT LENGTH; DEFAULT IS L'&TEXT           * 00110000
+.*  &WK (14)  WORK REGISTER                                           * 00120000
+.*  &W2 (15)  RESULT REGISTER (TEXT+LEN IF NOTHING FOUND)             * 00130000
+.*  &BYTE     SELF-DEFINING TERM FOR SEARCH CHARACTER                 * 00140000
+.*                                                                    * 00150000
+.*  WHEN DONE,                                                        * 00160000
+.*                                                                    * 00170000
+.*         CONDITION CODE 1 (BH) NO MATCH FOUND                       * 00180000
+.*         CONDITION CODE 2 (BL) MATCH FOUND; ADDRESS IN &W2          * 00190000
+.*                                                                    * 00200000
+.*  SAMPLE USE:                                                       * 00210000
+.*                                                                    * 00220000
+.*       LOCBYTE INBUFF      BUFFER, CARD IMAGE, ETC. BUFFER          * 00230000
+.*       BH    NOTFOUND        NOTHING FOUND                          * 00240000
+.*       BCTR  R15,0     E.G., SPACE TO LAST BYTE                     * 00250000
+.*                                                                    * 00260000
+.*--------------------------------------------------------------------* 00270000
+         LCLC  &L,&LAB                                                  00280000
+&L       SETC  'L'''                                                    00290000
+&LAB     SETC  'ZZ'.'&SYSNDX'                                           00300000
+&NM      MACPARM R0,&BYTE                                       GP03199 00310000
+         MACPARM &WK,&TEXT   LOAD TEXT ADDRESS                          00320000
+         AIF   ('&END' EQ '').HAVELEN                           GP03199 00330000
+         MACPARM &W2,&END    LOAD END ADDRESS+1                 GP03199 00340000
+         AIF   ('&LEN' EQ '').DONELEN                           GP03199 00350000
+         MNOTE 8,'LOCBYTE: END= AND LEN= ARE MUTUALLY EXCLUSIVE'        00360000
+.HAVELEN MACPARM &W2,&LEN,NULL=&L&TEXT                          GP03199 00370000
+         MACPARM &W2,(&WK),OP=AR,OPR=AR                                 00380000
+.DONELEN ANOP  ,                                                GP03199 00390000
+&LAB.LP  SRST  &W2,(&WK)                                        GP04234 00400000
+         BO    &LAB.LP                                                  00410000
+.DONE    MEND  ,                                                        00420000

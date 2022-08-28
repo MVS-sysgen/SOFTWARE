@@ -1,0 +1,227 @@
+         MACRO                                                          00010000
+&NM      FDLITEM &ARGS                                                  00020000
+.*                                                                      00030000
+.*   BUILD ONE DISPLAY ITEM DEFINITION FOR THE SCLINE SERVICE           00040000
+.*                                                                      00050000
+.*   USE AFTER  FDLINE ...END=name                    1/n               00060000
+.*   FDLITEM LABEL:,(FIELD ATTRIBS),LBL:,TEXT.....    2/n               00070000
+.*   DC or whatever                                   m/n               00080000
+.*   FDLINE *END             GENERATE CLOSING NAME    n/n               00090000
+.*                                                                      00100000
+.*   ATTRIBUTES:                                                        00110000
+.*                                                                      00120000
+.*   IN, OUT, INT(ENSE OUT),                                            00130000
+.*   RED, BLUE, GREEN, CYAN, TURQ(OISE), WHITE, YELLOW                  00140000
+.*   BLACK (NON-DISPLAY) - FORCES INPUT MODE                    GP09353 00150000
+.*                                                                      00160000
+.*   THIS MACRO GENERATES NEITHER THE LINE NOR FLAG FIELDS; USE FDLINE  00170000
+.*   FOR THOSE                                                          00180000
+.*                                                                      00190000
+         GBLC  &ZZZLEND      PRIOR/NEXT END LABEL                       00200000
+         GBLC  &ZZZFLAB      NEXT FIELD LABEL                           00210000
+         GBLC  &ZZZFLAN      FDLINE  LABEL                      GP09358 00220000
+         LCLC  &LABEL,&C,&FLAB,&D                               GP09358 00230000
+         LCLB  &F0,&F1,&F2,&F3,&F4,&F5,&F6,&F7                          00240000
+         LCLB  &INP,&INT,&BLACK                                 GP09353 00250000
+         LCLA  &I,&J,&K,&L,&M,&N                                        00260000
+         AIF   ('&ARGS' EQ '*END').CLOSER                               00270000
+&N       SETA  N'&SYSLIST                                               00280000
+&LABEL   SETC  '&NM'                                                    00290000
+&I       SETA  0                                                        00300000
+         AIF   (&N GT 0).LOOP     HAVE MULTIPLE ARGUMENTS               00310000
+         MNOTE 0,'FDLITEM: NO ARGUMENTS SUPPLIED'                       00320000
+         AGO   .DONE                                                    00330000
+.LOOP    AIF   (&I GE &N).DONE                                          00340000
+&I       SETA  &I+1                                                     00350000
+&C       SETC  '&SYSLIST(&I)'                                           00360000
+         AIF   ('&C' EQ '').LOOP                                        00370000
+         AIF   ('&C'(1,1) EQ '(').FIELD                                 00380000
+         AIF   ('&C'(1,1) EQ '''').STRING                               00390000
+         AIF   ('&C'(K'&C,1) EQ ':').LABEL                              00400000
+         AIF   ('&C'(K'&C,1) EQ '-').OFFSET                             00410000
+         AIF   ('&C'(1,1) EQ 'C').COUNT                                 00420000
+         AIF   ('&C'(1,1) EQ 'X').HEXER                                 00430000
+         AIF   ('&C'(1,1) GE '0' AND '&C'(1,1) LE '9').COUNT            00440000
+.ARGBAD  MNOTE 8,'FDLITEM: ARGUMENT &I INVALID - &C NOT A VALID ENTRY'  00450000
+         AGO   .LOOP                                                    00460000
+.*                                                                      00470000
+.STRING  ANOP  ,                                                        00480000
+&LABEL   DC    C&C                                                      00490000
+&LABEL   SETC  ''                                                       00500000
+         AGO   .LOOP                                                    00510000
+.*                                                                      00520000
+.COUNT   AIF   ('&C'(K'&C,1) NE '''').COUNTS                            00530000
+&LABEL   DC    &C                                                       00540000
+&LABEL   SETC  ''                                                       00550000
+         AGO   .LOOP                                                    00560000
+.COUNTS  ANOP  ,                                                        00570000
+&LABEL   DC    &C' '                                                    00580000
+&LABEL   SETC  ''                                                       00590000
+         AGO   .LOOP                                                    00600000
+.HEXER   AIF   ('&C'(K'&C,1) NE '''').HEXED                             00610000
+&LABEL   DC    &C                                                       00620000
+&LABEL   SETC  ''                                                       00630000
+         AGO   .LOOP                                                    00640000
+.HEXED   ANOP  ,                                                        00650000
+&LABEL   DC    &C'0'                                                    00660000
+&LABEL   SETC  ''                                                       00670000
+         AGO   .LOOP                                                    00680000
+.*                                                                      00690000
+.FIELD   ANOP  ,                                                        00700000
+&J       SETA  0                                                        00710000
+&L       SETA  N'&SYSLIST(&I)  NUMBER OF SUBARGUMENTS                   00720000
+&F0      SETB  0             MUST BE OFF                                00730000
+&F1      SETB  0             MUST BE OFF (RANGE 01-3F)                  00740000
+&F2      SETB  0                                                        00750000
+&F3      SETB  0        1 0  OUTPUT  ;  1 1  OUT INTENSE                00760000
+&F4      SETB  0        0 1  INPUT   ;  0 0  NON-DISPLAY                00770000
+&F5      SETB  0             COLOR: GREEN                               00780000
+&F6      SETB  0             COLOR: RED                                 00790000
+&F7      SETB  0             COLOR: BLUE                                00800000
+&INP     SETB  0             INPUT                              GP09353 00810000
+&INT     SETB  0             INTENSE                            GP09353 00820000
+&BLACK   SETB  0             NON-DISPLAY                        GP09353 00830000
+.FDLOOP  AIF   (&J GE &L).EXPFLD                                        00840000
+&J       SETA  &J+1                                                     00850000
+&C       SETC  '&SYSLIST(&I,&J)'                                        00860000
+         AIF   ('&C' EQ '').FDLOOP                                      00870000
+.*DEFER* AIF   ('&C' EQ 'REVERSE').REVERSE                              00880000
+.*DEFER* AIF   ('&C' EQ 'BLINK').BLINK                                  00890000
+.*DEFER* AIF   ('&C' EQ 'UNDER').UNDER                                  00900000
+.*DEFER* AIF   ('&C' EQ 'DFLT').NULL                                    00910000
+         AIF   ('&C' EQ 'BL').BLUE                                      00920000
+         AIF   ('&C' EQ 'RE').RED                                       00930000
+         AIF   ('&C' EQ 'PI').PINK                                      00940000
+         AIF   ('&C' EQ 'MA').PINK                                      00950000
+         AIF   ('&C' EQ 'GR').GREEN                                     00960000
+         AIF   ('&C' EQ 'CY').TURQ                                      00970000
+         AIF   ('&C' EQ 'TU').TURQ                                      00980000
+         AIF   ('&C' EQ 'YE').YELLOW                                    00990000
+         AIF   ('&C' EQ 'WH').WHITE                                     01000000
+         AIF   ('&C' EQ 'BK').BLACK                             GP09353 01010000
+         AIF   ('&C' EQ 'ND').BLACK                             GP09353 01020000
+         AIF   ('&C' EQ 'IN').INPUT                                     01030000
+         AIF   ('&C' EQ 'BLUE').BLUE                                    01040000
+         AIF   ('&C' EQ 'RED').RED                                      01050000
+         AIF   ('&C' EQ 'PINK').PINK                                    01060000
+         AIF   ('&C' EQ 'MAGENTA').PINK                                 01070000
+         AIF   ('&C' EQ 'GREEN').GREEN                                  01080000
+         AIF   ('&C' EQ 'CYAN').TURQ                                    01090000
+         AIF   ('&C' EQ 'TURQ').TURQ                                    01100000
+         AIF   ('&C' EQ 'TURQOISE').TURQ                                01110000
+         AIF   ('&C' EQ 'YELLOW').YELLOW                                01120000
+         AIF   ('&C' EQ 'WHITE').WHITE                                  01130000
+         AIF   ('&C' EQ 'BLACK').BLACK                          GP09353 01140000
+         AIF   ('&C' EQ 'INPUT').INPUT                                  01150000
+         AIF   ('&C' EQ 'OUT').OUTPUT                                   01160000
+         AIF   ('&C' EQ 'INT').INTENSE                                  01170000
+         AIF   ('&C' EQ 'INTENSE').INTENSE                              01180000
+       MNOTE 8,'FDLITEM: ARGUMENT &I,&J INVALID - &C NOT A VALID ENTRY' 01190000
+         AGO   .FDLOOP                                                  01200000
+.BLUE    ANOP  ,                                                        01210000
+&F5      SETB  0                                                        01220000
+&F6      SETB  0                                                        01230000
+&F7      SETB  1                                                        01240000
+         AGO   .FDLOOP                                                  01250000
+.*                                                                      01260000
+.RED     ANOP  ,                                                        01270000
+&F5      SETB  0                                                        01280000
+&F6      SETB  1                                                        01290000
+&F7      SETB  0                                                        01300000
+         AGO   .FDLOOP                                                  01310000
+.*                                                                      01320000
+.PINK    ANOP  ,                                                        01330000
+&F5      SETB  0                                                        01340000
+&F6      SETB  1                                                        01350000
+&F7      SETB  1                                                        01360000
+         AGO   .FDLOOP                                                  01370000
+.*                                                                      01380000
+.GREEN   ANOP  ,                                                        01390000
+&F5      SETB  1                                                        01400000
+&F6      SETB  0                                                        01410000
+&F7      SETB  0                                                        01420000
+         AGO   .FDLOOP                                                  01430000
+.*                                                                      01440000
+.TURQ    ANOP  ,                                                        01450000
+&F5      SETB  1                                                        01460000
+&F6      SETB  0                                                        01470000
+&F7      SETB  1                                                        01480000
+         AGO   .FDLOOP                                                  01490000
+.*                                                                      01500000
+.YELLOW  ANOP  ,                                                        01510000
+&F5      SETB  1                                                        01520000
+&F6      SETB  1                                                        01530000
+&F7      SETB  0                                                        01540000
+         AGO   .FDLOOP                                                  01550000
+.*                                                                      01560000
+.WHITE   ANOP  ,                                                        01570000
+&F5      SETB  1                                                        01580000
+&F6      SETB  1                                                        01590000
+&F7      SETB  1                                                        01600000
+         AGO   .FDLOOP                                                  01610000
+.*                                                                      01620000
+.BLACK   ANOP  ,                                                GP09353 01630000
+&F5      SETB  0                                                GP09353 01640000
+&F6      SETB  0                                                GP09353 01650000
+&F7      SETB  1             FORCE NON-ZERO                     GP09353 01660000
+&BLACK   SETB  1                                                GP09353 01670000
+         AGO   .FDLOOP                                                  01680000
+.*                                                                      01690000
+.INPUT   ANOP                                                           01700000
+&F3      SETB  0                                                        01710000
+&F4      SETB  1                                                        01720000
+&INP     SETB  1                                                GP08356 01730000
+         AIF   (&INT).CONFII                                    GP08356 01740000
+         AGO   .FDLOOP                                                  01750000
+.*                                                                      01760000
+.OUTPUT  ANOP  ,                                                        01770000
+&F3      SETB  1                                                        01780000
+&F4      SETB  0                                                        01790000
+         AGO   .FDLOOP                                                  01800000
+.*                                                                      01810000
+.INTENSE ANOP  ,                                                        01820000
+&F4      SETB  1                                                        01830000
+&INT     SETB  1                                                GP08356 01840000
+         AIF   (&INP).CONFII                                    GP08356 01850000
+&F3      SETB  1                                                        01860000
+         AGO   .FDLOOP                                                  01870000
+.CONFII  MNOTE *,'FDLITEM: INTENSE INPUT NOT SUPPORTED'         GP08356 01880000
+         AGO   .FDLOOP                                          GP08356 01890000
+.*                                                                      01900000
+.EXPFLD  AIF   (NOT &BLACK).EXPFLD1                             GP09353 01910000
+&F4      SETB  0             FORCED INPUT MODE                  GP09353 01920000
+         AIF   (NOT &F3).EXPFLD2                                GP09353 01930000
+         MNOTE 4,'FDLITEM: CONFLICTING NON-DISPLAY & OUTPUT ATTR &I'    01940000
+.EXPFLD1 AIF   (&F3 OR &F4).EXPFLD2                                     01950000
+&F3      SETB  1             OUTPUT IS DEFAULT                          01960000
+.EXPFLD2 ANOP  ,                                                        01970000
+&LABEL   DC    B'&F0&F1&F2&F3&F4&F5&F6&F7'                              01980000
+&LABEL   SETC  ''                                                       01990000
+&INP     SETB  0                                                GP08356 02000000
+&INT     SETB  0                                                GP08356 02010000
+         AGO   .LOOP                                                    02020000
+.*                                                                      02030000
+.LABEL   AIF   ('&LABEL' EQ '').LABNEW                                  02040000
+         MNOTE 0,'FDLITEM: CONSECUTIVE LABELS &LABEL AND &C '           02050000
+&LABEL   DS    0X                                                       02060000
+.LABNEW  ANOP  ,                                                        02070000
+&LABEL   SETC  '&C'(1,K'&C-1)                                           02080000
+         AGO   .LOOP                                                    02090000
+.*                                                                      02100000
+.OFFSET  ANOP  ,                                                GP09358 02110000
+&D       SETC  '&C'(1,K'&C-1)                                   GP09358 02120000
+&D       EQU   *-&ZZZFLAN    FIELD OFFSET (NO LEN)              GP09358 02130000
+         AGO   .LOOP                                            GP09358 02140000
+.*                                                                      02150000
+.DONE    AIF   ('&LABEL' EQ '').MEND                                    02160000
+&LABEL   DS    0X                                                       02170000
+         AGO   .MEND                                                    02180000
+.*                                                                      02190000
+.CLOSER  AIF   ('&LABEL  ' EQ '').CLOSED                                02200000
+&ZZZFLAB DC    X'00'         ERROR ?                                    02210000
+&ZZZFLAB SETC  ''                                                       02220000
+.CLOSED  AIF   ('&ZZZLEND' EQ '').MEND                                  02230000
+&ZZZLEND DC    X'00'                                                    02240000
+&ZZZLEND SETC  ''                                                       02250000
+.*                                                                      02260000
+.MEND    MEND  ,                                                        02270000

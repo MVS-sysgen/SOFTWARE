@@ -1,0 +1,7 @@
+ CLC =C'GERHARD.AMS.SRC',1(R7)   *******DEBUG***********                11790000
+ BL TBEF                                                                11800000
+ BH TAFT                                                                11810000
+ #TRC INIT,RENT=NO,ADCON=YES                                            11820000
+ B TBEF                                                                 11830000
+TAFT #TRC KILL                                                          11840000
+TBEF DS 0H                       *******DEBUG***********                11850000

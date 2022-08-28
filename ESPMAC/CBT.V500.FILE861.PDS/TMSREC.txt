@@ -1,0 +1,252 @@
+         MACRO ,                                                        00010000
+&NM     TMSREC &SECT=DSECT,&P=TM,&VERSION=50                     92364  00020000
+         LCLC  &N                                                       00030000
+.*       THIS IS A LOCAL VERSION OF THE CA-1 (UCC-1) VOLUME RECORD.     00040000
+.*       THE COPY WAS ADDED HERE TO PERMIT UTILITIES AND REPORT         00050000
+.*       PROGRAMS TO BE ASSEMBLED INDEPENDENTLY OF TMS LIBRARIES.       00060000
+.*       UPDATED FOR TMS 4.8 (FUNNY EXPDT, 3480 SUPPORT)         90082  00070000
+&N       SETC  '&NM'                                                    00080000
+         AIF   ('&SECT' EQ 'DSECT').DSECT                               00090000
+         AIF   ('&NM' EQ '').DONESEC                                    00100000
+&NM       DS   0D            ALIGN RECORD                               00110000
+         AGO   .DONESEC                                                 00120000
+.DSECT   AIF   ('&N' NE '').HDSEC                                       00130000
+&N       SETC  'TMRECORD'                                               00140000
+.HDSEC   ANOP  ,                                                        00150000
+&N       DSECT ,                                                        00160000
+.DONESEC AIF   (&VERSION GE 50).NEWREC                           92364  00170000
+&P.DSN    DS   CL44          DATASET                                    00180000
+&P.STPNAM DS   CL8           NAME OF STEP (OR PROC?)                    00190000
+&P.SLOT   DS   AL2           VAULT #                                    00200000
+&P.VOLSEQ DS   AL2           VOLUME SEQUENCE                            00210000
+&P.CRTDT  DS   PL3           CREATION DATE                              00220000
+&P.EXPDT  DS   PL3           EXPIRATION DATE                            00230000
+&P.TRTCH  DS   XL1           TAPE MODE                                  00240000
+&P.9TRK  EQU   X'80'            9-TRACK TAPE                            00250000
+&P.18TRK EQU   X'C0'           18-TRACK (CARTRIDGE)              90082  00260000
+*        EQU   X'23'            7-TRACK, EVEN                           00270000
+*        EQU   X'3B'            7-TRACK, TRANSLATE                      00280000
+*        EQU   X'13'            7-TRACK, CONVERT                        00290000
+*        EQU   X'2B'            7-TRACK, EVEN + TRANSLATE               00300000
+&P.DEN    DS   XL1           RECORDING DENSITY                          00310000
+&P.38000 EQU   X'E3'           18-TRACK IN 38K BPI MODE          90082  00320000
+&P.38KC  EQU   X'E7'          38000 BPI  18-TRACK  COMPRESSED    90316  00330000
+*        EQU   X'D3'           6250 BPI   9-TRACK                       00340000
+*        EQU   X'C3'           1600 BPI   9-TRACK                       00350000
+*        EQU   X'83'            800 BPI   7-TRACK                       00360000
+*        EQU   X'43'            556 BPI   7-TRACK                       00370000
+*        EQU   X'03'            200 BPI   7-TRACK                       00380000
+&P.LTYPE  DS   XL1           LABEL TYPE                                 00390000
+*        EQU   X'02'            SL                                      00400000
+*        EQU   X'0A'            SUL                                     00410000
+*        EQU   X'01'            NL                                      00420000
+*        EQU   X'04'            NSL                                     00430000
+*        EQU   X'10'            BLP                                     00440000
+*        EQU   X'40'            AL     AL1                              00450000
+*        EQU   X'48'            AU1                              90082  00460000
+*        EQU   X'C0'            AL3                              90082  00470000
+*        EQU   X'C8'            AU3                              90082  00480000
+&P.RECFM  DS   XL1           RECFORM                                    00490000
+&P.BLKSI  DS   AL2           BLKSIZE                                    00500000
+&P.LRECL  DS   AL2           RECORD LENGTH                              00510000
+&P.FLAG2  DS   XL1           TMS FLAGS                                  00520000
+&P.CATLOG EQU  X'80'            DSN IS CATALOGED                        00530000
+&P.OUTPUT EQU  X'40'            DS WAS WRITTEN                          00540000
+&P.REUSE  EQU  X'20'            DS RECREATED                            00550000
+&P.TEMPDS EQU  X'10'            TEMPORARY DS                            00560000
+&P.E99000 EQU  X'08'            99000 EXPIRATION                        00570000
+&P.E99CCC EQU  X'04'            99CCC CYCLE EXPIRATIO                   00580000
+&P.E98DDD EQU  X'02'            98DDD ?                                 00590000
+&P.ETMS   EQU  X'01'            EXPIRED BY TMS                          00600000
+&P.VOLSER DS   CL6           VOLUME SERIAL                              00610000
+&P.NXTVOL DS   CL6           NEXT VOLUME IN GROUP                       00620000
+&P.PRVVOL DS   CL6           PRIOR VOLUME IN GROUP                      00630000
+&P.DSSIF  DS   XL1           PSWD FLAGS                                 00640000
+&P.DSSPW  DS   XL4           TMS ACCESS PASSWORD                        00650000
+&P.#DSNBS DS   XL2           DSNB COUNT                                 00660000
+&P.ADSNB  DS   AL4           BLOCK # OF FIRST DSNB                      00670000
+&P.FRSVOL DS   CL6           FIRST VOLUME IN GROUP                      00680000
+&P.BATCH# DS   XL1           UPDATE ID ?                                00690000
+&P.FLAG3  DS   XL1           TMS FLAGS                                  00700000
+&P.BADTAP EQU  X'80'           DO NOT USE FOR SCRATCH                   00710000
+&P.XPDTCH EQU  X'40'           EXPDT IS PHONY                           00720000
+&P.EXTAP  EQU  X'20'           MANAGED OUTSIDE TMS ?                    00730000
+&P.DYNAM  EQU  X'10'           DYNAM-T TAPE ?                    90316  00740000
+&P.CRTTI  DS   PL3           TIME CREATED                               00750000
+&P.CRUNI  DS   XL2           CUU WRITTEN ON                             00760000
+&P.USUNI  DS   XL2           CUU USED ON                                00770000
+&P.LASUSD DS   PL3           LAST USED DATE                             00780000
+&P.LASUSJ DS   CL8           LAST USED JOB                              00790000
+&P.BTHDT  DS   PL3           FIRST EVER USE                             00800000
+&P.UCOUNT DS   XL2           USE COUNT                                  00810000
+&P.FLAG1  DS   XL1           TMS FLAGS                                  00820000
+&P.INTAL  EQU  X'80'           FIELD CHANGED BY USER                    00830000
+&P.CLOSED EQU  X'40'           CLOSED BY TMS                            00840000
+&P.UPDATE EQU  X'20'           UPDATED BY USER                          00850000
+&P.ABEND  EQU  X'10'           WRITER ABENDED                           00860000
+&P.CLEAN  EQU  X'08'           SCHEDULE CLEANING                        00870000
+&P.SCRTCH EQU  X'04'           LISTED ON SCRATCH                        00880000
+&P.DELET  EQU  X'02'           PHYSICAL DELETION FROM TAPELIB           00890000
+&P.DFAULT EQU  X'01'           DEFAULT EXPIRY                           00900000
+&P.CLNCNT DS   XL1           # TIMES CLEANED                            00910000
+&P.OUTDAT DS   PL3           DATE OF REMOVAL FROM SITE                  00920000
+&P.OUTAR  DS   CL4           DESTINATION NICKNAME                       00930000
+&P.USECLN DS   AL2           TIMES USED AT LAST CLEANING                00940000
+&P.DATCLN DS   PL3           DATE CLEANED                               00950000
+&P.BLKCNT DS   FL4           BLOCKS IN DS                               00960000
+&P.RERROR DS   XL1           # OF READ ERRORS                           00970000
+&P.WERROR DS   XL1           # OF WRITE ERRORS                          00980000
+&P.JOBNM  DS   CL8           NAME OF (RE)CREATING JOB                   00990000
+&P.USER   DS   0CL41         P.I.D.I. GOODIES FIELD                     01000000
+IGPACCT  DS    0CL8          ACCT AND SUB-ACCT                          01010000
+IGPACT   DC    CL4' '        ACCOUNT NUMBER                             01020000
+IGPSUB   DC    CL4' '        SUB ACCOUNT                                01030000
+IGPOWN   DC    C' '          OWNERSHIP FLAG                             01040000
+IGPOCUS  EQU   C'C'          CUSTOMER OWNED                             01050000
+IGPOIGP  EQU   C'D'          PIDI OWNED                                 01060000
+IGPBILL  DC    C' '          BILLING FLAG                               01070000
+IGPOBIL  EQU   C'B'          BILLABLE                                   01080000
+IGPOFRE  EQU   C'F'          FREEBEE                                    01090000
+IGPOFLAG DC    X'00'         SPECIAL PROCESSING FLAGS                   01100000
+IGPFSYS  EQU   X'80'           SYSTEMS BYPASS - SMF DUMP ETC.           01110000
+IGPFBACK EQU   X'40'           TAPE USED FOR BACKUP SERVICE             01120000
+IGPODEC  EQU   X'20'           DEC SYSTEM TAPE                          01130000
+IGPFBLP  EQU   X'10'           SKIP VOL PROMPT WITH BLP                 01140000
+IGPFFLG5 EQU   X'08'           RESERVED                                 01150000
+IGPFFLG6 EQU   X'04'           RESERVED                                 01160000
+IGPFFLG7 EQU   X'02'           RESERVED                                 01170000
+IGPFMANU EQU   X'01'           MANUAL PROCESSING                        01180000
+IGPPGMNM DC    CL8' '        PROGRAM NAME                               01190000
+IGPDUMMY DC    CL22' '       ROOM FOR MORE STUFF                        01200000
+         MEXIT ,                                                 92364  01210000
+.NEWREC  ANOP  ,                                                 92364  01220000
+&P.VOLSER  DS  CL6           VOLUME SERIAL                       92364  01230000
+&P.DSN     DS  CL44          DATA SET NAME                       92364  01240000
+&P.EXPDT   DS  PL4           EXPIRATION DATE                     92364  01250000
+&P.VOLSEQ  DS  H             VOLUME SEQUENCE NUMBER              92364  01260000
+&P.FRSVOL  DS  CL6           FIRST VOLSER OF DATA SET            92364  01270000
+&P.PRVVOL  DS  CL6           PREVIOUS VOLSER OF DATA SET         92364  01280000
+&P.NXTVOL  DS  CL6           NEXT VOLSER OF DATA SET             92364  01290000
+&P.#DSNBS  DS  H             NUMBER OF DATA SET NAME BLOCKS      92364  01300000
+&P.ADSNB   DS  F             ADDRESS OF FIRST DSNB               92364  01310000
+&P.ALDSNB  DS  F             ADDRESS OF LAST DSNB                92364  01320000
+&P.FLAG1   DS  X             FLAGS (1-4)                         92364  01330000
+F1INTAL  EQU   X'80'           FIELD CHANGED BY USER             92364  01340000
+F1CLOSED EQU   X'40'           VOLUME CLOSED BY TMS              92364  01350000
+F1UPDATE EQU   X'20'           RECORD UPDATED BY USER            92364  01360000
+F1ABEND  EQU   X'10'           VOLUME CLOSED BY ABEND            92364  01370000
+F1CLEAN  EQU   X'08'           TAPE IS TO BE CLEANED             92364  01380000
+F1SCRTCH EQU   X'04'           LISTED ON SCRATCH LIST            92364  01390000
+F1DELET  EQU   X'02'           VOLUME DELETED FROM LIBRARY       92364  01400000
+F1DFAULT EQU   X'01'           DEFAULT EXPIRATION DATE USED      92364  01410000
+&P.FLAG2   DS  X                                                 92364  01420000
+F2CATLOG EQU   X'80'           DATA SET IS CATALOGED             92364  01430000
+F2OUTPUT EQU   X'40'           DATA SET OPENED FOR OUTPUT        92364  01440000
+F2REUSE  EQU   X'20'           DATA SET RECREATED                92364  01450000
+F2TEMPDS EQU   X'10'           TEMPORARY DATA SET                92364  01460000
+F2ECATLG EQU   X'08'           EXPIRE UNDER CATALOG CONTROL      92364  01470000
+F2ECYCLE EQU   X'04'           EXPIRE UNDER CYCLE CONTROL        92364  01480000
+F2ELDATE EQU   X'02'           EXPIRE UNDER FREQUENCY CONTROL    92364  01490000
+F2ETMS   EQU   X'01'           EXPIRED BY TMS                    92364  01500000
+&P.FLAG3   DS  X                                                 92364  01510000
+F3BADTAP EQU   X'80'           BAD TAPE, DO NOT MOUNT FOR SCRATCH       01520000
+F3EDMTAP EQU   X'20'           EXTERNALLY MANAGED TAPE           92364  01530000
+F3DYNAM  EQU   X'10'           DYNAM-T OWNED TAPE                92364  01540000
+F3FILCPY EQU   X'01'           FILE CREATED BY CA-1/COPYCAT      92364  01550000
+&P.FLAG4   DS  X                                                 92364  01560000
+&P.TRTCH   DS  X             TRTCH                               92364  01570000
+FT9TRK   EQU   X'80'                                             92364  01580000
+FT18TRK  EQU   X'C0'           3480                              92364  01590000
+FT36TRK  EQU   X'E0'           3490                              92364  01600000
+*        EQU   X'23'            7-TRACK, EVEN                           01610000
+*        EQU   X'3B'            7-TRACK, TRANSLATE                      01620000
+*        EQU   X'13'            7-TRACK, CONVERT                        01630000
+*        EQU   X'2B'            7-TRACK, EVEN + TRANSLATE               01640000
+&P.DEN     DS  X             DENSITY                             92364  01650000
+FD38000  EQU   X'E3'           3480 CARTRIDGE @ 38000 BPI        92364  01660000
+FD38KC   EQU   X'E7'                    -"-   COMPACTED          92364  01670000
+*        EQU   X'D3'           6250 BPI   9-TRACK                       01680000
+*        EQU   X'C3'           1600 BPI   9-TRACK                       01690000
+*        EQU   X'83'            800 BPI   7-TRACK                       01700000
+*        EQU   X'43'            556 BPI   7-TRACK                       01710000
+*        EQU   X'03'            200 BPI   7-TRACK                       01720000
+&P.LTYPE   DS  X             TAPE LABEL TYPE                     92364  01730000
+*        EQU   X'02'            SL                                      01740000
+*        EQU   X'0A'            SUL                                     01750000
+*        EQU   X'01'            NL                                      01760000
+*        EQU   X'04'            NSL                                     01770000
+*        EQU   X'10'            BLP                                     01780000
+*        EQU   X'40'            AL     AL1                              01790000
+*        EQU   X'48'            AU1                              90082  01800000
+*        EQU   X'C0'            AL3                              90082  01810000
+*        EQU   X'C8'            AU3                              90082  01820000
+&P.RECFM   DS  X             RECORD FORMAT                       92364  01830000
+&P.LRECL   DS  F             RECORD LENGTH                       92364  01840000
+&P.BLKSI   DS  F             MAXIMUM BLOCK SIZE                  92364  01850000
+&P.BLKCNT  DS  F             DATA SET BLOCK COUNT                92364  01860000
+&P.OUTDAT  DS  PL4           DATE TAKEN OUT OF AREA              92364  01870000
+&P.OUTAR   DS  CL4           (OUT OF) AREA CODE                  92364  01880000
+&P.SLOT    DS  F             VAULT SLOT NUMBER                   92364  01890000
+&P.CRTDT   DS  PL4           CREATION DATE                       92364  01900000
+           DS  X                                      FILLER     92364  01910000
+&P.CRTTI   DS  PL3             AND TIME                          92364  01920000
+&P.JOBNM   DS  CL8           CREATING JOB NAME                   92364  01930000
+&P.STPNAM  DS  CL8             STEP NAME                         92364  01940000
+&P.DDNAME  DS  CL8             DDNAME                            92364  01950000
+&P.CRUNI   DS  XL2             UNIT                              92364  01960000
+&P.LASUSD  DS  PL4           DATE LAST ACCESSED                  92364  01970000
+           DS  X                                                 92364  01980000
+&P.LASUST  DS  PL3             AND TIME                          92364  01990000
+&P.LASUSJ  DS  CL8           JOB THAT LAST USED VOLUME           92364  02000000
+&P.USUNI   DS  XL2             UNIT                              92364  02010000
+&P.DSSIF   DS  X             INSECURITY FLAGS                    92364  02020000
+TSSDPRO  EQU   X'80'           TMS SECURITY PROTECTED            92364  02030000
+TSDDREA  EQU   X'40'             READ PROTECTED                  92364  02040000
+TSDDWRT  EQU   X'20'             WRITE PROTECTED                 92364  02050000
+&P.DSSPW   DS  XL4           SECURITY PASSWORD                   92364  02060000
+&P.CLNCNT  DS  X             COUNT OF TAPE CLEANINGS             92364  02070000
+&P.USECLN  DS  HL2           USE COUNT AT LAST CLEANING          92364  02080000
+&P.DATCLN  DS  PL4           DATE OF LAST CLEANING               92364  02090000
+&P.BTHDT   DS  PL4           DATE OF FIRST USE                   92364  02100000
+&P.UCOUNT  DS  XL2           NUMBER OF USES                      92364  02110000
+&P.VENDOR  DS  CL8           VENDOR'S NAME (???)                 92364  02120000
+&P.EDMID   DS  CL4           EXT. MANAGER ID                     92364  02130000
+&P.TRERRC  DS  XL2           TEMP READ ERRORS: CLEAN             92364  02140000
+&P.TWERRC  DS  XL2           TEMP WRITE ERRORS: CLEAN            92364  02150000
+&P.PRERRC  DS  XL2           PERM READ ERRORS: CLEAN             92364  02160000
+&P.PWERRC  DS  XL2           PERM WRITE ERRORS: CLEAN            92364  02170000
+&P.TRERRI  DS  XL2           TEMP READ ERRORS: INIT              92364  02180000
+&P.TWERRI  DS  XL2           TEMP WRITE ERRORS: INIT             92364  02190000
+&P.PRERRI  DS  XL2           PERM READ ERRORS: INIT              92364  02200000
+&P.PWERRI  DS  XL2           PERM WRITE ERRORS: INIT             92364  02210000
+&P.DSN17   DS  XL17          REAL TAPE DSN                       92364  02220000
+           DS  XL35                       RESERVED               92364  02230000
+&P.USER    DS  0CL50         USER'S PLAYGROUND                   92364  02240000
+PIDACCT  DS    0CL8          ACCT AND SUB-ACCT                   92364  02250000
+PIDACT   DS    CL4' '        ACCOUNT NUMBER                      92364  02260000
+PIDSUB   DS    CL4' '        SUB ACCOUNT                         92364  02270000
+PIDOWN   DS    C' '          OWNERSHIP FLAG                      92364  02280000
+PIDOCUS  EQU   C'C'            CUSTOMER OWNED                    92364  02290000
+PIDOPID  EQU   C'D'            DATACENTER OWNED                  92364  02300000
+PIDBILL  DS    C' '          BILLING FLAG                        92364  02310000
+PIDOBIL  EQU   C'B'            BILLABLE                          92364  02320000
+PIDOFRE  EQU   C'F'            FREEBEE                           92364  02330000
+PIDOFLAG DS    X'00'         SPECIAL PROCESSING FLAGS            92364  02340000
+PIDFSYS  EQU   X'80'           SYSTEMS BYPASS - SMF DUMP ETC.    92364  02350000
+PIDFBACK EQU   X'40'           TAPE USED FOR BACKUP SERVICE      92364  02360000
+PIDODEC  EQU   X'20'           HARRIS SYSTEM TAPE                92364  02370000
+PIDFBLP  EQU   X'10'           SKIP VOL PROMPT WITH BLP          92364  02380000
+PIDFFLG5 EQU   X'08'             RESERVED                        92364  02390000
+PIDFFLG6 EQU   X'04'             RESERVED                        92364  02400000
+PIDFFLG7 EQU   X'02'             RESERVED                        92364  02410000
+PIDFMANU EQU   X'01'             RESERVED                        92364  02420000
+PIDPGMNM DS    CL8' '        PROGRAM NAME                        92364  02430000
+PIDJNAME DS    CL8' '          ???                               92364  02440000
+PIDDUMMY DS    CL23' '       ROOM FOR MORE STUFF                 92364  02450000
+         DS    H               ???                               92366  02460000
+         DS    PL4           DATE ?                              92366  02470000
+         DS    PL4           TIME ?                              92366  02480000
+         DS    4H              ???                               92366  02490000
+TMCPUID  DS    CL4           SMCA ID                             92366  02500000
+         DS    H                                                 92366  02510000
+         MEND  ,                                                        02520000

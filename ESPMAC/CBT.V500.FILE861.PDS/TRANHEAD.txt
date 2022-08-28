@@ -1,0 +1,73 @@
+         MACRO                                                          00010000
+&NM      TRANHEAD &DOLL=C';'                               ADDED 79299  00020000
+         COPY  OPTIONS                                                  00030000
+         LCLA  &I                                                       00040000
+         LCLC  &N1                                                      00050000
+&N1      SETC  '&NM'                                                    00060000
+         AIF   ('&N1' EQ '').BOOBOO                                     00070000
+&I       SETA  K'&NM-4                                                  00080000
+         AIF   (&I LT 1).BOOBOO                                         00090000
+         AIF   ('&N1'(1,4) NE 'EXHT').BOOBOO                            00100000
+&N1      SETC  '&N1'(5,&I)                                              00110000
+&NM      START 0                                                        00120000
+         USING *,R15                                                    00130000
+         NUSE  SQSP,R13                                                 00140000
+         NUSE  WORK,R11                                                 00150000
+*        THIS MODULE PROVIDES TRANSLATION CODE AND TRANSLATE TABLES     00160000
+*        FOR SPECIFIC DEVICES.  THE CODE ASSUMES THAT THE TRANSLATE     00170000
+*        INSTRUCTION MAY BE USED; E.G. APL AND SIMILAR KEYBOARDS        00180000
+*        WITH TWO-CHARACTER SHIFT SEQUENCES ARE NOT SUPPORTED.          00190000
+*                                                                       00200000
+*        INPUT R2 - BUFFER TO BE TRANSLATED  R3 - BUFFER LENGTH         00210000
+*              R0 - FUNCTION SWITCH 0/OUT,DATA  2/OUT,CONTROL           00220000
+*                                   4/IN,VAR. CASE  6/IN,UPPER CASE     00230000
+*              R15 - BASE ADDRESS OF THIS MODULE                        00240000
+*              R14 - RETURN ADDRESS                                     00250000
+*          R0-R3 ARE DESTROYED                                          00260000
+*                                                                       00270000
+         B     TRANSLAT      GO TO TRANSLATION CODE                     00280000
+         SPACE 1                                                        00290000
+         DC    CL4'&N1 '     MODULE ID                                  00300000
+TRANPOIN DC    Y(OUTDATA-&NM)  OUTPUT TABLE; DATA ONLY                  00310000
+         DC    Y(OUTCON-&NM)   OUTPUT TABLE; CONTROL AND DATA           00320000
+TRANULOW DC    Y(INUPLOW-&NM)  INPUT TABLE; UPPER+LOWER CASE            00330000
+         DC    Y(INUPPER-&NM)  INPUT TABLE; UPPER CASE ONLY             00340000
+TRANSDOL DC    AL1(&DOLL)    ALTERNATE FOR $ IN COMMANDS         87176  00350000
+         DC    XL3'0'          SPARE                             87176  00360000
+         DC    3A(0)         FOR EXPANSION                              00370000
+         SPACE 1                                                        00380000
+TRANSLAT CH    R0,=Y(TRANULOW-TRANPOIN)  UPLOW INPUT ?                  00390000
+         BNE   TRANSLAS      NO                                         00400000
+         TM    SQTRANS,X'80'  UPLOW FLAG SET ?                          00410000
+         BNZ   TRANSLAS      YES; LEAVE LOWER CASE                      00420000
+         LA    R0,TRANULOW+2-TRANPOIN  SET UPPER CASE ONLY              00430000
+TRANSLAS LR    R1,R0         COPY TABLE OFFSET                          00440000
+         LH    R1,TRANPOIN(R1)  GET TABLE OFFSET IN MODULE              00450000
+         AR    R1,R15        GET TABLE ADDRESS                          00460000
+         LTR   R3,R3         VALID LENGTH ?                             00470000
+         BNPR  R14           NO; RETURN                                 00480000
+         LR    R0,R14        SAVE RETURN ADDRESS                        00490000
+         LA    R14,255       MAKE LENGTH VALUE FOR EXECUTE              00500000
+TRANLOOP CH    R3,=H'256'    MORE TO DO ?                               00510000
+         BNL   *+8           YES                                        00520000
+         LR    R14,R3                                                   00530000
+         BCTR  R14,0         SET FOR EXECUTE                            00540000
+         EX    R14,TRANTR    TRANSLATE                                  00550000
+         LA    R2,1(R2,R14)  BUMP BUFFER                                00560000
+         BCTR  R3,0          DECREMENT LENGTH                           00570000
+         SR    R3,R14        MORE TO DO ?                               00580000
+         BP    TRANLOOP                                                 00590000
+         LR    R14,R0        REGAIN EXIT ADDRESS                        00600000
+         BR    R14           RETURN TO CALLER                           00610000
+TRANTR   TR    0(0,R2),0(R1)  TRANSLATE BUFFER                          00620000
+         SPACE 1                                                        00630000
+         LTORG ,                                                        00640000
+         PUSH  PRINT                                                    00650000
+         PRINT NOGEN                                                    00660000
+&NM      CSECT ,                                                        00670000
+         MSECT ,                                                        00680000
+&NM      CSECT ,                                                        00690000
+         POP   PRINT                                                    00700000
+.MEXIT   MEXIT                                                          00710000
+.BOOBOO  MNOTE 12,'NAME MISSING OR INVALID'                             00720000
+         MEND                                                           00730000

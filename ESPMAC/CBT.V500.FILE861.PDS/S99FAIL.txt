@@ -1,0 +1,66 @@
+         MACRO                                                          00310600
+&NAME    S99FAIL &RB=(R14),&RC=(R15),&CPPL=,&MF=G,&CP=                  00310700
+         GBLB  &RCPCPPL(2)             CP INDICATOR                     00310800
+         GBLC  &RCPPRE                                                  00310900
+         LCLB  &GEN                                                     00311000
+         LCLC  &C                                                       00311100
+&NAME    DS    0H                                                       00311200
+         AIF   ('&MF(1)' EQ 'G').GEN                                    00311300
+         AIF   ('&MF(1)' EQ 'E').EXEC                                   00311400
+         MNOTE 4,'&MF(1) IS AN INVALID MF, MF=G USED'                   00311500
+.GEN     LA    R1,FAIL&SYSNDX     LOAD PLIST ADDRESS                    00311600
+&GEN     SETB  1                                                        00311700
+         AGO   .L                                                       00311800
+.EXEC    AIF   ('&MF(2)' NE '').LISTOK                                  00311900
+         MNOTE 8,'LIST ADDRESS NOT SPECIFIED'                           00312000
+         MEXIT                                                          00312100
+.LISTOK  AIF   ('&MF(3)' EQ '').TMF2                                    00312200
+&MF(3)   EQU   24                      LENGTH OF PARAMETER LIST         00312300
+.TMF2    AIF   ('&MF(2)' EQ '(R1)' OR '&MF(2)' EQ '(1)').L              00312400
+         AIF   ('&MF(2)'(1,1) EQ '(').REG                               00312500
+         LA    R1,&MF(2)          LOAD DAIRFAIL PARAM LIST ADDRESS      00312600
+         AGO   .L                                                       00312700
+.REG     ANOP                                                           00312800
+&C       SETC  '&MF(2)'(2,K'&MF(2)-2)                                   00312900
+         LR    R1,&C              LOAD DAIRFAIL PARAM LIST ADDR         00313000
+.L       AIF   ('&RB'(1,1) EQ '(').RBR                                  00313100
+         AIF   ('&RB' NE '').RBA                                        00313200
+         MNOTE 8,'REQ BLOCK ADDRESS NOT SPECIFIED'                      00313300
+         MEXIT                                                          00313400
+.RBR     ST    &RB(1),0(R1)       STORE S99 RB ADDRESS                  00313500
+         AGO   .RC                                                      00313600
+.RBA     LA    R14,&RB            LOAD ADDRESS OF REQ BLOCK             00313700
+         ST    R14,0(R1)          AND STORE IN PLIST                    00313800
+.RC      AIF   ('&RC'(1,1) EQ '(').RCR                                  00313900
+         LA    R14,&RC            LOAD ADDRESS OF RET CODE              00314000
+         ST    R14,4(R1)          AND STORE IN PLIST                    00314100
+         AGO   .EFF02                                                   00314200
+.RCR     ANOP                                                           00314300
+.GRC     LA    R14,20(R1)         LOAD ADDR RET CODE FLD                00314400
+         ST    &RC(1),0(R14)      STORE RET CODE                        00314500
+         ST    R14,4(R1)          AND STORE ITS ADDRESS                 00314600
+.EFF02   LA    R14,=A(0)          LOAD ADDR OF FULLWORD OF 0            00314700
+         ST    R14,8(R1)          STORE IT.                             00314800
+         AIF   ('&CP' EQ 'YES' OR &RCPCPPL(1)).CPID                     00314900
+         LA    R14,=X'8032'       LOAD ADDRESS OF CALLERID              00315000
+         ST    R14,12(R1)          AND STORE IT                         00315100
+         XC    16(4,R1),16(R1)    CLEAR CPPL POINTER                    00315200
+         AGO   .GO                                                      00315300
+.CPID    LA    R14,=Y(50)         LOAD ADDRESS OF CALLERID              00315400
+         ST    R14,12(R1)         AND STORE IT                          00315500
+         AIF   ('&CPPL' EQ '').DCPPL                                    00315600
+         AIF   ('&CPPL'(1,1) EQ '(').RCPPL                              00315700
+         LA    R14,&CPPL          LOAD CPPL ADDRESS                     00315800
+         ST    R14,16(R1)          AND STORE IT                         00315900
+         AGO   .GO                                                      00316000
+.DCPPL   MVC   16(4,R1),&RCPPRE.CPPL MOVE IN CPPL ADDRESS               00316100
+         AGO   .GO                                                      00316200
+.RCPPL   ST    &CPPL(1),16(R1)    STORE ADDRESS OF CPPL                 00316300
+.GO      LINK  EP=IKJEFF18                                              00316400
+         AIF   (NOT &GEN).EXIT                                          00316500
+         SPACE 1                                                        00316600
+         RCPDS                                                          00316700
+&C SETC 'FAIL&SYSNDX'                                                   00316800
+&C       DS    6F             RESERVE SPACE FOR PARAM LIST              00316900
+         RCPDS                                                          00317000
+.EXIT    MEND                                                           00317100

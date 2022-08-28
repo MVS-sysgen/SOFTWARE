@@ -1,0 +1,4 @@
+         MACRO ,                                                        00010000
+&NM      FDUEXRET ,                                                     00020000
+&NM      BR    R14           RETURN TO CALLER                           00030000
+         MEND  ,                                                        00040000

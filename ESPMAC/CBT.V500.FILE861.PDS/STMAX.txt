@@ -1,0 +1,9 @@
+         MACRO ,                                                        00010000
+&NM      STMAX &R,&A,&TYPE=                                      85195  00020000
+         LCLA  &I                                                       00030000
+&I       SETA  &SYSNDX                                                  00040000
+&NM      MACPARM &R,&A,OP=C&TYPE,OPR=C&TYPE.R,MODE=EQU                  00050000
+         MACPARM ZZZZ&I,OP=BNH,MODE=ONE                                 00060000
+         MACPARM &R,&A,OP=ST&TYPE,OPR=L&TYPE.R,MODE=REV                 00070000
+ZZZZ&I   DS    0H                                                       00080000
+.MEND    MEND  ,                                                        00090000

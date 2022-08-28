@@ -1,0 +1,13 @@
+         MACRO ,                                                        00010001
+&NM      BASRET &POP,&TYPE=BSM,&RS=R0,&RE=R15,&VECT=0                   00020001
+&NM      SH    R13,=Y(LOCSAVE1-LOCSAVE)  POP THE STACK                  00030001
+         AIF   ('&POP' EQ '*NO').POP                                    00040001
+         AIF   ('&VECT' EQ '0').BSM0                                    00050001
+         LA    R9,&VECT      GET RETURN OFFSET                          00060001
+         A     R9,4*R9+8(R13) ADJUST RETURN                             00070001
+         ST    R9,4*R9+8(R13) ADJUST RETURN                             00080001
+.BSM0    LM    &RS,&RE,4*&RS+8(R13)  RESTORE CALLER'S REGISTERS         00090001
+         RET31 R9            RETURN IN CALLER'S MODE                    00100001
+         MEXIT ,                                                        00110001
+.POP     LM    &RS,&RE,4*&RS+8(R13)  RESTORE CALLER'S REGISTERS         00120001
+         MEND  ,                                                        00130001

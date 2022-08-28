@@ -1,0 +1,45 @@
+         MACRO ,                                                        00010000
+&NM      CLRL  &A,&LN,&WORK1=14,&WORK2=0,&FILL=,&OPLEN=LA        84254  00020000
+.*--------------------------------------------------------------------* 00030000
+.*  CLEAR AN AREA OF ANY LENGTH USING MVCL (WAS MVC ON 360)           * 00040000
+.*--------------------------------------------------------------------* 00050000
+         LCLA  &K                                                       00060000
+         LCLC  &W1E,&W1O,&W2E,&W2O                                      00070000
+         LCLC  &L                                               GP03093 00080000
+&L       SETC  'L'''                                            GP03093 00090000
+.*                                                                      00100000
+         AIF   (T'&A EQ 'O').BADA                                       00110000
+.*USE L*  AIF   (T'&LN EQ 'O').BADLN                                    00120000
+         AIF   (N'&A NE 1).BADA                                         00130000
+.*USE L*  AIF   (N'&LN NE 1).BADLN                                      00140000
+.*                                                                      00150000
+         AIF   (T'&WORK1 EQ 'O').BADW1                                  00160000
+         AIF   (T'&WORK2 EQ 'O').BADW2                                  00170000
+         AIF   (N'&WORK1 NE 1).BADW1                                    00180000
+         AIF   (N'&WORK2 NE 1).BADW2                                    00190000
+.*                                                                      00200000
+&W1E     SETC  '&WORK1(1)'                                              00210000
+&W1O     SETC  '&W1E'.'+1'                                              00220000
+&W2E     SETC  '&WORK2(1)'                                              00230000
+&W2O     SETC  '&W2E'.'+1'                                              00240000
+&NM      MACPARM &W1E,&A                                                00250000
+         MACPARM &W1O,&LN,NULL=&L&A,OP=&OPLEN                   GP03093 00260000
+         MACPARM &W2O,0      CLEAR SOURCE LENGTH                        00270000
+         AIF   (T'&FILL EQ 'O').NOFILL                                  00280000
+         AIF   ('&FILL' EQ '0').NOFILL                                  00290000
+&K       SETA  K'&FILL                                                  00300000
+         AIF   ('&FILL'(&K,1) EQ '''' OR '&FILL'(&K,1) EQ ')').FILLICM  00310000
+         ICM   &W2O,8,=AL1(&FILL)                                       00320000
+         AGO   .NOFILL                                                  00330000
+.FILLICM ICM   &W2O,8,=&FILL                                            00340000
+.NOFILL  MVCL  &W1E,&W2E     CLEAR THE AREA                             00350000
+         MEXIT ,                                                        00360000
+.BADLN   MNOTE 4,'INVALID AREA LENGTH &LN'                              00370000
+         MEXIT ,                                                        00380000
+.BADA    MNOTE 4,'INVALID AREA ADDRESS &A'                              00390000
+         MEXIT ,                                                        00400000
+.BADW1   MNOTE 4,'INVALID WORK1 &WORK1'                                 00410000
+         MEXIT ,                                                        00420000
+.BADW2   MNOTE 4,'INVALID WORK2 &WORK2'                                 00430000
+         MEXIT ,                                                        00440000
+         MEND  ,                                                        00450000

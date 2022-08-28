@@ -1,0 +1,43 @@
+         MACRO ,                                                        00010000
+&L       SAVEX &R1,&R3,&LOC,&TYPE=*,&SETAM=,&WORK=R14           GP99018 00020000
+         GBLB  &ZZSVBSM,&MVSESA                                         00030000
+         LCLC  &NM                                                      00040000
+&NM      SETC  '&L'                                                     00050000
+.*                                                                      00060000
+.*             COPYRIGHT 1981 BY EXPERT SYSTEMS PROGRAMMING INC.        00070000
+.*                               347 ORCHARD STREET                     00080000
+.*                               VIENNA, VIRGINIA   22180               00090000
+.*                                                                      00100000
+.*                        ALL RIGHTS RESERVED.                          00110000
+.*                                                                      00120000
+.*             THIS MACRO IS NOT TO BE DISTRIBUTED WITHOUT PERMISSION,  00130000
+.*             AS DESCRIBED IN MEMBER $$RIGHTS.                         00140000
+.*                                                                      00150000
+.*       CODE ADDED TO PRESERVE CALLER'S AMODE AND OPTIONALLY SET AMODE 00160000
+.*                                                              GP99018 00170000
+         AIF   ('&TYPE' EQ 'BSM').BSM                           GP98322 00180000
+         AIF   ('&TYPE' EQ 'STM').STM                                   00190000
+         MNOTE 8,'SAVEX: TYPE=&TYPE UNKNOWN - TYPE=STM ASSUMED'         00200000
+         AGO   .STM                                                     00210000
+.BSM     ANOP  ,                                                GP98322 00220000
+&ZZSVBSM SETB  1             SET FLAG FOR ENDM                          00230000
+&NM      BSM   R14,0         GET CALLER'S AMODE                 GP98322 00240000
+&NM      SETC  ''            DONE WITH LABEL                            00250000
+.STM     ANOP  ,                                                        00260000
+&NM      STM   &R1,&R3,&LOC                                             00270000
+&NM      SETC  ''            DONE WITH LABEL                            00280000
+         AIF   ('&SETAM' EQ '' OR '&SETAM' EQ 'ANY').MEND       GP04234 00290000
+         AIF   (NOT &MVSESA).MEND                               GP04234 00300000
+         BASR  R14,0                                            GP04050 00310000
+         USING *,R14                                            GP04050 00320000
+         LA    &WORK,ZZSV&SYSNDX                                GP99018 00330000
+         AIF   ('&SETAM' EQ '24' OR '&SETAM' EQ 'AM24').SETCM   GP99018 00340000
+         LA    R0,1                                             GP99018 00350000
+         SLL   R0,31         MAKE 80000000                      GP99018 00360000
+         OR    &WORK,R0                                         GP99018 00370000
+         AIF   ('&SETAM' EQ '31' OR '&SETAM' EQ 'AM31').SETCM   GP99018 00380000
+   MNOTE 8,'SAVEX: UNSUPPORTED SETAM VALUE: &SETAM - AM31 ASSUMED'      00390000
+.SETCM   BSM   0,&WORK       CHANGE TO REQUIRED MODE            GP99018 00400000
+         DROP  R14                                              GP04050 00410000
+ZZSV&SYSNDX DS 0H                                               GP99018 00420000
+.MEND    MEND  ,                                                GP99018 00430000

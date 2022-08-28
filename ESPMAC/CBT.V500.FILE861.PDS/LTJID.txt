@@ -1,0 +1,24 @@
+         MACRO                                                          00010000
+&L       LTJID &REG,&BYTE1,&BYTE2,&MASK=YES                             00020000
+         GBLC  &MODEL                                                   00030000
+         LCLC  &NM                                                      00040000
+&NM      SETC  '&L'                                                     00050000
+         AIF   ('&MASK' NE 'NO').NOMA                                   00060000
+&NM      XR    &REG,&REG                                                00070000
+&NM      SETC  ''                                                       00080000
+.NOMA    AIF   ('&MODEL' EQ '360').TJID360                              00090000
+&NM      ICM   &REG,3,&BYTE1           BITS 1-7 OF TJID                 00100000
+         AGO   .TJID370                NOW ARE YOU HAPPY?               00110000
+.TJID360 ANOP ,                                                         00120000
+&NM      IC    &REG,&BYTE1             BITS  1-7 OF TJID                00130000
+         SLL   &REG,8                  MAKE ROOM FOR SECOND BYTE        00140000
+.TJID370 AIF   ('&BYTE2' EQ '').UP4                                     00150000
+         IC    &REG,&BYTE2                   8-F OF TJID                00160000
+         AGO   .COMASK                                                  00170000
+.UP4     IC    &REG,4+&BYTE1                 8-F OF TJID                00180000
+.COMASK  AIF   ('&MASK' EQ '' OR '&MASK' EQ 'NO').MEND                  00190000
+         AIF   ('&MASK' EQ 'YES').MLIT                                  00200000
+         MACPARM &REG,&MASK,OP=N,OPR=NR         KILL HIGH BITS          00210000
+         MEXIT ,                                                        00220000
+.MLIT    N     &REG,=X'00007FFF'       MASK HIGH BIT                    00230000
+.MEND    MEND                                                           00240000

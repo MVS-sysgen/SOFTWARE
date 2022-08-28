@@ -1,0 +1,9 @@
+         MACRO ,                                                        00010000
+&NM      PGMPATCH &LEN                                 ADDED ON 2000017 00020000
+         LCLC  &LN                                                      00030000
+&LN      SETC  '&LEN'                                                   00040000
+         AIF   ('&LEN' NE '').USERS                                     00050000
+&LN      SETC  '128'                                                    00060000
+.USERS   ANOP  ,                                                        00070000
+&NM      DC    ((&LN+1)/2)S(*)                                          00080000
+         MEND  ,                                                        00090000

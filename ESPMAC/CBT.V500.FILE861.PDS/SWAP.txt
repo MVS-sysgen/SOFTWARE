@@ -1,0 +1,14 @@
+         MACRO ,                                                        00010000
+&NM      SWAP  &A,&B,&LEN=   EXCHANGE TWO STRINGS                86197  00020000
+         LCLC  &L                                                       00030000
+&L       SETC  'L'''                                                    00040000
+         AIF   ('&LEN' EQ '').DFLT                                      00050000
+&NM      XC    &A.(&LEN),&B                                             00060000
+         XC    &B.(&LEN),&A                                             00070000
+         XC    &A.(&LEN),&B                                             00080000
+         MEXIT ,                                                        00090000
+.DFLT    ANOP  ,                                                        00100000
+&NM      XC    &A.(&L&A),&B                                             00110000
+         XC    &B.(&L&A),&A                                             00120000
+         XC    &A.(&L&A),&B                                             00130000
+         MEND  ,                                                        00140000

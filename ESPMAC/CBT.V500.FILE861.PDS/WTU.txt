@@ -1,0 +1,337 @@
+         MACRO                                                          00010000
+&NAME    WTU   &MESG,&MF=I,&ROUTCDE=,&DESC=,&MSGTYP=,&MCSFLAG=,&UCMID=W*00020000
+               RKUCMID,&TSO=NO                                          00030000
+         GBLB  &IHBWTL,&IHBWTOR                                         00040000
+         GBLC  &MACPLAB                                                 00050000
+.********************************************************************** 00060000
+.*                                                                   ** 00070000
+.*   ISSUE MESSAGE AS TPUT UNDER TSO, AND WTO OTHERWISE              ** 00080000
+.*     IF STC, USE START CONSOLE UCMID FOR RESPONSES                 ** 00090000
+.*                                                                   ** 00100000
+.********************************************************************** 00110000
+         LCLA  &LT(256),&H,&I,&N,&J,&LEN,&LNUM,&LLCNT            S21002 00120000
+         LCLB  &NODFLT                                                  00130000
+         LCLB  &B(16),&AD,&E,&E1,&E2,&E3,&E4,&E5,&MCS,&MLW       S21002 00140000
+         LCLB  &SECONDL,&SWM,&TWO,&PAIR                          S21002 00150000
+         LCLC  &CFLG(16),&CD(16),&GNAME                          S21002 00160000
+.*                                                                      00170000
+.*       THIS IS A COPY OF IBM'S WTO MACRO - ONLY MODIFICATION          00180000
+.*       WAS TO FORCE MCSFLAG=REG0 AND ADDED CODE TO LOAD               00190000
+.*       UCMID FROM LABEL WRKUCMID VIA IC                               00200000
+.*                                                                      00210000
+&GNAME   SETC  'IHB'.'&SYSNDX'                                          00220000
+&MACPLAB SETC  '&NAME'                                                  00230000
+         AIF    ('&MF' EQ 'I' OR '&MF' EQ 'L').NUMCHK            S21002 00240000
+         AIF   (N'&MF NE 2).E1                                          00250000
+         AIF   ('&MF(1)' NE 'E').E1                                     00260000
+&NAME    IHBINNRA &MF(2)                                                00270000
+&MACPLAB SETC  ''                                                90014  00280000
+         AIF   (&IHBWTL).END                                            00290000
+.*       SVC   35                                ISSUE SVC              00300000
+         AGO   .UCMSVC                                                  00310000
+.NUMCHK  ANOP                                                    S21002 00320000
+         AIF   (N'&SYSLIST LE 1).LABLL                            66488 00330000
+         AIF   ('&SYSLIST(1)'(1,1) EQ '(').LABLL                  66488 00340000
+         MNOTE 8,'MLWTO MSG LINES NOT ENCLOSED IN PARENTHESES'    66488 00350000
+         AGO   .END                                               66488 00360000
+.LABLL   AIF   (N'&SYSLIST EQ 0 OR N'&SYSLIST GT 10).NOTXT        66488 00370000
+         AIF   ('&MF' EQ 'I').IROUT                              S21002 00380000
+.LROUT   AIF   (&IHBWTOR).MESCHK                                        00390000
+&NAME    DS    0H                                                       00400000
+&MACPLAB SETC  ''                                                90014  00410000
+.MESCHK  ANOP                                                           00420000
+&I       SETA  1                                                        00430000
+&MCS     SETB  (T'&ROUTCDE NE'O' OR T'&MSGTYP NE 'O' )                  00440000
+&B(3)    SETB  0                                                   MCS  00450000
+         AIF   ('&MESG' EQ '').NOTXT                             S21002 00460000
+&MLW     SETB  (N'&SYSLIST NE 1 OR N'&SYSLIST(1) NE 1)           S21002 00470000
+         AIF   (&IHBWTOR AND &MLW).MLWTOR                        S21002 00480000
+         AIF   (T'&DESC EQ 'O').SETNCLR                                 00490000
+&MCS     SETB  1                                                        00500000
+.*                                                                      00510000
+.*  DESCRIPTOR CODES                                                    00520000
+.*                                                                      00530000
+.DCHK    ANOP                                                           00540000
+&N       SETA  &DESC(&I)                                                00550000
+&I       SETA  &I+1                                                     00560000
+         AIF   (&N GE 1 AND &N LE 16).ASSIGND                           00570000
+         MNOTE 8,'&DESC(&I-1) IS INVALID DESCRIPTOR- IGNORED'     67737 00580000
+         AGO   .NXTD                                                    00590000
+.ASSIGND ANOP                                                           00600000
+&B(&N)   SETB  1                                                        00610000
+.NXTD    AIF   (&I LE N'&DESC).DCHK                                     00620000
+&I       SETA  1                                                        00630000
+         AGO   .SETNCLR                                                 00640000
+.*                                                                      00650000
+.*  ROUTE CODES                                                         00660000
+.*                                                                      00670000
+.RTCHK   AIF   (T'&ROUTCDE NE 'O').RCHK0                                00680000
+.DEFLAG  ANOP                                                           00690000
+&I       SETA  3                                                        00700000
+         AIF   (&J EQ N'&MCSFLAG OR T'&MCSFLAG EQ 'O').DODEF            00710000
+&J       SETA  &J+1                                                     00720000
+         AIF   ('&MCSFLAG(&J)' EQ 'REG0' OR '&MCSFLAG(&J)' EQ 'QREG0').*00730000
+               SETNCLR                                                  00740000
+         AGO   .DEFLAG                                                  00750000
+.DODEF   ANOP                                                           00760000
+         AIF   (T'&MSGTYP NE 'O').SETNCLR                         68508 00770000
+         AIF   (T'&UCMID NE 'O').SETNCLR                                00780000
+&B(2)    SETB  (&MCS)                                                   00790000
+&I       SETA  3                                                        00800000
+         AGO   .SETNCLR                                                 00810000
+.*                                                                      00820000
+.RCHK0   ANOP                                                           00830000
+.RCHK    ANOP                                                           00840000
+&N       SETA  &ROUTCDE(&I)                                             00850000
+&I       SETA  &I+1                                                     00860000
+         AIF   (&N GE 1 AND &N LE 16).ASSIGNR                           00870000
+         MNOTE 8,'ROUTCDE(&I-1) IS INVALID ROUTE- IGNORED'        66111 00880000
+         AGO   .NXTR                                                    00890000
+.ASSIGNR ANOP                                                           00900000
+&NODFLT  SETB  (&NODFLT OR &N NE 16)                                    00910000
+&B(&N)   SETB  1                                                        00920000
+.NXTR    AIF   (&I LE N'&ROUTCDE).RCHK                                  00930000
+&I       SETA  3                                                        00940000
+&B(2)    SETB  (&B(2) OR NOT &NODFLT)                                   00950000
+&NODFLT  SETB  0                                                        00960000
+&B(16)   SETB  0                                                        00970000
+.NOT11   ANOP                                                           00980000
+.*                                                                      00990000
+.*  SET OUTPUT AREAS AND CLEAR BINARY FLAGS                             01000000
+.*                                                                      01010000
+.SETNCLR ANOP                                                           01020000
+&CD(&I)  SETC  '&B(1)&B(2)&B(3)&B(4)&B(5)&B(6)&B(7)&B(8)'               01030000
+&CD(&I+1) SETC '&B(9)&B(10)&B(11)&B(12)&B(13)&B(14)&B(15)&B(16)'        01040000
+&N       SETA  1                                                        01050000
+.CLR     ANOP                                                           01060000
+&B(&N)   SETB  0                                                        01070000
+&N       SETA  &N+1                                                     01080000
+         AIF   (&N LT 17).CLR                                           01090000
+         AIF   (&I EQ 1).RTCHK                                          01100000
+         AIF   (&I EQ 5).FLGCHK0                                        01110000
+         AIF   (&I EQ 7).GENDCS                                  S21002 01120000
+.*                                                                      01130000
+.*  MESSAGE TYPES                                                       01140000
+.*                                                                      01150000
+.TYPCHK  AIF   (T'&MSGTYP EQ 'O').FLGCHK0                               01160000
+         AIF   ('&MSGTYP(1)' EQ 'N').FLGCHK0                            01170000
+&SWM     SETB  1                                                 S21002 01180000
+&I       SETA  5                                                        01190000
+&N       SETA  1                                                        01200000
+         AIF   ('&MSGTYP(1)' EQ 'Y').SETNCLR                            01210000
+&I       SETA  1                                                        01220000
+.*                                                                      01230000
+&CFLG(1) SETC  'JOBNAMES'                                               01240000
+&CFLG(2) SETC  'STATUS'                                                 01250000
+&CFLG(3) SETC  'ACTIVE'                                          S21002 01260000
+&CFLG(4) SETC  ''                                                S21002 01270000
+&CFLG(5) SETC  'SHOW'                                              CRJE 01280000
+&CFLG(6) SETC  'SESS'                                            20034  01290000
+.*                                                                      01300000
+.TCHK    AIF   ('&MSGTYP(&I)' EQ '&CFLG(&N)').SETTYP                    01310000
+&N       SETA  &N+1                                                     01320000
+         AIF   (&N LE 8).TCHK                                           01330000
+         MNOTE 8,'MESSAGE TYPE FIELD INVALID- N IS ASSUMED'             01340000
+&N       SETA  1                                                 S21002 01350000
+&I       SETA  5                                                 S21002 01360000
+&SWM     SETB  0                                                 S21002 01370000
+         AGO   .CLR                                              S21002 01380000
+         AGO   .FLGCHK0                                                 01390000
+.SETTYP  AIF   ('&CFLG(&N)' EQ '').ADDIT                                01400000
+&B(&N)   SETB 1                                                         01410000
+.ADDIT   ANOP                                                           01420000
+&I       SETA  &I+1                                                     01430000
+&N       SETA  1                                                        01440000
+         AIF   (&I LE N'&MSGTYP).TCHK                                   01450000
+&I       SETA  5                                                        01460000
+         AGO   .SETNCLR                                                 01470000
+.*                                                                      01480000
+.*  MCSFLAGS                                                            01490000
+.*                                                                      01500000
+.FLGCHK0 ANOP                                                           01510000
+&MCS    SETB  (T'&ROUTCDE NE 'O' OR T'&MSGTYP NE 'O' OR T'&DESC NE 'O') 01520000
+.*                                                               S21002 01530000
+&B(1)    SETB  (&MCS)                                                   01540000
+         AIF   (T'&UCMID EQ 'O').NOUCMFG                                01550000
+&B(2)    SETB  1             SET UCMID FLAG                             01560000
+.NOUCMFG ANOP                                                           01570000
+&B(4)    SETB  (&SWM)                                                   01580000
+&B(10)   SETB  (&MLW)              THIS IS MLWTO LIST            S21002 01590000
+&I       SETA  7                                                        01600000
+         AIF   (T'&MCSFLAG EQ 'O').SETNCLR                              01610000
+&I       SETA  1                                                        01620000
+&N       SETA  1                                                        01630000
+.*                                                                      01640000
+&CFLG(1) SETC  'REG0'                                                   01650000
+&CFLG(2) SETC  'RESP'                                                   01660000
+&CFLG(3) SETC  ''                                                       01670000
+&CFLG(4) SETC  'REPLY'                                                  01680000
+&CFLG(5) SETC  'BRDCST'                                                 01690000
+&CFLG(6) SETC  'HRDCPY'                                                 01700000
+&CFLG(7) SETC  'QREG0'                                                  01710000
+&CFLG(8) SETC  'NOTIME'                                                 01720000
+&CFLG(13) SETC 'NOCPY'                                                  01730000
+.*                                                                      01740000
+.FLGCHK  AIF   ('&MCSFLAG(&I)' EQ '&CFLG(&N)').SETFLG                   01750000
+&N       SETA  &N+1                                                     01760000
+         AIF   (&N LE 15).FLGCHK                                        01770000
+         MNOTE 8,'&MCSFLAG(&I) IS INVALID- IGNORED'                     01780000
+         AGO   .ADDI                                                    01790000
+.SETFLG  AIF   ('&CFLG(&N)' EQ '').ADDI                                 01800000
+         AIF   ('&CFLG(&N)' NE 'HRDCPY').HDCYOK               BE A52575 01810000
+         AIF   (NOT &MLW).HDCYOK                              BE A52575 01820000
+         IHBERMAC 248                                         BE A52575 01830000
+&GNAME.A DS    0H                                                       01840000
+         MEXIT                                                          01850000
+.HDCYOK  ANOP                                                 BE A52575 01860000
+&B(&N+1) SETB  1                                                        01870000
+.ADDI    ANOP                                                           01880000
+&I       SETA  &I+1                                                     01890000
+&N       SETA  1                                                        01900000
+         AIF   (&I LE N'&MCSFLAG).FLGCHK                                01910000
+         AIF   (&B(7) AND &B(14)).MUTEXC  THESE PARAM MUTUALLY EXCLUSIV 01920000
+.*                                      HARDCOPY AND NO HARD COPY       01930000
+         AGO   .SETTER                                                  01940000
+.MUTEXC  ANOP                                                           01950000
+&B(14)   SETB  0                                                        01960000
+         MNOTE 8,'HRDCPY AND NOCPY MUTUALLY EXCLUSIVE, HRDCPY ASSUMED'  01970000
+.SETTER  ANOP                                                           01980000
+&I       SETA  7                                                        01990000
+         AGO   .SETNCLR                                                 02000000
+.IROUT   AIF   (&IHBWTOR).MESCHK                                        02010000
+         CNOP  0,4                                                      02020000
+&NAME    BAL   1,&GNAME.A                        BRANCH AROUND MESSAGE  02030000
+&MACPLAB SETC  ''                                                90014  02040000
+         AGO   .MESCHK                                                  02050000
+.*                                                               S21002 02060000
+.*  * *  SET LINETYPE  * * * * *                                 S21002 02070000
+.*                                                               S21002 02080000
+.GENDCS  AIF   (NOT &MLW).NOTMLW1  GENERATE REGULAR WTO          S21002 02090000
+&H       SETA  1                                                 S21002 02100000
+         AIF   ('&SYSLIST(1,1)' EQ '').MLW04                     S21002 02110000
+         AIF   (N'&SYSLIST(1) GT 2).MLW05                        S21002 02120000
+         AIF   ('&SYSLIST(1,2)' NE 'C').MLW02                    S21002 02130000
+&LT(1)   SETA  80                                                S21002 02140000
+.MLW01   AIF   (N'&SYSLIST LE &H).MLW11                          S21002 02150000
+&H       SETA  &H+1                                              S21002 02160000
+         AIF   (N'&SYSLIST(&H) GT 2).MLW05                       S21002 02170000
+.MLW02   AIF   ('&SYSLIST(&H,2)' NE 'L' OR '&SYSLIST(&H,1)' EQ '').MLW0X02180000
+               4                                                 S21002 02190000
+&LT(&H)  SETA  40                                                S21002 02200000
+         AIF   (&SECONDL).MLW03                                  S21002 02210000
+&SECONDL SETB  1                                                 S21002 02220000
+         AGO   .MLW01                                            S21002 02230000
+.MLW03   AIF   (N'&SYSLIST LE &H).MLW11                          S21002 02240000
+&H       SETA  &H+1                                              S21002 02250000
+         AIF   (N'&SYSLIST(&H) GT 2).MLW05                       S21002 02260000
+.MLW04   AIF   ('&SYSLIST(&H,2)' EQ 'E').MLW06                   S21002 02270000
+         AIF   ('&SYSLIST(&H,1)' EQ '').MLW05                    S21002 02280000
+         AIF   ('&SYSLIST(&H,2)' EQ 'DE').MLW08                  S21002 02290000
+         AIF   ('&SYSLIST(&H,2)' EQ 'L' OR '&SYSLIST(&H,2)' EQ 'C').MLWX02300000
+               09                                                S21002 02310000
+         AIF   ('&SYSLIST(&H,2)' NE 'D' AND '&SYSLIST(&H,2)' NE '').MLW*02320000
+               10                                                S21002 02330000
+&LT(&H)  SETA  20                                                S21002 02340000
+         AGO   .MLW03                                            S21002 02350000
+.MLW05   ANOP                                                    S21002 02360000
+&E5      SETB  1                                                 S21002 02370000
+&LT(&H)  SETA  10                                                S21002 02380000
+         AGO   .MLW11                                            S21002 02390000
+.MLW06   ANOP                                                    S21002 02400000
+&LT(&H)  SETA  10                                                S21002 02410000
+.MLW07   ANOP                                                    S21002 02420000
+&E4      SETB  (&H NE N'&SYSLIST)                                S21002 02430000
+         AGO   .MLW11                                            S21002 02440000
+.MLW08   ANOP                                                    S21002 02450000
+&LT(&H)  SETA  30                                                S21002 02460000
+         AGO   .MLW07                                            S21002 02470000
+.MLW09   ANOP                                                    S21002 02480000
+&E3      SETB  1                                                 S21002 02490000
+&LT(&H)  SETA  30                                                S21002 02500000
+         AGO   .MLW11                                            S21002 02510000
+.MLW10   ANOP                                                    S21002 02520000
+&E5      SETB  1                                                 S21002 02530000
+&LT(&H)  SETA  30                                                S21002 02540000
+.MLW11   ANOP                                                    S21002 02550000
+&LLCNT   SETA  &H                                                S21002 02560000
+&H       SETA  1                                                 S21002 02570000
+.NOTMLW1 ANOP                                                    S21002 02580000
+&I       SETA  1                                              MA S21002 02590000
+&LEN     SETA  K'&SYSLIST(1,1)-2                              MA S21002 02600000
+&PAIR    SETB  0                                              MA S21002 02610000
+.QLOOP1  ANOP                                                 MA S21002 02620000
+&I       SETA  &I+1+&PAIR                                     MA S21002 02630000
+         AIF   (&I GE K'&SYSLIST(1,1)).QDONE1                 MA S21002 02640000
+&PAIR    SETB  ('&SYSLIST(1,1)'(&I,2) EQ '''''' OR '&SYSLIST(1,1)'(&I,2*02650000
+               ) EQ '&&')                                               02660000
+&LEN     SETA  &LEN-&PAIR                                     MA S21002 02670000
+         AGO   .QLOOP1                                        MA S21002 02680000
+.QDONE1  ANOP                                                 MA S21002 02690000
+&AD      SETB  (&LT(1) NE 10)      0 IF E-TYPE LINE, 1 IF NOT MA S21002 02700000
+&LEN     SETA  4+&LEN*&AD                                     MA S21002 02710000
+         DC    AL2(&LEN)           TEXT LENGTH                          02720000
+         DC    B'&CD(7)&CD(8)'     MCS FLAGS                            02730000
+         AIF   (&LEN EQ 4).SKIPDC                                S21002 02740000
+         DC    C&SYSLIST(1,1)                                           02750000
+.SKIPDC  AIF   (NOT &MCS).OLDEXIT                                S21002 02760000
+         DC    B'&CD(1)&CD(2)'     DESCRIPTOR CODES                     02770000
+         DC    B'&CD(3)&CD(4)'     ROUTING CODES                        02780000
+         AIF   ('&MSGTYP(1)' NE 'Y' AND NOT &SWM).OLDEXIT        S21002 02790000
+         DC    B'&CD(5)&CD(6)'     MESSAGE TYPE                         02800000
+.OLDEXIT AIF   (NOT &MLW).NOTMLW2                                S21002 02810000
+         DC    XL2'&LT(1)00'       LINE TYPE                            02820000
+         DC    AL2(&LLCNT)         TOTAL NUMBER OF LINES                02830000
+.MLW12   AIF   (&H GE &LLCNT).MLW14                              S21002 02840000
+&H       SETA  &H+1                                              S21002 02850000
+&I       SETA  1                                              MA S21002 02860000
+&LEN     SETA  K'&SYSLIST(&H,1)-2                             MA S21002 02870000
+&PAIR    SETB  0                                              MA S21002 02880000
+.QLOOPH  ANOP                                                 MA S21002 02890000
+&I       SETA  &I+1+&PAIR                                     MA S21002 02900000
+         AIF   (&I GE K'&SYSLIST(&H,1)).QDONEH                MA S21002 02910000
+&PAIR    SETB  ('&SYSLIST(&H,1)'(&I,2) EQ '''''' OR '&SYSLIST(&H,1)'(&I*02920000
+               ,2) EQ '&&')                                             02930000
+&LEN     SETA  &LEN-&PAIR                                     MA S21002 02940000
+         AGO   .QLOOPH                                        MA S21002 02950000
+.QDONEH  ANOP                                                 MA S21002 02960000
+&AD      SETB  (&LT(&H) NE 10)     0 IF E-TYPE LINE, 1 IF NOT MA S21002 02970000
+&LEN     SETA  4+&LEN*&AD                                     MA S21002 02980000
+         DC    AL2(&LEN)           LENGTH                               02990000
+         DC    XL2'&LT(&H)00'      LINE TYPE                            03000000
+         AIF   (&LEN EQ 4).MLW12                                 S21002 03010000
+         DC    C&SYSLIST(&H,1)                                          03020000
+         AGO   .MLW12                                            S21002 03030000
+.MLW14   AIF   (NOT &E4).MLW15                                   S21002 03040000
+         IHBERMAC 242                                         MB  M1428 03050000
+.MLW15   AIF   (NOT &E5).MLW17                                   S21002 03060000
+         IHBERMAC 243                                         MB  M1428 03070000
+.MLW17   AIF   (NOT &E3).NOTMLW2                                 S21002 03080000
+         IHBERMAC 244                                         MB  M1428 03090000
+.NOTMLW2 AIF   (&IHBWTOR OR '&MF' NE 'I').END                    S21002 03100000
+.MLWHC   ANOP                                                 BE A52575 03110000
+&GNAME.A DS    0H                                                       03120000
+         AIF   (&E3 OR &IHBWTL).END                              S21002 03130000
+.UCMSVC  AIF   (T'&UCMID EQ 'O').DOSVC                                  03140000
+         AIF   ('&UCMID'(1,1) EQ '(').NOSR                              03150000
+&MACPLAB SLR   R0,R0         CLEAR IC REGISTER                   90014  03160000
+&MACPLAB SETC  ''                                                90014  03170000
+.NOSR    MACPARM R0,&UCMID,OP=IC                                        03180000
+         AIF   ('&TSO' EQ 'NO').DOSVC                                   03190000
+&MACPLAB LA    R15,255       MAX UCMID                                  03200000
+         CR    R0,R15        MAX ?                                      03210000
+         BL    *+22          SKIP TPUT CODE                             03220000
+         LH    R0,0(,R1)     LOAD LENGTH+4                              03230000
+         SH    R0,*+6        ACTUAL LENGTH                              03240000
+         LA    R1,4(R1,0)    TEXT START                                 03250000
+         SVC   93            TPUT                                       03260000
+         B     *+6           BRANCH AROUND WTO                          03270000
+.DOSVC   ANOP  ,                                                        03280000
+&MACPLAB SVC   35                                                       03290000
+         MEXIT                                                   S21002 03300000
+.E1      IHBERMAC 35,,&MF                                               03310000
+         MEXIT                                                          03320000
+.NOTXT   ANOP                                                    S21002 03330000
+         IHBERMAC 245                                         MB  M1428 03340000
+         MEXIT                                                   S21002 03350000
+.MLWTOR  IHBERMAC 246                                         MB  M1428 03360000
+.END     MEND                                                           03370000

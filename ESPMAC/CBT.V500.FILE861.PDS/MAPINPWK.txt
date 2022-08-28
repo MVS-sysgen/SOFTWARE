@@ -1,0 +1,75 @@
+         MACRO ,                                        ADDED ON 90260  00010000
+&NM      MAPINPWK &PREFIX=IP,&WIDTH=500 INPUT READER WORK AREA MAPPING  00020000
+.*   UPDATED FOR ESA AND OS/390                                 GP98365 00030000
+.*   UPDATED FOR DESERV AND CONCATENATED PDS & PDS/E SUPPORT    GP03244 00040000
+         LCLC  &DS                                                      00050000
+         LCLC  &P            SHORT PREFIX                               00060000
+&P       SETC  '&PREFIX'                                                00070000
+&DS      SETC  '&P'.'WORK'                                              00080000
+         AIF   ('&NM' EQ '').NONAME                                     00090000
+&DS      SETC  '&NM'                                                    00100000
+.NONAME  ANOP  ,                                                        00110000
+&DS      DSECT ,             MAPPING OF PRINT DCB AND WORK AREA         00120000
+&P.LINK  DS    F             LINK TO NEXT GETMAINED AREA                00130000
+&P.ID    DS    C'INP-'       ID OF INPUT FILE 'N'                       00140000
+&P.SPLEN DS    F             SUBPOOL/LENGTH OF THIS AREA                00150000
+&P.TCB   DS    A             ADDRESS OF OWNING TCB                      00160000
+&P.DCB@  DS    X'90',AL3(&P.DCB)  DCB POINTER (24-BIT ADDRESS)          00170000
+&P.PU@   DS    A             ADDRESS OF USER'S OPEN WORK AREA           00180000
+&P.@SERV DS    A             ADDRESS OF @SERVICE ROUTINE                00190000
+         SPACE 1                                                        00200000
+&P.O2LVL DCBEXITD DSECT=NO,PREFIX=IX,LEVEL2=2                    90260  00210000
+&P.WLIST SERVCOMP DSECT=NO,PFX=&P.D                              90260  00220000
+&P.UFLAG DS    X             USER'S PROCESSING FLAGS                    00230000
+&P.UFILL DS    C             FILL BYTE FOR SHORT RECORDS         81200  00240000
+&P.FLAG  DS    X             PROCESSING FLAGS                           00250000
+&P.FEOF  EQU   X'80'           END FILE READ                            00260000
+&P.FEOM  EQU   X'40'           END MEMBER READ                   89352  00270000
+&P.FEXT  EQU   X'20'           PDS EXTENSION PRESENT            GP03244 00280002
+&P.FKEEP EQU   X'10'           RE-GET OF CURRENT RECORD                 00290000
+&P.FWYL  EQU   X'08'           POTENTIAL WYLBUR EDIT BLOCK              00300000
+&P.FWIL  EQU   X'04'           WYLBUR RECORD READY FOR DEBLOCK          00310000
+&P.FACB  EQU   X'02'           PROCESSING ACB, NOT DCB           89360  00320000
+&P.FASCI EQU   X'01'           TRANSLATE ASCII TO EBCDIC         82175  00330000
+&P.BUFSP DC    X'00'         GETPOOL SUBPOOL NUMBER              85157  00340000
+&P.ACB   ACB   DDNAME=SYSUT1,MACRF=(ADR,SEQ,IN)                  89360  00350000
+&P.RPLEN DC    F'0'    1/2   LENGTH OF GOTTEN RPL                89360  00360000
+&P.RPL@  DC    A(0)    2/2   ADDRESS OF GOTTEN RPL               89360  00370000
+&P.RRN   DC    A(0)          RELATIVE RECORD NO. FEEDBACK        90201  00380000
+         ORG   &P.ACB         RE-USE                             89360  00390000
+&P.DCB   DCB   DDNAME=ANY,DSORG=PS,MACRF=GL,EROPT=ACC, OPTCD=Z,        *00400000
+               EODAD=1,EXLST=&P.XLIST ,BFTEK=A                   82178  00410000
+         ORG   ,             COMMON END OF ACB/DCB               89360  00420000
+&P.XLIST DC    0A(0),X'87',AL3(0),A(0,0,0) +JFCB+@DCBEXIT+ABND   86272  00430000
+&P.VCON  DC    F'0'          V-FORMAT RECORD HEADER                     00440000
+&P.RECCC DC    C' '          CARRIAGE CONTROL                           00450000
+&P.REC   DC    2CL(&WIDTH/2)' '     TEXT RECORD                         00460000
+&P.TRUPP DS    A             UPPER CASE TRANSLATE OR NO-OP      GP04114 00470006
+&P.WKEND DS    0D            END OF WORK AREA                           00480004
+         SPACE 1                                                 89352  00490000
+*        EXTENSION PRESENT WHEN USER REQUESTS PDS SERVICES       89352  00500000
+&P.POD   DCB   DDNAME=ANY,DSORG=PS,MACRF=GL,RECFM=U,EODAD=1 DEODAD      00510000
+         ORG   &P.POD         RE-USE                            GP03244 00520003
+&P.DIR   DCB   DDNAME=ANY,DSORG=PS,MACRF=GL,EROPT=ACC,                 *00530003
+               EODAD=1 EXLST=&P.XLIST                           GP03244 00540003
+         ORG   ,             COMMON END OF ACB/DCB               89360  00550003
+&P.PCARD DC    CL15'./       ADD   '   IEBUPDTE CARD             89352  00560000
+&P.PCAME DC    CL65'SSI=XXXXXXXX,NAME=XXXXXXXX'  VARIABLE PART  GP10192 00570000
+&P.CONCT DC    X'00'         CONCATENATION # FROM SMDEMLTK (0->255)     00580000
+&P.PFLAG DC    X'00'         MORE FLAGS                         GP03244 00590001
+&P.PFDE  EQU   X'80'           DESERV BUFFERS AVAILABLE         GP03244 00600001
+&P.PFPDS EQU   X'20'           PROCESSING A PDS                 GP03244 00610002
+&P.RSVD8 DC    X'00'         RESERVED                           GP03244 00620003
+&P.@DSAB DC    A(0)          ADDRESS OF DSAB FOR INPUT DD       GP03244 00630005
+&P.@POD  DC    A(&P.POD)      OPEN/CLOSE LIST                    89352  00640000
+&P.PXLST DC    2A(0)         POD EXIT LIST/JFCB                  89352  00650000
+&P.@ROOT DC    A(0)          ROOT OF DESERV BUFFERS             GP03244 00660005
+&P.@DBXL DC    4A(0)         BXLE/@BUF FOR DESERV LOOP          GP03244 00670005
+&P.@DSRV DC    A(0)          ADDRESS OF SUBDSERV ROUTINE        GP03244 00680005
+&P.PDDNM DC    CL8' '        NAME OF DYNAMICALLY ALLOCATED DD   GP03244 00690005
+&P.PJFCB DS    XL(JFCBLGTH)  JFCB FOR INDIVIDUAL MEMBER          89352  00700000
+&P.PDSDE DS    XL(8+1+3+62)  (FAKE) DIRECTORY ENTRY             GP03244 00710005
+&P.PBXLE SERVPDS PFX=PE,DSECT=NO,RETURN=YES,VER=1                89352  00720000
+&P.PBXLN EQU   *-&P.PBXLE    LENGTH OF PDE WORK AREA             89352  00730000
+&P.PWKND EQU   *             END OF PDS EXTENSION                89352  00740000
+         MEND  ,                                                 90260  00750000

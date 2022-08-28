@@ -1,0 +1,21 @@
+         MACRO ,                                                        00000100
+&NM      MACBL &LABEL                                  NEW 2009.082 GYP 00000202
+.*--------------------------------------------------------------------* 00000300
+.*   MACAD EXPANDS A LABELLED BRANCH TO THE TARGET ADDRESS, OR        * 00000400
+.*     A WORD OF ZEROES.                                              * 00000500
+.*   USED AS AN INNER MACRO TO EXPAND DEFINITIONS OR MAPPING          * 00000600
+.*--------------------------------------------------------------------* 00000700
+         GBLB  &ZZLABYN                                                 00000800
+         LCLA  &I,&N                                                    00000900
+         LCLC  &STR,&LAB                                                00001000
+&N       SETA  N'&SYSLIST    GET NUMBER OF OPERANDS                     00001100
+         AIF   (NOT &ZZLABYN).SIMPLE                                    00001200
+&LAB     SETC  '&NM'                                                    00001300
+.DOLAB   AIF   (&I GE &N).MEND                                          00001400
+&I       SETA  &I+1                                                     00001500
+&LAB     B     &SYSLIST(&I)                                             00001600
+&LAB     SETC  ''                                                       00001700
+         AGO   .DOLAB                                                   00001800
+.SIMPLE  ANOP  ,                                                        00001900
+&NM      DC    &N.AL4(0)                                                00002000
+.MEND    MEND  ,                                                        00002100

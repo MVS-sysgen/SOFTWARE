@@ -1,0 +1,556 @@
+         MACRO ,                                                        00010000
+&NM      MDEFHEAD &LANG=0001,&PFX=,&VERID=V0R9,&SECT=,&TYPE=,          *00020000
+               &RENT=YES,    (OPTIONAL RENT=NO SLIGHTLY FASTER)        *00030000
+               &LENID=8,     MAXIMUM MESSAGE ID LENGTH                 *00040000
+               &UDATA=0,     AVAILABLE TO DESIGNER                     *00050000
+               &DOFFLEN=2,   LENGTH OF A DICTIONARY OFFSET ENTRY       *00060000
+               &MOFFLEN=2,   LENGTH OF A MESSAGE POINTER OFFSET        *00070000
+               &COM='U.S. ENGLISH / EBCDIC'                             00080000
+.********************************************************************** 00090000
+.*                                                                    * 00100000
+.* MDEFHEAD - THIS MACRO IS THE FIRST IN A MESSAGE DEFINITION MODULE. * 00110000
+.*       ONLY ONE IS PERMITTED PER ASSEMBLY, AND IT IS ANTICIPATED    * 00120000
+.*       THAT EACH MESSAGE MODULE WILL BE COMPLETE FOR ONE PRODUCT.   * 00130000
+.*                                                                    * 00140000
+.*   AFTER MDEFHEAD, USE ONE MDEF STATEMENT PER MESSAGE.              * 00150000
+.*   THE MODULE IS COMPLETED WITH THE MDEFEND MACRO (AND AN END CARD) * 00160000
+.*                                                                    * 00170000
+.*   PARAMETERS:                                                      * 00180000
+.*                                                                    * 00190000
+.*   SECT=  EXPANDS IN-LINE TEXT AND RSECT STATEMENTS                 * 00200000
+.*   SECT=DSECT  EXPANDS A MAPPING OF THE MODULE HEADER AREA.         * 00210000
+.*       NOTE THAT THE ENTRIES PRIOR TO POINT ARE VARIABLE LENGTH.    * 00220000
+.*       TO GET CORRECT RESULTS, LOAD THE FIRST FOUR BYTES, MASK WITH * 00230000
+.*       X'00000FFF' (RETAIN ONLY DISPLAVEMENT), AND THE LOAD ADDRESS * 00240000
+.*       AND USE THAT ADDRESS FOR A USING MTVPOINT                    * 00250000
+.*                                                                    * 00260000
+.*   LANG=  ANY VALUE LEGAL IN AN A CONSTANT. NOT USED, NOT CHECKED.  * 00270000
+.*                                                                    * 00280000
+.*   PFX=   WITH SECT=DSECT, THE LABEL PREFIX                         * 00290000
+.*          OTHERWISE, THE PREFIX FOR MESSAGE IDENTIFIERS             * 00300000
+.*                                                                    * 00310000
+.*   TYPE=  USE C OR G(NOT SUPPORTED) - GLOBAL DC TYPE                * 00320000
+.*                                                                    * 00330000
+.*   VERID= VERSION IDENTIFIER (I.E., V_R_)                           * 00340000
+.*                                                                    * 00350000
+.*   LENID= MAXIMUM MESSAGE IDENTIFIER LENGTH. LONGER IDS WILL FAIL.  * 00360000
+.*          SHORTER ONES ARE LEFT-JUSTIFIED AND BLANK PADDED          * 00370000
+.*                                                                    * 00380000
+.*   DOFFLEN=2 (LEGAL ARE 2, 3, AND 4) LENGTH OF DICTIONARY OFFSET    * 00390000
+.*          ENTRY. USE 2 FOR SMALL MODULES, 3 FOR LARGE.              * 00400000
+.*                                                                    * 00410000
+.*   MOFFLEN=2 (LEGAL ARE 2, 3, AND 4) LENGTH OF MESSAGE PTR OFFSET   * 00420000
+.*          ENTRY. USE 2 FOR SMALL MODULES, 3 FOR LARGE.              * 00430000
+.*                                                                    * 00440000
+.*   COM=   ARBITRARY TEXT TO IDENTIFY THE MODULE IN A DUMP.          * 00450000
+.*                                                                    * 00460000
+.*   UDATA= ANY TEXT LEGAL IN AN A CONSTANT.                          * 00470000
+.*                                                                    * 00480000
+.********************************************************************** 00490000
+.*                                                                    * 00500000
+.*   PRODUCES:  RSECT,AM31,RMANY WITH SECT=,  DSECT WITH SECT=DSECT   * 00510000
+.*     RSECT NAME MUST APPEAR ON MACRO INVOCATION                     * 00520000
+.*     DSECT NAME USES LABEL. IF NONE, DEFAULTS TO MTVDSECT, AND      * 00530000
+.*              PFX DEFAULTS TO MTV                                   * 00540000
+.*                                                                    * 00550000
+.*   PFX.BCODE  BRANCH TO MESSAGE BUILD CODE                          * 00560000
+.*   PFX.POINT  LABEL FOR USING                                       * 00570000
+.*   PFX.UDAT   USER DATA                                             * 00580000
+.*   PFX.LANG   LANGUAGE INDICATOR                                    * 00590000
+.*   PFX.MPTR   1/3 FIRST MESSAGE POINTER ADDRESS      |              * 00600000
+.*   PFX.MPLN   2/3 LENGTH OF MESSAGE POINTER (2,3,4)  |  BXLE        * 00610000
+.*   PFX.MPND   3/3 LAS DEFINED MESSAGE POINTER        |              * 00620000
+.*   PFX.@MSG   ADDRESS OF MESSAGE RSECT                              * 00630000
+.*   PFX.@DIC   ADDRESS OF DICTIONARY RSECT                           * 00640000
+.*   PFX.LMID   MAXIMUM LENGTH OF A MESSAGE IDENTIFIER                * 00650000
+.*   PFX.LMOF   SIZE OF MESSAGE OFFSET (2,3,4)                        * 00660000
+.*   PFX.LDOF   LENGTH OF MESSAGE OFFSET LIST ENTRY                   * 00670000
+.*                                                                    * 00680000
+.*   TO LOCATE A MESSAGE:                                             * 00690000
+.*                                                                    * 00700000
+.*   CALCULATE ADDRESS OF PFX.POINT                                   * 00710000
+.*   LM R1,R3,PFX.MPTR - USE BXLE OR (IF ORDERED) BINARY TABLE LOOKUP * 00720000
+.*     RESULT IS POINTER TO MESSAGE DEFINITION:                       * 00730000
+.*     (2,3,4 BYTE) OFFSET TO MESSAGE WORD LIST; MESSAGE ID           * 00740000
+.*     WORDLIST OFFSET IS OFFSET FROM MESSAGE RSECT IN PFX.@MSG       * 00750000
+.*   WORDLIST: (2,3,4 BYTE EACH): NUMBER OF ENTRIES FOLLOWING;        * 00760000
+.*     A) OFFSET FROM ADDR IN PFX.@DIC TO WORD IN DICTIONARY          * 00770000
+.*     B) CODE (>ZZDICMX) FOR SPECIAL FUNCTION (DEFAULT IS 48000)     * 00780000
+.*                                                                    * 00790000
+.*   DICTIONARY ENTRY:                                                * 00800000
+.*     (1 BYTE) PHYSICAL LENGTH OF TEXT                               * 00810000
+.*     (1 BYTE) LOGICAL LENGTH OF TEXT                                * 00820000
+.*     (1 BYTE) TYPE (C, G, X)                                        * 00830000
+.*     (PHYS. LEN) QUOTED STRING                                      * 00840000
+.*                                                                    * 00850000
+.********************************************************************** 00860000
+         COPY  MDEFGBL                                                  00870000
+         LCLC  &P,&LBL,&OPDS,&MYSECT                                    00880000
+.*  ESTABLISH GLOBAL VALUES                                             00890000
+&ZZDOFLN SETA  &DOFFLEN      LENGTH OF OFFSET WORD - DICTIONARY LOOKUP  00900000
+&ZZMOFLN SETA  &MOFFLEN      LENGTH OF OFFSET WORD - MESSAGE LOOKUP     00910000
+&ZZIDLEN SETA  &LENID                                                   00920000
+&ZZMDTYP SETC  '&TYPE'       GLOBAL DC ATTRIBUTE (C OR G)               00930000
+&LBL     SETC  '&NM'                                                    00940000
+&P       SETC  '&PFX'                                                   00950000
+&MYSECT  SETC  '&SYSECT'                                                00960000
+.*  CHECK MDEFHEAD USAGE - BY DESIGN, ONE PER MODULE. (IGNORE IF DSECT) 00970000
+         AIF   ('&SECT' EQ 'DSECT').UNFORKD                             00980000
+&ZZMGLO  SETC  (&LENID)'9'   LOWEST ID TO DATE                          00990000
+&ZZMGHI  SETC  ''            HIGHEST MESSAGE ID TO DATE                 01000000
+&ZZMGPRE SETC  ''            PREVIOUS MESSAGE ID                        01010000
+&ZZMGSRT SETC  'IS'          TABLE IS IN SEQUENCE (?)                   01020000
+&ZZLNGIX SETA &ZZLNGIX+1                                                01030000
+         AIF   (&ZZLNGIX LE 1).UNFORKD                                  01040000
+         MNOTE 4,'ONLY ON MDEFHEAD PER MODULE IS SUPPORTED.'            01050000
+.*  SET DEFAULT NAME (MTVDSECT) AND PREFIX (MTV) FOR SECT=DSECT ONLY    01060000
+.UNFORKD AIF   ('&P' NE '').UPFX                                        01070000
+&P       SETC  'MTV'         MESSAGE TABLE VECTOR MAPPING               01080000
+.UPFX    AIF   ('&NM' NE '').HAVELBL                                    01090000
+&LBL     SETC  'MTVDSECT'                                               01100000
+.HAVELBL AIF   ('&SECT' EQ 'DSECT').MAPPER                              01110000
+         AIF   ('&NM' NE '').HAVEMOD                                    01120000
+         MNOTE 4,'MDEFHEAD SHOULD HAVE A NAME FIELD'                    01130000
+.*  EXPAND RSECT FOR MODULE HEADER                                      01140000
+.HAVEMOD ANOP  ,                                                        01150000
+&NM      CSECT ,                                                        01160000
+&NM      AMODE 31                                                       01170000
+&NM      RMODE ANY                                                      01180000
+&ZZTABNM SETC  '&NM'                                                    01190000
+&OPDS    SETC  ''                                                       01200000
+         AIF   ('&P' NE '').COMGO                                       01210000
+&P       SETC  '&NM'(1,3)    IF NO PREFIX - CHEAT AND USE PRODUCT NAME  01220000
+         AGO   .COMGO                                                   01230000
+.*  ELSE SET DSECT HEADER                                               01240000
+.MAPPER  ANOP  ,             MAP THE MESSAGE TABLE HEADER               01250000
+&LBL     DSECT ,             MAP THE MESSAGE TABLE HEADER               01260000
+&OPDS    SETC  '0) '         PREVENT UNDEFINED ERRORS                   01270000
+.COMGO   ANOP  ,                                                        01280000
+.*  BUILD BRANCH AROUND, AND BUILD VARIABLE HEADER INFORMATION          01290000
+&P.BROF  B     &P.BCODE-&LBL.(,R15)    DEFINE OFFSET TO CONSTANTS       01300000
+         DC    AL1(&OPDS.&P.POINT-&P.COPR)  LENGTH OF EYEBALLER         01310000
+&P.COPR  DC    C'&LBL &VERID &SYSDATE &SYSTIME '                        01320000
+         DC    C'COPYRIGHT 2003,2008 EXPERT SYSTEM PROGRAMMING'         01330000
+         DC    C' - ALL RIGHTS RESERVED '                               01340000
+         CNOP  2,4           FORCE ALIGNMENT PRIOR TO POINT             01350000
+&P.TBVR  DC    C' 1'         TABLE VERSION 1                            01360000
+.*  START OF MESSAGE TABLE VECTORS                                      01370000
+         DS   0A             MALIGN                                     01380000
+&P.BCODE B    &P.CODE-&LBL.(,R15)  GO TO MESSAGE BUILDER                01390000
+&P.POINT DS   0A   SPECIFY THIS IN USING AFTER CALCULATING ADDRESS      01400000
+&P.UDAT  DC    A(&OPDS.&UDATA) USER SPECIFIED DATA                      01410000
+&P.LANG  DC    A(&OPDS.&LANG) LANGUAGE / CODE PAGE COMBINATION          01420000
+&P.MPTR  DC    A(&OPDS.MPT00001) FIRST MESSAGE POINTER (1/3 FOR BXLE)   01430000
+&P.MPLN  DC    A(&OPDS.MPTSIZE) SIZE OF MSG PTR ENTRY (2/3)             01440000
+&P.MPND  DC    A(&OPDS.MPTLAST) LAST DEFINED MESSAGE (3/3 FOR BXLE)     01450000
+&P.@MSG  DC    A(&OPDS.MSGSECT) ADDRESS OF MESSAGE BASE                 01460000
+&P.@DIC  DC    A(&OPDS.MSGDSCT) ADDRESS OF DICTIONARY START             01470000
+&P.LMOF  DC    A(&OPDS.MPTSIZE-&LENID-2) SIZE OF MSG ID OFFSET          01480000
+&P.LMID  DC    A(&OPDS.&LENID) LENGTH OF MESSAGE IDENTIFIER (MAX)       01490000
+&P.LCOF  DC    A(&OPDS.MPTSIZE-2) SIZE OF LEN OFFSET                    01500000
+&P.LCID  DC    A(&OPDS.2)    LENGTH OF LENGTH                           01510000
+&P.LDOF  DC    A(&OPDS.LENWDPTR) LENGTH OF MESSAGE OFFSET LIST ENTRY    01520000
+          DC    A(0)           RESERVED                                 01530000
+          DC    A(0)           RESERVED                                 01540000
+          DC    A(0)           RESERVED                                 01550000
+          DC    A(0)           RESERVED                                 01560000
+&P.TCOMD DC    C'MESSAGE TABLE FOR ',C&COM                              01570000
+&ZZMPFX  SETC  '&PFX'                                                   01580000
+&P.CODE  DS    0H            START OF EXECUTABLE CODE                   01590000
+         AIF   ('&SECT' EQ 'DSECT').MEND                                01600000
+         SPACE 2                                                        01610000
+         STM   R14,R12,12(R13)    SAVE                                  01620000
+         LR    R12,R15       LOCAL BASE                                 01630000
+         DROP  ,                                                        01640000
+         USING &LBL,R12                                                 01650000
+         AIF   ('&RENT' NE 'YES').NOGET                                 01660000
+         LA    R0,LOCEND-LOCSAVE  DYNAMIC SIZE                          01670000
+         STORAGE OBTAIN,LENGTH=(0)                                      01680000
+         LR    R9,R1         COPY RETURN                                01690000
+         USING LOCSAVE,R13   DECLARE GOTTEN STORAGE                     01700000
+         AGO   .CMGET                                                   01710000
+.NOGET   LA    R9,LOCSAVER                                              01720000
+.CMGET   ST    R13,4(,R9)                                               01730000
+         ST    R9,8(,R13)                                               01740000
+         LM    R0,R1,20(R13) RELOAD R0, R1 FOR RENT CASE                01750000
+         LR    R13,R9        MAKE NEW SAVE AREA                         01760000
+         STM   R0,R1,CALLR0  SAVE ENTRY VALUES                          01770000
+         XC    RETR15(3*4),RETR15   ZERO RETURN VALUES                  01780000
+         L     R10,CALLR1    RESTORE CALL PARM                          01790000
+         USING XMSGMGPM,R10   DECLARE IT                                01800000
+         LM    R8,R9,XMSGBUF  LOAD BUFFER ADDRESS AND LENGTH            01810000
+         LTR   R8,R8         HAVE AN ADDRESS ?                          01820000
+         BNP   DISASTER      NO; TOO BAD                                01830000
+         CH    R9,=H'44'     AT LEAST MINIMUM LENGTH ?                  01840000
+         BL    DISASTER      NO; FAIL                                   01850000
+         CLRL  (R8),(R9),FILL=C' '  BLANK THE BUFFER                    01860000
+         USING MESSBUF,R8    DECLARE THE BUFFER                         01870000
+         MVC   MESSLEN(4),=X'00040000'  CLEAR BUFFER LENGTH             01880000
+         LA    R11,&P.POINT                                             01890000
+         USING MTVPOINT,R11  OR RENAME MTV -> &P                        01900000
+         LM    R3,R5,MTVMPTR  GET FIRST MESSAGE                         01910000
+         USING MTPDSECT,R3                                              01920000
+         SPACE 1                                                        01930000
+MSGLOOP  LM    R14,R15,MTVLMOF  GET MSG ID OFFSET AND LENGTH            01940000
+         SH    R15,=H'1'     CHANGE FOR EXECUTE                         01950000
+         BM    BADMISS       TAKE A DIVE                                01960000
+         LA    R14,MTPDSECT(R14)  ADDRESS OF MESSAGE IDENTIFIER         01970000
+         CLC   XMSGMID,0(R14)     REQUESTED MESSAGE ?                   01980000
+         BE    FOUNDREQ                                                 01990000
+         BXLE  R3,R4,MSGLOOP                                            02000000
+BADMISS  OICC  4,4           RETURN MESSAGE NOT FOUND                   02010000
+         MVC   DB(MGBADMSL),MGBADMIS   MISSING MESSAGE DEFINITION       02020000
+         MVC   DB+21(8),XMSGMID                                         02030000
+         LA    R2,DB         POINT TO MISSING MESSAGE MESSAGE           02040000
+         LA    R5,1          SINGLE MESSAGE ELEMENT                     02050000
+         B     DICTMSG       OOPS                                       02060000
+BADMDF   OICC  4,4           RETURN MESSSUB NOT FOUND                   02070000
+         MVC   DB(MGBADMDL),MGBADMDF   MISSING MESSAGE DEFINITION       02080000
+         MVC   DB+21(8),XMSGMID                                         02090000
+         LA    R2,DB         POINT TO MISSING MESSAGE MESSAGE           02100000
+         LA    R5,1          SINGLE MESSAGE ELEMENT                     02110000
+         B     DICTMSG       OOPS                                       02120000
+         SPACE 1                                                        02130000
+FOUNDREQ LR    R7,R3         (USE OLD MAPPING)                          02140000
+         DROP  R3                                                       02150000
+         USING MTPDSECT,R3                                              02160000
+         MVI   MESSAGE,C' '                                             02170000
+         MVC   MESSAGE+1(L'MESSAGE-1),MESSAGE  SPACE IT                 02180000
+         EX    R15,BUILDID   MAKE MESSAGE ID                            02190000
+         LA    R15,6(,R15)   MAKE MESSAGE LENGTH WITH RDW               02200000
+         STH   R15,MESSLEN   STASH IT                                   02210000
+         AL    R14,MTVLMID   SPACE TO WORD COUNT                        02220000
+         MVI   MSGFLAGS,0    RESET MESSAGE FLAGS                        02230000
+         SR    R5,R5         CLEAR FOR ICM                              02240000
+         STH   R5,ENDSPACE   CLEAR ENDING SPACE COUNT                   02250000
+         ICM   R5,3,0(R14)   GET MESSAGE WORD COUNT                     02260000
+         BZ    BADMDF        OOPS                                       02270000
+         SPACE 1                                                        02280000
+         L     R1,MTVLMOF    GET OFFSET LENGTH AGAIN                    02290000
+         SLL   R1,2          CONVERT TO VECTOR OFFSET                   02300000
+         SR    R6,R6         CLEAR FOR ICM                              02310000
+         EX    0,GETMSGOF-4(R1)  LOAD MESSAGE OFFSET                    02320000
+         AL    R6,MTV@MSG    MAKE MESSAGE ADDRESS                       02330000
+         USING MTMDSECT,R6                                              02340000
+         L     R4,MTVLDOF    LENGTH OF DICTIONARY OFFSET                02350000
+         LR    R3,R4         COPY                                       02360000
+         SLL   R3,2          CONVERT TO INSTRUCTION INDEX               02370000
+DICTLOOP SR    R2,R2         CLEAR FOR ICM                              02380000
+         CLI   0(R6),MTSPFUN  SPECIAL ENTRY?                            02390000
+         BL    DICTWORD      NO; DO A WORD                              02400000
+         CLI   0(R6),MTSPPRM  SPECIAL FUNCTION?                         02410000
+         BL    BADFUN        YES; PROCESS IT                            02420000
+         CLI   0(R6),MTSPMETA SPECIAL GIMMICKING?                       02430000
+         BL    DICTPARM      NO; PROCESS A PARM                         02440000
+         MVC   ENDCHAR,1(R6)  COPY THE OPTION CHARACTER                 02450000
+         IC    R2,0(,R6)     GET THE REQUESTED FUNCTION                 02460000
+         N     R2,=X'0000000F'  ISOLATE REQUEST                         02470000
+         SLL   R2,1          CONVERT TO HALF-WORD OFFSET                02480000
+         LH    R15,METAPHOR(R2) GET CORRESPONDING PROCESSING ROUTINE    02490000
+         B     &LBL.(R15)    INVOKE THE PROCESSOR                       02500000
+METAPHOR DC    Y(BADFUN-&LBL)      F0 - UNASSIGNED                      02510000
+         DC    Y(BADFUN-&LBL)      F1 - UNASSIGNED                      02520000
+         DC    Y(BADFUN-&LBL)      F2 - UNASSIGNED                      02530000
+         DC    Y(BADFUN-&LBL)      F3 - UNASSIGNED                      02540000
+         DC    Y(BADFUN-&LBL)      F4 - UNASSIGNED                      02550000
+         DC    Y(BADFUN-&LBL)      F5 - UNASSIGNED                      02560000
+         DC    Y(BADFUN-&LBL)      F6 - UNASSIGNED                      02570000
+         DC    Y(BADFUN-&LBL)      F7 - UNASSIGNED                      02580000
+         DC    Y(BADFUN-&LBL)      F8 - UNASSIGNED                      02590000
+         DC    Y(BADFUN-&LBL)      F9 - UNASSIGNED                      02600000
+         DC    Y(BADFUN-&LBL)      FA - UNASSIGNED                      02610000
+         DC    Y(BADFUN-&LBL)      FB - UNASSIGNED                      02620000
+         DC    Y(BADFUN-&LBL)      FC - UNASSIGNED                      02630000
+         DC    Y(CHARWSP-&LBL)      FD - SUFFIX CHARACTER, SPACE        02640000
+         DC    Y(CHARNSP-&LBL)      FE - SUFFIX CHARACTER, NO SPACE     02650000
+         DC    Y(BADFUN-&LBL)      FF - UNASSIGNED                      02660000
+         SPACE 1                                                        02670000
+*  CHARNSP - SUPPRESS INTER-WORD SPACING                                02680000
+*     APPEND THE CURRENT CHARACTER TO PRIOR WORD, UNLESS IT IS A BLANK  02690000
+CHARNSP  MVI   ENDSPACE+L'ENDSPACE-1,0  SET NO TRAILING SPACE           02700000
+         CLI   ENDCHAR,C' '  IS IT A SPACE ?                            02710000
+         BNE   CHARNOW       NO; SUFFIX IT                              02720000
+         B     DICTBUMP      ELSE REQUEST IS DONE                       02730000
+         SPACE 1                                                        02740000
+*  CHARWSP - APPEND CHARACTER TO CURRENT TEXT, AND SET TRAILING SPACE   02750000
+*     APPEND THE CURRENT CHARACTER TO PRIOR WORD UNCONDITIONALLY        02760000
+CHARWSP  MVI   ENDSPACE+L'ENDSPACE-1,1  APPEND TRAILING SPACE           02770000
+CHARNOW  LH    R14,MESSLEN   CURRENT MESSAGE LENGTH                     02780000
+         LA    R0,1(,R14)    NEW LENGTH                                 02790000
+         STH   R0,MESSLEN    UPDATE LENGTH                              02800000
+         LA    R14,MESSLEN(R14)  NEXT ENTRY                             02810000
+         MVC   0(1,R14),ENDCHAR  MOVE SUFFIX CHARACTER                  02820000
+         B     DICTBUMP      DO NEXT WORD                               02830000
+         SPACE 1                                                        02840000
+*  DICTFUN - INVOKE A FUNCTION FOR PARM N (N=0 - ALL PARMS)             02850000
+*    **NOT DEFINED YET**                                                02860000
+DICTFUN  LA    R2,BADFUNC                                               02870000
+         B     DICTMSG                                                  02880000
+BADFUN   LA    R2,BADFUNC                                               02890000
+         OICC  4,16                                                     02900000
+         B     DICTMSG                                                  02910000
+         SPACE 1                                                        02920000
+*  DICTPARM - FORMAT CALLER'S PARM N AS SPECIFIED BY FORMAT BYTE        02930000
+*                                                                       02940000
+DICTPARM MVC   WDHED,MGBADTOO  MOVE WORD/MSG HEADER                     02950000
+*    **FOR TESTING - JUST DISPLAY REQUEST**                             02960000
+*TEST*   MVC   DB(16),BADPARM                                           02970000
+*TEST*   MVC   DB3(2),0(R6)  GET TEXT WITHOUT 0C4                       02980000
+*TEST*   UNPK  DB+3+1(5),DB3(3)  SHOW ENTIRE CALL                       02990000
+*TEST*   TR    DB+3+1(4),TRHEXTAB                                       03000000
+*TEST*   MVI   DB+3+1+4,C'>'                                            03010000
+*TEST*   LA    R2,DB                                                    03020000
+         LA    R0,15         MAKE PARAMETER # MASK                      03030000
+         IC    R2,0(,R6)     LOAD DEFINITION                            03040000
+         NR    R2,R0         EXTRACT PARAMETER                          03050000
+         MH    R2,=AL2(XMSGPR2-XMSGPRM)  GET OFFSET                     03060000
+         LA    R2,XMSGPRM(R2)  POINT TO ADDRESS & LENGTH                03070000
+         SR    R14,R14                                                  03080000
+         SR    R15,R15                                                  03090000
+         ICM   R15,1,5(R2)   LOAD LENGTH                                03100000
+         BZ    DICTBUMP      NULL VALUE - IGNORE                        03110000
+         ICM   R14,1,4(R2)   LOAD TYPE                                  03120000
+         BNZ   DICTYPE       USE OVERRIDE TYPE                          03130000
+         IC    R14,1(,R6)    GET DEFAULT TYPE FROM MESSAGE              03140000
+DICTYPE  STC   R14,PROFG     SAVE PROCESSING FLAGS                      03150000
+         N     R14,=X'0000000F'  DELETE MODIFIER BITS                   03160000
+         L     R2,0(,R2)     GET PARM ADDRESS                           03170000
+         N     R2,=X'7FFFFFF'  IGNORE END OF LIST BIT                   03180000
+         BNZ   DICTBRTY      BRANCH BY TYPE                             03190000
+         CH    R14,=H'2'     IS IT ADDRESS FUNCTION ?                   03200000
+         BNE   DICTBUMP      NO; IGNORE ZERO ADDRESS                    03210000
+DICTBRTY BIX   VAL=(R14),WK=R1,ERR=BADCOD,BASE=&LBL,PFX=UPM,           *03220000
+               LOC=(TEXT,     0 - TEXT                                 *03230000
+               TEXT,          1 - TEXT                                 *03240000
+               ADDR,          2 - ADDRESS                              *03250000
+               SDEC,          3 - SIGNED DECIMAL                       *03260000
+               ADEC,          4 - UNSIGNED DECIMAL                     *03270000
+               SINT,          5 - SIGNED INTEGER                       *03280000
+               AINT,          6 - UNSIGNED INTEGER                     *03290000
+               SHEX,          7 - SIGNED HEX ?                         *03300000
+               AHEX,          8 - HEXADECIMAL                          *03310000
+               SBIN,          9 - SIGNED BINARY                        *03320000
+               ABIN,         10 - UNSIGNED BINARY                      *03330000
+               )             END OF LIST                                03340000
+         SPACE 1                                                        03350000
+UPMSBIN  DS    0H                                                       03360000
+UPMABIN  STM   R3,R6,12(R13) SAVE A FEW REGISTERS                       03370000
+         LR    R3,R15        INPUT LOOP COUNTER                         03380000
+         SLL   R15,3         NEW OUTPUT LENGTH                          03390000
+         LA    R4,DB3        SET OUTPUT POSITION                        03400000
+UPMABINB ICM   R1,8,0(R2)    LOAD BITS TO BE PROCESSED                  03410000
+         LA    R6,8          DO8 BITS PER BYTE                          03420000
+UPMABINL LA    R0,C'0'/2     MAKE 0 OR 1 WITH NEXT SHIFT                03430000
+         SLDL  R0,1          ISOLATE LEFT-MOST BIT                      03440000
+         STC   R0,0(,R4)     STASH IT                                   03450000
+         LA    R4,1(,R4)     NEXT BIT POSITION                          03460000
+         BCT   R6,UPMABINL   DO ALL BITS IN BYTE                        03470000
+         LA    R2,1(,R2)     NEXT INPUT BYTE                            03480000
+         BCT   R3,UPMABINB   REPEAT FOR NEXT BYTE                       03490000
+         LM    R3,R6,12(R13) RESTORE REGISTERS                          03500000
+         LA    R2,DB3        POINT TO RESULTS                           03510000
+         B     UPMTEXT       NO EDITING                                 03520000
+UPMSINT  DS    0H                                                       03530000
+UPMAINT  XC    DB(16),DB                                                03540000
+         XC    DB2,DB2                                                  03550000
+         LA    R14,DB2+8                                                03560000
+         SR    R14,R15       MOVE DESTINATION                           03570000
+         EX    R15,EXMVT14   MOVE INPUT                                 03580000
+         LM    R0,R1,DB2     LOAD IT                                    03590000
+         CVD   R1,DB+8       PACK LOW WORD                              03600000
+         B     UPMADIN                                                  03610000
+         SPACE 1                                                        03620000
+UPMSDEC  DS    0H                                                       03630000
+UPMADEC  XC    DB(16),DB     CLEAR TO MAX                               03640000
+         LTR   R15,R15       ANY LENGTH ?                               03650000
+         BP    MADECLOK                                                 03660000
+   LA  R15,16     *****TEST***** LATER CALCULATE LENGTH                 03670000
+MADECLOK CH    R15,=H'16'    DESIGN LIMIT ?                             03680000
+         BH    BADTOO        YES; TOO LONG                              03690000
+         LA    R14,DB+16     MOVE TO TEMP WORK                          03700000
+         SR    R14,R15       SET MOVE DESTINATION                       03710000
+         SH    R15,=H'1'     MAKE EXECUTE LENGTH                        03720000
+         EX    R15,EXMVT14   MOVE USER'S DATA RIGHT JUSTIFIED           03730000
+UPMADIN  MVI   DB3,C' '      SET EDIT FILL BYTE                         03740000
+         MVI   DB3+1,X'20'     MAKE EDIT BYTE                           03750000
+         MVC   DB3+2(L'DB3-2),DB3+1   PROPAGATE IT                      03760000
+         MVI   DB3+30,X'21'  TURN SIGNIFICANCE ON                       03770000
+         LA    R1,DB3+31     SET DEFAULT SIGNIFICANCE START             03780000
+         EDMK  DB3(32),DB    EDIT USER'S TEXT                           03790000
+         BNM   MADEPLUS                                                 03800000
+         TM    PROFG,PFABS   DOING ABSOLUTE VALUE ?                     03810000
+         BZ    MADEPLUS      YES; IGNORE THE SIGN                       03820000
+         BCTR  R1,0                                                     03830000
+         MVI   0(R1),C'-'    MOVE SIGN TO FRONT                         03840000
+MADEPLUS LA    R15,DB3+32    GETEND + 1                                 03850000
+         SR    R15,R1        TOTAL LENGTH                               03860000
+         LR    R2,R1         POINT TO TEXT START                        03870000
+         B     UPMTEXT       FINAGLE                                    03880000
+         SPACE 1                                                        03890000
+UPMADDR  ST    R2,DB2        FORMAT ADDRESS                             03900000
+         LA    R2,DB2                                                   03910000
+         LA    R15,4                                                    03920000
+         SPACE 1                                                        03930000
+UPMSHEX  DS    0H            TREAT AS UNSIGNED                          03940000
+UPMAHEX  XC    DB(16),DB     CLEAR TO MAX                               03950000
+         CH    R15,=H'16'    DESIGN LIMIT ?                             03960000
+         BH    BADTOO        YES; TOO LONG                              03970000
+         SH    R15,=H'1'     MAKE EXECUTE LENGTH                        03980000
+         BM    DICTBUMP       SHOULDN'T GET HERE                        03990000
+         EX    R15,EXMVCTX   MOVE TEXT TO WORK AREA                     04000000
+         UNPK  DB3+00(9),DB+00(5)  UNPACK TEXT                          04010000
+         UNPK  DB3+09(9),DB+04(5)  UNPACK TEXT                          04020000
+         UNPK  DB3+18(9),DB+08(5)  UNPACK TEXT                          04030000
+         UNPK  DB3+27(9),DB+12(5)  UNPACK TEXT                          04040000
+         TR    DB3(35),TRHEXTAB    MAKE DISPLAYABLE                     04050000
+         LR    R14,R15       COPY INPUT LENGTH-1                        04060000
+         MVI   DB3+08,C' '   GAP                                        04070000
+         MVI   DB3+17,C' '   GAP                                        04080000
+         MVI   DB3+26,C' '   GAP                                        04090000
+         SRL   R14,2         NUMBER OF INTERWORD GAPS                   04100000
+         SLL   R15,1         DOUBLE INPUT LENGTH (-2)                   04110000
+         LA    R15,2(R14,R15)  NEW OUTPUT LENGTH                        04120000
+         LA    R2,DB3        NEW TEXT                                   04130000
+*NEXT*   B     UPMTEXT       ADJUST                                     04140000
+         SPACE 1                                                        04150000
+UPMTEXT  STC   R15,WDHOLEN   INPUT=OUTPUT LENGTH                        04160000
+         SPACE 1                                                        04170000
+MASSAGE  LTR   R15,R15       ANY STRING LENGTH ?                        04180000
+         BNP   DICTBUMP      BUMP      NO; SKIP IT                      04190000
+         TM    PROFG,PFDEBL  SUPPRESS DEBLANKING ?                      04200000
+         BNZ   SKIPDEBL      YES                                        04210000
+LOOPDEBL TM    0(R2),255-C' '    LEADING BLANK/NULL ?                   04220000
+         BNZ   SKIPDEBL      NO                                         04230000
+         LA    R2,1(,R2)     ADVANCE                                    04240000
+         BCT   R15,LOOPDEBL                                             04250000
+         B     DICTBUMP      ALL GONE                                   04260000
+SKIPDEBL TM    PROFG,PFDEBR  SUPPRESS DEBLANKING ?                      04270000
+         BNZ   SKIPDEBR      YES                                        04280000
+         LA    R14,0(R15,R2)                                            04290000
+LOOPDEBR BCTR  R14,0         SPACE TO LAST BYTE                         04300000
+         TM    0(R14),255-C' '   TRAILING BLANK/NULL ?                  04310000
+         BNZ   SKIPDEBR      NO                                         04320000
+         BCT   R15,LOOPDEBR                                             04330000
+         B     DICTBUMP      ALL GONE                                   04340000
+SKIPDEBR B     DICTMSG2      PROCESS WHAT'S LEFT                        04350000
+EXMVT14  MVC   0(0,R14),0(R2)  MOVE TEXT RIGHT-JUSTIFIED                04360000
+EXMVCTX  MVC   DB(0),0(R2)   MOVE USER'S TEXT                           04370000
+         SPACE 1                                                        04380000
+BADDEF   LA    R2,MGBADDEF   ERROR IN DEFINITION                        04390000
+         OICC  4,16                                                     04400000
+         B     DICTMSG       INSERT                                     04410000
+BADCOD   LA    R2,MGBADCOD   ERROR IN TYPE                              04420000
+         OICC  4,32                                                     04430000
+         B     DICTMSG       INSERY                                     04440000
+BADTOO   LA    R2,MGBADTOO   INPUT DATA TOO LONG                        04450000
+         OICC  4,64                                                     04460000
+         B     DICTMSG       INSERY                                     04470000
+         SPACE 1                                                        04480000
+DICTWORD SR    R2,R2         CLEAR FOR ICM                              04490000
+         EX    0,GETDICOF-4(R3)  OFFSET TO DICTIONARY ENTRY             04500000
+         AL    R2,MTV@DIC    GET ADDRESS IN DICTIONARY                  04510000
+         USING MTDDSECT,R2                                              04520000
+DICTMSG  SR    R15,R15                                                  04530000
+         IC    R15,MTDPHYLN  GET PHYSICAL LENGTH                        04540000
+         MVC   WDHED,0(R2)   MOVE MESSAGE HEADER                        04550000
+         LA    R2,MTDTEXT    POINT TO TEXT                              04560000
+         DROP  R2                                                       04570000
+DICTMSG2 SH    R15,=H'1'     SET EXECUTE LENGTH                         04580000
+         BM    DICTBUMP      OOPS                                       04590000
+         LH    R14,MESSLEN   CURRENT MESSAGE LENGTH                     04600000
+         AH    R14,ENDSPACE  LEADING SPACE, IF ANY                      04610000
+         LA    R0,1(R14,R15)  NEW LENGTH                                04620000
+         C     R0,XMSGBUF+4  WILL IT FIT ?                              04630000
+         BNH   DICTLNOK      YES                                        04640000
+         OICC  8             SET TRUNCATION ERROR                       04650000
+         S     R0,XMSGBUF+4  GET SIZE OF EXCESS                         04660000
+         SR    R14,R0        MAX THAT WILL FIT IN OUTPUT BUFFER         04670000
+         SR    R15,R0        MAXIMUM TO BE MOVED                        04680000
+         BM    XMSGWTOT      TRUNCATE                                   04690000
+         LA    R0,1(R14,R15)  NEW LENGTH                                04700000
+DICTLNOK STH   R0,MESSLEN    UPDATE LENGTH                              04710000
+         LA    R14,MESSLEN(R14)  NEXT ENTRY                             04720000
+         EX    R15,EXMVT14   MOVE AN ENTRY                              04730000
+         MVI   ENDSPACE+L'ENDSPACE-1,1  SET (DEFAULT) SPACE             04740000
+         MVI   MSGFLAGS,0    RESET FLAGS                                04750000
+DICTBUMP AR    R6,R4         SPACE TO NEXT ENTRY                        04760000
+         BCT   R5,DICTLOOP   REPEAT UNTIL TIRED                         04770000
+XMSGWTOT LA    R1,XMSGMSG    POINT TO TEXT                              04780000
+         ST    R1,RETR1      MAKE IT EASY FOR CALLER                    04790000
+         TM    CALLR0+L'CALLR0-1,1  WTO REQUESTED ?                     04800000
+         BZ    XMSGEXIT      NO                                         04810000
+         WTO   MF=(E,MESSLEN)  ISSUE WTO                                04820000
+XMSGEXIT LR    R1,R13        SAVE FOR RENT CASE                         04830000
+         L     R13,4(,R13)   LOAD CALLER'S SAVE AREA                    04840000
+         MVC   16(12,R13),RETCODE-LOCSAVER(R1)  COPY RETURNS            04850000
+         AIF   ('&RENT' NE 'YES').NOLET                                 04860000
+         LA    R0,LOCEND-LOCSAVE  DYNAMIC SIZE                          04870000
+         STORAGE RELEASE,LENGTH=(0),ADDR=(1)                            04880000
+.NOLET   LM    R14,R12,12(R13)  LOAD REST                               04890000
+         BR    R14           RETURN                                     04900000
+         SPACE 1                                                        04910000
+DISASTER MVICC 20            ERROR IN PARMS                             04920000
+         B     XMSGEXIT      RETURN WITHOUT ACTION                      04930000
+         SPACE 1                                                        04940000
+BUILDID  MVC   MESSAGE(0),0(R14)  MOVE MESSAGE ID                       04950000
+GETMSGOF IC    R6,0(,R7)  1/4  LOAD OFFSET                              04960000
+         ICM   R6,3,0(R7) 2/4  LOAD OFFSET FROM AL2                     04970000
+         ICM   R6,7,0(R7) 3/4  LOAD OFFSET FROM AL3                     04980000
+         L     R6,0(,R7)  4/4  LOAD OFFSET FROM AL4                     04990000
+         SPACE 1                                                        05000000
+GETDICOF IC    R2,0(,R6)  1/4  LOAD OFFSET                              05010000
+         ICM   R2,3,0(R6) 2/4  LOAD OFFSET FROM AL2                     05020000
+         ICM   R2,7,0(R6) 3/4  LOAD OFFSET FROM AL3                     05030000
+         L     R2,0(,R6)  4/4  LOAD OFFSET FROM AL4                     05040000
+         SPACE 1                                                        05050000
+BADFUNC  DC    AL1(30,30,C'C'),C'UNSUPPORTED TEXT IN DEFINITION'        05060000
+BADPARM  DC    AL1(06,06,C'C'),C'<....>'                                05070000
+MGBADDEF DC    AL1(13,13,C'C'),C'<msg.def.err>'                         05080000
+MGBADCOD DC    AL1(10,10,C'C'),C'<inv.type>'                            05090000
+MGBADTOO DC    AL1(10,10,C'C'),C'<inp.long>'                            05100000
+MGBADMIS DC    AL1(L'MGBADMS1+10,L'MGBADMS1+10,C' '),CL10'&PFX.000E'    05110000
+MGBADMS1 DC    C'Message XXXXXXXX not defined'                          05120000
+MGBADMSL EQU   *-MGBADMIS    TOTAL PATTERN LENGTH                       05130000
+MGBADMDF DC    AL1(L'MGBADMD1+10,L'MGBADMD1+10,C' '),CL10'&PFX.001E'    05140000
+MGBADMD1 DC    C'Message XXXXXXXX in error'                             05150000
+MGBADMDL EQU   *-MGBADMIS    TOTAL PATTERN LENGTH                       05160000
+HEXTAB   DC    C'0123456789ABCDEF'                                      05170000
+TRHEXTAB EQU   HEXTAB-C'0',256,C'C'                                     05180000
+         LTORG ,                                                        05190000
+         SPACE 1                                                        05200000
+         AIF   ('&RENT' NE 'YES').NODS                                  05210000
+LOCSAVE  DSECT ,                                                        05220000
+.NODS    ANOP  ,                                                        05230000
+LOCSAVER DS    18A                                                      05240000
+CALLR0   DS    A    1/2                                                 05250000
+CALLR1   DS    A    2/2                                                 05260000
+RETCODE  DS    0A   0/3                                                 05270000
+RETR15   DS    A    1/3                                                 05280000
+RETR0    DS    A    2/3                                                 05290000
+RETR1    DS    A    3/3                                                 05300000
+DB       DS    2D            CONVERSION SPACE - INPUT                   05310000
+DB2      DS    D             CONVERSION SPACE - INPUT                   05320000
+DB3SIG   DS    5D            CONVERSION SPACE - SIGNED                  05330000
+DB3      EQU   DB3SIG+1,5*8-1,C'C'  CONVERSION SPACE - OUTPUT           05340000
+ENDSPACE DS    H                                                        05350000
+MSGFLAGS DS    X             MESSAGE PROCESSING FLAGS                   05360000
+MFCHAR   EQU   X'01'           APPEND ENDCHAR TO CURR. WORD             05370000
+ENDCHAR  DS    C             SUFFIX CHARACTER, IF ANY                   05380000
+PROFG    DS    X             PARAMETER PROCESSING FLAG                  05390000
+PFABS    EQU   1               IGNORE SIGN                              05400000
+PFDEBR   EQU   X'10'           SKIP RIGHT DEBLANKING                    05410000
+PFDEBL   EQU   X'20'           SKIP LEFT DEBLANKING                     05420000
+WDHED    DS    XL3           WORD DEFINITION HEADER                     05430000
+WDHXLEN  EQU   WDHED,1,C'X'    EXPLICIT (INPUT) LENGTH                  05440000
+WDHOLEN  EQU   WDHED+1,1,C'X'  OUTPUT LENGTH                            05450000
+WDHCHAR  EQU   WDHED+2,1,C'C'  CHAR SET (C OR G)                        05460000
+PFDEB    EQU   PFDEBL+PFDEBR   SKIP BOTH                                05470000
+LOCEND   EQU   *                                                        05480000
+.*                                                                      05490000
+XMSGMGPM MDEFPARM SECT=DSECT                                            05500000
+MESSBUF  DSECT ,                                                        05510000
+MESSLEN  DS    XL2,XL2       V-FORMAT MESSAGE                           05520000
+MESSAGE  DS    CL132         MESSAGE TEXT                               05530000
+         YREGS ,                                                        05540000
+&NM      CSECT ,             RESTORE                                    05550000
+.MEND    MEND  ,                                                        05560000

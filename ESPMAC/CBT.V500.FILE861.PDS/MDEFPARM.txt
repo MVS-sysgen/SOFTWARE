@@ -1,0 +1,31 @@
+         MACRO ,                                                        00010000
+&NM      MDEFPARM &PFX=XMSG,&SECT=                                      00020000
+.*                                                                      00030000
+.*   MDEFPARM IS THE MACRO USED TO DEFINE THE WORK AND CALLING          00040000
+.*     PARAMETER AREA FOR THE XMSG/MDEFxxx MACROS AND THE MESSAGE       00050000
+.*     FORMATTING SERVICE.                                              00060000
+.*                                                                      00070000
+.*   &PFX     SPECIFIES A PREFIX TO THE GENERATED LABELS                00080000
+.*   WHEN SECT=DSECT IS SPECIFIED, MAPPING FOR THE PARAMETER AREA       00090000
+.*   IS EXPANDED                                                        00100000
+.*                                                                      00110000
+.*                                      V1 WRITTEN 3/2008 BY GYP        00120000
+         LCLC  &LABEL                                                   00130000
+&LABEL   SETC  '&NM'                                                    00140000
+         AIF   ('&LABEL' NE '').HAVELAB                                 00150000
+&LABEL   SETC  '&PFX'.'MGPM'                                            00160000
+.HAVELAB AIF   ('&SECT' EQ 'DSECT').DSECT                               00170000
+&LABEL   DS    0D            SET LABEL                                  00180000
+         AGO   .COMMON                                                  00190000
+.DSECT   ANOP  ,                                                        00200000
+&LABEL   DSECT ,             EXPAND DSECT                               00210000
+.COMMON  ANOP  ,                                                        00220000
+&PFX.ADD DC    A(0)          ADDRESS OF MESSAGE MODULE                  00230000
+&PFX.BUF DC    A(&PFX.MSG,L'&PFX.MSG)  MESSAGE RETURN AREA              00240000
+&PFX.MID DC    CL8' '        MESSAGE IDENTIFIER                         00250000
+         SPACE 1                                                        00260000
+&PFX.PRM DC    AL4(0),AL2(0) INSERTION ENTRY (ADDRESS/FLG/LEN)          00270000
+&PFX.PR2 DC    15XL(&PFX.PR2-&PFX.PRM)'0'  16 ENTRIES TOTAL             00280000
+         SPACE 1                                                        00290000
+&PFX.MSG DC    XL(4+132)'0'  V-FORMAT MESSAGE ASSEMBLY AREA             00300000
+         MEND  ,                                                        00310000

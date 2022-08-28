@@ -1,0 +1,645 @@
+         MACRO                                                          00010000
+&NAME   SERVCALC &FUNCTN=,&DEVTAB=,&TYPE=,&UCB=,&BALANCE=,&REMOVE=,    *00020000
+               &MAXSIZE=,&REGSAVE=,&RKDD=,&R=,&K=,&DD=,&LAST=,&MF=I     00030000
+.***** START OF SPECIFICATIONS **************************************** 00040000
+.*                                                                      00050000
+.* MODULE NAME - SERVCALC;  ADAPTED FROM IBM'S TRKCALC MACRO     82105  00060000
+.*                                                                      00070000
+.* DESCRIPTIVE NAME -                                                   00080000
+.*      SYSTEM TRACK ALGORITHM ROUTINE (STAR) SERVICE MACRO             00090000
+.*                                                                      00100000
+.* COPYRIGHT - NONE (PRE MVS/SE)                                        00110000
+.*                                                                      00120000
+.* STATUS - NEW                                                         00130000
+.*                                                                      00140000
+.* FUNCTION -                                                           00150000
+.*    THIS MACRO, DEPENDING ON THE VALUE OF THE "MF" PARAMETER,         00160000
+.*    PERFORMS ONE OF FOUR BASIC FUNCTIONS RELATED TO ESTABLISHING      00170000
+.*    OR MAPPING THE INPUT PARAMETER LIST FOR THE SYSTEM TRACK          00180000
+.*    ALGORITHM ROUTINE (STAR). THE FOUR FUNCTIONS ARE DESCRIBED        00190000
+.*    BELOW:                                                            00200000
+.*                                                                      00210000
+.*    MF=I - DEFAULT - WITH A SPECIFICATION OF MF=I, THIS MACRO         00220000
+.*       WILL ALLOCATE STORAGE FOR THE STAR PARAMETER LIST AND          00230000
+.*       INITIALIZE IT ACCORDING TO THE OPTIONS SELECTED VIA THE        00240000
+.*       ALLOWABLE KEYWORDS (SEE BELOW FOR KEYWORD DESCRIPTIONS).       00250000
+.*       THIS IS CALLED THE STANDARD-FORM (INSTRUCTION FORMAT) OF       00260000
+.*       THE MACRO.                                                     00270000
+.*    MF=E - THIS SPECIFICATION WILL RESULT IN THE INITIALIZATION       00280000
+.*       OF AN ALREADY EXISTING STAR PARAMETER LIST. THE ADDRESS        00290000
+.*       OF THE EXISTING PARAMETER LISTS IS PROVIDED VIA A SECOND       00300000
+.*       SUBPARAMETER OF THE "MF" KEYWORD. (SEE THE SECTION BELOW       00310000
+.*       ON KEYWORDS FOR THE SOURCE OF THE INITIALIZATION DATA).        00320000
+.*       THIS IS CALLED THE EXECUTE-FORM OF THE MACRO.                  00330000
+.*                                                                      00340000
+.*    NOTE - NO KEYWORDS ARE PROCESSED FOR THE FOLLOWING MACRO FORMS.   00350000
+.*                                                                      00360000
+.*    MF=L - THIS SPECIFICATION WILL RESULT IN THE ALLOCATION           00370000
+.*       OF THE STAR PARAMETER LIST WITHOUT INITIALIZATION. THIS IS     00380000
+.*       CALLED THE LIST-FORM OF THE MACRO.                             00390000
+.*    MF=D - THIS SPECIFICATION WILL RESULT IN THE GENERATION OF A      00400000
+.*       MAPPING OF THE SYMBOLS USED TO ADDRESS THE FIELDS AND          00410000
+.*       FLAGS OF THE STAR PARAMETER LIST. THE CALLER MUST PROVIDE      00420000
+.*       A "DSECT" STATEMENT IN ORDER TO OBTAIN SYMBOLIC ADDRESSING     00430000
+.*       WITHOUT STORAGE ALLOCATION. THIS IS CALLED THE DSECT-FORM      00440000
+.*       OF THE MACRO.                                                  00450000
+.*                                                                      00460000
+.*    KEYWORDS- (APPLICABLE ONLY FOR MF=I AND MF=E FORMS)               00470000
+.*       FUNCTN - USED TO REQUEST TRACK BALANCE (TRKBAL) OR TRACK       00480000
+.*          CAPACITY (TRKCAP) FUNCTIONS.                                00490000
+.*       NOTE 1 - A SPECIAL OPTION IS PROVIDED TO ALLOW A TRKCALC CALL  00500000
+.*                WITH THE 'FUNCTN' KEYWORD OMITTED. THIS OPTION IS     00510000
+.*                ALLOWED ONLY IF THE KEYWORD MF=E IS CODED. IF THE     00520000
+.*                'FUNCTN' KEYWORD IS OMITTED, NO INSTRUCTION WILL BE   00530000
+.*                GENERATED TO SET THE PARAMETER LIST FLAGS. THUS,      00540000
+.*                THE MUTUALLY EXCLUSIVE TEST FOR FUNCTN=TRKCAP AND     00550000
+.*                REMOVE=YES, MAXSIZE=YES, AND LAST=YES IS BYPASSED.    00560000
+.*                ALSO, THE FOLLOWING NOTE (2) DOES NOT APPLY.          00570000
+.*       NOTE 2 - ONE OF THE FOLLOWING THREE KEYWORDS (DEVTAB,          00580000
+.*                TYPE, OR UCB) MUST BE PROVIDED WHEN THE 'FUNCTN'      00590000
+.*                KEYWORD IS CODED. THIS IS TO ENSURE A SOURCE FOR THE  00600000
+.*                DEVICE CHARACTERISTICS TABLE. IF THE PARAMETER LIST   00610000
+.*                HAS BEEN PREVIOUSLY SET WITH A SOURCE, THEN AN '*'    00620000
+.*                SHOULD BE CODED AS THE INPUT VALUE FOR THE PROPER     00630000
+.*                SOURCE KEYWORD. THIS WILL RESULT IN THE PROPER SOURCE 00640000
+.*                FLAG SETTING WITHOUT ACTUALLY GENERATING THE CODE TO  00650000
+.*                STORE THE DVCT.                                       00660000
+.*       DEVTAB - USED TO SUPPLY THE ADDRESS OF THE DEVICE CHARACTER-   00670000
+.*          ISTICS TABLE ENTRY.                                         00680000
+.*       TYPE - USED TO SUPPLY THE UCB DEVICE TYPE VIA THE LOW ORDER    00690000
+.*          BYTE OF A REGISTER OR AN ADDRESS. UCB TYPE IS USED BY STAR  00700000
+.*          TO FIND THE DEVICE CHARACTERISTICS TABLE ENTRY.             00710000
+.*       UCB - USED TO PROVIDE THE ADDRESS OF THE UCB. STAR WILL        00720000
+.*          EXTRACT THE DEVICE TYPE TO FIND THE PROPER DEVICE CHAR-     00730000
+.*          ACTERISTICS TABLE ENTRY.                                    00740000
+.*       BALANCE - USED TO PROVIDE THE ADDRESS OF A TRACK BALANCE TO BE 00750000
+.*          USED BY STAR IN THE CAPACITY AND BALANCE ALGORITHMS.        00760000
+.*       RKDD - USED TO SUPPLY THE ADDRESS OF A FULL WORD CONTAINING    00770000
+.*          A RECORD NUMBER, KEY LENGTH, AND DATA LENGTH OR TO DESIG-   00780000
+.*          NATE A REGISTER CONTAINING SAME. THE FOLLOWING THREE KEY-   00790000
+.*          WORDS SUPPLY THE SAME DATA, BUT FROM SEPARATE SOURCES.      00800000
+.*                                                                      00810000
+.*       NOTE - THE FOLLOWING THREE KEYWORDS PROVIDE THE CAPABILITY     00820000
+.*              FOR THE CALLER TO CODE THE RECORD NUMBER, KEY LENGTH,   00830000
+.*              AND DATA LENGTH AS SELF-DEFINING DECIMAL VALUES         00840000
+.*              (REFERRED TO HERE AS IMMEDITATE DATA).                  00850000
+.*                                                                      00860000
+.*       R - USED TO PROVIDE THE SUBJECT RECORD NUMBER VIA THE LOW-     00870000
+.*           ORDER BYTE OF A REGISTER, A STORAGE ADDRESS, OR IMMEDIATE  00880000
+.*           DATA.                                                      00890000
+.*       K - USED TO PROVIDE THE SUBJECT KEY LENGTH VIA THE LOW-ORDER   00900000
+.*           BYTE OF A REGISTER, A STORAGE ADDRESS, OR IMMEDIATE        00910000
+.*           DATA.                                                      00920000
+.*       DD - USED TO PROVIDE THE SUBJECT DATA LENGTH VIA THE LOW-ORDER 00930000
+.*           BYTE OF A REGISTER, A STORAGE ADDRESS, OR IMMEDIATE        00940000
+.*           DATA.                                                      00950000
+.*                                                                      00960000
+.*       NOTE - THE FOLLOWING THREE KEYWORDS (REMOVE, MAXSIZE, AND      00970000
+.*              LAST) ARE VALID ONLY WHEN 'FUNCTN=TRKBAL' IS CODED.     00980000
+.*              THEY ARE IGNORED IF 'FUNCTN' IS OMITTED.                00990000
+.*                                                                      01000000
+.*       REMOVE - OPTIONALLY USED TO REQUEST THE DELETION OF A RECORD   01010000
+.*          DURING A TRACK BALANCE REQUEST.                             01020000
+.*       MAXSIZE - OPTIONALLY USED TO REQUEST A COUNT OF THE RESIDUAL   01030000
+.*          DATA BYTES ON A TRACK AFTER IT IS FOUND THAT ANOTHER WHOLE  01040000
+.*          RECORD WILL NOT FIT DURING A TRACK BALANCE REQUEST.         01050000
+.*       LAST - A SPECIAL OPTION MADE AVAILABLE FOR ISAM. IF SPECIFIED, 01060000
+.*          THE OVERHEAD FOR THE LAST RECORD IS USED IN CALCULATING     01070000
+.*          A NEW TRACK BALANCE.                                        01080000
+.*       REGSAVE - DEFINED FOR COMPATIBILITY WITH TRKCALC; NOT USED     01090000
+.*          THE CALL TO @SERVICE PRESERVES REGISTERS 2-13        82105  01100000
+.*       MF - USED TO SPECIFY WHICH FORM OF THE TRKCALC MACRO IS        01110000
+.*          DESIRED. SEE OPENING PARAGRAPH ABOVE.                       01120000
+.*                                                                      01130000
+.*    INTERNAL PROCESSING FOR THE I AND E FORMS OF THE MACRO IS         01140000
+.*    CONTROLLED BY A NUMBER OF LOCAL BINARY AND CHARACTER              01150000
+.*    VARIABLES. THE L AND D FORMS OF THE MACRO ARE HANDLED BY          01160000
+.*    DIRECT PATHS THROUGH THE MACRO AND AS SUCH DO NOT INVOLVE THE     01170000
+.*    USE OF LOCAL VARIABLES. FOLLOWING ARE THE DESCRIPTIONS OF THE     01180000
+.*    THE LOCAL VARIABLES USED FOR THE I AND E FORMS:                   01190000
+.*                                                                      01200000
+.*    LCLC'S -                                                          01210000
+.*       &FUNFLG - 'B' = TRKBAL FUNCTION REQUESTED                      01220000
+.*               - 'C' = TRKCAP FUNCTION REQUESTED                      01230000
+.*               - (OMITTED) = USE FUNCTION FLAGS FROM LAST CALL        01240000
+.*       &SAVAREA - 'NO' = DON'T SAVE AND RESTORE REGISTERS             01250000
+.*                  'YES' = SAVE AND RESTORE REGISTERS                  01260000
+.*       &SET(1) - DVCT SOURCE WITH POSSIBLE PARENTHESES REMOVED: DVCT  01270000
+.*                 ADDRESS, UCB ADDRESS, OR DEVICE TYPE (ADDRESS        01280000
+.*                 OR IMMEDIATE DATA)                                   01290000
+.*       &SET(2) - RKDD PARAMETER VALUE WITH POSSIBLE PARENTHESES       01300000
+.*                 REMOVED                                              01310000
+.*       &SET(3) - R PARAMETER VALUE WITH POSSIBLE PARENTHESES REMOVED  01320000
+.*       &SET(4) - K PARAMETER VALUE WITH POSSIBLE PARENTHESES REMOVED  01330000
+.*       &SET(5) - DD PARAMETER VALUE WITH POSSIBLE PARENTHESES REMOVED 01340000
+.*       &SET(6) - BALANCE PARAMETER VALUE WITH POSSIBLE PARENTHESES    01350000
+.*                 REMOVED                                              01360000
+.*       &SKIP - 'P3' = RKDD PARAMETER NOT SPECIFIED                    01370000
+.*       &FLGA(1) - 'R' = &SET(1) (DVCT SOURCE PARAMETER) IS IN         01380000
+.*                        REGISTER FORMAT                               01390000
+.*                - 'A' = &SET(1) (DVCT SOURCE PARAMETER) IS IN ADDRESS 01400000
+.*                        FORMAT                                        01410000
+.*       &FLGA(2) - 'R' = RKDD PARAMETER IS IN REGISTER FORMAT          01420000
+.*                - 'A' = RKDD PARAMETER IS IN ADDRESS FORMAT           01430000
+.*       &FLGA(3) - 'R' = BALANCE PARAMETER IS IN REGISTER OR IMMED-    01440000
+.*                        IATE DATA FORMAT                              01450000
+.*                - 'A' = BALANCE PARAMETER IS IN ADDRESS FORMAT        01460000
+.*       &FLGA(4) - 'R' = R PARAMETER IS IN REGISTER FORMAT             01470000
+.*       &FLGA(5) - 'R' = K PARAMETER IS IN REGISTER FORMAT             01480000
+.*       &FLGA(6) - 'R' = DD PARAMETER IS IN REGISTER FORMAT            01490000
+.*       &LABEL - AID TO VARIABLE LABEL ASSIGNMENT                      01500000
+.*       &BITS - USED TO COLLECT BIT SWITCHES FOR STAR PARM FLAGS       01510000
+.*                                                                      01520000
+.*    LCLB'S                                                            01530000
+.*       &BIT(1) - 0 = TRKBAL REQUESTED OR FUNCTN WAS OMITTED           01540000
+.*               - 1 = TRKCAP REQUESTED                                 01550000
+.*       &BIT(2) - 0 = REMOVE OPTION NOT REQUESTED                      01560000
+.*               - 1 = REMOVE OPTION REQUESTED                          01570000
+.*       &BIT(3) - 0 = MAXSIZE OPTION NOT REQUESTED                     01580000
+.*               - 1 = MAXSIZE OPTION REQUESTED                         01590000
+.*       &BIT(4) - 0 = BALANCE NOT PROVIDED CALLER                      01600000
+.*               - 1 = BALANCE PROVIDED BY CALLER                       01610000
+.*       &BIT(5) - 0 = LAST OPTION NOT REQUESTED                        01620000
+.*               - 1 = LAST OPTION REQUESTED                            01630000
+.*       &BIT(6&7) - 00 = DVCT ENTRY ADDRESS PROVIDED                   01640000
+.*                   01 = NOT USED                                      01650000
+.*                   10 = UCB ADDRESS PROVIDED                          01660000
+.*                   11 = DEVICE TYPE (ADDRESS OR IMMEDIATE) PROVIDED   01670000
+.*       &QUIT - 0 = SUCCESSFUL PARAMETER LIST CONSTRUCTION             01680000
+.*             - 1 = ERRORS DETECTED. DO NOT GENERATE ANY CODE          01690000
+.*       &MSG - 0 = NO INFORMATION/WARNING MESSAGES ISSUED              01700000
+.*              1 = INFORMATION/WARNING MESSAGES ISSUED                 01710000
+.*                                                                      01720000
+.* NOTES - EXECUTABLE CODE RESIDES IN @SERVICE, FUNCTION TRKCP   82105  01730000
+.*                                                                      01740000
+.* MACROS - IHBINNRA                                                    01750000
+.*                                                                      01760000
+.***** END OF SPECIFICATIONS ****************************************** 01770000
+         LCLC  &FUNFLG,&SAVAREA,&SET(6),&SKIP,&FLGA(6),&LABEL,&BITS     01780000
+         LCLB  &BIT(7),&QUIT,&MSG                                       01790000
+&LABEL   SETC  '&NAME'                                                  01800000
+         AIF   ('&MF' EQ 'L').LIST      BR IF LIST OPTION               01810000
+         AIF   ('&MF' EQ 'D').DSECT     BR IF DSECT OPTION              01820000
+*                                                                       01830000
+*   STAR USES REGISTERS; 0(OUTPUT),1,9,10,11,14, AND 15(RETURN CODE)    01840000
+*                                                                       01850000
+.********************************************************************** 01860000
+.*    KEYWORD SYNTAX CHECKING FOLLOWS                                   01870000
+.********************************************************************** 01880000
+.*                                                                      01890000
+.********************************************************************** 01900000
+.*    CHECK SYNTAX OF REGSAVE KEYWORD                                   01910000
+.********************************************************************** 01920000
+         AIF   (T'&REGSAVE EQ 'O').NOSAVE                               01930000
+         AIF   ('&REGSAVE' EQ 'NO').NOSAVE                              01940000
+         AIF   ('&REGSAVE' EQ 'YES').SAVE                               01950000
+         SPACE 1                                                        01960000
+         MNOTE 0,'REGSAVE= OPERAND NOT RECOGNIZED; ''NO'' IS ASSUMED'   01970000
+&MSG     SETB  1                        INDICATE MESSAGE ISSUED         01980000
+.NOSAVE  ANOP  ,                                                        01990000
+&SAVAREA SETC  'NO'                     INDICATE REG SAVING NOT REQ'D   02000000
+         AGO   .SYNTAX                                                  02010000
+.SAVE    ANOP  ,                                                        02020000
+*   REGSAVE OPTION SPECIFIED; ALL REGISTERS BUT 0 AND 15 WILL BE        02030000
+*   SAVED AND RESTORED.                                                 02040000
+*                                                                       02050000
+&SAVAREA SETC  'YES'                    INDICATE REG SAVING REQ'D       02060000
+.********************************************************************** 02070000
+.*    SYNTAX CHECK OF FUNCTN KEYWORD                                    02080000
+.********************************************************************** 02090000
+.SYNTAX  ANOP  ,                                                        02100000
+         AIF   (T'&FUNCTN EQ 'O').NOFUNC                                02110000
+         AIF   ('&FUNCTN' EQ 'TRKBAL').BALFUN                           02120000
+         AIF   ('&FUNCTN' EQ 'TRKCAP').CAPFUN                           02130000
+         SPACE 1                                                        02140000
+         MNOTE 8,'FUNCTN= OPERAND INVALID; PROCESSING TERMINATED'       02150000
+         SPACE 1                                                        02160000
+         MEXIT ,                        ABORT - CAN'T VALIDATE          02170000
+.*                                      REMAINING KEYWORD CONFLICTS     02180000
+.NOFUNC  ANOP  ,                                                        02190000
+         AIF   ('&MF' NE 'I').NOPROBM   FUNCTN OMITTED AND MF=E IS OK   02200000
+         SPACE 1                                                        02210000
+         MNOTE 8,'FUNCTN= CAN NOT BE OMITTED WITH MF=I; PROCESSING TERM*02220000
+               INATED'                                                  02230000
+         SPACE 1                                                        02240000
+         MEXIT ,                                                        02250000
+.BALFUN  ANOP  ,                                                        02260000
+&FUNFLG  SETC  'B'                      INDICATE TRKBAL REQ'D           02270000
+.NOPROBM ANOP  ,                                                        02280000
+&BIT(1)  SETB  0                        SET TRKBAL/OMITTED FLG FOR      02290000
+.*                                      STAR PARMS                      02300000
+         AGO   .TRKC010                                                 02310000
+.CAPFUN  ANOP  ,                                                        02320000
+&FUNFLG  SETC  'C'                      INDICATE TRKCAP REQ'D           02330000
+&BIT(1)  SETB  1                        SET TRKCAP FLG FOR STAR PARMS   02340000
+.********************************************************************** 02350000
+.*   CHECK SYNTAX OF DEVTAB KEYWORD                                     02360000
+.********************************************************************** 02370000
+.TRKC010 ANOP  ,                                                        02380000
+&BIT(6)  SETB  0                        INIT SOURCE FLAGS               02390000
+&BIT(7)  SETB  0                        FOR DVCT ADDR                   02400000
+         AIF   (T'&DEVTAB EQ 'O').TRKC020                               02410000
+         AIF   ('&DEVTAB'(1,1) NE '(').DEVADDR                          02420000
+         AIF   (N'&DEVTAB GT 1).DEVBAD                                  02430000
+&SET(1)  SETC  '&DEVTAB(1)'             SAVE KEYW VALUE W/O PARENS      02440000
+&FLGA(1) SETC  'R'                      INDICATE REG-FORM               02450000
+         AGO   .TRKC020                 ON TO NEXT KEYW                 02460000
+.DEVADDR ANOP  ,                                                        02470000
+&SET(1)  SETC  '&DEVTAB'                SAVE KEYW VALUE                 02480000
+&FLGA(1) SETC  'A'                      INDICATE ADDR-FORM              02490000
+         AGO   .TRKC020                 ON TO NEXT KEYW                 02500000
+.DEVBAD  ANOP  ,                                                        02510000
+         SPACE 1                                                        02520000
+         MNOTE 8,'DEVTAB= OPERAND INVALID; NO CODE PRODUCED'            02530000
+&QUIT    SETB  1                        DEFER TERMINATION               02540000
+.********************************************************************** 02550000
+.*  CHECK SYNTAX OF TYPE KEYWORD                                        02560000
+.********************************************************************** 02570000
+.TRKC020 ANOP  ,                                                        02580000
+         AIF   (T'&TYPE EQ 'O').TRKC030                                 02590000
+         AIF   ('&FLGA(1)' NE '').DEVBAD2  HAVE DVCT SOURCE ALREADY?    02600000
+         AIF   ('&TYPE'(1,1) NE '(').TYPADDR                            02610000
+         AIF   (N'&TYPE GT 1).TYPEBAD                                   02620000
+&SET(1)  SETC  '&TYPE(1)'               SAVE KEYW VALUE W/O PARENS      02630000
+&FLGA(1) SETC  'R'                      INDICATE REG-FORM               02640000
+         AGO   .SETTYPE                 ON TO SETTING OF TYPE FLG       02650000
+.TYPADDR ANOP  ,                                                        02660000
+&SET(1)  SETC  '&TYPE'                  SAVE KEYW VALUE                 02670000
+&FLGA(1) SETC  'A'                      INDICATE ADDR-FORM              02680000
+.SETTYPE ANOP  ,                                                        02690000
+&BIT(6)  SETB  1                        SET TYPE FLGS FOR               02700000
+&BIT(7)  SETB  1                        STAR PARMS                      02710000
+         AGO   .TRKC030                 ON TO NEXT KEYW                 02720000
+.TYPEBAD ANOP  ,                                                        02730000
+         SPACE 1                                                        02740000
+         MNOTE 8,'TYPE= OPERAND INVALID; NO CODE PRODUCED'              02750000
+&QUIT    SETB  1                        DEFER TERMINATION               02760000
+.********************************************************************** 02770000
+.*  CHECK SYNTAX OF UCB KEYWORD                                         02780000
+.********************************************************************** 02790000
+.TRKC030 ANOP  ,                                                        02800000
+         AIF   (T'&UCB EQ 'O').TRKC040                                  02810000
+         AIF   ('&FLGA(1)' NE '').DEVBAD2  HAVE DVCT SOURCE ALREADY?    02820000
+         AIF   ('&UCB'(1,1) NE '(').UCBADDR                             02830000
+         AIF   (N'&UCB GT 1).UCBBAD                                     02840000
+&SET(1)  SETC  '&UCB(1)'                SAVE KEYW VALUE W/O PARENS      02850000
+&FLGA(1) SETC  'R'                      INDICATE REG-FORM               02860000
+         AGO   .SETUCB                  ON TO SETTING UCB FLG           02870000
+.UCBADDR ANOP  ,                                                        02880000
+&SET(1)  SETC  '&UCB'                   SAVE KEYW VALUE                 02890000
+&FLGA(1) SETC  'A'                      INDICATE ADDR-FORM              02900000
+.SETUCB  ANOP  ,                                                        02910000
+&BIT(6)  SETB  1                        SET UCB FLG FOR STAR PARMS      02920000
+         AGO   .TRKC040                 ON TO NEXT KEYW                 02930000
+.DEVBAD2 ANOP  ,                                                        02940000
+         SPACE 1                                                        02950000
+         MNOTE 8,'DEVTAB=, TYPE=, AND UCB= OPERANDS ARE MUTUALLY EXCLUS*02960000
+               IVE;              NO CODE PRODUCED'                      02970000
+&QUIT    SETB  1                        DEFER TERMINATION               02980000
+         AGO   .TRKC040                 ON TO NEXT KEYW                 02990000
+.UCBBAD  ANOP  ,                                                        03000000
+         SPACE 1                                                        03010000
+         MNOTE 8,'UCB= OPERAND INVALID; NO CODE PRODUCED'               03020000
+&QUIT    SETB  1                        DEFER TERMINATION               03030000
+.********************************************************************** 03040000
+.*  ENSURE THAT A SOURCE (DEVTAB, UCB, OR TYPE) FOR THE DEVICE CHAR-    03050000
+.*  ACTERISTICS TABLE WAS PROVIDED. IF NOT, DEFAULT TO A RESIDUAL       03060000
+.*  DEVTAB ADDRESS AS THE DVCT SOURCE.                                  03070000
+.********************************************************************** 03080000
+.TRKC040 ANOP  ,                                                        03090000
+         AIF   (T'&FUNCTN EQ 'O').TRKC045  BR, IF FUNCTN NOT PROVIDED - 03100000
+.*                                      SOURCE ASSUMED, FLGS NOT SET    03110000
+         AIF   ('&FLGA(1)' NE '').TRKC045  BR, IF DVCT SOURCE GIVEN     03120000
+.*  AT THIS POINT IF &QUIT=1, THE CALLER PROVIDED A SOURCE FOR THE      03130000
+.*  DVCT BUT IT WAS IN ERROR.                                           03140000
+         AIF   (&QUIT).TRKC045          BR, IF &QUIT=1                  03150000
+         SPACE 1                                                        03160000
+         MNOTE 4,'DVCT SOURCE (DEVTAB=, UCB=, OR TYPE=) IS MISSING;    *03170000
+                DEVTAB=* IS ASSUMED'                                    03180000
+&SET(1)  SETC  '*'                      INDICATE A RESIDUAL DEVTAB      03190000
+&MSG     SETB  1                        INDICATE MESSAGE ISSUED         03200000
+.********************************************************************** 03210000
+.*  CHECK SYNTAX OF RKDD KEYWORD                                        03220000
+.********************************************************************** 03230000
+.TRKC045 ANOP  ,                                                        03240000
+         AIF   (T'&RKDD EQ 'O').TRKC050                                 03250000
+         AIF   ('&RKDD'(1,1) NE '(').DORKDD                             03260000
+         AIF   (N'&RKDD GT 1).RKDDBAD                                   03270000
+&SET(2)  SETC  '&RKDD(1)'               SAVE KEYW VALUE W/O PARENS      03280000
+&FLGA(2) SETC  'R'                      INDICATE REG-FORM               03290000
+         AGO   .TSTDUP                                                  03300000
+.DORKDD  ANOP  ,                                                        03310000
+         AIF   (T'&RKDD EQ 'N').RKDDBAD  BR IF IMMEDIATE-FORM; ERROR    03320000
+&SET(2)  SETC  '&RKDD'                  SAVE KEYW VALUE                 03330000
+&FLGA(2) SETC  'A'                      INDICATE ADDR-FORM              03340000
+         AGO   .TSTDUP                                                  03350000
+.RKDDBAD ANOP  ,                                                        03360000
+         SPACE 1                                                        03370000
+         MNOTE 8,'RKDD= OPERAND INVALID; NO CODE PRODUCED'              03380000
+&QUIT    SETB  1                        DEFER TERMINATION               03390000
+.********************************************************************** 03400000
+.*  SYNTAX CHECK FOR R, K, AND DD KEYWORDS                              03410000
+.********************************************************************** 03420000
+.TSTDUP  AIF   (T'&R NE 'O' OR T'&K NE 'O').MLTXERR  RKDD AND R, K, OR  03430000
+         AIF   (T'&DD EQ 'O').TRKC060   DD ARE MUTUALLY EXCLUSIVE       03440000
+.MLTXERR ANOP  ,                                                        03450000
+         SPACE 1                                                        03460000
+         MNOTE 4,'R=, K=, OR DD= MAY NOT BE CODED WITH RKDD=; R=, K=, A*03470000
+               ND DD= ARE IGNORED'                               82105  03480000
+&MSG     SETB  1                        INDICATE MESSAGE ISSUED         03490000
+         AGO   .TRKC060                 ON TO NEXT KEYW                 03500000
+.TRKC050 ANOP  ,                                                        03510000
+&SKIP    SETC  'P3'                     INDICATE R/K/DD PROVIDED        03520000
+         AIF   (T'&R EQ 'O').NORXX                                      03530000
+         AIF   ('&R'(1,1) NE '(').NORXX                                 03540000
+         AIF   (N'&R GT 1).BADPARM                                      03550000
+&FLGA(4) SETC  'R'                      INDICATE REG-FORM               03560000
+.NORXX   AIF   (T'&K EQ 'O').NOKXX                                      03570000
+         AIF   ('&K'(1,1) NE '(').NOKXX                                 03580000
+         AIF   (N'&K GT 1).BADPARM                                      03590000
+&FLGA(5) SETC  'R'                      INDICATE REG-FORM               03600000
+.NOKXX   AIF   (T'&DD EQ 'O').NODDXX                                    03610000
+         AIF   ('&DD'(1,1) NE '(').NODDXX                               03620000
+         AIF   (N'&DD GT 1).BADPARM                                     03630000
+&FLGA(6) SETC  'R'                      INDICATE REG-FORM               03640000
+.NODDXX  ANOP  ,                                                        03650000
+&SET(3)  SETC  '&R(1)'                  SAVE KEYW VALUES AND            03660000
+&SET(4)  SETC  '&K(1)'                  STRIP AWAY                      03670000
+&SET(5)  SETC  '&DD(1)'                 POSSIBLE PARENS                 03680000
+         AGO   .TRKC060                 ON TO NEXT KEYW                 03690000
+.BADPARM ANOP  ,                                                        03700000
+         SPACE 1                                                        03710000
+         MNOTE 8,'R=, K=, OR DD= OPERAND INVALID; NO CODE PRODUCED'     03720000
+&QUIT    SETB  1                        DEFER TERMINATION               03730000
+.********************************************************************** 03740000
+.*  SYNTAX CHECKING OF REMOVE KEYWORD                                   03750000
+.********************************************************************** 03760000
+.TRKC060 ANOP  ,                                                        03770000
+         AIF   (T'&REMOVE EQ 'O').NOREMV                                03780000
+         AIF   ('&REMOVE' EQ 'NO').NOREMV                               03790000
+         AIF   ('&REMOVE' NE 'YES').GARMSG1                             03800000
+         AIF   ('&FUNFLG' EQ 'C').WARN1                                 03810000
+&BIT(2)  SETB  1                        SET REMOVE FLG FOR STAR PARMS   03820000
+         AGO   .TRKC070                 ON TO NEXT KEYW                 03830000
+.GARMSG1 ANOP  ,                                                        03840000
+         SPACE 1                                                        03850000
+         MNOTE 4,'REMOVE= OPERAND NOT RECOGNIZED; ''NO'' IS ASSUMED'    03860000
+&MSG     SETB  1                        INDICATE MESSAGE ISSUED         03870000
+         AGO   .NOREMV                                                  03880000
+.WARN1   ANOP  ,                                                        03890000
+         SPACE 1                                                        03900000
+         MNOTE 4,'REMOVE=YES AND FUNCTN=TRKCAP ARE MUTUALLY EXCLUSIVE; *03910000
+                REMOVE=YES IS IGNORED'                                  03920000
+&MSG     SETB  1                        INDICATE MESSAGE ISSUED         03930000
+.NOREMV  ANOP  ,                                                        03940000
+&BIT(2)  SETB  0                        RESET REMOVE FLG FOR STAR PARMS 03950000
+.********************************************************************** 03960000
+.*  SYNTAX CHECKING OF MAXSIZE KEYWORD                                  03970000
+.********************************************************************** 03980000
+.TRKC070 ANOP  ,                                                        03990000
+         AIF   ('&MAXSIZE' EQ 'NO').NOMAX                               04000000
+         AIF   (T'&MAXSIZE EQ 'O').NOMAX                                04010000
+         AIF   ('&MAXSIZE' NE 'YES').GARMSG2                            04020000
+         AIF   ('&FUNFLG' EQ 'C').WARN2                                 04030000
+&BIT(3)  SETB  1                        SET MAXSIZE FLG FOR STAR PARMS  04040000
+         AGO   .TRKC080                 ON TO NEXT KEYW                 04050000
+.GARMSG2 ANOP  ,                                                        04060000
+         SPACE 1                                                        04070000
+         MNOTE 4,'MAXSIZE= OPERAND NOT RECOGNIZED; ''NO'' IS ASSUMED'   04080000
+&MSG     SETB  1                        INDICATE MESSAGE ISSUED         04090000
+         AGO   .NOMAX                                                   04100000
+.WARN2   ANOP  ,                                                        04110000
+         SPACE 1                                                        04120000
+         MNOTE 4,'MAXSIZE=YES AND FUNCTN=TRKCAP ARE MUTUALLY EXCLUSIVE;*04130000
+                MAXSIZE=YES IS IGNORED'                                 04140000
+&MSG     SETB  1                        INDICATE MESSAGE ISSUED         04150000
+.NOMAX   ANOP  ,                                                        04160000
+&BIT(3)  SETB  0                        RESET MAXSIZE FLG FOR           04170000
+.*                                      STAR PARMS                      04180000
+.********************************************************************** 04190000
+.*  SYNTAX CHECKING OF LAST KEYWORD                                     04200000
+.********************************************************************** 04210000
+.TRKC080 ANOP  ,                                                        04220000
+         AIF   ('&LAST' EQ 'NO').NOLAST                                 04230000
+         AIF   (T'&LAST EQ 'O').NOLAST                                  04240000
+         AIF   ('&LAST' NE 'YES').GARMSG3                               04250000
+         AIF   ('&FUNFLG' EQ 'C').WARN3                                 04260000
+&BIT(5)  SETB  1                        SET LAST FLG FOR STAR PARMS     04270000
+         AGO   .TRKC090                 ON TO NEXT KEYW                 04280000
+.GARMSG3 ANOP  ,                                                        04290000
+         SPACE 1                                                        04300000
+         MNOTE 4,'LAST= OPERAND NOT RECOGNIZED; ''NO'' IS ASSUMED'      04310000
+&MSG     SETB  1                        INDICATE MESSAGE ISSUED         04320000
+         AGO   .NOLAST                                                  04330000
+.WARN3   ANOP  ,                                                        04340000
+         SPACE 1                                                        04350000
+         MNOTE 4,'LAST=YES AND FUNCTN=TRKCAP ARE MUTUALLY EXCLUSIVE;   *04360000
+               LAST=YES IS IGNORED'                              82105  04370000
+&MSG     SETB  1                        INDICATE MESSAGE ISSUED         04380000
+.NOLAST  ANOP  ,                                                        04390000
+&BIT(5)  SETB  0                        RESET LAST FLG FOR STAR PARMS   04400000
+.********************************************************************** 04410000
+.*  SYNTAX CHECKING OF BALANCE KEYWORD                                  04420000
+.********************************************************************** 04430000
+.TRKC090 ANOP  ,                                                        04440000
+         AIF   (T'&BALANCE EQ 'O').BALOFF                               04450000
+         AIF   ('&BALANCE'(1,1) EQ '(').BALREG                          04460000
+&SET(6)  SETC  '&BALANCE'               SAVE KEYW VALUE                 04470000
+&FLGA(3) SETC  'A'                      INDICATE ADDR-FORM              04480000
+         AGO   .BALON                   ON TO SETTING BALANCE FLG       04490000
+.BALREG  ANOP  ,                                                        04500000
+         AIF   (N'&BALANCE GT 1).BADBAL                                 04510000
+&SET(6)  SETC  '&BALANCE(1)'            SAVE KEYW VALUE W/O PARENS      04520000
+&FLGA(3) SETC  'R'                      INDICATE REG-FORM               04530000
+         AGO   .BALON                   ON TO SETTING BALANCE FLG       04540000
+.BADBAL  ANOP  ,                                                        04550000
+         SPACE 1                                                        04560000
+         MNOTE 8,'BALANCE= OPERAND INVALID; NO CODE PRODUCED'           04570000
+&QUIT    SETB  1                        DEFER TERMINATION               04580000
+.BALOFF  ANOP  ,                                                        04590000
+&BIT(4)  SETB  0                        RESET BALANCE FLG FOR           04600000
+.*                                      STAR PARMS                      04610000
+         AGO   .TSTERR                                                  04620000
+.BALON   ANOP  ,                                                        04630000
+&BIT(4)  SETB  1                        SET BALANCE FLG FOR STAR PARMS  04640000
+.********************************************************************** 04650000
+.*  TEST TO SEE IF ANY SERIOUS (TERMINATING) ERRORS WERE FOUND          04660000
+.********************************************************************** 04670000
+.TSTERR  AIF   (&MSG EQ 0 AND &QUIT EQ 0).SETBITS  DON'T SPACE IF CLEAN 04680000
+         SPACE 1                                                        04690000
+         AIF   (&QUIT EQ 0).SETBITS     CONTINUE IF NO TERMINAL ERRORS  04700000
+         MEXIT ,                        OTHERWISE, GIVE IT UP           04710000
+.********************************************************************** 04720000
+.*  SET STAR PARM FLAGS FOR CODE GENERATION                             04730000
+.********************************************************************** 04740000
+.SETBITS ANOP  ,                                                        04750000
+&BITS    SETC  '&BIT(1).&BIT(3).&BIT(2).&BIT(4).&BIT(5).&BIT(6).&BIT(7)*04760000
+               .0'                                                      04770000
+.********************************************************************** 04780000
+.*  CHECK SYNTAX OF MF KEYWORD                                          04790000
+.********************************************************************** 04800000
+.MFCHECK AIF   ('&MF' EQ 'I').DOCNOP                                    04810000
+         AIF   (N'&MF NE 2).MFBAD                                       04820000
+         AIF   ('&MF(1)' NE 'E').MFBAD                                  04830000
+         AGO   .TSTSA                   GO TEST FOR REG SAVE REQ        04840000
+.DOCNOP  ANOP  ,                                                        04850000
+         CNOP  0,4                      BOUNDARY ALIGNMENT              04860000
+.TSTSA   ANOP  ,             SAVE REGISTER CODE REMOVED          82105  04870000
+.NOSA    AIF   ('&MF' EQ 'I').STNDARD                                   04880000
+&LABEL   IHBINNRA &MF(2)                GO LOAD PARM REG                04890000
+         AGO   .XECUTE                  GO GEN CODE TO INIT PARM LIST   04900000
+.MFBAD   ANOP  ,                                                        04910000
+         MNOTE 8,'MF= OPERAND INVALID; PROCESSING TERMINATED'           04920000
+         SPACE 1                                                        04930000
+         MEXIT ,                        A BAD MF KEYW IS FATAL          04940000
+.STNDARD ANOP  ,                                                        04950000
+&LABEL   BALS  1,*+16                   BRANCH AROUND LIST              04960000
+&LABEL   SETC  ''                       CAN USE A LABEL ONLY ONCE       04970000
+.LIST    ANOP  ,                                                        04980000
+&LABEL   DC    A(0)                     DVCT OR UCB ADDR, OR DEVTYPE    04990000
+         AIF   ('&MF' EQ 'L').SKIPFLG   IF LIST, GEN ONLY ZERO'S        05000000
+         DC    B'&BITS'                 FLAG BYTE                       05010000
+         AGO   .TRKC100                 GO AROUND LIST CODE             05020000
+.SKIPFLG ANOP  ,                                                        05030000
+         DC    X'00'                    FLAG BYTE                       05040000
+.TRKC100 ANOP  ,                                                        05050000
+         DC    X'00'                    RESERVED                        05060000
+         DC    AL2(0)                   TRACK BALANCE                   05070000
+         AIF   ('&MF' EQ 'L').SKIPR     GEN ZERO FOR                    05080000
+         AIF   ('&FLGA(4)' EQ 'R').SKIPR  RECORD NUMBER UNLESS          05090000
+         AIF   (T'&R NE 'N').SKIPR      IT'S THE IMMEDIATE-FORM         05100000
+         DC    AL1(&R)                  RECORD NUMBER                   05110000
+         AGO   .TRKC110                                                 05120000
+.SKIPR   ANOP  ,                                                        05130000
+         DC    AL1(0)                   RECORD NUMBER                   05140000
+.TRKC110 ANOP  ,                                                        05150000
+         AIF   ('&MF' EQ 'L').SKIPK     GEN ZERO FOR                    05160000
+         AIF   ('&FLGA(5)' EQ 'R').SKIPK  KEY LENGTH UNLESS             05170000
+         AIF   (T'&K NE 'N').SKIPK      IT'S THE IMMEDIATE-FORM         05180000
+         DC    AL1(&K)                  KEY LENGTH                      05190000
+         AGO   .TRKC120                                                 05200000
+.SKIPK   ANOP  ,                                                        05210000
+         DC    AL1(0)                   KEY LENGTH                      05220000
+.TRKC120 ANOP  ,                                                        05230000
+         AIF   ('&MF' EQ 'L').SKIPDD    GEN ZERO FOR                    05240000
+         AIF   ('&FLGA(6)' EQ 'R').SKIPDD  DATA LENGTH UNLESS           05250000
+         AIF   (T'&DD NE 'N').SKIPDD    IT'S THE IMMEDIATE-FORM         05260000
+         DC    AL2(&DD)                 DATA LENGTH                     05270000
+         AGO   .TRKC130                                                 05280000
+.SKIPDD  ANOP  ,                                                        05290000
+         DC    AL2(0)                   DATA LENGTH                     05300000
+.TRKC130 ANOP  ,                                                        05310000
+         AIF   ('&MF' EQ 'L').FINISH    GEN NO INSTRUCTION IF LIST REQ  05320000
+.XECUTE  ANOP  ,                                                        05330000
+         AIF   ('&SET(1)' EQ '*').TRKC140  IF *, THEN DVCT SOURCE IS    05340000
+.*                                      ALREADY IN THE STAR LIST        05350000
+         AIF   (&BIT(7)).GOTTYPE        BR IF TYPE PROVIDED             05360000
+         AIF   ('&FLGA(1)' EQ 'R').BR1  BR IF REG-FORM                  05370000
+         AIF   ('&FLGA(1)' NE 'A').TRKC140  BR IF NOT ADDR-FORM         05380000
+         ICM   15,15,&SET(1)            MOVE ADDR OF DEVTAB OR   86041  05390000
+         ST    15,0(0,1)                UCB TO LIST                     05400000
+         AGO   .TRKC140                                                 05410000
+.BR1     ANOP  ,                                                        05420000
+         ST    &SET(1),0(0,1)           ST @ OF DEVTAB OR UCB IN LIST   05430000
+         AGO   .TRKC140                                                 05440000
+.GOTTYPE AIF   ('&FLGA(1)' EQ 'R').TYPER  BR IF REG-FORM                05450000
+.*                                      OTHERWISE, IT'S ADDR-FORM       05460000
+         IC    15,&SET(1)               MOVE DEVICE TYPE                05470000
+         STC   15,3(0,1)                TO LIST                         05480000
+         AGO   .TRKC140                                                 05490000
+.TYPER   ANOP  ,                                                        05500000
+         STC   &SET(1),3(0,1)           ST DEVICE TYPE IN LIST          05510000
+.TRKC140 ANOP  ,                                                        05520000
+         AIF   ('&MF' EQ 'I').NOFLAG    FLGS ARE DC'D FOR I-FORM        05530000
+         AIF   (T'&FUNCTN EQ 'O').NOFLAG  USE RESIDUAL FLGS IF NO FUNCT 05540000
+         MVI   4(1),B'&BITS'            FLAGS TO LIST                   05550000
+.NOFLAG  ANOP  ,                                                        05560000
+         AIF   (&BIT(4) NE 1).TRKC150   BR IF NO BALANCE PROVIDED       05570000
+         AIF   ('&SET(6)' EQ '*').TRKC150  IF '*', BAL IS IN STAR       05580000
+.*                                      PARM LIST ALREADY               05590000
+         AIF   ('&FLGA(3)' EQ 'R').BR2  BR IF REG-FORM                  05600000
+         ICM   15,3,&SET(6)             TRK BALANCE              86041  05610000
+         STH   15,6(0,1)                TO LIST                         05620000
+         AGO   .TRKC150                                                 05630000
+.BR2     ANOP  ,                                                        05640000
+         STH   &SET(6),6(0,1)           ST TRK BALANCE IN LIST          05650000
+.TRKC150 ANOP  ,                                                        05660000
+         AIF   ('&SKIP' EQ 'P3').RKDD3  BR IF RKDD WAS NOT PROVIDED     05670000
+         AIF   ('&FLGA(2)' EQ 'R').BR3  BR IF REG-FORM                  05680000
+         ICM   15,15,&SET(2)            MOVE RKDD                86041  05690000
+         ST    15,8(0,1)                TO LIST                         05700000
+         AGO   .EXITBR                                                  05710000
+.BR3     ANOP  ,                                                        05720000
+         ST    &SET(2),8(0,1)           ST RKDD IN LIST                 05730000
+         AGO   .EXITBR                                                  05740000
+.RKDD3   ANOP  ,                                                        05750000
+         AIF   (T'&R EQ 'O').AKY        BR IF R NOT PROVIDED            05760000
+         AIF   ('&FLGA(4)' NE 'R').RADDR  BR IF NOT REG-FORM            05770000
+         STC   &SET(3),8(0,1)           ST REC NO. IN LIST              05780000
+         AGO   .AKY                                                     05790000
+.RADDR   ANOP  ,                                                        05800000
+         AIF   (T'&R EQ 'N').NRX        BR IF IMMEDIATE-FORM            05810000
+         IC    15,&SET(3)               MOVE REC NO.                    05820000
+         STC   15,8(0,1)                TO LIST                         05830000
+         AGO   .AKY                                                     05840000
+.NRX     ANOP  ,                                                        05850000
+         AIF   ('&MF' EQ 'I').AKY       IF I-FORM, R IS DC'D            05860000
+         MVI   8(1),&R                  ST REC NO. IN LIST              05870000
+.AKY     ANOP  ,                                                        05880000
+         AIF   (T'&K EQ 'O').ADDY       BR IF K NOT PROVIDED            05890000
+         AIF   ('&FLGA(5)' NE 'R').KADDR  BR IF NOT REG-FORM            05900000
+         STC   &SET(4),9(0,1)           ST KEY LENGTH IN LIST           05910000
+         AGO   .ADDY                                                    05920000
+.KADDR   ANOP  ,                                                        05930000
+         AIF   (T'&K EQ 'N').NKX        BR IF IMMEDIATE-FORM            05940000
+         IC    15,&SET(4)               MOVE KEY LENGTH                 05950000
+         STC   15,9(0,1)                TO LIST                         05960000
+         AGO   .ADDY                                                    05970000
+.NKX     ANOP  ,                                                        05980000
+         AIF   ('&MF' EQ 'I').ADDY      IF I-FORM, K IS DC'D            05990000
+         MVI   9(1),&K                  ST KEY LENGTH IN LIST           06000000
+.ADDY    ANOP  ,                                                        06010000
+         AIF   (T'&DD EQ 'O').EXITBR    BR IF DD NOT PROVIDED           06020000
+         AIF   ('&FLGA(6)' NE 'R').DDADDR  BR IF NOT REG-FORM           06030000
+         STH   &SET(5),10(0,1)          ST DATA LENGTH IN LIST          06040000
+         AGO   .EXITBR                                                  06050000
+.DDADDR  ANOP  ,                                                        06060000
+         AIF   (T'&DD EQ 'N').NDDX      BR IF IMMEDIATE-FORM            06070000
+         ICM   15,3,&SET(5)             MOVE DATA LENGTH         86041  06080000
+         STH   15,10(0,1)               TO LIST                         06090000
+         AGO   .EXITBR                                                  06100000
+.NDDX    ANOP  ,                                                        06110000
+         AIF   ('&MF' EQ 'I').EXITBR    IF I-FORM, DD IS DC'D           06120000
+         MVI   10(1),&DD/256            ST DATA LENGTH(1) IN LIST       06130000
+         MVI   11(1),&DD-((&DD/256)*256) ST DATA LENGTH(2) IN LIST      06140000
+.EXITBR  ANOP  ,                                                        06150000
+         L     R15,@SERVICE  LOAD THE SERVICE ROUTINE ADDRESS    82105  06160000
+         LA    R0,VENDVCAP   SET THE ENTRY CODE                  82105  06170000
+         BALSR R14,R15       SERVICE THE REQUEST                 82105  06180000
+.FINISH  MEXIT ,                                                        06190000
+.DSECT   ANOP  ,                                                        06200000
+         DS    0F                       ALIGN TO FULL WORD BOUNDARY     06210000
+&NAME    DS    0CL12                    STAR PARM LIST MAP              06220000
+STARUCBA DS    0F                       UCB ADDRESS                     06230000
+STARDCTA DS    0F                       DEVICE TABLE ADDRESS            06240000
+         DS    XL3                                                      06250000
+STARTYPE DS    XL1                      DEVICE TYPE                     06260000
+STARFLGS DS    XL1                      FUNCTION AND OPTIONS            06270000
+STARFUNC EQU   B'10000000'              FUNCTION: 0=TRKBAL, 1=TRKCAP    06280000
+STARMAXS EQU   B'01000000'              1=MAXSIZE REQUESTED             06290000
+STARREMV EQU   B'00100000'              1=REMOVE REQUESTED              06300000
+STARUBAL EQU   B'00010000'              1=CALLER PROVIDED BALANCE       06310000
+STARLAST EQU   B'00001000'              1=SPECIAL LAST RCD REQUEST      06320000
+STARDTU  EQU   B'00000110'              DVCT ENTRY SOURCE FLAGS:        06330000
+*                                       00=DVCT ENTRY ADDRESS PROVIDED  06340000
+*                                       01=RESERVED                     06350000
+*                                       10=UCB ADDRESS PROVIDED         06360000
+*                                       11=DEVICE TYPE PROVIDED         06370000
+STARLOC  EQU   B'00000001'              LOC=ANY. DEVTAB OR UCB  GP99133 06380000
+         DS    XL1                      RESERVED                        06390000
+STARBAL  DS    H                        TRACK BALANCE                   06400000
+STARRKDD DS    0F                       RECORD INFO AS DEFINED BELOW    06410000
+STARR    DS    XL1                      RECORD NUMBER                   06420000
+STARKL   DS    XL1                      KEY LENGTH                      06430000
+STARDL   DS    H                        DATA LENGTH                     06440000
+         MEND  ,                                                        06450000

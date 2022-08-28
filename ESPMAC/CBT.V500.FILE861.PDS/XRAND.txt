@@ -1,0 +1,15 @@
+         MACRO ,                                                        00010000
+&NM      XRAND &OPT=                                        NEW GP13105 00020000
+.*                                                                      00030000
+.*  INVOKES THE RANDOM NUMBER GENERATOR IN EXHBWORK                     00040000
+.*  RETURN IS INTEGER 0-9 IN GPR 0, AND 0.0-9.0 IN FPR 0                00050000
+.*    OPT=INIT RESTARTS WITH TIME-BASED VALUE                           00060000
+.*                                                                      00070000
+         GBLC  &MACPLAB                                                 00080000
+&MACPLAB SETC  '&NM'                                                    00090000
+         AIF   ('&OPT' NE 'INIT').CONTIN                                00100000
+         MACPARM R15,EXWRANDI,OP=L                                      00110000
+         XC    0(8,R15),0(R15)    INITIALIZE                            00120000
+.CONTIN  MACPARM R15,EXWRAND,OP=L                                       00130000
+         MACPARM R14,R15,OP=BALR,OPR=BALR                               00140000
+         MEND  ,                                                        00150000

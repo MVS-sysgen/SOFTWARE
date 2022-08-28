@@ -1,0 +1,9 @@
+         MACRO ,                                                        00010000
+&NM      BAKR  &R,&A                                    ADDED ON 04234  00020000
+.*                                                                      00030000
+.*    HERCULES MVS 3.8 SUPPORT                                          00040000
+.*                                                                      00050000
+         GBLB  &MVSXA        SET BY OPTIONGB/SYSPARM            GP04234 00060000
+         GBLC  &MACPLAB                                                 00070000
+&NM      STM   R14,R12,12(R13)  SAVE STUFF                              00080000
+         MEND  ,                                                        00090000

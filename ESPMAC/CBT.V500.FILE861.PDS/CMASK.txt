@@ -1,0 +1,43 @@
+         MACRO ,                                                        00010000
+&NM      CMASK &MASKEND='*-',&MASKEQU='?%', 2260 HAD "  ADDED ON 89016 *00020000
+               &ML=R15,&MA=R14,&L=R0,&A=R1,&RET=R9                      00030000
+         LCLA  &I,&J,&K                                                 00040000
+         LCLB  &LEQ                                                     00050000
+         LCLC  &N,&C                                             89078  00060000
+&I       SETA  &SYSNDX                                                  00070000
+&LEQ     SETB  ('&ML' EQ '&L')                                          00080000
+&N       SETC  '&NM'                                                    00090000
+         AIF   (&LEQ).NOCOMP                                            00100000
+&N       CR    &ML,&L        IS MASK LONGER THAN DATA ?                 00110000
+&N       SETC  ''                                                       00120000
+         BHR   &RET          RETURN WITH CC UNEQUAL                     00130000
+.NOCOMP  ANOP  ,             MASK LENGTH DEFINED SAME AS LENGTH         00140000
+&N       LTR   &ML,&ML       MASK EXHAUSTED ?                           00150000
+         BNPR  &RET          YES - RETURN EQUAL                         00160000
+CMK&I.M  DS    0H                                                       00170000
+&J       SETA  1                                                        00180000
+&K       SETA  K'&MASKEND-2  LENGTH W/O QUOTES                          00190000
+.LOOPEND AIF   (&J GT &K).ENDLOOP                                       00200000
+&J       SETA  &J+1          SET FOR NEXT ONE                           00210000
+&C       SETC  '&MASKEND'(&J,1)                                  89078  00220000
+         CLI   0(&MA),C'&C'  FORCED END ?                        89078  00230000
+         BER   &RET          'END' CHARACTER - RETURN EQUAL             00240000
+         AGO   .LOOPEND                                                 00250000
+.ENDLOOP ANOP  ,                                                        00260000
+&J       SETA  1                                                        00270000
+&K       SETA  K'&MASKEQU-2  LENGTH W/O QUOTES                          00280000
+.LOOPEQU AIF   (&J GT &K).EQULOOP                                       00290000
+&J       SETA  &J+1          SET FOR NEXT ONE                           00300000
+&C       SETC  '&MASKEQU'(&J,1)                                  89078  00310000
+         CLI   0(&MA),C'&C'  NON-COMPARE ?                       89078  00320000
+         BE    CMK&I.E       'EQU' CHARACTER - SKIP COMPARE             00330000
+         AGO   .LOOPEQU                                                 00340000
+.EQULOOP ANOP  ,                                                        00350000
+         CLC   0(1,&MA),0(&A)    EQUAL ?                                00360000
+         BNER  &RET          NO - RETURN UNEQUAL                        00370000
+CMK&I.E  LA    &MA,1(,&MA)   NEXT MASK BYTE                             00380000
+         LA    &A,1(,&A)     NEXT DATA BYTE                             00390000
+         BCT   &ML,CMK&I.M   NEW MASK LENGTH                            00400000
+         LTR   &ML,&ML       SET CC EQUAL                               00410000
+         BR    &RET                                                     00420000
+         MEND  ,                                                        00430000

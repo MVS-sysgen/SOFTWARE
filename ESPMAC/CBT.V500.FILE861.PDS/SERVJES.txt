@@ -1,0 +1,113 @@
+         MACRO ,                                                        00010000
+&NM      SERVJES &DSECT=,&OPT=,&PFX=SJ                  ADDED ON 90274  00020000
+         LCLC  &S,&P                                                    00030000
+         LCLA  &I,&J                                                    00040000
+&P       SETC  '&PFX'                                                   00050000
+&S       SETC  '&NM'                                                    00060000
+         AIF   ('&DSECT' EQ 'NO').NODS                                  00070000
+         AIF   ('&S' NE '').DODS                                        00080000
+&S       SETC  'SERVJES'                                                00090000
+.DODS    ANOP  ,                                                        00100000
+&S       DSECT ,             @SERVICE JES INTERFACE MAPPING             00110000
+         AGO   .PODS                                                    00120000
+.NODS    ANOP  ,                                                        00130000
+&S       DS    0D            @SERVICE JES INTERFACE LIST                00140000
+.PODS    ANOP  ,                                                        00150000
+&P.SSNAM DS    CL8           SUB-SYSTEM NAME                            00160000
+&P.SSTOK DS    XL8           TOKEN FOR ALESERV ACCESS           GP02327 00170000
+&P.SSASC DS    A             JES2 ASCB ADDRESS                  GP02327 00180000
+&P.SSASI DS    H             JES2 ASID                          GP02327 00190000
+&P.SSCOM DS    C             OS COMMAND CHARACTER                90288  00200000
+&P.SSRCH DS    C             READER COMMAND CHARACTER            90288  00210000
+.SSLOOP  AIF   (&I GE N'&OPT).DONELUP                                   00220000
+&I       SETA  &I+1                                                     00230000
+&S       SETC  '&OPT(&I)'    GET NEXT OPTION                            00240000
+         AIF   ('&S' EQ '').SSLOOP  BAD KEYPUNCHING ?                   00250000
+         AIF   ('&S' EQ 'LOJOB').LOJOB                                  00260000
+         AIF   ('&S' EQ 'J2INF').JESINFO                         90288  00270000
+         MNOTE 4,'UNDEFINED OPT=&S '                                    00280000
+         AGO   .SSLOOP                                                  00290000
+.LOJOB   ORG   &P.SSNAM+8                                               00300000
+&P.1JNAM DS    CL8           JOB NAME (REQ/RET)                         00310000
+&P.1JNUM DS    CL8           JOB ID/NUMBER (EBCDIC)                     00320000
+&P.1ACCT DS    CL8           ACCOUNT   (REQ/RET)                        00330000
+&P.1JQOF DS    XL4           OFFSET TO JQE (REQ/RET)             90288  00340000
+&P.1J### DS    HL2           JOB NUMBER (BINARY) (REQ/RET)              00350000
+.*.1     DS    XL2             SPARE                                    00360000
+&P.1FLGS DS    X             JES FLAGS                                  00370000
+&P.F1HA  EQU   X'80'           HOLD ALL                          90288  00380000
+&P.F1H1  EQU   X'40'           HOLD THIS JOB                     90288  00390000
+&P.F1H2  EQU   X'20'           HOLD FOR DUPLICATE JOBNAME        90288  00400000
+&P.F1PG  EQU   X'10'           PURGE REQUESTED                   90288  00410000
+&P.F1OC  EQU   X'08'           OPERATOR CANCELLED                90288  00420000
+&P.F1BSY EQU   X'07'           BUSY ON CPU #                     90288  00430000
+&P.1FLG2 DS    X             JES FLAGS                                  00440000
+&P.F1IAF EQU   X'80'           INIT/AFFINITY                     90288  00450000
+&P.F1SAF EQU   X'7F'           SYSTEM AFFINITY                   90288  00460000
+&P.1FLG3 DS    X             JES FLAGS                                  00470000
+&P.F1MRQ EQU   X'80'           MOVE REQUESTED                    90288  00480000
+&P.F1USP EQU   X'40'           UNSPOOLED IOT                     90288  00490000
+&P.F1NDP EQU   X'20'           DON'T PROCESS ON SPOOL DUMP       90288  00500000
+&P.F1SYD EQU   X'10'                                             90288  00510000
+&P.F1TMD EQU   X'08'                                             90288  00520000
+&P.F1XMT EQU   X'04'                                             90288  00530000
+&P.F1JOB EQU   X'03'           JQE IS A BATCH JOB                90288  00540000
+&P.F1TSU EQU   X'02'           JQE IS A TIME SHARING USER        90288  00550000
+&P.F1STC EQU   X'01'           JQE IS A START JOB                90288  00560000
+&P.1FLG4 DS    X             JES FLAGS                                  00570000
+.*.F1    EQU   X'80'                                             90288  00580000
+.*.F1    EQU   X'40'                                             90288  00590000
+.*.F1    EQU   X'20'                                             90288  00600000
+.*.F1    EQU   X'10'                                             90288  00610000
+.*.F1    EQU   X'08'                                             90288  00620000
+.*.F1    EQU   X'04'                                             90288  00630000
+.*.F1    EQU   X'02'                                             90288  00640000
+&P.F1JHD EQU   X'01'           TYPRUN=JCLHOLD                    90288  00650000
+&P.1LFG1 DS    X             LOCAL FLAGS                                00660000
+.*.F1    EQU   X'80'                                             90288  00670000
+.*.F1    EQU   X'40'                                             90288  00680000
+.*.F1    EQU   X'20'                                             90288  00690000
+.*.F1    EQU   X'10'                                             90288  00700000
+&P.F1NPT EQU   X'08'           NO PRINT WHEN SENT TO HOPE        90288  00710000
+.*.F1    EQU   X'04'                                             90288  00720000
+.*.F1    EQU   X'02'                                             90288  00730000
+.*.F1    EQU   X'01'                                             90288  00740000
+&P.1LFG2 DS    X             LOCAL FLAGS                                00750000
+&P.F1HDT EQU   X'80'           USER REQUESTED HOLD               90288  00760000
+&P.F1RRN EQU   X'40'           JOB RERUN PERMITTED               90288  00770000
+&P.F1NST EQU   X'20'           NO-SETUP JOB                      90288  00780000
+&P.F1FET EQU   X'10'           ROUTE TO FETCH AFTER EXECUTION    90288  00790000
+&P.F1NFY EQU   X'08'           NOTIFY USER                       90288  00800000
+&P.F1PAS EQU   X'04'           PASSWORD SUPPLIED AND VERIFIED    90288  00810000
+.*.F1    EQU   X'02'                                             90288  00820000
+.*.F1    EQU   X'01'                                             90288  00830000
+&P.1OCLS DS    0X            ORIGINAL CLASS (LOCAL)                     00840000
+&P.1LFG3 DS    X             LOCAL FLAGS                                00850000
+&P.1OPTY DS    0X            ORIGINAL PRIORITY                          00860000
+&P.1LFG4 DS    X             LOCAL FLAGS                                00870000
+&P.1QNAM DS    CL4           QUEUE NAME                                 00880000
+&P.1CLS  DS    X             QUEUE TYPE                                 00890000
+&P.1QUE  DS    XL2           QUEUE OFFSET                               00900000
+&P.1PTY  DS    X             JOB PRIORITY                               00910000
+         DS    4X            SPARE                                      00920000
+         AGO   .SSLOOP                                                  00930000
+.JESINFO ANOP  ,                                                 90288  00940000
+&P.2VERS DS    CL8           $HCT VERSION                        90288  00950000
+&P.2TON  DS    AL2           THIS NODE (BINARY)                 GP02328 00960000
+&P.2TOQ  DS    C,C           THIS NODE (EBCDIC)                  90288  00970000
+&P.2MSYS DS    AL2           MAXIMUM SYSTEM NUMBER              GP02328 00980000
+&P.2MRJE DS    AL2           MAXIMUM REMOTE NUMBER               90288  00990000
+&P.2$HCT DS    A             $HCT ADDRESS                       GP02327 01000000
+&P.2$CAT DS    A             $CAT ADDRESS                       GP02327 01010000
+&P.2$DCT DS    A             $DCT/RAT ADDRESS                   GP02327 01020000
+&P.2$JOB DS    A             $JOBQPTR ADDRESS                   GP02327 01030000
+&P.2$JOT DS    A             $JOT ADDRESS                       GP02327 01040000
+&P.2$JQH DS    A             $JQHEAD ADDRESS                    GP02327 01050000
+&P.2$QNX DS    A             $QINDEXA                           GP02327 01060000
+&P.2COMC DS    C             OS COMMAND CHARACTER               GP04234 01070000
+&P.2COMR DS    C             READER COMMAND CHARACTER           GP04234 01080000
+         DS    2X              SPARES                           GP04234 01090000
+         DS    7A              SPARES                            90288  01100000
+         AGO   .SSLOOP                                           90288  01110000
+.DONELUP ORG   ,                                                        01120000
+         MEND  ,                                                        01130000

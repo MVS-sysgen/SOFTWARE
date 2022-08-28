@@ -1,0 +1,160 @@
+         MACRO                                                          00010000
+&NM      FDOPT &S,&SBA=,&CUR=,&CC=,&IND=                         81270  00020000
+         GBLA  &FDCNTR                                                  00030000
+         LCLA  &C,&I,&J,&K,&N                                           00040000
+         LCLA  &T,&E,&O7,&O9,&WCC                                       00050000
+         LCLC  &SB1,&CU1,&L,&FDCHN,&COM1,&COM2                          00060000
+         LCLB  &NOP,&OPT,&SKPLEN                                        00070000
+         LCLB  &NL,&WCCP,&SBAP,&CURP,&CCP,&INDP,&ALARM,&O79      81270  00080000
+         LCLB  &BLUE,&GREEN,&PINK,&RED,&TURQ,&WHITE,&YELLOW,&C1,&C2,&C3 00090000
+         LCLB  &UNDER,&BLINK,&REVERSE,&MONO,&MDT                 87313  00100000
+         LCLB  &INTENSE,&DETECT,&NONDISP,&NUMERIC,&SKIP,&PROTECT        00110000
+         LCLB  &DEFAULT,&PREV                                           00120000
+&FDCNTR  SETA  &FDCNTR+1                                                00130000
+&FDCHN   SETC  'ZFD'.'&FDCNTR'                                          00140000
+&C       SETA  &FDCNTR+1                                                00150000
+         AIF   ('&NM' EQ '').NONAME                                     00160000
+&NM      EQU   *                                                        00170000
+.NONAME  AIF   ('&S' NE 'END' AND '&S' NE '*END').PROCESS               00180000
+&FDCHN   DC    AL1(0)        END OF FD LIST                             00190000
+         MEXIT ,                                                        00200000
+.PROCESS ANOP  ,                                                        00210000
+&I       SETA  N'&SYSLIST                                               00220000
+&J       SETA  0                                                        00230000
+&SB1     SETC  '0'                                                      00240000
+&CU1     SETC  '0'                                                      00250000
+.NOLIT   AIF   (&J GE &I).CHECK                                         00260000
+&J       SETA  &J+1                                                     00270000
+&L       SETC  '&SYSLIST(&J)'                                           00280000
+         AIF   ('&L' EQ '').NOLIT                                       00290000
+&NOP     SETB  (&NOP  OR '&L' EQ 'NOP')                                 00300000
+&NL      SETB  (&NL  OR '&L' EQ 'NL' OR '&L' EQ 'NEWLINE')              00310000
+&ALARM    SETB  (&ALARM OR '&L' EQ 'ALARM')                             00320000
+&BLUE    SETB  (&BLUE OR '&L' EQ 'BLUE')                                00330000
+&GREEN   SETB  (&GREEN OR '&L' EQ 'GREEN')                              00340000
+&PINK    SETB  (&PINK OR '&L' EQ 'PINK')                                00350000
+&RED     SETB  (&RED  OR '&L' EQ 'RED')                                 00360000
+&TURQ    SETB  (&TURQ  OR '&L' EQ 'TURQ' OR '&L' EQ 'CYAN')      90326  00370000
+&WHITE   SETB  (&WHITE OR '&L' EQ 'WHITE')                              00380000
+&YELLOW  SETB  (&YELLOW OR '&L' EQ 'YELLOW')                            00390000
+&MONO    SETB  (&MONO OR '&L' EQ 'MONO')                         87313  00400000
+&UNDER   SETB  (&UNDER OR '&L' EQ 'UL' OR '&L' EQ 'UNDER')              00410000
+&BLINK   SETB  (&BLINK OR '&L' EQ 'BLINK')                              00420000
+&REVERSE SETB  (&REVERSE OR '&L' EQ 'REVERSE')                          00430000
+&INTENSE SETB  (&INTENSE OR '&L' EQ 'INTENSE' OR '&L' EQ 'INT')         00440000
+&DETECT  SETB  (&DETECT OR '&L' EQ 'DETECT' OR '&L' EQ 'LP')            00450000
+&NONDISP SETB  (&NONDISP OR '&L' EQ 'NONDISP' OR '&L' EQ 'NDISP')       00460000
+&NUMERIC SETB  (&NUMERIC OR '&L' EQ 'NUMERIC' OR '&L' EQ 'NUM')         00470000
+&SKIP    SETB  (&SKIP OR '&L' EQ 'SKIP')                                00480000
+&PROTECT SETB  (&PROTECT OR '&L' EQ 'PROTECT')                          00490000
+&MDT     SETB  (&MDT OR '&L' EQ 'MDT')                           87313  00500000
+&DEFAULT SETB  (&DEFAULT OR '&L' EQ 'DEFAULT' OR '&L' EQ 'DFLT')        00510000
+         AGO   .NOLIT                                                   00520000
+.CHECK   ANOP  ,                                                        00530000
+         AIF   ('&SBA' EQ '').NOSBA                                     00540000
+         AIF   (N'&SBA EQ 2).SBA2                                       00550000
+         AIF   (N'&SBA NE 1).BADSBA                                     00560000
+&SBAP    SETB  1                                                        00570000
+&SB1     SETC  '254*256+254'                                            00580000
+         AIF   ('&SBA(1)' EQ '*').NOSBA                                 00590000
+&SB1     SETC  '&SBA'                                                   00600000
+         AGO   .NOSBA                                                   00610000
+.BADSBA  MNOTE 4,'INVALID SBA= FIELD'                                   00620000
+         AGO   .NOSBA                                                   00630000
+.SBA2    ANOP  ,                                                        00640000
+&COM1    SETC  '&SBA(1)'                                                00650000
+&COM2    SETC  '&SBA(2)'                                                00660000
+         AGO   .ADDCOM                                                  00670000
+.RETSBA  ANOP  ,                                                        00680000
+&SBAP    SETB  1             SET SBA PRESENT                            00690000
+&SB1     SETC  '&CU1'                                                   00700000
+&CU1     SETC  '0'                                                      00710000
+.NOSBA   AIF   ('&CUR' EQ '').NOCUR                                     00720000
+&CURP    SETB  1                                                        00730000
+         AIF   (N'&CUR EQ 2).CUR2                                       00740000
+         AIF   (N'&CUR NE 1).BADCUR                                     00750000
+&CU1     SETC  '254*256+254'                                            00760000
+         AIF   ('&CUR(1)' EQ '*').NOCUR                                 00770000
+         AIF   ('&CUR(1)' EQ '0').BADCUR                                00780000
+&CU1     SETC  '&CUR'                                                   00790000
+         AGO   .NOCUR                                                   00800000
+.ADDERR  AIF   (NOT &CURP).BADSBA                                       00810000
+.BADCUR  MNOTE 4,'INVALID CUR= FIELD'                                   00820000
+         AGO   .NOCUR                                                   00830000
+.CUR2    ANOP  ,                                                        00840000
+&COM1    SETC  '&CUR(1)'                                                00850000
+&COM2    SETC  '&CUR(2)'                                                00860000
+.ADDCOM  ANOP  ,                                                        00870000
+&CU1     SETC  '254'                                                    00880000
+         AIF   ('&COM1' EQ 'NULL' OR '&COM1' EQ '*').AD1COM             00890000
+&CU1     SETC  '255'                                                    00900000
+         AIF   ('&COM1' EQ 'NEXT' OR '&COM1' EQ '+').AD1COM             00910000
+&CU1     SETC  '253'                                                    00920000
+         AIF   ('&COM1' EQ 'PREV' OR '&COM1' EQ '-').AD1COM             00930000
+&CU1     SETC  '253'.'&COM1'                                            00940000
+         AIF   (K'&COM1 LT 1).ADDERR                                    00950000
+         AIF   ('&COM1'(1,1) EQ '-').AD1COM                             00960000
+         AIF   ('&COM1' EQ '0').ADDERR                                  00970000
+&CU1     SETC  '&COM1'.'+63'                                            00980000
+.AD1COM  ANOP  ,                                                        00990000
+&COM1    SETC  '254'                                                    01000000
+         AIF   ('&COM2' EQ 'NULL' OR '&COM2' EQ '*').AD2COM             01010000
+&COM1    SETC  '255'                                                    01020000
+         AIF   ('&COM2' EQ 'NEXT' OR '&COM2' EQ '+').AD2COM             01030000
+&COM1    SETC  '253'                                                    01040000
+         AIF   ('&COM2' EQ 'PREV' OR '&COM2' EQ '-').AD2COM             01050000
+&COM1    SETC  '253'.'&COM2'                                            01060000
+         AIF   (K'&COM2 LT 1).ADDERR                                    01070000
+         AIF   ('&COM2'(1,1) EQ '-').AD2COM                             01080000
+         AIF   ('&COM2' EQ '0').ADDERR                                  01090000
+&COM1    SETC  '&COM2'.'-1'                                             01100000
+.AD2COM  ANOP  ,                                                        01110000
+&CU1     SETC  '('.'&CU1'.')*256+'.'&COM1'                              01120000
+         AIF   (NOT &CURP).RETSBA                                       01130000
+.NOCUR   AIF   (T'&CC EQ 'O').NOCC                               81201  01140000
+         AIF   (NOT &CURP).SETCC                                 81201  01150000
+         MNOTE 4,'CC= AND CUR= ARE MUTUALLY EXCLUSIVE'           81201  01160000
+         AGO   .NOCC                                             81201  01170000
+.SETCC   ANOP  ,                                                 81201  01180000
+&CCP     SETB  1                                                 81201  01190000
+.NOCC    AIF   (T'&IND EQ 'O').NOIND                             81270  01200000
+         AIF   (NOT &CURP).SETIND                                81270  01210000
+         MNOTE 4,'IND= AND CUR= ARE MUTUALLY EXCLUSIVE'          81270  01220000
+         AGO   .NOIND                                            81270  01230000
+.SETIND  ANOP  ,                                                 81270  01240000
+&INDP    SETB  1                                                 81270  01250000
+.NOIND   ANOP  ,                                                 81270  01260000
+&OPT     SETB  1                                                        01270000
+&T       SETA  32*&OPT+64*&NOP                                          01280000
+&WCC     SETA  4*&ALARM                                                 01290000
+&WCCP    SETB  (&ALARM)                                                 01300000
+&E      SETA 128*&NL+64*&WCCP+32*&SBAP+8*&CURP+&CCP+4*&INDP      81270  01310000
+&O7      SETA  128*&DEFAULT+64*&PREV+&MDT                        87313  01320000
+&PROTECT SETB  (&PROTECT OR &SKIP)                                      01330000
+&NUMERIC SETB  (&NUMERIC OR &SKIP)                                      01340000
+&DETECT  SETB  (&DETECT  OR &NONDISP)                                   01350000
+&INTENSE SETB  (&INTENSE OR &NONDISP)                                   01360000
+&O7      SETA  &O7+32*&PROTECT+16*&NUMERIC+8*&INTENSE+4*&DETECT         01370000
+&C1      SETB  (&GREEN OR &TURQ OR &WHITE OR &YELLOW)                   01380000
+&C2      SETB  (&RED OR &PINK OR &WHITE OR &YELLOW)                     01390000
+&C3      SETB  (&BLUE OR &PINK OR &TURQ OR &WHITE)                      01400000
+&O9      SETA  64*&C1+32*&C2+16*&C3+8*&MONO+4*&UNDER+2*&REVERSE+&BLINK  01410000
+&O79     SETB  (&O7 NE 0 OR &O9 NE 0)                                   01420000
+&E       SETA  &E+2*&O79                                                01430000
+         AIF   (&CCP).EXPCC                                      81201  01440000
+         AIF   (&CURP).EXPSC                                     81270  01450000
+         AIF   (&INDP).EXPSI                                     81270  01460000
+&FDCHN   DC    AL1(ZFD&C-*,&T,&E,&O9,&O7,&WCC),AL2(&SB1)                01470000
+         MEXIT ,                                                 81270  01480000
+.EXPSI   ANOP  ,                                                 81270  01490000
+&FDCHN   DC    AL1(ZFD&C-*,&T,&E,&O9,&O7,&WCC),AL2(&SB1),AL1(0,&IND)    01500000
+         MEXIT ,                                                 81270  01510000
+.EXPSC   ANOP  ,                                                 81270  01520000
+&FDCHN   DC    AL1(ZFD&C-*,&T,&E,&O9,&O7,&WCC),AL2(&SB1,&CU1)           01530000
+         MEXIT ,                                                 81201  01540000
+.EXPCC   AIF   (&INDP).EXPCI                                     81270  01550000
+&FDCHN   DC    AL1(ZFD&C-*,&T,&E,&O9,&O7,&WCC),AL2(&SB1),AL1(&CC)       01560000
+         MEXIT ,                                                 81270  01570000
+.EXPCI   ANOP  ,                                                 81270  01580000
+&FDCHN   DC    AL1(ZFD&C-*,&T,&E,&O9,&O7,&WCC),AL2(&SB1),AL1(&CC,&IND)  01590000
+         MEND  ,                                                        01600000

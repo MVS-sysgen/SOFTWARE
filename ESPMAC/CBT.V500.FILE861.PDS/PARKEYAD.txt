@@ -1,0 +1,24 @@
+         MACRO ,                                                        00010001
+&NM      PARKEYAD &TEXT,&ADD,&MIN=3                                     00020001
+.*--------------------------------------------------------------------* 00030000
+.*  THIS MACRO BUILDS BRANCH ADDRESS TABLES FOR KEYWORD PROCESSING.   * 00040001
+.*  USE IN CONJUNCTION WITH @PARSER/PARSE, AND PARKEYBX SERVICES,     * 00050001
+.*  AND THE SUBVERB SUBROUTINE.                                       * 00060001
+.*--------------------------------------------------------------------* 00070000
+         GBLB  &ZZZOPT@                                                 00080001
+         LCLA  &I,&J                                            GP03245 00090005
+&I       SETA  N'&TEXT                                          GP03245 00100005
+&J       SETA  16            SIGNAL SL2 ADDRESS                         00110002
+         AIF   (&ZZZOPT@).LATER                                         00120001
+OFO@TXT  EQU   0,8,C'C'      VERB                                       00130001
+OFO@MIN  EQU   8,1,C'F'      MINIMUM LENGTH                             00140003
+OFO@FLG  EQU   9,1,C'F'      (ARBITRARY) FLAG                           00150003
+OFO@ADD  EQU  10,2,C'A'      OFFSET TO PROCESSING CODE                  00160003
+&ZZZOPT@ SETB  1             DEFINITIONS DONE                           00170001
+.LATER   AIF   ('&TEXT'(1,1) EQ '''').QUOTED                            00180001
+&NM      DC    CL8'&TEXT ',AL1(&MIN-1,&J),SL2(&ADD)                     00190002
+         MEXIT ,                                                        00200001
+.QUOTED  ANOP  ,                                                        00210001
+&I       SETA  &I-2                                                     00220001
+&NM      DC    CL8&TEXT,AL1(&MIN-1,&J),SL2(&ADD)                        00230002
+         MEND  ,                                                        00240001

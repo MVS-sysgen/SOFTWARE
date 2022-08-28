@@ -1,0 +1,52 @@
+         MACRO                                                          00010000
+&NAME    DYNSPACE &TYPE                                                 00020000
+.*                                                                      00030000
+.*    THIS IS AN INNER MACRO TO ALLOC/FREE.                             00040000
+.*    IT IS CALLED TO   A) NAME AN AREA FOR THE PARMLIST                00050000
+.*                      B) LOG THE VARIOUS AMOUNTS NEEDED BY            00060000
+.*                         EACH, REMEMBERING THE LARGEST.               00070000
+.*                      C) GENERATING A DS FOR THE LARGEST AMOUNT.      00080000
+.*    THE FIRST TWO FUNCTIONS ARE INVOKED BY ALLOC/FREE MACROS ONLY,    00090000
+.*    AND THE THIRD IS USED BY THE PROGRAMMER, EITHER EXPLICITLY,       00100000
+.*    OR BY BEGINWKA, IF THE LATTER IS USED.                            00110000
+.*                                                                      00120000
+.*     TO INVOKE THE NAMING FUNCTION, ALLOC/FREE GENERATE               00130000
+.*     NAME DYNSPACE                                                    00140000
+.*     NOTE. THE NAMING OPERATION ONLY GENERATES A NAME ON THE          00150000
+.*     FIRST CALL IN THE ASSEMBLY. THE NAME REMAINS THE SAME UNTIL      00160000
+.*     DYNSPACE IS CALLED TO EXPAND INTO A DS.                          00170000
+.*                                                                      00180000
+.*     THE SECOND FUNCTION IS INVOKED BY THE MACRO CALL                 00190000
+.*          DYNSPACE ADD                                                00200000
+.*     (NO NAME FIELD AND ONE OPERAND)                                  00210000
+.*     IT USES THE GLOBAL VARIABLES &DTUO AND &DTUPO TO CALCULATE       00220000
+.*     THE SPACE FOR THIS REQUEST, AND UPDATES &DYNSPQ ONLY IF THE      00230000
+.*     CURRENT REQUEST IS FOR A GREATER AMOUNT                          00240000
+.*                                                                      00250000
+.*     THE THIRD FUNCTION IS INVOKED BY CALLING DYNSPACE WITH NO        00260000
+.*     NAME OR OPERAND FIELD.                                           00270000
+.*     THIS EXPANDS INTO A DEFINE STORAGE, CLEARS THE DYNSPACE NAME     00280000
+.*     GLOBAL SETC, AND THE &DYNSPQ GLOBAL SETA.                        00290000
+.*     THUS, THE MACRO IS SERIALLY REUSABLE IN ALL FUNCTIONS.           00300000
+.*                                                                      00310000
+         GBLA  &DYNSPQ,&DTUO,&DTUPO,&RCPDYN                             00320000
+         GBLC  &DYNP,&DYNSP                                             00330000
+         LCLA  &I                                                       00340000
+         AIF   ('&NAME' NE '').NAME                                     00350000
+         AIF   ('&TYPE' EQ '').ALLOC                                    00360000
+.*   THE ACCUMULATE FUNCTION IS REQUIRED                                00370000
+&I       SETA  24+&DTUO+&DTUPO         GET AMOUNT FOR THIS REQUEST      00380000
+         AIF   (&I LE &DYNSPQ).EXIT    IF CURRENT < MAX, EXIT           00390000
+&DYNSPQ  SETA  &I                      ELSE UPDATE CURRENT MAXIMUM      00400000
+         MEXIT                                                          00410000
+.NAME    AIF   ('&DYNSP' NE '').EXIT   IF NAME ALREADY EXISTS, EXIT     00420000
+&DYNSP   SETC  'DYNSP&RCPDYN'           ELSE GENERATE A NAME            00430000
+.EXIT    MEXIT                                                          00440000
+.ALLOC   AIF   ('&DYNSP' EQ '').EXIT                                    00450000
+*                                                                       00460000
+**     RESERVE SPACE FOR ALLOC/FREE MACRO WORK AREA                     00470000
+*                                                                       00480000
+&DYNSP   DS    0F,CL&DYNSPQ            RESERVE SPACE                    00490000
+&DYNSP   SETC  ''                      SET MAX QUANTITY TO 0            00500000
+&DYNSPQ  SETA 0                                                         00510000
+         MEND                                                           00520000

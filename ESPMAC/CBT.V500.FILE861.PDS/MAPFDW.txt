@@ -1,0 +1,77 @@
+         MACRO ,                                                        00010000
+&NM      MAPFDW &DSECT=,&PFX=FDW                        ADDED ON 84237  00020000
+         LCLC  &P,&Q                                                    00030000
+&P       SETC  '&PFX'                                                   00040000
+&Q       SETC  '&P'.'SECT'                                              00050000
+         AIF   ('&NM' EQ '').DFDS                                       00060000
+&Q       SETC  '&NM'                                                    00070000
+.DFDS    AIF   ('&DSECT' EQ 'NO').NODS                                  00080000
+&Q       DSECT ,                                                        00090000
+         AGO   .CMDS                                                    00100000
+.NODS    AIF   ('&NM' EQ '').CMDS                                       00110000
+&Q       DS    0A                                                       00120000
+.CMDS    ANOP  ,                                                        00130000
+&P.FDA   DC    A(0)          ADDRESS OF FD/FDIN SEQUENCE                00140000
+&P.FWA   DC    A(0)          ADDRESS OF INPUT WORK AREA (FIW)           00150000
+&P.FWL   DC    F'0'          LENGTH OF FIW                              00160000
+&P.SCAN  DC    A(0)          CURRENT INPUT SCANNER ADDRESS       86209  00170000
+&P.SCAL  DC    F'0'          RESIDUAL INPUT LENGTH TO SCAN       86209  00180000
+&P.BIA   DC    A(0)          ADDRESS OF INPUT BUFFER                    00190000
+&P.BIL   DC    F'0'          CURRENT LENGTH OF INPUT                    00200000
+&P.BIM   DC    Y(0)          MAXIMUM INPUT SIZE                  86209  00210000
+&P.BOM   DC    Y(0)          MAXIMUM OUTPUT SIZE                 86209  00220000
+&P.BOA   DC    A(0)          ADDRESS OF OUTPUT BUFFER                   00230000
+&P.BOL   DC    F'0'          LENGTH OF OUTPUT BUFFER                    00240000
+&P.BOS   DC    Y(0)          SCREEN CAPACITY USED BY OUTPUT      86209  00250000
+&P.CUR   DC    X'FFFF' 1/3   0 OR REQUESTED CURSOR ADDRESS              00260000
+&P.CUD   DC    X'FFFF' 2/3   DEFAULT CURSOR ADDRESS                     00270000
+&P.ICUD  DC    Y(0)    3/3   (LAST) INPUT CURSOR ADDRESS         85034  00280000
+&P.IAID  DC    C' '          (LAST) INPUT AID                    85034  00290000
+&P.ICOD  DC    AL1(0)        (LAST) INPUT AID CONVERTED          85034  00300000
+&P.FG    DC    X'00'         ENTRY FLAG (OR'ED FROM ALL FIWFG)          00310000
+&P.FTXT  EQU   X'80'           ENTRY CONTAINS TEXT                      00320000
+&P.FERR  EQU   X'40'           TEXT IS IN ERROR                         00330000
+&P.FPEN  EQU   X'20'           FIELD SELECTED BY LIGHT-PEN              00340000
+&P.FHLP  EQU   X'10'           TEXT IS HELP OR ?                 88221  00350000
+&P.FF1   EQU   X'08'           FIRST FDIN MODIFIED               86338  00360000
+&P.FF2   EQU   X'04'           OTHER FDIN MODIFIED               86338  00370000
+&P.FINT  EQU   X'02'           INTENSIFIED DISPLAY FIELD         86338  00380000
+&P.FINV  EQU   X'01'           INVERT INTENSITY                  86338  00390000
+&P.OPT   DC    X'00'         PROCESSING OPTIONS                         00400000
+&P.OKEEP EQU   X'80'           SCINIT NOT TO ERASE FIW AREA      86231  00410000
+&P.MKEEP EQU   X'40'           SCMOVE TO KEEP FIW FLAGS          87159  00420000
+&P.MKDEL EQU   X'20'           SCMARK TO CLEAR NON-ESSENTIAL IWS 87360  00430000
+&P.OSA   EQU   X'10'           SCLIST TO USE SA, NOT SFE         87336  00440000
+&P.LOCK  EQU   X'08'           IF OFF, COND. INPUT IS LOCKED     87156  00450000
+&P.OHELP EQU   X'04'           LOOK FOR 'HELP' AND '?'           88221  00460000
+&P.SFTAB EQU   X'02'           DON'T MERGE SF - TABLE PROC.     GP02363 00470000
+&P.NREAD EQU   X'02'           SCLINE WRITE ONLY; NO READ       GP13068 00480000
+&P.KYFLP EQU   X'00' >LATER<   SWAP KEYS 13-24 WITH 1-12        GP12305 00490000
+&P.KEY12 EQU   X'01'           CONVERT KEYS 13-24 TO 1-12        88211  00500000
+&P.SCAC  DC    A(0)          SCANNER CONTROL LIST ADDRESS        87312  00510000
+&P.SCMSG DC    A(0)          ERROR MESSAGE ADDRESS               87360  00520000
+&P.DEVIC DC    A(0)          DEVICE ATTRIBUTE POINTER (MAPCMPR)  93344  00530000
+&P.FDRST DC    A(0)          FD ADDR - RESTART AFT. FULL SCREEN GP02363 00540000
+.*                             (FDOPT ADDR. IF FDKEEP SEQUENCE) GP02363 00550000
+&P.RELOC DC    A(0)          ADDRESS OF REGISTER AREA FOR FD    GP03269 00560000
+.*                             ADDRESS RESOLUTION (SUBXSCRN)    GP03269 00570000
+&P.PROFG DC    X'00'         PROCESSING FLAG FOR SUBXSCRN, ETC. GP03273 00580000
+&P.PFHED EQU   X'80'           NEED PAGE HEADER                 GP03273 00590000
+&P.PFSHO EQU   X'40'           DISPLAY PAGE                     GP03273 00600000
+&P.PFENT EQU   X'20'           RETURN TO CALLER ON ENTER ONLY   GP04108 00610000
+&P.PFCUR EQU   X'10'           USE CURSOR                       GP12297 00620000
+&P.PFARC EQU   X'08'           CURSORS IN (ROW,COL) FORMAT      GP09356 00630000
+&P.PFCAN EQU   X'04'           CAN COMMAND AFTER DISPLAY        GP09356 00640000
+&P.PFEND EQU   X'02'           END COMMAND AFTER DISPLAY        GP09350 00650000
+&P.PFDAT EQU   X'01'           DATA ON PAGE                     GP03273 00660000
+         DC    X'00'           RESERVED                         GP03273 00670000
+&P.SVCUR DC    H'0'          SCINIT SAVED CURSOR ADDRESS        GP05338 00680000
+.*       ZAP SPACE                                               87360  00690000
+&P.SVPAG DC    A(0)          ADDRESS OF INITIAL (PAGE) FD CHAIN GP03277 00700000
+&P.@HLP  DC    A(0)          FD OR FDLINE FOR HELP SCREEN       GP05080 00710000
+&P.CATR  DC    XL2'0'  1/3   CURSOR ADDRESS FOR SPECIAL SA      GP10021 00720000
+&P.CATL  DC    XL1'0'  2/3     LENGTH OF SA FIELD               GP10021 00730000
+&P.CATC  DC    CL1'6'          SA COLOR CODE                    GP10021 00740000
+         DC    1A(0)           RESERVED                         GP05080 00750000
+&P.FDWLN EQU   *-&P.FDA      SIZE TO BE CLEARED                  93344  00760000
+         MEND  ,                                                        00770000

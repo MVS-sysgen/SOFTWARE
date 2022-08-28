@@ -1,0 +1,17 @@
+         MACRO ,                                                        00010000
+&NM      SERVTREE &PFX=?,&KEYLEN=4,&KEYOFF=0,&RECLEN=256,              *00020000
+               &RECNUM=64*1024                                          00030000
+         AIF   ('&NM' EQ '').NOLAB                                      00040000
+&NM      DS    0A            TREE WORK AREA                             00050000
+.NOLAB   ANOP  ,                                                        00060000
+&PFX.ID    DC  C'TREE'       IDENTIFIER FOR THIS                        00070000
+&PFX.HEAD  DC  2A(0)         HEAD OF TREE                               00080000
+&PFX.WORK  DC  A(0)          ADDRESS OF WORK AREA                       00090000
+&PFX.@REC  DC  A(0)          ADDRESS OF RECORD (SAME AS R1)             00100000
+&PFX.COUNT DC  A(&RECNUM)    NUMBER OF RECORDS (ESTIMATED)              00110000
+&PFX.RECL  DC  AL2(&RECLEN)  LENGTH OF RECORD (INCLUDING KEY)           00120000
+&PFX.KEYO  DC  AL2(&KEYOFF)  KEY OFFSET IN RECORD                       00130000
+&PFX.KEYL  DC  AL1(&KEYLEN)  KEY LENGTH                                 00140000
+&PFX.REC   DC  CL(&RECLEN)' '  CURRENT RECORD (OR JUST KEY FOR LOC)     00150000
+&PFX.SIZE  EQU *-&PFX.ID     SIZE OF USER CONTROL AREA                  00160000
+         MEND  ,                                                        00170000

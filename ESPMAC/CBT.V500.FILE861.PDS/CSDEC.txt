@@ -1,0 +1,20 @@
+         MACRO ,                                                        00010000
+&NM      CSDEC &CTR,&DEC=1,&WK1=R14,&WK2=R15                     87001  00020000
+         LCLC  &N                                                       00030000
+&N       SETC  '&NM'                                                    00040000
+         AIF   ('&N' NE '').HAVELB                                      00050000
+&N       SETC  'ZZCS'.'&SYSNDX'                                         00060000
+.HAVELB  ANOP  ,                                                        00070000
+&N       L     &WK1,&CTR     LOAD OLD VALUE                             00080000
+         LR    &WK2,&WK1     COPY CURRENT VALUE                         00090000
+         AIF   (K'&DEC LT 3).NOREG                                      00100000
+         AIF   ('&DEC'(1,1) EQ '(' AND '&DEC'(2,1) NE '(').REG          00110000
+.NOREG   AIF   ('&DEC' EQ '1').SPEC                                     00120000
+         SH    &WK2,=Y(&DEC) DECREASE                                   00130000
+         AGO   .COM                                                     00140000
+.SPEC    BCTR  &WK2,0        DECREASE                                   00150000
+         AGO   .COM                                                     00160000
+.REG     SR    &WK2,&DEC(1)  DECREASE                                   00170000
+.COM     CS    &WK1,&WK2,&CTR  REPLACE                                  00180000
+         BNZ   &N            ELSE TRY AGAIN                             00190000
+         MEND  ,                                                        00200000

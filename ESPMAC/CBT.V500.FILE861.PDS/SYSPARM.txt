@@ -1,0 +1,255 @@
+         MACRO ,                                                        00010000
+       SYSPARM &DBTEST=YES,&SETS=YES,&LIST=YES,&SHOW=,&PARM=            00020000
+.********************************************************************** 00030000
+.*   THIS MACRO, FOLLOWING OPTIONGB, SETS GLOBAL ASSEMBLY OPTIONS.      00040000
+.*   OVERRIDES ARE MERGED FROM THE CONTENTS OF THE ASSEMBLER EXEC       00050000
+.*   PARM SUBFIELD SYSPARM:  // EXEC ASMHC,PARM='SYSPARM(MVS/ESA)'      00060000
+.********************************************************************** 00070000
+         COPY  OPTIONGB                                                 00080000
+         LCLA  &CURSOR                                                  00090000
+         LCLA  &I,&J,&K                                                 00100000
+         LCLB  &GOTLOC                                                  00110000
+         LCLC  &CHAR                                                    00120000
+         LCLC  &DEFSP1R,&DEFSP2R,&DEFSP3R,&DEFJES2               90217  00130000
+         LCLC  &DELIM                                                   00140000
+         LCLC  &TOKEN                                                   00150000
+         LCLC  &DEFMOD,&DEFLOC,&DEFMAC,&DEFSOR,&DEFSYM,&DEFSYS   81169  00160000
+&GOTLOC  SETB  ('&SETS' EQ 'NO' OR '&LOCAL' NE '' OR &SYSPRM# GT 0)     00170000
+         AIF   (&SYSPRM# NE 0).BYEBYE                            81154  00180000
+         AIF   ('&PARM' EQ 'IGNORE').NOFRAME                     83100  00190000
+         AIF   (T'&PARM EQ 'O').OKPPRM                           83100  00200000
+         MNOTE 8,'INVALID PARM=&PARM'                            83100  00210000
+.OKPPRM  ANOP  ,                                                 83100  00220000
+&K       SETA  K'&SYSPARM                                        82099  00230000
+         AIF   (&K LT 2).NOFRAME                                 82099  00240000
+         AIF   ('&SYSPARM'(1,1) NE '(').NOFRAME                  82099  00250000
+         AIF   ('&SYSPARM'(&K,1) NE ')').NOFRAME                 82099  00260000
+&K       SETA  &K-1          SUPPORT FORMAT (A,B,C)              82099  00270000
+&CURSOR  SETA  &CURSOR+1                                         82099  00280000
+.NOFRAME AIF   (&GOTLOC).FINDTOK                                 82099  00290000
+&DEFLOC  SETC  'MVS'           INSTALLATION                      81154  00300000
+&DEFMOD  SETC  '370'             DEFAULTS        (360 OR 370)    81154  00310000
+&DEFSYS  SETC  'MVS'               HERE          (SYSTEM FLAVOR) 85077  00320000
+&DEFSP1R SETC  '0303'                            SP1 RELEASE     85077  00330000
+&DEFSP2R SETC  '0200'                            SP2 RELEASE     90252  00340000
+&DEFSP3R SETC  '0100'                            SP3 RELEASE     90217  00350000
+&DEFJES2 SETC  '41'                              JES2 VERSION    90189  00360000
+&DEFMAC  SETC  'GEN'         PRINT OPTION FOR LOCAL MACROS       81154  00370000
+&DEFSOR  SETC  'NOGEN'       PRINT OPTION FOR SOURCE CODE        81154  00380000
+&DEFSYM  SETC  'NOGEN'       PRINT OPTION FOR SYSTEM MACROS      81154  00390000
+&SVCJFCB SETA  0             MODJFCB SVC (SOURCE MEMBER IGC00240)82099  00400000
+&SVC@SVC SETA  0             @SERVICE INSTALLED AS SVC ? (255)   84160  00410000
+&SVCTMSX SETA  0             UCC-1 (TMS) SVC X                   92271  00420000
+&SVCTMSY SETA  0             UCC-1 (TMS) SVC Y                   92271  00430000
+.*                                                                      00440000
+.FINDTOK AIF   (&CURSOR GE &K).MERGE                             82099  00450000
+&CURSOR  SETA  &CURSOR+1                                                00460000
+         AIF   ('&SYSPARM'(&CURSOR,1) EQ ' ').FINDTOK                   00470000
+         AIF   ('&SYSPARM'(&CURSOR,1) EQ ',').FINDTOK                   00480000
+.*                                                                      00490000
+&DELIM   SETC  '&SYSPARM'(&CURSOR,1)                                    00500000
+&TOKEN   SETC  '&DELIM'                                                 00510000
+         AIF   ('&DELIM' EQ '''' OR '&DELIM' EQ '"').CURINC2            00520000
+&DELIM   SETC  ''                                                       00530000
+&TOKEN   SETC  ''                                                       00540000
+.*                                                                      00550000
+.SCANTOK AIF   (&CURSOR GT &K).ENDTOK                           82099   00560000
+&CHAR    SETC  '&SYSPARM'(&CURSOR,1)                                    00570000
+         AIF   ('&DELIM' EQ '&CHAR').CATDEL                             00580000
+         AIF   ('&DELIM' EQ '').TESTEND                                 00590000
+         AGO   .CATTOK                                                  00600000
+.CATDEL  ANOP  ,                                                        00610000
+&TOKEN   SETC  '&TOKEN'.'&CHAR'                                         00620000
+&CURSOR  SETA  &CURSOR+1                                                00630000
+         AIF   (&CURSOR GT &K).GOODTOK                           82099  00640000
+&CHAR    SETC  '&SYSPARM'(&CURSOR,1)                                    00650000
+         AIF   ('&CHAR' NE '&DELIM').ENDQTOK                            00660000
+.TESTEND AIF   ('&CHAR' EQ ' ').GOODTOK                                 00670000
+         AIF   ('&CHAR' EQ ',').GOODTOK                                 00680000
+.CATTOK  ANOP  ,                                                        00690000
+&TOKEN   SETC  '&TOKEN'.'&CHAR'                                         00700000
+.CURINC2 ANOP  ,                                                        00710000
+&CURSOR  SETA  &CURSOR+1                                                00720000
+         AGO   .SCANTOK                                                 00730000
+.ENDQTOK AIF   ('&CHAR' EQ ' ' OR '&CHAR' EQ ',').GOODTOK               00740000
+         MNOTE 4,'TOKENS RUN TOGETHER - COMMA ASSUMED'                  00750000
+         AGO   .GOODTOK                                                 00760000
+.ENDTOK  AIF   ('&DELIM' EQ '').GOODTOK                                 00770000
+         AIF   ('&TOKEN' NE '').GOODTOK                                 00780000
+         MNOTE 8,'UNPAIRED DELIMITER IN &&SYSPARM:'                     00790000
+         MNOTE 8,'&SYSPARM'                                             00800000
+.GOODTOK AIF   ('&TOKEN' NE 'DEBUG' OR '&DBTEST' EQ 'NO').NOTDB         00810000
+&BUGBEAR SETB  1                                                 81331  00820000
+         AGO   .FINDTOK                                                 00830000
+.NOTDB   AIF   ('&TOKEN' EQ '360' OR '&TOKEN' EQ '370' OR '&TOKEN'     *00840000
+               EQ '470' OR '&TOKEN' EQ '390').SETMODL           GP04234 00850000
+         AIF   ('&TOKEN' EQ 'MVS' OR '&TOKEN' EQ 'SVS' OR '&TOKEN'     *00860000
+               EQ 'VS1' OR '&TOKEN' EQ 'MVT').SETSYS             82137  00870000
+         AIF   ('&TOKEN     '(1,6) EQ 'MVS/SP').SETSP            82091  00880000
+         AIF   ('&TOKEN     '(1,6) EQ 'MVS/XA').SETXA            82091  00890000
+         AIF   ('&TOKEN     '(1,7) EQ 'MVS/ESA').SETESA          90217  00900000
+         AIF   ('&TOKEN   '(1,3) EQ 'J2/').SETJES2               85076  00910000
+         AIF   (K'&TOKEN NE 6 AND K'&TOKEN NE 8).NOTPROP         82099  00920000
+         AIF   ('&TOKEN'(1,1) NE 'P').NOTPROP                    82099  00930000
+         AIF   ('&TOKEN'(3,1) NE '/').NOTPROP                    82099  00940000
+         AIF   ('&TOKEN'(K'&TOKEN-2,3) NE 'GEN').NOTPROP         82099  00950000
+         AIF   ('&TOKEN'(2,1) EQ 'S').PROPSOR                    82099  00960000
+         AIF   ('&TOKEN'(2,1) EQ 'M').PROPMAC                    82099  00970000
+         AIF   ('&TOKEN'(2,1) EQ 'Y').PROPSYS                    82099  00980000
+.NOTPROP AIF   (NOT &GOTLOC).GETLOC                              82099  00990000
+         AIF   (&SYSPRM# GE 10).TOOMANY                                 01000000
+&SYSPRM# SETA  &SYSPRM#+1                                               01010000
+&SYSPRMS(&SYSPRM#) SETC '&TOKEN'                                        01020000
+         AGO   .FINDTOK                                                 01030000
+.SETMODL ANOP  ,                                                 81154  01040000
+&MODEL   SETC  '&TOKEN'                                          81154  01050000
+         AGO   .FINDTOK                                          81154  01060000
+.*                                                               82099  01070000
+.*       PRINT OPTIONS MAY BE PARTIALLY SET WITH THE FORM        82099  01080000
+.*       SYSPARM=P?/GEN AND =P?/NOGEN, WHERE ? IS S, M, OR Y     82099  01090000
+.PROPSOR ANOP  ,             PS/ - SET SOURCE OPTION             82099  01100000
+&PRTSOR  SETC  '&TOKEN'(4,K'&TOKEN-3)                            82099  01110000
+         AGO   .FINDTOK                                          82099  01120000
+.PROPMAC ANOP  ,             PM/ - SET LOCAL MACRO OPTION        82099  01130000
+&PRTMAC  SETC  '&TOKEN'(4,K'&TOKEN-3)                            82099  01140000
+         AGO   .FINDTOK                                          82099  01150000
+.PROPSYS ANOP  ,             PY/ - SET SYSTEM MACRO OPTION       82099  01160000
+&PRTSYS  SETC  '&TOKEN'(4,K'&TOKEN-3)                            82099  01170000
+         AGO   .FINDTOK                                          82099  01180000
+.SETJES2 ANOP  ,                                                 85076  01190000
+&JES2REL SETC  '&TOKEN'(4,K'&TOKEN-3)                            85076  01200000
+         AGO   .FINDTOK                                          85076  01210000
+.*                                                               85076  01220000
+.*                                                               82091  01230000
+.SETSP   AIF   ('&TOKEN' EQ 'MVS/SP').SETSYS                     82091  01240000
+&SPVEREL SETC  ''                                                82091  01250000
+.SETSP1  ANOP  ,                                                 82091  01260000
+&I       SETA  6                                                 82091  01270000
+.SETSP2  ANOP  ,                                                 82091  01280000
+&CHAR    SETC  ''                                                82091  01290000
+.SETSP3  ANOP  ,                                                 82091  01300000
+&I       SETA  &I+1                                              82091  01310000
+         AIF   ('&TOKEN'(&I,1) EQ '.').SPENDL                    82091  01320000
+&CHAR    SETC  '&CHAR'.'&TOKEN'(&I,1)                            82091  01330000
+         AIF   (&I LT K'&TOKEN).SETSP3                           82091  01340000
+.SPENDL  AIF   (K'&CHAR LE 2).SPNERRL                            82091  01350000
+         MNOTE 8,'"&CHAR" IN "&TOKEN" IS MORE THAN 2 DIGITS'     82091  01360000
+         MNOTE 8,'"&CHAR" WILL BE TRUNCATED ON THE LEFT'         82091  01370000
+.SPNERRL ANOP  ,                                                 82091  01380000
+&CHAR    SETC  '00'.'&CHAR'                                      82091  01390000
+&SPVEREL SETC  '&SPVEREL'.'&CHAR'(K'&CHAR-1,2)                   82091  01400000
+         AIF   (&I LT K'&TOKEN).SETSP2                           82091  01410000
+&SYSTEM  SETC  'MVS/SP'                                          82091  01420000
+         AIF   (K'&SPVEREL GT 2).SPRELS                          82091  01430000
+&SPVEREL SETC  '&SPVEREL'.'01'                                   82091  01440000
+.SPRELS  AIF   (K'&SPVEREL GT 4).SPLEVS                          82091  01450000
+&SPVEREL SETC  '&SPVEREL'.'00'                                   82091  01460000
+.SPLEVS  AIF   ('&SPVEREL'(1,2) LE '01').FINDTOK                 82091  01470000
+&MVSXA   SETB  1                                                 82091  01480000
+         AIF   ('&SPVEREL'(1,2) LE '02').FINDTOK                 90217  01490000
+&MVSESA  SETB  1                                                 90217  01500000
+         AGO   .FINDTOK                                          82091  01510000
+.*                                                               82091  01520000
+.SETXA   AIF   ('&TOKEN' EQ 'MVS/XA').SETSYS                     82091  01530000
+&SYSTEM  SETC  'MVS/SP'                                          82091  01540000
+&SPVEREL SETC  '02'                                              82091  01550000
+         AGO   .SETSP1                                           82091  01560000
+.*                                                               90217  01570000
+.SETESA  AIF   ('&TOKEN' EQ 'MVS/ESA').SETSYS                    90217  01580000
+&SYSTEM  SETC  'MVS/SP'                                          90217  01590000
+&SPVEREL SETC  '03'                                              90217  01600000
+         AGO   .SETSP1                                           90217  01610000
+.*                                                               82091  01620000
+.SETSYS  ANOP  ,                                                 81154  01630000
+&SYSTEM  SETC  '&TOKEN'                                          81154  01640000
+         AGO   .FINDTOK                                          81154  01650000
+.GETLOC  AIF   ('&TOKEN' EQ 'TSM').OPTTSM                               01660000
+&DEFSYS  SETC  'MVS'         DEFAULT SYSTEM                      94217  01670000
+&DEFMAC  SETC  'GEN'         LOCAL MACROS                        90031  01680000
+&DEFSOR  SETC  'NOGEN'       LOCAL SOURCE                        90031  01690000
+&DEFSYM  SETC  'NOGEN'       SYSTEM MACROS                       90031  01700000
+&SVCJFCB SETA  0             NO MODJFCB SVC                      90031  01710000
+&SVC@SVC SETA  0             @SERVICE NOT INSTALLED AS SVC       90031  01720000
+&SVCTMSX SETA  0             UCC-1 TMS ?                         90031  01730000
+&SVCTMSY SETA  0             UCC-1 TMS ?                         90031  01740000
+         AGO   .OPT370                                           90031  01750000
+.*                                                                      01760000
+.OPTTSM  ANOP  ,                                                 82099  01770000
+&SVCJFCB SETA  240           MODJFCB SVC                         82099  01780000
+&SVC@SVC SETA  0             @SERVICE NOT INSTALLED AS SVC       83100  01790000
+&SVCTMSX SETA  0             UCC-1 TMS ?                         82099  01800000
+&SVCTMSY SETA  0             UCC-1 TMS ?                         82099  01810000
+.*                                                                      01820000
+.OPTMVS  ANOP  ,                                                        01830000
+&DEFSYS  SETC  'MVS'                                                    01840000
+         AGO   .OPT370                                           82099  01850000
+.*                                                                      01860000
+.OPTSVS  ANOP  ,                                                        01870000
+&DEFSYS  SETC  'SVS'                                                    01880000
+.OPT370  ANOP  ,                                                        01890000
+&DEFMOD  SETC  '370'                                                    01900000
+.COMLOC  ANOP  ,                                                 81154  01910000
+&LOCAL   SETC  '&TOKEN'                                          81154  01920000
+&GOTLOC  SETB  1                                                        01930000
+         AGO   .FINDTOK                                          81154  01940000
+.TOOMANY MNOTE 8,'MORE THAN 10 ELEMENTS IN &&SYSPARM:'                  01950000
+         MNOTE 8,'&SYSPARM'                                             01960000
+.MERGE   AIF   ('&LOCAL' NE '').MGLOC                            81154  01970000
+&LOCAL   SETC  '&DEFLOC'                                         81154  01980000
+.MGLOC   AIF   ('&MODEL' NE '').MGMOD                            81154  01990000
+&MODEL   SETC  '&DEFMOD'                                         81154  02000000
+.MGMOD   AIF   ('&PRTMAC' NE '').MGMAC                           81154  02010000
+&PRTMAC  SETC  '&DEFMAC'                                         81154  02020000
+.MGMAC   AIF   ('&PRTSOR' NE '').MGSOR                           81154  02030000
+&PRTSOR  SETC  '&DEFSOR'                                         81154  02040000
+.MGSOR   AIF   ('&PRTSYS' NE '').MGSYM                           81154  02050000
+&PRTSYS  SETC  '&DEFSYM'                                         81154  02060000
+.MGSYM   AIF   ('&SYSTEM' NE '').MGSYS                           81154  02070000
+&SYSTEM  SETC  '&DEFSYS'                                         81154  02080000
+.MGSYS   ANOP  ,                                                 81154  02090000
+&MVSESA  SETB  (&MVSESA OR '&SYSTEM' EQ 'MVS/ESA')               90217  02100000
+&MVSXA   SETB  (&MVSXA OR &MVSESA OR '&SYSTEM' EQ 'MVS/XA')      90217  02110000
+&MVSSP   SETB  (&MVSSP OR &MVSXA OR '&SYSTEM' EQ 'MVS/SP')       90217  02120000
+         AIF   (NOT &MVSSP OR '&SPVEREL' NE '').MGSP             82091  02130000
+&SYSTEM  SETC  'MVS/SP'                                          82091  02140000
+&SPVEREL SETC  '01'.'&DEFSP1R'                                   82091  02150000
+         AIF   (NOT &MVSXA).MGSP                                 82091  02160000
+&SYSTEM  SETC  'MVS/XA'                                          90217  02170000
+&SPVEREL SETC  '02'.'&DEFSP2R'                                   82091  02180000
+         AIF   (NOT &MVSESA).MGSP                                90217  02190000
+&SYSTEM  SETC  'MVS/ESA'                                         90217  02200000
+&SPVEREL SETC  '03'.'&DEFSP3R'                                   90217  02210000
+.MGSP    AIF   ('&JES2REL' NE '').MGSJ2                          85076  02220000
+&JES2REL SETC  '&DEFJES2'                                        85076  02230000
+.MGSJ2   ANOP  ,                                                 85076  02240000
+&CPU     SETC  '&MODEL'                                                 02250000
+&MVS     SETB  ('&SYSTEM'(1,3) EQ 'MVS')                         82091  02260000
+&SVS     SETB  ('&SYSTEM' EQ 'SVS')                                     02270000
+&VS1     SETB  ('&SYSTEM' EQ 'VS1')                              82137  02280000
+.BYEBYE  AIF   ('&LIST' EQ 'NO').MEND                            81154  02290000
+         MNOTE *,'                                                  '   02300000
+         MNOTE *,'               INSTALLATION &LOCAL                '   02310000
+&CHAR    SETC  ''                                                85076  02320000
+         AIF   (NOT &MVSSP).PRTVER                               85076  02330000
+&CHAR    SETC  'V'.'&SPVEREL'(1,2)                               82091  02340000
+         AIF   (K'&SPVEREL LE 3).PRTVER                          82091  02350000
+&CHAR    SETC  '&CHAR'.'.R'.'&SPVEREL'(3,2)                      82091  02360000
+         AIF   (K'&SPVEREL LE 5).PRTVER                          82091  02370000
+&CHAR    SETC  '&CHAR'.'.L'.'&SPVEREL'(5,2)                      82091  02380000
+.PRTVER  MNOTE *,'      CPU   &MODEL      SYSTEM &SYSTEM  &CHAR     '   02390000
+         AIF   ('&JES2REL' EQ '').NOTJES2                        85076  02400000
+         MNOTE *,'      JES2 RELEASE &JES2REL                       '   02410000
+.NOTJES2 MNOTE *,'      PRINT SOR &PRTSOR  MAC &PRTMAC  SYS &PRTSYS '   02420000
+         MNOTE *,'      SVC:  TMS=&SVCTMSX/&SVCTMSY  JFCB=&SVCJFCB  @SV*02430000
+               C=&SVC@SVC '                                      83100  02440000
+         MNOTE *,'                                                  '   02450000
+         AIF   ('&SHOW' EQ '').IFBUG                                    02460000
+         MNOTE *,'      MVS &MVS  MVS/SP &MVSSP  MVS/XA &MVSXA  MVS/ESA*02470000
+               &MVSESA'                                                 02480000
+.IFBUG   AIF   (NOT &BUGBEAR).MEND                               82099  02490000
+         MNOTE *,'**************************************************'   02500000
+         MNOTE *,'*                                                *'   02510000
+         MNOTE *,'*              DEBUG MODE IN EFFECT              *'   02520000
+         MNOTE *,'*                                                *'   02530000
+         MNOTE *,'**************************************************'   02540000
+.MEND    MEND  ,                                                 81154  02550000

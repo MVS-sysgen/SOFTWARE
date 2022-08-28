@@ -1,0 +1,115 @@
+         MACRO                                                          00010000
+&L       ENDM  &DUMMY,&DISP=FREEMAIN,&PFX=SAVE,&NEXT=,                 *00020000
+               &RC=,&RC0=,&RC1=,&COPYRET=,&RETADDR=(R14)         83087  00030000
+.*                                                                      00040000
+.*             COPYRIGHT 1978 BY SHMUEL (SEYMOUR J.) METZ               00050000
+.*                        ALL RIGHTS RESERVED.                          00060000
+.*                                                                      00070000
+.*             THIS MACRO IS NOT TO BE DISTRIBUTED WITHOUT PERMISSION,  00080000
+.*             AS DESCRIBED IN MEMBER $$RIGHTS.                         00090000
+.*                                                                      00100000
+         LCLC  &LB                 LABEL                         81208  00110000
+         LCLC  &SB                 SAVE AREA BASE NAME           81208  00120000
+         LCLC  &SV                 SAVE AREA PREFIX              81208  00130000
+&LB      SETC  '&L'                                                     00140000
+&SV      SETC  '&PFX'                                                   00150000
+&SB      SETC  '&SV'.'SPLN'                                      81208  00160000
+         AIF   ('&DISP' EQ 'FREEMAIN' OR '&DISP' EQ 'RETAIN'           *00170000
+               OR '&DISP' EQ 'POP' OR '&DISP' EQ 'STATIC'              *00180000
+               OR '&DISP' EQ 'TEST').DISPOK                      81347  00190000
+         MNOTE 4,'UNSUPPORTED VALUE DISP=&DISP'                  81347  00200000
+.DISPOK  AIF   ('&DISP' EQ 'RETAIN').RETAIN                      81347  00210000
+&L       L     R0,&SV.SPLN-&SB.(,R13)                            81208  00220000
+         LR    R1,R13                                                   00230000
+         L     R13,&SV.13-&SB.(,R13)                             81208  00240000
+&LB      SETC  ''                                                       00250000
+.RETAIN  AIF   (T'&COPYRET EQ 'O').DONCOPY                       81154  00260000
+         AIF   (N'&COPYRET LT 2).ONECOPY                         81154  00270000
+         AIF   (N'&COPYRET EQ 2).TWOCOPY                         81154  00280000
+         MNOTE 4,' COPYRET PARAMETER INVALID; USE (ADDR-EXPR,LENGTH)'   00290000
+.TWOCOPY ANOP  ,                                                 81154  00300000
+&LB      MVC   &SV.15-&SB.(&COPYRET(2),R13),&COPYRET(1)          81208  00310000
+         AGO   .TSTCOPY                                          81154  00320000
+.ONECOPY ANOP  ,                                                 81154  00330000
+&LB      MVC   &SV.15-&SB.(4,R13),&COPYRET(1)                    81208  00340000
+.TSTCOPY ANOP  ,                                                 81154  00350000
+&LB      SETC  ''                                                81154  00360000
+.DONCOPY AIF   (T'&NEXT NE 'O').XCTL                             81154  00370000
+         AIF   (T'&RC EQ 'O').T1RC0                                     00380000
+         AIF   ('&RC'(1,1) EQ '(').SVRC                                 00390000
+         AIF   (T'&RC EQ 'N').T1RC0                                     00400000
+         MNOTE 12,'INVALID RETURN CODE &RC'                             00410000
+         MEXIT                                                          00420000
+.SVRC    ANOP  ,                                                        00430000
+&LB      ST    &RC(1),&SV.15-&SB.(,R13)                          81208  00440000
+&LB      SETC  ''                                                       00450000
+.T1RC0   AIF   (T'&RC0 EQ 'O').T1RC1                                    00460000
+         AIF   ('&RC0' EQ '(0)' OR '&RC0' EQ '(R0)').BUMRC0             00470000
+         AIF   ('&RC0'(1,1) EQ '(').SVRC0                               00480000
+         AIF   (T'&RC0 EQ 'N').EXIT                                     00490000
+.BUMRC0  MNOTE 12,'INVALID SECONDARY RETURN CODE &RC0'                  00500000
+         MEXIT                                                          00510000
+.SVRC0   ANOP  ,                                                        00520000
+&LB      ST    &RC0(1),&SV.0-&SB.(,R13)                          81208  00530000
+&LB      SETC  ''                                                       00540000
+.T1RC1   AIF   (T'&RC1 EQ 'O').EXIT                                     00550000
+         AIF   ('&RC1' EQ '(1)' OR '&RC1' EQ '(R1)').BUMRC1             00560000
+         AIF   ('&RC1'(1,1) EQ '(').SVRC1                               00570000
+         AIF   (T'&RC1 EQ 'N').EXIT                                     00580000
+.BUMRC1  MNOTE 12,'INVALID SECONDARY RETURN CODE &RC1'                  00590000
+         MEXIT                                                          00600000
+.SVRC1   ANOP  ,                                                        00610000
+&LB      ST    &RC1(1),&SV.1-&SB.(,R13)                          81208  00620000
+&LB      SETC  ''                                                       00630000
+         AGO   .EXIT                                                    00640000
+.XCTL    AIF   ('&DISP' EQ 'FREEMAIN').XCTL1                     81347  00650000
+         AIF   ('&DISP' NE 'TEST').XCTL2                         81347  00660000
+&LB      ICM   R0,7,1+&SV.SPLN-&SB.(R1) ZERO LENGTH ?            81347  00670000
+&LB      SETC  ''                                                81347  00680000
+         BZ    *+6           SKIP FREE IF SO                     81347  00690000
+.XCTL1   ANOP  ,                                                 81347  00700000
+.*       FREEMAIN R,LV=(0),A=(1)                                 81347  00710000
+&LB      SVC   10                                                81347  00720000
+&LB      SETC  ''                                                       00730000
+.XCTL2   ANOP  ,                                                        00740000
+&LB      LA    R15,X@&SYSNDX                                            00750000
+         LM    R0,R12,&SV.0-&SB.(R13)                            81208  00760000
+         MVI   &SV.14-&SB.(R13),X'FF'   FLAG AS LAST SAVE AREA   81208  00770000
+         XCTL  SF=(E,(15))                                              00780000
+X@&SYSNDX XCTL EP=&NEXT,SF=L                                            00790000
+         MEXIT                                                          00800000
+.EXIT    AIF   ('&DISP' EQ 'FREEMAIN').EXIT1                     81347  00810000
+         AIF   ('&DISP' NE 'TEST').NOFM                          81347  00820000
+&LB      ICM   R0,7,1+&SV.SPLN-&SB.(R1) ZERO LENGTH ?            81347  00830000
+&LB      SETC  ''                                                81347  00840000
+         BZ    *+6           SKIP FREE IF SO                     81347  00850000
+.EXIT1   ANOP  ,                                                 81347  00860000
+.*       FREEMAIN R,LV=(0),A=(1)                                 81347  00870000
+&LB      SVC   10                                                81347  00880000
+&LB      SETC  ''                                                       00890000
+.NOFM    ANOP  ,                                                        00900000
+&LB      LM    R14,R12,&SV.14-&SB.(R13)                          81208  00910000
+         MVI   &SV.14-&SB.(R13),X'FF'   FLAG AS LAST SAVE AREA   81208  00920000
+         AIF   (T'&RC NE 'N').T2RC0                                     00930000
+         AIF   ('&RC'(1,1) EQ '(').T2RC0                                00940000
+         AIF   ('&RC' EQ '0').EFES                                      00950000
+         LA    R15,&RC                                                  00960000
+         AGO   .T2RC0                                                   00970000
+.EFES    XR    R15,R15                                                  00980000
+.T2RC0   AIF   (T'&RC0 NE 'N').T2RC1                                    00990000
+         AIF   ('&RC0' EQ '0').EFES0                                    01000000
+         LA    R0,&RC0                                                  01010000
+         AGO   .T2RC1                                                   01020000
+.EFES0   XR    R0,R0                                                    01030000
+.T2RC1   AIF   (T'&RC1 NE 'N').BR                                       01040000
+         AIF   ('&RC1' EQ '0').EFES1                                    01050000
+         LA    R1,&RC1                                                  01060000
+         AGO   .BR                                               83087  01070000
+.EFES1   XR    R1,R1                                                    01080000
+.BR      AIF   (T'&RETADDR EQ 'O').END                           83087  01090000
+         AIF   (K'&RETADDR LT 3).BRL                             83087  01100000
+         AIF   ('&RETADDR'(1,1) EQ '(' AND '&RETADDR'(2,1) NE '(').BRR  01110000
+.BRL     B     &RETADDR                                          83087  01120000
+         AGO   .END                                              83087  01130000
+.BRR     BR    &RETADDR(1)                                       83087  01140000
+.END     MEND                                                           01150000

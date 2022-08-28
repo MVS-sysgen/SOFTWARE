@@ -1,0 +1,51 @@
+         MACRO ,                                                        00010000
+         MACBDDDL &OP,&LEN                               NEW ON 2010290 00020000
+         GBLC  &MACSTR       RETURN OPERAND STRING                      00030000
+         GBLA  &MACTYP       RETURN OPERAND TYPE (1-REG,2-TXT,3-MIX)    00040000
+.*                                                                      00050000
+.*   THIS MACRO ACCEPTS AN OPERAND EXPRESSION AND A LENGTH,             00060000
+.*   AND RETURNS A SINGLE OPERAND COMBINING THE TWO.  E.G.,             00070000
+.*     TEXT,5                -> TEXT(5)                                 00080000
+.*     (R6),4                -> 0(4,R6)                                 00090000
+.*     XYZ(R9),3             -> XYZ(3,R9)                               00100000
+.*     ((R6)),8              -> ((R6))(8)                               00110000
+.*                                                                      00120000
+         LCLC  &OP1,&OP2                                                00130000
+         LCLA  &I,&J,&K,&L                                              00140000
+&MACSTR  SETC  ''            ERROR INDICATION                           00150000
+&MACTYP  SETA  0             ERROR INDICATION                           00160000
+&K       SETA  K'&OP         LENGTH OF INPUT OPERAND                    00170000
+         AIF   (&K LT 1).MEND     ERROR                                 00180000
+         AIF   (&K LT 3).BDDD     PLAIN TEXT                            00190000
+         AIF   ('&OP'(&K,1) NE ')').BDDD    SIMPLE TEXT                 00200000
+         AIF   ('&OP'(&K-1,1) EQ ')').BDDD                              00210000
+         AIF   ('&OP'(1,1) NE '(' OR '&OP'(2,1) EQ '(').MIX             00220000
+.REG0    ANOP  ,                                                        00230000
+&MACTYP  SETA  1             REGISTER                                   00240000
+&MACSTR  SETC  '0('.'&LEN'.','.'&OP'.')' GENERATE OPERAND FIELD         00250000
+         MEXIT ,                                                        00260000
+.MIX     ANOP  ,                                                        00270000
+.*  PARSE xxx ( yyy ) - CHANGE TO xxx ( len , yyy )                     00280000
+&I       SETA  &K                                                       00290000
+&J       SETA  1                                                        00300000
+.QLOOP   AIF   (&I LE 1).BDDD                                           00310000
+&I       SETA  &I-1                                                     00320000
+         AIF   ('&OP'(&I,1) EQ '(').QLEFT                               00330000
+         AIF   ('&OP'(&I,1) EQ ')').QRITE                               00340000
+         AGO   .QLOOP                                                   00350000
+.QRITE   ANOP  ,                                                        00360000
+&J       SETA  &J+1                                                     00370000
+         AGO   .QLOOP                                                   00380000
+.QLEFT   ANOP  ,                                                        00390000
+&J       SETA  &J-1                                                     00400000
+         AIF   (&J GT 0).QLOOP                                          00410000
+         AIF   (&I LE 1).BDDD                                           00420000
+&OP1     SETC  '&OP'(1,&I)                                              00430000
+&OP2     SETC  '&OP'(&I+1,&K-&I)                                        00440000
+&MACSTR  SETC  '&OP1'.'&LEN'.','.'&OP2'                                 00450000
+&MACTYP  SETA  3             MIXED                                      00460000
+         MEXIT ,                                                        00470000
+.BDDD    ANOP  ,                                                        00480000
+&MACSTR  SETC  '&OP'.'('.'&LEN'.')'    GENERATE OPERAND FIELD           00490000
+&MACTYP  SETA  2             TEXT                                       00500000
+.MEND    MEND  ,                                                        00510000

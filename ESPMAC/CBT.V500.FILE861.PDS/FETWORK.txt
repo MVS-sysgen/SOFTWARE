@@ -1,0 +1,39 @@
+         MACRO ,                                                        00010000
+&NM      FETWORK &PFX=FT,&DSECT=YES   MAP PARMS FOR SUBFETCH ROUTINE    00020000
+         LCLC  &NAME                                                    00030000
+&NAME    SETC  '&NM'                                                    00040000
+         AIF   ('&DSECT' EQ 'YES' OR '&DSECT' EQ '').DOD                00050000
+         AIF   ('&NM' EQ '').DONES                                      00060000
+&NM      DS    0F            SUBFETCH PARAMTER LIST                     00070000
+         AGO   .DONES                                                   00080000
+.DOD     AIF   ('&NM' NE '').HAVNAM                                     00090000
+&NAME    SETC  'FETWORK'                                                00100000
+.HAVNAM  ANOP  ,                                                        00110000
+&NAME    DSECT ,             SUBFETCH PARAMETER LIST                    00120000
+.DONES   ANOP  ,                                                        00130000
+&PFX.@DCB   DC  A(0)         PROGRAM LIBRARY OPEN DCB                   00140000
+&PFX.@NAME  DC  A(0)         MEMBER NAME                                00150000
+&PFX.MFBLD  EQU X'80'          ABOVE POINTS TO BLDL RESULTS             00160000
+&PFX.@LOAD  DC  A(0)         REQUESTED/RETURNED LOAD ADDRESS            00170000
+&PFX.#LOAD  DC  F'0'         STORAGE ACQUIRED (24-BITS)                 00180000
+&PFX.@RELOC DC  A(0)         REQUESTED/RETURNED RELOCATION BASE         00190000
+&PFX.@ENTRY DC  A(0)         ENTRY ADDRESS WITH AMODE BIT               00200000
+&PFX.#MODSZ DC  F'0'         MODULE SIZE                                00210000
+&PFX.OFLGSP DC  X'0'         SUBFETCH - SUBPOOL FOR LOADING             00220000
+&PFX.OFLGS1 DC  X'0'         OPTION FLAGS FOR SUBFETCH                  00230000
+&PFX.OFALTN EQU X'80'          USE AN ALTERNATE NAME FOR CDE            00240000
+&PFX.OFBCDE EQU X'40'          FETCH TO CALL CDE TO BUILD ONE           00250000
+&PFX.OFBCDF EQU X'20'          CDE BUILD FAILED                 GP06308 00260000
+&PFX.OFNOLO EQU X'10'          CDE NOT TO ISSUE LOAD                    00270000
+&PFX.OFREFR EQU X'08'          USE SP252 IF RENT/REFR AND AUTH  GP11270 00280000
+&PFX.OFFREN EQU X'04'          FORCE RE-ENTRANT                 GP11270 00290000
+&PFX.OFCLR0 EQU X'02'          CLEAR GOTTEN STORAGE TO 0        GP05261 00300000
+&PFX.OFCLRC EQU X'01'          CLEAR GOTTEN STORAGE TO X'CC'    GP05261 00310000
+&PFX.OFLGS2 DC  X'0'         OPTION FLAGS FOR SUBCDE                    00320000
+&PFX.OFRENT EQU X'20'          FLAG LOADED MODULE RE-ENTRANT            00330000
+&PFX.OFREUS EQU X'10'          FLAG LOADED MODULE RE-USABLE             00340000
+&PFX.OFLGS3 DC  X'0'         OPTION FLAGS FOR SUBCDE                    00350000
+&PFX.OFAPFL EQU X'02'          FLAG AS COMING FROM APF LIBRARY          00360000
+&PFX.OFAUTH EQU X'01'          FLAG AS BEING AUTHORIZED AC=1            00370000
+&PFX.FWCLRS EQU *-&PFX.@DCB    SIZE TO CLEAR                            00380000
+         MEND  ,                                                        00390000

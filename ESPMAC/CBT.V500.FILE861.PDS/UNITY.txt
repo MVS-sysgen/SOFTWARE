@@ -1,0 +1,86 @@
+         MACRO ,                                                        00010000
+&NM      UNITY &FORMAT=,&DEVD=(DA,TA)     EARLY VERSION ADDED ON 90359  00020000
+         GBLB  &MVS                                                     00030000
+         LCLA  &I,&J,&K                                                 00040000
+         LCLB  &DA,&TA,&UR,&GAM,&TP                                     00050000
+         LCLC  &N                                                       00060000
+&N       SETC  '&NM'                                                    00070000
+&K       SETA  N'&DEVD                                                  00080000
+.DEVLOOP ANOP  ,                                                        00090000
+&I       SETA  &I+1                                                     00100000
+         AIF   (&I GT &K).DEVDONE                                       00110000
+&DA      SETB  (&DA OR ('&DEVD(&I)' EQ 'DA'))                           00120000
+&TA      SETB  (&TA OR ('&DEVD(&I)' EQ 'TA'))                           00130000
+&UR      SETB  (&UR OR ('&DEVD(&I)' EQ 'UR'))                           00140000
+&TP      SETB  (&TP OR ('&DEVD(&I)' EQ 'TP'))                           00150000
+&GAM     SETB  (&GAM OR ('&DEVD(&I)' EQ 'GAM'))                         00160000
+         AGO   .DEVLOOP                                                 00170000
+.DEVDONE ANOP  ,                                                GP10042 00180000
+&I       SETA  4             WIDTH OF DEVICE NAME               GP10042 00190000
+         AIF   ('&FORMAT' EQ '24').TAB24                                00200000
+         AIF   ('&FORMAT' EQ '14').TAB14                        GP10042 00210000
+&I       SETA  6             WIDTH OF DEVICE NAME               GP10042 00220000
+         AIF   ('&FORMAT' EQ '26').TAB24                                00230000
+         AIF   ('&FORMAT' EQ '16').TAB14                        GP10042 00240000
+         MNOTE 4,'FORMAT &FORMAT NOT SUPPORTED'                         00250000
+.TAB24   AIF   (NOT &DA).SK24DA                                         00260000
+.*  NOTE:  THE DASD TABLE MUST BE KEPT IN REVERSE ORDER BY TBYT4,       00270000
+.*   AND MUST BE COMPLETE. SOME PROGRAMS INDEX INTO THE TABLE.          00280000
+&N       DC    X'200F',CL&I'3390'                                       00290000
+&N       SETC  ''                                                       00300000
+         DC    X'200E',CL&I'3380'                                       00310000
+         DC    X'200D',CL&I'333D'                                       00320000
+         DC    X'200C',CL&I'3375'                                       00330000
+         DC    X'200B',CL&I'3350'                                       00340000
+         DC    X'200A',CL&I'3340'                                       00350000
+         DC    X'2009',CL&I'3330'                                       00360000
+         DC    X'2008',CL&I'2314'                                       00370000
+         DC    X'2007',CL&I'2305'                                       00380000
+         DC    X'2006',CL&I'2305'                                       00390000
+         DC    X'2005',CL&I'2321'                                       00400000
+         AIF   (&MVS).NO24DA                                            00410000
+         DC    X'2004',CL&I'2302'                                       00420000
+         AGO   .CM24DA                                                  00430000
+.NO24DA  DC    X'2004',CL&I'9345'                                       00440000
+.CM24DA  DC    X'2003',CL&I'2303'                                       00450000
+         DC    X'2002',CL&I'2301'                                       00460000
+         DC    X'2001',CL&I'2311'                                       00470000
+.SK24DA  AIF   (NOT &TA).NO24TA                                         00480000
+&N       DC    X'8083',CL&I'3590'                                       00490000
+&N       SETC  ''                                                       00500000
+         DC    X'8081',CL&I'3490'                                       00510000
+         DC    X'8080',CL&I'3480'                                       00520000
+         DC    X'8003',CL&I'3400'                                       00530000
+         DC    X'8001',CL&I'2400'                                       00540000
+.NO24TA  MEXIT ,                                                        00550000
+.TAB14   AIF   (NOT &DA).SK14DA                                         00560000
+.*  NOTE:  THE DASD TABLE MUST BE KEPT IN REVERSE ORDER BY TBYT4,       00570000
+.*   AND MUST BE COMPLETE. SOME PROGRAMS INDEX INTO THE TABLE.          00580000
+&N       DC    X'0F',CL&I'3390'                                         00590000
+&N       SETC  ''                                                       00600000
+         DC    X'0E',CL&I'3380'                                         00610000
+         DC    X'0D',CL&I'333D'                                         00620000
+         DC    X'0C',CL&I'3375'                                         00630000
+         DC    X'0B',CL&I'3350'                                         00640000
+         DC    X'0A',CL&I'3340'                                         00650000
+         DC    X'09',CL&I'3330'                                         00660000
+         DC    X'08',CL&I'2314'                                         00670000
+         DC    X'07',CL&I'2305'                                         00680000
+         DC    X'06',CL&I'2305'                                         00690000
+         DC    X'05',CL&I'2321'                                         00700000
+         AIF   (&MVS).NO14DA                                            00710000
+         DC    X'04',CL&I'2302'                                         00720000
+         AGO   .CM14DA                                                  00730000
+.NO14DA  DC    X'04',CL&I'9345'                                         00740000
+.CM14DA  DC    X'03',CL&I'2303'                                         00750000
+         DC    X'02',CL&I'2301'                                         00760000
+         DC    X'01',CL&I'2311'                                         00770000
+.SK14DA  AIF   (NOT &TA).NO14TA                                         00780000
+&N       DC    X'83',CL&I'3590'                                         00790000
+&N       SETC  ''                                                       00800000
+         DC    X'81',CL&I'3490'                                         00810000
+         DC    X'80',CL&I'3480'                                         00820000
+         DC    X'03',CL&I'3400'                                         00830000
+         DC    X'01',CL&I'2400'                                         00840000
+.NO14TA  MEXIT ,                                                        00850000
+         MEND  ,                                                        00860000

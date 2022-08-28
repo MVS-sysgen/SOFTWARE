@@ -1,0 +1,27 @@
+         MACRO ,                                                        00010000
+&NM      MAPINDEX &DSECT=YES,&PFX=MIX                  NEW 2010.187 GYP 00020000
+.*--------------------------------------------------------------------* 00030000
+.*  MAPS ENTRIES IN THE IBM DISTRIBUTION SOURCE LIBRARY INDEX         * 00040000
+.*--------------------------------------------------------------------* 00050000
+         LCLC  &P                                                       00060000
+&P       SETC  '&PFX'                                                   00070000
+         AIF   ('&DSECT' NE 'YES').ALTSECT                              00080000
+&PFX.DSECT DSECT ,                                                      00090000
+         AGO   .NODSECT ,                                               00100000
+.ALTSECT ANOP  ,                                                        00110000
+&PFX.DSECT  DS 0D            PLANT A LABEL                              00120000
+.NODSECT AIF   ('&NM' EQ '').NOLABEL                                    00130000
+&NM      DS    0F                                                       00140000
+.NOLABEL AIF   ('&NM' EQ '&PFX'.'TENT').NOLTENT                         00150000
+&PFX.TENT   DS 0F            DEFINE START OF TEXT ENTRY                 00160000
+.NOLTENT ANOP  ,                                                        00170000
+&P.MEM   DC    CL8' '        MEMBER NAME (PROGRAM OR MACRO)             00180000
+&P.VOL   DC    CL6' '        VOLUME SERIAL                              00190000
+&P.LBL   DC    CL1' '        LABEL TAPE (S/N)                           00200000
+&P.FIL   DC    CL3'  0' '    FILE NUMBER (0 FOR DASD)                   00210000
+&P.DSN   DC    CL44' '       DATA SET NAME                              00220000
+&P.DST   DC    CL8' '        (OPTIONAL) DISTLIB                         00230000
+&P.TGT   DC    CL8' '        PROGRAM NAME                               00240000
+         DC    CL2' '          FILLER                                   00250000
+&P.LEN   EQU   *-&P.MEM        ENTRY LENGTH                             00260000
+         MEND  ,                                                        00270000

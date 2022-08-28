@@ -1,0 +1,9 @@
+         MACRO ,                                                        00010000
+&NM      MAXH  &R,&A                                     ADDED  GP04128 00020000
+         LCLA  &I                                                       00030000
+&I       SETA  &SYSNDX                                                  00040000
+&NM      MACPARM &R,&A,OP=CH,OPR=CR,MODE=EQU                            00050000
+         MACPARM ZZZZ&I,OP=BNL,MODE=ONE                                 00060000
+         MACPARM &R,&A,OP=LH,OPR=LR,MODE=EQU                            00070000
+ZZZZ&I   DS    0H                                                       00080000
+.MEND    MEND  ,                                                        00090000

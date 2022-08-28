@@ -1,0 +1,41 @@
+         MACRO ,                                                        00010000
+&NM      GETREG &R1,&R2,&MODE=OS,&WORK=R15                      GP04234 00020000
+.********************************************************************** 00030000
+.*                                                                    * 00040000
+.*   LOAD REGISTER(S) FROM SAVE AREA OR STACK                         * 00050000
+.*   MODE = OS - R13 IS CURRENT SAVE AREA; GET FROM OLDER S.A.        * 00060000
+.*   MODE = USER - R13 POINTS TO USER'S AREA                          * 00070000
+.*   MODE = BAKR (OR ZZZBAKR GLOBAL ON) - USE EREG                    * 00080000
+.*                                                                    * 00090000
+.*   ONLY R14 - R12 ARE VALID, AND OPTIONAL SECOND REGISTER MUST      * 00100000
+.*     NOT BE SAVE AREA AFTER FIRST (R14-R5 OK; R12-R15 NOT)          * 00110000
+.*                                                                    * 00120000
+.********************************************************************** 00130000
+         GBLB  &MVSESA,&ZZZBAKR                                         00140000
+         GBLC  &MACPLAB                                                 00150000
+         LCLC  &O1,&O2,&W,&F                                            00160000
+&MACPLAB SETC  '&NM'                                                    00170000
+&W       SETC  '&WORK'                                                  00180000
+&O1      SETC  '&R1(1)'                                                 00190000
+&O2      SETC  '&R2(1)'                                                 00200000
+         AIF   ('&O2' NE '').O                                          00210000
+&O2      SETC  '&O1'                                                    00220000
+.O       AIF   ('&MODE' EQ 'BAKR' OR &ZZZBAKR).BAKR                     00230000
+&F       SETC  '4*((&O1+2)-(((&O1+2)/16)*16))+12'                       00240000
+   AIF   ('&MODE' EQ 'OS' OR '&MODE' EQ 'OSSAVE' OR '&MODE' EQ '').STD  00250000
+&W       SETC  'R13'         ALREADY POINTS TO USER'S SAVE AREA         00260000
+         AIF   ('&MODE' EQ 'USER').USER                                 00270000
+         MNOTE 4,'GETREG: INVALID MODE=&MODE '                          00280000
+.STD     AIF   ('&O2' EQ '0' OR '&O2' EQ 'R0').STD1                     00290000
+&W       SETC  '&O2'                                                    00300000
+         AGO   .STDL                                                    00310000
+.STD1    AIF   ('&O1' EQ '0' OR '&O1' EQ 'R0').STDL                     00320000
+&W       SETC  '&O1'                                                    00330000
+.STDL    MACPARM &W,4(,R13),OP=L  USER'S SAVE AREA                      00340000
+.USER    AIF   ('&O1' NE '&O2').STDLM                                   00350000
+         MACPARM &O1,&F.(,&W),OP=L                                      00360000
+         MEXIT ,                                                        00370000
+.STDLM   MACPARM &O1,&O2,&F.(&W),OP=LM,MODE=THREE                       00380000
+         MEXIT ,                                                        00390000
+.BAKR    EREG  &O1,&O2                                                  00400000
+         MEND  ,                                                        00410000

@@ -1,0 +1,13 @@
+         MACRO ,                                                        00010000
+&NM      RET31 &RET                                     ADDED ON 90308  00020000
+.*                                                                      00030000
+.*       THE MACRO NAME NOT-WITHSTANDING, THIS MACRO RETURNS WITH       00040000
+.*       A BSM (IN XA) REGARDLESS OF CURRENT OR NEW MODE                00050000
+.*                                                                      00060000
+         GBLB  &MVSXA                                                   00070000
+         AIF   (&MVSXA).BSM                                             00080000
+&NM      MACPARM &RET,OP=BR,OPR=BR,MODE=ONE                             00090000
+         MEXIT ,                                                        00100000
+.BSM     ANOP  ,                                                        00110000
+&NM      MACPARM 0,&RET,OP=BSM,OPR=BSM                                  00120000
+         MEND  ,                                                        00130000

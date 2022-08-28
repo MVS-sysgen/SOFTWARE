@@ -1,0 +1,43 @@
+         MACRO                                                          00010000
+&NM      INDEC &TO,&FROM,&FL                                            00020000
+         GBLB  &INLINE(50)                                              00030000
+         GBLC  &MACPLAB                                                 00040000
+.********************************************************************** 00050000
+.*                                                                   ** 00060000
+.*   INLINE DECIMAL CONVERSION FROM INTEGER TO EBCDIC                ** 00070000
+.*                                                                   ** 00080000
+.********************************************************************** 00090000
+         LCLC  &L                                                       00100000
+&MACPLAB SETC  '&NM'                                                    00110000
+&INLINE(11) SETB 1                                                      00120000
+&L       SETC  'L'''                                                    00130000
+         AIF   ('&FROM'(1,1) EQ '(').L                                  00140000
+         AIF   ('&FL' EQ '').DEF                                        00150000
+         AIF   ('&FL' EQ '1').IC                                        00160000
+         AIF   ('&FL' EQ '2').LH                                        00170000
+         AIF   ('&FL' EQ '3').LA                                        00180000
+         AIF   ('&FL' EQ '4').L                                         00190000
+         MNOTE 4,'INVALID LENGTH ON INDEC'                              00200000
+         MEXIT                                                          00210000
+.IC      ANOP                                                           00220000
+         MACPARM R0,(R0),MODE=EVEN  CLEAR FOR IC                        00230000
+         IC    R0,&FROM .       LOAD VALUE                              00240000
+         AGO   .COM                                                     00250000
+.DEF     ANOP                                                           00260000
+.LH      ANOP                                                           00270000
+         MACPARM R0,&FROM,OP=LH                                         00280000
+         AGO   .COM                                                     00290000
+.LA      ANOP                                                           00300000
+         MACPARM DB+1(3),&FROM,MODE=EVEN,OP=MVC                         00310000
+         MVC   DB+1(3),&FROM .     MOVE VALUE                           00320000
+         MVI   DB,0 .        CLEAR HIGH BYTE                            00330000
+         L     R0,DB .       LOAD VALUE                                 00340000
+         AGO   .COM                                                     00350000
+.L       ANOP                                                           00360000
+         MACPARM R0,&FROM,OP=L                                          00370000
+.COM     ANOP                                                           00380000
+         MACPARM R0,DB,OP=CVD . CONVERT TO PACKED                       00390000
+         MVC   DCONWORK,DCONPAT .   MOVE EDIT PATTERN                   00400000
+         ED    DCONWORK,DB .   EDIT                                     00410000
+         MVC   &TO,DCONWORK+16-&L&TO .   MOVE OUTPUT                    00420000
+         MEND                                                           00430000

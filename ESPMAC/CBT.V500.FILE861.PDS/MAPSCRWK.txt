@@ -1,0 +1,102 @@
+         MACRO ,                                        ADDED ON 81201  00010000
+&NM      MAPSCRWK &PREFIX=SW,&WIDTH=    PRINTER WORK AREA MAPPING       00020000
+         LCLC  &DS                                                      00030000
+         LCLC  &P            SHORT PREFIX                               00040000
+&P       SETC  '&PREFIX'                                                00050000
+&DS      SETC  '&P'.'WORK'                                              00060000
+         AIF   ('&NM' EQ '').NONAME                                     00070000
+&DS      SETC  '&NM'                                                    00080000
+.NONAME  ANOP  ,                                                        00090000
+&DS      DSECT ,             MAPPING OF PRINT DCB AND WORK AREA         00100000
+&P.LINK   DS   F             LINK TO NEXT GETMAINED AREA                00110000
+&P.ID     DS   C'SCR-'       ID OF PRINT FILE 'N'                       00120000
+&P.SPLEN  DS   F             SUBPOOL/LENGTH OF THIS AREA                00130000
+&P.TCB    DS   A             ADDRESS OF OWNING TCB                      00140000
+&P.DCB@   DS   X'BF',AL3(SWDCB)  DCB POINTER                            00150000
+&P.PU@    DS   A             ADDRESS OF USER'S OPEN WORK AREA           00160000
+&P.TRAN   DC   F'0'          ADDRESS OF TRANSLATE TABLE OR 0            00170000
+&P.DDNAM  DS   CL8           DDNAME                                     00180000
+&P.@BCC DC    A(0)           ADDRESS OF BUFFER PREFIX                   00190000
+&P.@OBUF DS    A(&P.OBUF)    OUTPUT BUFFER START                        00200000
+&P.@IBUF DS    A(&P.IBUF)    INPUT BUFFER ADDRESS                       00210000
+&P.WUMASK DC   XL4'00'       DEVICE CAPABILITY MASKS                    00220000
+&P.WUDFLT DC   XL4'0'        DEFAULT FD OPTIONS                         00230000
+&P.LSTWRK DS   0XL14         WORK AREA FOR EACH FD ENTRY                00240000
+&P.LSTLEN DS   A             FIELD LENGTH                               00250000
+&P.LSTLTX DS   A             ITEM LENGTH                                00260000
+&P.LSTADD DS   A             ITEM ADDRESS                               00270000
+&P.LSTDAT DS   F             DATA TYPE                                  00280000
+&P.PREOPT DS   F             PRIOR OPTIONS                              00290000
+&P.CUROPT DS   F             CURRENT PROCESSING OPTIONS                 00300000
+&P.LSTEDT DS   X             EDIT OPTIONS                               00310000
+&P.LSTCC  DS   X                                                        00320000
+&P.BUFNXT DS   A             ADDRESS OF NEXT BYTE                       00330000
+&P.SCRCUR DS   H             BYTES USED IN CURRENT LINE                 00340000
+&P.LSTDO  DC    X'00'        CONTROL FLAG                               00350000
+&P.FUN    DC    X'00'        CALLER'S REQUEST                           00360000
+&P.FLIST  EQU   X'80'          BUILD BUFFER FROM FD LIST                00370000
+&P.FANAL  EQU   X'40'          ANALYZE USER'S RESPONSE                  00380000
+&P.FMOVE  EQU   X'10'          MOVE ERROR-FREE INPUT TO MEMORY          00390000
+&P.FLOOP  EQU   X'04'          LOOP FDS AND TAKE USER EXIT       87173  00400000
+&P.FITEM  EQU   X'01'          SCITEM CALL                      GP03011 00410000
+&P.OPT9   DC    X'00'  1/2   FD OPTION BYTES; 0 IF NONE                 00420000
+&P.OPT7   DC    X'00'  2/2   SECOND OPTION BYTE; DFLT IF MISSING        00430000
+&P.LSTXEQ DC    A(0)         ADDRESS OF EXEC FD                         00440000
+&P.LSTXEN DC    A(0)         END ADDRESS OF EXEC RANGE                  00450000
+         DC    (4*2)A(0)     PUSH-DOWN STACK                            00460000
+&P.TRNLOW DC    A(TNTRTAB)   TRANSLATE TABLE                            00470000
+         SPACE 1                                                 87173  00480000
+&P.XEXIT  DC    A(0,0,&P.XPARM)  R15-R1 TO USER (EXIT,LIST,PARM)        00490000
+&P.XPARM  DC    A(&P.XSAVE,0,0,0) SAVE/FD/FIW/FDW                       00500000
+&P.XSAVE  DC    18F'0'       SAVE AREA FOR USER'S USE            87173  00510000
+&P.XMYSV  DC    12F'0'       MY SAVE AREA                        87173  00520000
+&P.FLAG   DS   X             PROCESSING FLAG                            00530000
+&P.FVTAM  EQU  X'80' =PUFVTAM   THIS IS VTAM, NOT BTAM                  00540000
+&P.FAKE   EQU  X'40'         IN-STORAGE ACCESS METHOD            83275  00550000
+&P.FTSU   EQU  X'20'         OUTPUT ROUTED TO TSO USER                  00560000
+&P.FHEAD  EQU  X'10'         TITLE PRINTED ON THIS PAGE                 00570000
+&P.SETAT  EQU  X'08'           USE SET ATTRIB, NOT SFE                  00580000
+&P.FPXLST EQU  X'04' =PUPGXLST   EXIT LIST PRESENT               84169  00590000
+&P.FUPAGE EQU  X'02' =PUPUPAGE   USER MAINTAINS PAGE #S          84169  00600000
+&P.FGPAGE EQU  X'01' =PUPGPAGE   USER PAGE # FEED-BACK OPTION           00610000
+&P.FILL   DC   AL1(0)        UNPRINTABLE CHARACTER REPLACEMENT          00620000
+&P.DCB    DCB  DDNAME=ANY,DSORG=PS,MACRF=PM,EROPT=ACC,                 *00630000
+               RECFM=VBSA,LRECL=137,EXLST=SWEXLIST                      00640000
+&P.EXLIST DC   0A(0),X'87',AL3(0),A(0,0) +JFCB+@DCBEXIT                 00650000
+&P.TOPPG  DC   F'0'          EDIT LEN/ADDRESS FOR PAGE NUMBER           00660000
+&P.TOPPS  DC   F'0'             DITTO FOR SUB-PAGE                      00670000
+&P.TOPDT  DC   F'0'             DITTO FOR DATE                          00680000
+&P.TOPTM  DC   F'0'             AND TIME                                00690000
+&P.BOTPG  DC   F'0'          EDIT LEN/ADDRESS FOR PAGE NUMBER           00700000
+&P.BOTPS  DC   F'0'             DITTO FOR SUB-PAGE                      00710000
+&P.BOTDT  DC   F'0'             DITTO FOR DATE                          00720000
+&P.BOTTM  DC   F'0'             AND TIME                                00730000
+&P.CURLN  DC   H'-1'                                                    00740000
+&P.MAXLN  DC   H'24'         MAXIMUM LINES PER PAGE (INCL. TITLES)      00750000
+&P.WIDTH  DC   H'80'         DATA WIDTH FOR TRUNCATION                  00760000
+&P.BUFSIZ DC   Y(&P.IBUF-&P.OBUF)  BUFFER SIZE                          00770000
+&P.SCRSIZ DC   Y(24*80)      SCREEN SIZE                                00780000
+&P.TIT#   DC   H'0'          NUMBER OF TITLE LINES                      00790000
+&P.FOOT#  DC   H'0'          NUMBER OF FOOTER LINES                     00800000
+&P.PAGE   DC   H'0'          CURRENT PAGE NUMBER                        00810000
+&P.SPAGE  DC   H'0'          PAGE SINCE LAST TITLE CHANGE               00820000
+&P.QUEREP DC    XL128'0'     WSF QUERY REPLY DATA                87315  00830000
+&P.BINDS  DC    XL128'0'     BIND DATA                           87315  00840000
+&P.PRSZ  DC    2X'0'         PRIMARY SIZE                        87315  00850000
+&P.ALSZ  DC    2X'00'        ALTERNATE SIZE                      87315  00860000
+&P.ATTR  DC    XL4'0'        ATTRIBUTE STRING                    87315  00870000
+&P.VCON   DC   F'0'          V-FORMAT RECORD HEADER                     00880000
+&P.RECCC  DC   C' '          CARRIAGE CONTROL                           00890000
+         AIF   ('&WIDTH' NE '').HAVEW                                   00900000
+&P.REC    EQU  *             DATA RECORD                                00910000
+         AGO   .MEND         TRUNCATE THE MAPPING                       00920000
+.HAVEW   ANOP  ,                                                        00930000
+&P.REC    DC   CL(&WIDTH)' '   TEXT RECORD                              00940000
+         DS    0F                                                       00950000
+&P.SIZE  EQU   *-&DS         LENGTH OF FIXED AREA                       00960000
+&P.TIT1   DC   14CL((&WIDTH+5+3)/4*4)' '   14 TITLE/FOOTER RECORDS      00970000
+&P.CBUF  DS    16X           BUFFER CONTROL BYTES (VAR. LENGTH)         00980000
+&P.OBUF  DS    (27+13)CL132' '  ROOM FOR COLOR OUTPUT                   00990000
+&P.IBUF  DS    27CL132' '    ROOM FOR FULL INPUT                        01000000
+&P.BUFND  EQU  *               END OF BUFFERS                           01010000
+.MEND    MEND  ,                                                        01020000

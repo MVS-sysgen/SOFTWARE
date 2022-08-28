@@ -1,0 +1,144 @@
+         MACRO                                                          00010000
+&MODULE ESPHEAD &R0=,&R1=,&HEADER=,&REENT=Y,&BASE=R12,&CLEAR=YES,      *00020001
+               &LOC=,&PATCH=,&ENTRY=,&SP=0                     GP00126  00030001
+         GBLB  &RENTFLG                                                 00040000
+         GBLC  &CPYWRIT                                                 00050000
+         GBLC  &VERSION                                                 00060000
+         GBLC  &MODNAME                                                 00070000
+         LCLC  &LABEL,&NAME                                             00080000
+         LCLC  &PBAS,&CBAS,&FBAS,&LBAS                          GP99357 00090000
+         LCLB  &FGPATCH,&FGENT,&FGENTB                          GP00126 00100000
+&FGPATCH SETB  (T'&PATCH EQ 'N')                                        00110000
+&FGENT   SETB  (T'&ENTRY NE 'O')                                GP00126 00120000
+         LCLA  &I,&J,&K                                         GP99357 00130000
+         SPACE 1                                                        00140001
+&LABEL   SETC  'ZZM'.'&SYSNDX'    PREFIX FOR GENERATED LABELS           00150001
+&NAME    SETC  '&MODULE'                                                00160001
+&MODNAME SETC  '&MODULE'                                                00170001
+&NAME    CSECT ,                                                        00180001
+&NAME    AMODE 31                                                       00190000
+&NAME    RMODE 24                                                       00200000
+         AIF   ('&HEADER' EQ 'TABLE').TABLE1                            00210000
+         SPACE 1                                                        00220001
+         USING *,R15                                                    00230000
+         B     &LABEL                  BRANCH AROUND HEADER INFO        00240000
+.TABLE1  ANOP  ,                                                        00250001
+         DC    AL1(&LABEL-&NAME)       LENGTH(HEADER TEXT)              00260000
+         DC    CL9'&NAME'              EYE CATCHER - MODULE NAME        00270000
+         DC    CL9'&SYSDATE'           EYE CATCHER - ASSEMBLE DATE      00280000
+         DC    CL6'&VERSION'           ESP VERSION N.NN                 00290000
+         DC    C'&CPYWRIT'             COPYRIGHT INFO                   00300000
+         AIF   ('&HEADER' NE 'TABLE').NOTTAB                            00310000
+&LABEL   DC    0D'0'                   DOUBLEWORD ALIGNMENT FOR TABLE   00320000
+.MEXIT   MEXIT ,                                                GP00126 00330000
+.NOTTAB  ANOP  ,                                                        00340001
+&LABEL   DC    0H'0'                   TAG FOR BRANCH AROUND TEXT       00350000
+         AIF   ('&HEADER' EQ 'TABLE').MEXIT                             00360000
+         SPACE 1                                                        00370001
+         STM   R14,R12,12(R13)         SAVE REGISTERS                   00380000
+         AIF   (NOT &FGENT).NOENT                               GP00126 00390000
+&I       SETA  0                                                GP00126 00400000
+&K       SETA  N'&ENTRY                                         GP00126 00410000
+         SR    R2,R2         FLAG MAIN ENTRY                    GP00126 00420000
+         B     BAS&MODULE-&NAME.(,R15)                          GP00126 00430000
+.ENTLOOP AIF   (&I GE &K).DONENT                                GP00126 00440000
+&I       SETA  &I+1                                             GP00126 00450000
+&PBAS    SETC  '&ENTRY(&I)'                                     GP00126 00460000
+         AIF   (NOT &FGENTB).NOENB                              GP00126 00470000
+         B     COM&MODULE-&PBAS.(,R15)                          GP00126 00480000
+&FGENTB  SETB  0                                                GP00126 00490000
+.NOENB   AIF   ('&PBAS' EQ '').ENTLOOP                          GP00126 00500000
+         ENTRY &PBAS                                            GP00126 00510000
+&PBAS    STM   R14,R12,12(R13)                                  GP00126 00520000
+         LA    R2,&I                                            GP00126 00530000
+&FGENTB  SETB  1                                                GP00126 00540000
+         AGO   .ENTLOOP                                         GP00126 00550000
+.DONENT  ANOP  ,                                                GP00126 00560000
+COM&MODULE BASR R15,0                                           GP00126 00570000
+         LA    R0,*-&NAME                                       GP00126 00580000
+         SLR   R15,R0                                           GP00126 00590000
+BAS&MODULE DS  0H                                               GP00126 00600000
+.NOENT   ANOP  ,                                                GP00126 00610000
+.*   CODE CHANGED TO ALLOW LIST OF BASE REGISTERS: BASE=(R1,R2...)      00620000
+&K       SETA  N'&BASE                                          GP99357 00630000
+&FBAS    SETC  '&BASE(1)'                                       GP99357 00640000
+         AIF   (&K GE 1).HAVBASE                                GP99357 00650000
+&FBAS    SETC  'R12'         SET DEFAULT BASE                   GP99357 00660000
+.HAVBASE AIF   (&K LE 1).OLDBASE                                GP99357 00670000
+&PBAS    SETC  '&FBAS'                                          GP99357 00680000
+&I       SETA  1                                                GP99357 00690000
+&CBAS    SETC  '&FBAS'                                          GP99357 00700000
+         DROP  R15                                              GP99357 00710000
+         LR    &FBAS,R15     LOAD FIRST BASE                    GP99357 00720000
+         LA    &BASE(&K),2048  LOAD INCREMENT                   GP99357 00730000
+&LBAS    SETC  '&BASE(&K)'                                      GP99357 00740000
+.BASLOOP AIF   (&I GE &K).USEBASE                               GP99357 00750000
+&I       SETA  &I+1                                             GP99357 00760000
+&PBAS    SETC  '&FBAS'                                          GP99357 00770000
+&FBAS    SETC  '&BASE(&I)'                                      GP99357 00780000
+&CBAS    SETC  '&CBAS'.','.'&FBAS'                              GP99357 00790000
+         LA    &FBAS,2048(&LBAS,&PBAS)  SET NEXT BASE           GP99357 00800000
+         AGO   .BASLOOP                                         GP99357 00810000
+.USEBASE USING &NAME,&CBAS  DECLARE BASES                       GP99357 00820000
+         AGO   .COMBASE                                         GP99357 00830000
+.OLDBASE AIF   ('&FBAS' EQ '15' OR '&FBAS' EQ 'R15').COMBASE    GP99357 00840000
+         DROP  R15                                              GP99357 00850000
+         LR    &FBAS,R15               LOAD THE BASE REGISTER   GP99357 00860000
+         USING &NAME,&FBAS             TELL THE ASSEMBLER       GP99357 00870000
+.COMBASE AIF   ('&REENT' EQ 'N').NOREENT                                00880000
+&RENTFLG SETB  1                       SET REENT FOR MODEXIT            00890001
+         L     R0,=A(SAVEEND-SAVE)     SAVE AREA AND ANY WORK AREA      00900001
+         STORAGE OBTAIN,LENGTH=(0),LOC=&LOC                             00910001
+         AGO   .REENT                                                   00920000
+         SPACE 1                                                        00930001
+.NOREENT ANOP  ,                                                        00940001
+&RENTFLG SETB  0                       SET NON REENT FOR MODEXIT        00950001
+         LA    R1,SAVE                 A(NON REENT DATA EXPANSION)      00960001
+.REENT   ANOP  ,                                                        00970000
+         AIF   (T'&CLEAR EQ 'O').UNCLEAR                        GP00117 00980000
+         AIF   ('&CLEAR'(1,1) NE 'Y').UNCLEAR                   GP00117 00990000
+         AIF ('&BASE(1)' EQ 'R15' OR '&BASE(1)' EQ '15').UNCLEAR  99357 01000000
+         AIF ('&BASE(1)' EQ 'R14' OR '&BASE(1)' EQ '14').UNCLEAR  99357 01010000
+         AIF ('&BASE(1)' EQ 'R13' OR '&BASE(1)' EQ '13').UNCLEAR  99357 01020000
+         AIF ('&BASE(1)' EQ 'R1' OR '&BASE(1)' EQ '1').UNCLEAR  GP99357 01030000
+         AIF   ('&REENT' NE 'N').RENTCLR                        GP99357 01040000
+         L     R0,=A(SAVEEND-SAVE)     SAVE AREA AND WORK LEN   GP99357 01050001
+.RENTCLR LR    R14,R1        SAVE SAVE AREA ADDRESS             GP99357 01060000
+         LR    R1,R0         COPY THE LENGTH                    GP99357 01070000
+         LR    R0,R14        GET THE ADDRESS BACK               GP99357 01080000
+         SR    R15,R15       CLEAR FROM LENGTH                  GP99357 01090000
+         MVCL  R0,R14        CLEAR SAVE/WORK AREA               GP99357 01100000
+         ST    R13,4(,R14)   STORE FORWARD POINTER              GP99357 01110000
+         ST    R14,8(,R13)   STORE BACKWARD POINTER             GP99357 01120000
+         LR    R13,R14       A(NEW SAVEAREA)                    GP99357 01130000
+         USING SAVE,R13                                         GP99357 01140001
+         AIF   (K'&R0 EQ 0 AND K'&R1 EQ 0).CMCLEAR              GP99357 01150000
+         L     R14,4(,R13)   RESTORE OLD SAVE AREA FOR RELOAD   GP99357 01160000
+         AGO   .CMCLEAR                                         GP99357 01170000
+.UNCLEAR LR    R14,R13                 SAVE BACKWARD SAVEAREA POINTER   01180000
+         LR    R13,R1                  A(NEW SAVEAREA)                  01190000
+         USING SAVE,R13                                                 01200001
+         XC    ESPSAVE(ESPSAVEL),ESPSAVE    CLEAR THE NEW SAVE AREA     01210000
+         ST    R13,8(,R14)             STORE FORWARD POINTER            01220000
+         ST    R14,4(,R13)             STORE BACKWARD POINTER           01230000
+.CMCLEAR AIF   (NOT &FGENT).NOEL                                GP00126 01240000
+         LR    R15,R2        RETURN ENTRY COUNTER                       01250000
+         L     R2,28(,R14)   RESTORE USER'S R2                  GP00126 01260000
+.NOEL    AIF   (('&R0' NE '0' AND '&R0' NE 'R0') OR                    *01270000
+               ('&R1' NE '1' AND '&R1' NE 'R1')).CMREST         GP99357 01280000
+         LM    &R0,&R1,20(R14)         RESTORE R0 AND R1 FROM SAVE      01290000
+         AGO   .NOREST1                                         GP99357 01300000
+.CMREST  AIF   (K'&R0 EQ 0).NOREST0                                     01310000
+         L     &R0,20(,R14)            RESTORE REG 0 FROM SAVEAREA      01320000
+.NOREST0 ANOP  ,                                                        01330001
+         AIF   (K'&R1 EQ 0).NOREST1                                     01340000
+         L     &R1,24(,R14)            RESTORE REG 1 FROM SAVEAREA      01350000
+.NOREST1 ANOP  ,                                                        01360001
+.*                                                                      01370000
+         USING $ESPCVT,R11             $ESPCVT DSECT SETUP              01380000
+         USING $TSB,R10                $TSB DSECT SETUP                 01390000
+         AIF   (NOT &FGPATCH).MEND                              GP00126 01400000
+         B     BEG&MODULE                                       GP00126 01410000
+ESPPATCH DC    &PATCH.S(*)                                      GP00126 01420000
+BEG&MODULE DS  0H                                               GP00126 01430000
+.MEND    MEND  ,                                                GP00126 01440000

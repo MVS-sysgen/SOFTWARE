@@ -1,0 +1,22 @@
+         MACRO ,                                                        00010000
+&NM      CRMSPIE &AD,&PFX=                              ADDED ON 85070  00020000
+         GBLC  &CRM@NAM                                                 00030000
+         LCLC  &P                                                       00040000
+&P       SETC  '&PFX'                                                   00050000
+         AIF   ('&P' NE '').HP                                          00060000
+&P       SETC  '&CRM@NAM'                                               00070000
+         AIF   ('&P' NE '').HP                                          00080000
+&P       SETC  'CRX'                                                    00090000
+.HP      ANOP  ,                                                        00100000
+         AIF   ('&AD' EQ '0').CANCEL                                    00110000
+         AIF   ('&AD' NE '').SET                                        00120000
+         MNOTE 8,'EXIT ADDRESS OPERAND REQUIRED'                        00130000
+         MEXIT ,                                                        00140000
+.CANCEL  ANOP  ,                                                        00150000
+&NM      XC    &P.SPEX,&P.SPEX                                          00160000
+         MEXIT ,                                                        00170000
+.SET     ANOP  ,                                                        00180000
+&NM      MACPARM R0,R12,&P.SAVE,OP=STM,MODE=THREE  REFRESH USER REGS    00190000
+         MACPARM R15,&AD     LOAD ADDRESS OF EXIT                       00200000
+         MACPARM R15,&P.SPEX,OP=ST   SET SPIE EXIT ADDRESS              00210000
+         MEND  ,                                                        00220000

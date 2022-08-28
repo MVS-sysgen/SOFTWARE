@@ -1,0 +1,38 @@
+         MACRO ,                                                        00010000
+&NM    SERVTERM &DELETE=YES                             ADDED ON 81148  00020000
+         GBLC  &MACPLAB                                                 00030000
+         GBLC  &SRVLMOD(20),&SRVLDEL(20)                        GP03258 00040000
+         GBLB  &MVSXA                                           GP04234 00050000
+         GBLA  &SRVNMOD                                         GP03258 00060000
+.*--------------------------------------------------------------------* 00070000
+.*  SERVTERM OPTIONALLY FREES MODULES LOADED BY SERVLOAD (W/EXPLICIT  * 00080000
+.*    SECOND NAME).                                                   * 00090000
+.*  SERVTERM CALLS @SERVICE TO CLOSE AND FREE KNOWN WORK AREAS AND    * 00100000
+.*    MODULES                                                         * 00110000
+.*  SERVTERM FREES AND CLEARS THE @SERVICE POINTER                    * 00120000
+.*--------------------------------------------------------------------* 00130000
+         LCLA  &I,&J                                            GP03258 00140000
+         LCLC  &X                                               GP03258 00150000
+&X       SETC  '&SYSNDX'                                        GP03258 00160000
+&NM      MACPARM R15,15,@SERVICE,OP=ICM,MODE=THREE                      00170000
+         BZ    ZZZZ&SYSNDX                                              00180000
+         SR    R0,R0                                                    00190000
+         AIF   (&MVSXA).BASSM                                   GP04234 00200000
+         BALR  R14,R15       CLOSE/FREE                         GP04234 00210000
+         AGO   .DELETE                                          GP04234 00220000
+.BASSM   BASSM R14,R15       CLOSE/FREE                                 00230000
+.DELETE  DELETE EP=@SERVICE                                             00240000
+ZZZZ&SYSNDX XC @SERVICE,@SERVICE                                        00250000
+         AIF   ('&DELETE' NE 'YES').SKIPDEL                     GP03258 00260000
+.DELLOOP AIF   (&I GE &SRVNMOD).SKIPDEL                         GP03258 00270000
+&I       SETA  &I+1                                             GP03258 00280000
+         AIF   ('&SRVLMOD(&I)' EQ '' OR '&SRVLDEL(&I)' EQ '').DELLOOP   00290000
+         MACPARM R15,15,&SRVLMOD(&I),OP=ICM,MODE=THREE          GP03258 00300000
+&J       SETA  &J+1                                             GP03258 00310000
+         BZ    ZZ&X.D&J                                         GP03258 00320000
+&MACPLAB SETC  'ZZ&X.D'.'&J'                                    GP03258 00330000
+         DELETE EPLOC==CL8'&SRVLDEL(&I) '                       GP03258 00340000
+         XC    &SRVLMOD(&I).(4),&SRVLMOD(&I)                    GP03258 00350000
+         AGO   .DELLOOP                                         GP03258 00360000
+.SKIPDEL MACPARM MODE=LBL    EXPAND FINAL LABEL                 GP03258 00370000
+         MEND  ,                                                        00380000

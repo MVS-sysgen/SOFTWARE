@@ -1,0 +1,84 @@
+         MACRO ,                                                        00010000
+&NM      VOLREAD &TYPE,&OPERAND,&USE=,&SIZE=,&MODE=   UPDATED ON 85350  00020000
+         GBLC  &MACPLAB                                                 00030000
+         LCLA  &I,&J                                                    00040000
+&MACPLAB SETC  '&NM'                                                    00050000
+&I       SETA  0                                                        00060000
+         AIF   ('&TYPE' EQ 'CLOSE').CLOSE                               00070000
+&I       SETA  1                                                        00080000
+         AIF   ('&TYPE' EQ 'TCLOSE').CLOSE                              00090000
+&I       SETA  2                                                        00100000
+         AIF   ('&TYPE' EQ 'OPEN').CHKUSE                               00110000
+&I       SETA  3                                                        00120000
+         AIF   ('&TYPE' EQ 'DSCB').TEST1                                00130000
+&I       SETA  4                                                        00140000
+         AIF   ('&TYPE' EQ 'DSC3').TEST1                                00150000
+&I       SETA  5                                                        00160000
+         AIF   ('&TYPE' EQ 'SEARCH').LOAD1                              00170000
+&I       SETA  6                                                        00180000
+         AIF   ('&TYPE' EQ 'SEEK').LOAD1                                00190000
+&I       SETA  7                                                        00200000
+         AIF   ('&TYPE' EQ 'FIND').LOAD1                                00210000
+&I       SETA  8                                                        00220000
+         AIF   ('&TYPE' EQ 'GETDE').TEST1                               00230000
+&I       SETA  9                                                        00240000
+         AIF   ('&TYPE' EQ 'READ').TEST1                                00250000
+&I       SETA  10                                                       00260000
+         AIF   ('&TYPE' EQ 'NOTE').TEST1                                00270000
+&I       SETA  11                                                       00280000
+         AIF   ('&TYPE' EQ 'POINT').LOAD1                               00290000
+&I       SETA  12                                                       00300000
+         AIF   ('&TYPE' EQ 'GET').TEST1                                 00310000
+&I       SETA  13                                                85350  00320000
+         AIF   ('&TYPE' EQ 'UPDATE').LOAD1                       85350  00330000
+&I       SETA  14                                                85350  00340000
+         AIF   ('&TYPE' EQ 'FEOM').CLOSE                        GP02247 00350000
+&I       SETA  15                                                85350  00360000
+         AIF   ('&TYPE' EQ 'TRACK').LOAD1                       GP09158 00370000
+         AIF   ('&TYPE' EQ 'LOAD').INIT                                 00380000
+         MNOTE 8,'TYPE OPERAND REQUIRED'                                00390000
+         MEXIT ,                                                        00400000
+.INIT    ANOP  ,                                                        00410000
+&I       SETA  &SYSNDX                                                  00420000
+         MACPARM R15,15,@VOLREAD,OP=ICM,OPR=ICM,MODE=THREE PRIOR LOAD?  00430000
+         BNZ   VLR@&I                                                   00440000
+         SERVCALL LPALD,=CL8'@VOLREAD'                                  00450000
+         ST    R0,@VOLREAD                                              00460000
+VLR@&I   DS    0H                                                       00470000
+         MEXIT ,                                                        00480000
+.TEST1   AIF   (T'&OPERAND EQ 'O').CLOSE                                00490000
+         AGO   .LR1                                                     00500000
+.CHKUSE  AIF   (T'&USE EQ 'O').MODE1                                    00510000
+&J       SETA  128                                                      00520000
+         AIF   ('&USE' EQ 'VTOC').MODE1                                 00530000
+&J       SETA  64                                                       00540000
+         AIF   ('&USE' EQ 'PDS').MODE1                                  00550000
+&J       SETA  32                                                       00560000
+         AIF   ('&USE' EQ 'DATA').MODE1                                 00570000
+&J       SETA  0                                                        00580000
+         MNOTE 4,'INVALID USE PARAMETER &USE'                           00590000
+.MODE1   AIF   (T'&MODE EQ 'O').LOAD1                            85350  00600000
+         AIF   ('&MODE' EQ 'INPUT').LOAD1                        85350  00610000
+&J       SETA  &J+1          SET OUTPUT FLAG                     85350  00620000
+         AIF   ('&MODE' EQ 'UPDAT' OR '&MODE' EQ 'OUTPUT' OR           *00630000
+               '&MODE' EQ 'UPDATE').LOAD1                        85350  00640000
+         MNOTE 4,'INVALID MODE OPERAND &MODE'                    85350  00650000
+.LOAD1   AIF   (T'&OPERAND NE 'O').LR1P                                 00660000
+         MNOTE 8,'FUNCTION &TYPE REQUIRES AN OPERAND'                   00670000
+         MEXIT ,                                                        00680000
+.LR1P    AIF   ('&TYPE' NE 'POINT').LR1                                 00690000
+         MACPARM R1,&OPERAND,OP=L   LOAD TTR VALUE                      00700000
+         AGO   .LR1CM                                                   00710000
+.LR1     MACPARM R1,&OPERAND,NULL=0                                     00720000
+.LR1CM   AIF   (&J EQ 0).CLOSE                                          00730000
+         ICM   R1,8,=AL1(&J)                                            00740000
+.CLOSE   AIF   (&I NE 2 OR T'&SIZE EQ 'O').CLOSET                       00750000
+         MACPARM R0,&SIZE                                               00760000
+         IC    R0,=AL1(&I)                                              00770000
+         AGO   .BAL                                                     00780000
+.CLOSET  MACPARM R0,&I                                                  00790000
+.BAL     ANOP  ,                                                        00800000
+&MACPLAB L     R15,@VOLREAD                                             00810000
+         BALSR R14,R15                                                  00820000
+&MACPLAB SETC  ''                                                       00830000
+         MEND  ,                                                        00840000

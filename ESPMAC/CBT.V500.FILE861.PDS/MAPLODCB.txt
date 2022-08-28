@@ -1,0 +1,20 @@
+         MACRO ,                                                        00010000
+&NM      MAPLODCB &PFX=LOD,&DSECT=YES                            87280  00020000
+.*   EXHIBIT - SUPPORT FOR JESx LOAD LIBRARIES                          00030000
+         LCLC  &P,&N                                                    00040000
+&N       SETC  '&NM'                                                    00050000
+&P       SETC  '&PFX'                                                   00060000
+         AIF   ('&NM' NE '').OK                                         00070000
+&N       SETC  '&P'.'CB'                                                00080000
+.OK      AIF   ('&DSECT' EQ 'NO').NOS                                   00090000
+&N       DSECT ,                                                        00100000
+         AGO   .COMM                                                    00110000
+.NOS     AIF   ('&NM' EQ '').COMM                                       00120000
+&NM      DS    0F                                                       00130000
+.COMM    ANOP  ,                                                        00140000
+&P.LINK  DC    A(0)          POINTER TO NEXT ENTRY                      00150000
+&P.SPLEN DC    A(0)          SUBPOOL/LENGTH OF THIS BLOCK               00160000
+&P.DDNM  DC    CL8'LOADXXXX'  DDNAME OF ENTRY                           00170000
+&P.DCB   DCB   DDNAME=LOADXXXX,DSORG=PO,DEVD=DA,MACRF=(E)               00180000
+&P.SIZE  EQU   *-&P.LINK                                                00190000
+         MEND  ,                                                        00200000

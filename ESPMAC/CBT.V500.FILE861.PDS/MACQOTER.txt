@@ -1,0 +1,243 @@
+         MACRO ,                                                        00010000
+        MACQOTER  &STR,&OPT=,&USE=,&FILL=,&NULL=,&NAME=,&TYPE=C         00020000
+.*-------------------------------------------------------------------*. 00030000
+.*  NAME:                M A C Q O T E R                             *. 00040000
+.* PURPOSE:                                                          *. 00050000
+.*                                                                   *. 00060000
+.*  INTERNAL MACRO TO DETERMINE IF A PARAMETER IS A QUOTED STRING    *. 00070000
+.*    AND OPTIONALLY QUOTE IT OR STRIP QUOTES.                       *. 00080000
+.*                                                                   *. 00090000
+.*  INPUT :                                                          *. 00100000
+.*    THE STRING PARAMETER                                           *. 00110000
+.*                                                                   *. 00120000
+.*  OUTPUT:                                                          *. 00130000
+.*   MACPERR  GLOBAL FLAG TO INDICATE AN ERROR OCCURRED              *. 00140000
+.*   MACQUOT  GLOBAL FLAG TO INDICATE THAT INPUT WAS A QUOTED STRING *. 00150000
+.*   MACPNUL  GLOBAL FLAG TO INDICATE THAT INPUT WAS NULL            *. 00160000
+.*   MACQSTR  ORIGINAL OR MODIFIED STRING                            *. 00170000
+.*-------------------------------------------------------------------*. 00180000
+.* KEYWORD PARAMETERS:                                               *. 00190000
+.*    OPT=   USE=   FILL=   NULL=   NAME=                            *. 00200000
+.*  RESERVED FOR LATER:  USE=LITERAL (CREATE =C'PARM')               *. 00210000
+.*  RESERVED FOR LATER:  TYPE=G  (SPECIAL CHARACTER SET SUPPORT)     *. 00220000
+.*********************************************************************. 00230000
+.* POSITIONAL PARAMETERS:                                            *. 00240000
+.*    THE STRING TO BE TESTED / CHANGED                              *. 00250000
+.*********************************************************************. 00260000
+.* EXAMPLES:                                                         *. 00270000
+.*    MACQOTER HAM&EGGS,USE=HEX,OPT=QUOTE,NULL=YES,NAME=OUTER        *. 00280000
+.*                                                                   *. 00290000
+.* &MACQSTR  SET TO  'HAM&&EGGS'                                     *. 00300000
+.* &MACQUOT  SET TO  1                                               *. 00310000
+.* &MACPERR  SET TO  0                                               *. 00320000
+.* &MACPNUL  SET TO  0                                               *. 00330000
+.*                                                                   *. 00340000
+.*********************************************************************. 00350000
+.* CHANGE LOG:                                                       *. 00360000
+.*                                                                   *. 00370000
+.* YYYY-MM-DD INT COMMENTS                                           *. 00380000
+.* ---------- --- --------                                           *. 00390000
+.* 1999-03-12 GYP CREATED                                            *. 00400000
+.* 2003-05-24 GYP CHANGED MACERR TO MACPERR TO MATCH MACPARM         *. 00410000
+.*                                                                   *. 00420000
+.*********************************************************************. 00430000
+.* THIS INNER MACRO CONVERTS AN ARGUMENT STRING INTO ANOTHER ONE.    *. 00440000
+.* WHEN NO CONVERT OPTIONS ARE USED, ONLY GLOBAL SETB VALUES ARE SET.*. 00450000
+.*                                                                   *. 00460000
+.*  OPT=QUOTE    SPECIFIES THAT A QUOTED STRING IS NEEDED            *. 00470000
+.*                 WITH USE=/USE=QUOTE WILL NOT CHANGE QUOTED STRING *. 00480000
+.*  USE= OR USE=QUOTE    ADD QUOTES TO STRING                        *. 00490000
+.*  USE=PROC     SPECIFIES THAT QUOTES ARE DOUBLED AGAIN             *. 00500000
+.*  USE=HEX      ALLOWS X'NNN', B'010101', AND SIMILAR EXPRESSIONS   *. 00510000
+.*                 WITHOUT ALTERATION (OTHERS AS USE=QUOTE)          *. 00520000
+.*  OPT=STRIP    HALVES THE QUOTES IN A QUOTED STRING AND UNQUOTES   *. 00530000
+.*  FILL='X' OR FILL=X    REPLACES BLANKS BY THE SPECIFIED CHARACTER *. 00540000
+.*                 DOES NOT SUPPORT AMPERSAND OR APOSTROPHE.         *. 00550000
+.*  NULL=YES     SPECIFIES THAT AN EMPTY STRING DOES NOT SET AN      *. 00560000
+.*                 ERROR; THE MACPNUL FLAG IS SET, MACPERR IS NOT.   *. 00570000
+.*                 RETURNS EMPTY STRING UNLESS QUOTING, THEN ''      *. 00580000
+.*                 IGNORED IF STRING IS NOT NULL. OPT=STRIP FOR ''   *. 00590000
+.*                 GENERATES A NULL STRING AND SETS THE FLAGS.       *. 00600000
+.*                                                                   *. 00610000
+.*  TYPE=C (DEFAULT) OR TYPE=G - NOT SUPPORTED YET                   *. 00620000
+.*                                                                   *. 00630000
+.* REQUEST:    OPT=  OPT=QUOTE  USE=HEX  USE=PROC  OPT=STRIP RESULT  *. 00640000
+.*  STRING        Y                Y                      STRING     *. 00650000
+.*  'STRING'      Y                Y                      'STRING'   *. 00660000
+.*  X'123'        Y                Y                      X'123'     *. 00670000
+.*  STRING              Y          Y                      'STRING'   *. 00680000
+.*  'STRING'            Y          Y                      'STRING'   *. 00690000
+.*  X'123'              Y          Y                      X'123'     *. 00700000
+.*  X'123'              Y                                 'X''123''' *. 00710000
+.*  STRING              Y                   Y             ''STRING'' *. 00720000
+.*  'STRING'            Y                   Y             ''STRING'' *. 00730000
+.*  X'123'              Y                   Y       ''X''''123'''''' *. 00740000
+.*  X'123'              Y          Y        Y             X'123'     *. 00750000
+.*  'IT''S &&'                                        Y   IT'S &     *. 00760000
+.*  ..ANY..    NO FLAGS ON (OTHER THAN NULL AND FILL)  SETB ONLY     *. 00770000
+.*                                                                   *. 00780000
+.*  (STRIP AND QUOTE CANCEL; STRIP AND PROC ACTS AS QUOTE)           *. 00790000
+.*                                                                   *. 00800000
+.* N.B.: STRIPPING AND DOUBLING APPLIES TO APOSTROPHES AND AMPERSANDS*. 00810000
+.*********************************************************************. 00820000
+.*  LIMITATIONS:  MAXIMUM INPUT LENGTH: 255 (ARBITRARY, <256)        *. 00830000
+.* >>>>> DOES NOT CHECK FOR STRING LENGTH EXCESSION (>255) <<<<<     *. 00840000
+.*********************************************************************. 00850000
+         GBLB  &MACPNUL,&MACPERR,&MACQUOT                               00860000
+         GBLC  &MACQSTR                                                 00870000
+         LCLB  &DEL,&DOUB,&FOUR                                         00880000
+         LCLC  &PAD,&MYSTR,&CH                                          00890000
+         LCLA  &I,&J,&K,&L,&M,&N                                        00900000
+&MACPERR SETB  0                                                        00910000
+&MACPNUL SETB  0                                                        00920000
+&MACQUOT SETB  0                                                        00930000
+&MYSTR   SETC  '&STR'                                                   00940000
+&MACQSTR SETC  '&STR'        PRESET AS NULL IF EMPTY                    00950000
+&K       SETA  K'&STR                                                   00960000
+&DEL     SETB  ('&OPT' EQ 'STRIP')                                      00970000
+&DOUB    SETB  ('&OPT' EQ 'QUOTE')                                      00980000
+&FOUR    SETB  ('&USE' EQ 'PROC')                                       00990000
+         AIF   (&K LT 2).NOQUOCH                                        01000000
+&MACQUOT SETB  ('&STR'(1,1) EQ '''' AND '&STR'(&K,1) EQ '''')           01010000
+.NOQUOCH AIF   (NOT &MACQUOT).UNQUO                                     01020000
+.*  ALREADY QUOTED STRING CANCELS ONE LEVEL OF QUOTING                  01030000
+&DOUB    SETB  (&FOUR)                                                  01040000
+&FOUR    SETB  0                                                        01050000
+.UNQUO   AIF   (NOT &DEL OR (NOT &DOUB AND NOT &FOUR)).NODEL            01060000
+.*  STRIP CANCELS ONE LEVEL OF QUOTING                                  01070000
+&DOUB    SETB  (&FOUR)                                                  01080000
+&FOUR    SETB  0                                                        01090000
+&DEL     SETB  0             CANCEL STRIP REQUEST                       01100000
+.NODEL   AIF   ('&NULL' EQ '' OR '&NULL' EQ 'Y' OR '&NULL' EQ 'YES').NU 01110000
+         AIF   ('&NULL' EQ 'N' OR '&NULL' EQ 'NO').NU                   01120000
+        MNOTE  4,'&NAME/MACQOTER *****  INVALID NULL OPTION ''&NULL'''  01130000
+        MNOTE  4,'  USE NULL= (DEFAULT), OR NULL=YES'                   01140000
+&MACPERR SETB  1                                                        01150000
+.NU      AIF   (&K GT 0 AND &K LE 255).OKLEN                            01160000
+         AIF   (&K NE 0).TOOLONG                                        01170000
+&MACPNUL SETB  1                                                        01180000
+         AIF   (&FOUR).DO4NU                                            01190000
+         AIF   (NOT &DOUB).NO2NU                                        01200000
+&MACQSTR SETC  ''''''        MAKE NULL STRING                           01210000
+         AGO   .NO2NU                                                   01220000
+.DO4NU   ANOP  ,                                                        01230000
+&MACQSTR SETC  ''''''''''    MAKE NULL STRING                           01240000
+.NO2NU   AIF   ('&NULL' EQ 'YES').TEST                                  01250000
+&MACPERR SETB  1                                                        01260000
+         AGO   .TEST                                                    01270000
+.TOOLONG MNOTE 8,'&NAME/MACQOTER INPUT EXCEEDS DESIGN LENGTH OF 255'    01280000
+&MACPERR SETB  1                                                        01290000
+         MEXIT ,                                                        01300000
+.OKLEN   AIF   ('&OPT' EQ '' OR '&OPT' EQ 'QUOTE' OR                   *01310000
+               '&OPT' EQ 'STRIP').OKOPT                                 01320000
+        MNOTE 4,'&NAME/MACQOTER  *****  INVALID STRING OPTION ''&OPT''' 01330000
+        MNOTE 4,'  SUPPORTED OPTIONS ARE OPT=QUOTE AND OPT=STRIP'       01340000
+&MACPERR SETB  1                                                        01350000
+         MEXIT ,                                                        01360000
+.OKOPT   AIF   ('&USE'  EQ ''  OR  '&USE'  EQ  'PROC'                  *01370000
+                 OR  '&USE'  EQ  'HEX'  OR '&USE' EQ 'QUOTE').OKUSE     01380000
+        MNOTE 4,'&NAME/MACQOTER  *****  INCORRECT USE OPTION ''&USE'''  01390000
+        MNOTE 4,'  SUPPORTED OPTIONS ARE USE=HEX AND USE=PROC'          01400000
+&MACPERR SETB  1                                                        01410000
+         MEXIT ,                                                        01420000
+.OKUSE   AIF   ('&FILL' EQ '').NOPAD                                    01430000
+&J       SETA  2                                                        01440000
+         AIF   (K'&FILL EQ 3 AND '&FILL'(1,1) EQ '''').PADQ             01450000
+&J       SETA  1                                                        01460000
+         AIF   (K'&FILL EQ 1).PADQ                                      01470000
+.BADFILL MNOTE 4,'&NAME/MACQOTER  *****  INVALID FILL OPTION ''&FILL''' 01480000
+         MNOTE 4,'  SPECIFY SINGLE CHARACTER WITH FILL=X OR FILL=''X''' 01490000
+&MACPERR SETB  1                                                        01500000
+         MEXIT ,                                                        01510000
+.PADQ    ANOP                                                           01520000
+&PAD     SETC  '&FILL'(&J,1)                                            01530000
+.*                                                                      01540000
+.*  DO CURSORY CHECK FOR X'NNN' AND B'0101', ETC. (ONLY APOSTROPHES)    01550000
+.*                                                                      01560000
+.NOPAD   AIF   (&MACQUOT).NOTHEX                                        01570000
+         AIF   (&K LT 4).NOHEX                                          01580000
+         AIF   ('&STR'(2,1) NE '''' OR '&STR'(&K,1) NE '''').NOHEX      01590000
+         AIF   ('&USE' EQ 'HEX').MEND   BYPASS .TEST CHECKS (FAIL)      01600000
+.*  FOR UNQUOTED STRING AND STRIP OPTION, RETURN                        01610000
+.NOHEX   AIF   (&DEL).TEST                                              01620000
+.NOTHEX  ANOP  ,                                                        01630000
+&I       SETA  0                                                        01640000
+.*                                                                      01650000
+.*  WHEN CALLER SPECIFIES FILL CHARACTER, REPLACE BLANKS                01660000
+.*                                                                      01670000
+&MYSTR   SETC  '&STR'        USE WORKING STRING                         01680000
+&K       SETA  K'&MYSTR      JUST IN CASE                               01690000
+         AIF   ('&PAD' EQ '').PADDED                                    01700000
+.SCANBLK AIF   (&I GE &K).PADDED                                        01710000
+&I       SETA  &I+1                                                     01720000
+&CH      SETC  '&MYSTR'(&I,1)                                           01730000
+         AIF   ('&CH' NE ' ').SCANBLK                                   01740000
+         AIF   (&I EQ &K).PADRITE                                       01750000
+         AIF   (&I GT 1).PADMID                                         01760000
+&MYSTR   SETC  '&PAD'.'&MYSTR'(2,&K-1)                                  01770000
+         AGO   .SCANBLK                                                 01780000
+.PADMID  ANOP  ,                                                        01790000
+&MYSTR   SETC  '&MYSTR'(1,&I-1).'&PAD'.'&MYSTR'(&I+1,&K-&I)             01800000
+         AGO   .SCANBLK                                                 01810000
+.PADRITE ANOP  ,                                                        01820000
+&MYSTR   SETC  '&MYSTR'(1,&I-1).'&PAD'                                  01830000
+         AGO   .SCANBLK                                                 01840000
+.*                                                                      01850000
+.*  NOW PROCESS THE STRING:                                             01860000
+.*                                                                      01870000
+.*  1) STRIP - FOR EACH DOUBLED AMPERSAND AND APOSTROPHE, COPY ONLY ONE 01880000
+.*     FOR QUOTED STRING, DOUB AND FOUR OFF - STRIP FRAMING QUOTES      01890000
+.*  2) DOUB/FOUR - FOR EACH, ADD TWO/FOUR AMPERSANDS OR APOSTROPHES     01900000
+.*                                                                      01910000
+.PADDED  ANOP  ,                                                        01920000
+&MACQSTR SETC  '&MYSTR'      PROVISIONAL                                01930000
+&K       SETA  K'&MYSTR      JUST IN CASE                               01940000
+         AIF   (&DOUB OR &FOUR).PROCEED                                 01950000
+         AIF   (NOT &DEL).TEST                                          01960000
+         AIF   (NOT &MACQUOT OR &K LT 2).PROCEED                        01970000
+&MYSTR   SETC  '&MYSTR'(2,&K-2)  ELIMINATE FRAME                        01980000
+&K       SETA  K'&MYSTR      ADJUST                                     01990000
+&MACQSTR SETC  '&MYSTR'      RETURN                                     02000000
+         AIF   (&K EQ 0).NU  SET NULL FLAG IF DIMINISHED TOO MUCH       02010000
+.PROCEED ANOP  ,                                                        02020000
+&I       SETA  1                                                        02030000
+&MACQSTR SETC  ''                                                       02040000
+.CHARLUP ANOP  ,                                                        02050000
+&CH      SETC  '&MYSTR'(&I,1)                                           02060000
+         AIF   ('&CH' NE '''' AND '&CH' NE '&&').COPYONE                02070000
+         AIF   (&DEL).STRIPPR                                           02080000
+&CH      SETC  '&CH'.'&CH'                                              02090000
+         AIF   (NOT &FOUR).COPYONE                                      02100000
+&CH      SETC  '&CH'.'&CH'                                              02110000
+         AGO   .COPYONE                                                 02120000
+.STRIPPR AIF   (&I GE &K).COPYONE                                       02130000
+         AIF   ('&MYSTR'(&I+1,1) NE '&CH').COPYONE  ERROR?              02140000
+&I       SETA  &I+1          SKIP DOUBLED CHARACTER                     02150000
+.COPYONE ANOP  ,                                                        02160000
+&MACQSTR SETC  '&MACQSTR'.'&CH'                                         02170000
+&I       SETA  &I+1                                                     02180000
+         AIF   (&I LE &K).CHARLUP                                       02190000
+.*                                                                      02200000
+.*  NOW SEE WHETHER AND WHAT WE NEED TO DO TO THE STRING                02210000
+.*                                                                      02220000
+.*  1) UNQUOTED STRING, AND DOUB OR FOUR ON - FRAME IN QUOTES           02230000
+.*       FOR FOUR, MUST DO PRIOR TO DOUBLING                            02240000
+.*  2) EXAMINE THE RESULT STRING - SET MACQUOT FLAG IF QUOTED,          02250000
+.*       OTHERWISE CHECK FOR ILLEGAL APOSTROPHES AND SET MACPERR        02260000
+.*                                                                      02270000
+         AIF   (NOT &DOUB AND NOT &FOUR AND &MACQUOT).TEST              02280000
+&MACQSTR SETC  ''''.'&MACQSTR'.''''                                     02290000
+         AIF   (NOT &FOUR).TEST                                         02300000
+&MACQSTR SETC  ''''.'&MACQSTR'.''''                                     02310000
+.TEST    ANOP  ,                                                        02320000
+&K       SETA  K'&MACQSTR                                               02330000
+&MACQUOT SETB  0             RESET FOR SHORT OR NULL STRING             02340000
+         AIF   (&K LT 2).SKPQUOT                                        02350000
+&MACQUOT SETB  ('&MACQSTR'(1,1) EQ '''' AND '&MACQSTR'(&K,1) EQ '''')   02360000
+.SKPQUOT AIF   (&MACQUOT).MEND                                          02370000
+&I       SETA  0                                                        02380000
+.UNBALUP AIF   (&I GE &K).MEND                                          02390000
+&I       SETA  &I+1                                                     02400000
+         AIF   ('&MACQSTR'(&I,1) NE '''').UNBALUP                       02410000
+&MACPERR SETB  1                                                        02420000
+.MEND    MEND                                                           02430000

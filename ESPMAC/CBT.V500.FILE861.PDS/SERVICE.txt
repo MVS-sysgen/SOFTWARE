@@ -1,0 +1,55 @@
+         MACRO ,                                                        00010000
+&NM      SERVICE &CODE,&ADDR,&REG2,&ERR=,&CC0=,&CC4=,&CC8=,&LEN=,      *00020000
+               &MAP=                                             87036  00030000
+         GBLA  &SVC@SVC                                          83100  00040000
+         GBLB  &SRVCM@P                                          85021  00050000
+         GBLB  &SRV#NUT      USE TSA BASSM/SVC IF TRUE          GP03142 00060000
+         GBLC  &MACPLAB,&SRVCM@R                                 81148  00070000
+         LCLC  &LERR                                             81148  00080000
+.*--------------------------------------------------------------------* 00090000
+.*  SERVICE INVOKES THE @SERVICE ROUTINE IN ANY OF THREE WAYS:        * 00100000
+.*  1) OLD MODE - IF SVC GLOBAL IS NON-ZERO, VIA SVC IGC00SVC         * 00110000
+.*  2) OLD MODE - IF SVC GLOBAL IS ZERO, VIA BASSM                    * 00120000
+.*  3) NEW MODE - EXECUTE INSTRUCTION (EITHER BASSM OR SVC); REQUIRES * 00130000
+.*     NEW SERVINIT MACRO AND SERVDEFS IN SAVE AREA                   * 00140000
+.*--------------------------------------------------------------------* 00150000
+&NM      MACPARM R2,&REG2,NULL=SKIP                              85070  00160000
+         MACPARM R1,&ADDR,NULL=SKIP                                     00170000
+.NOR1    AIF   ('&CODE' EQ '').NOR0                                     00180000
+         AIF   ('&CODE'(1,1) EQ '(').REG0                               00190000
+         MACPARM R0,VEN&CODE                                            00200000
+         AIF   ('&LEN' EQ '').NOR0                              GP99026 00210000
+         MACPARM R0,8,=AL1(&LEN),OP=ICM,MODE=THREE              GP99026 00220000
+         AGO   .NOR0                                                    00230000
+.REG0    MACPARM R0,&CODE                                               00240000
+.NOR0    AIF   (NOT &SRV#NUT).NOTEXEC                           GP03142 00250000
+         AIF   ('&CODE' EQ 'LPALD').NOTSVC   DOESN'T WORK IN SVC        00260000
+         MACPARM R15,@SERVICE,OP=L  GET MODULE ADDRESS          GP03142 00270000
+         MACPARM 0,@SERVEXC,OP=EX  EXECUTE BASSM OR SVC         GP03142 00280000
+         AGO   .COMSVC                                          GP03142 00290000
+.NOTEXEC AIF   (&SVC@SVC EQ 0).NOTSVC                            83100  00300000
+&MACPLAB SVC   &SVC@SVC      CALL THE SERVICE ROUTINE                   00310000
+&MACPLAB SETC  ''                                                83100  00320000
+         AGO   .COMSVC                                           83100  00330000
+.NOTSVC  MACPARM R15,@SERVICE,OP=L  GET MODULE ADDRESS                  00340000
+&MACPLAB BASSM R14,R15       CALL THE @SERVICE ROUTINE                  00350000
+.COMSVC  AIF   ('&CC0' EQ '' AND '&CC4' EQ '' AND '&CC8' EQ '').NOCC    00360000
+         AIF   ('&ERR' EQ '' OR '&ERR' EQ 'NO').NODUPE           81148  00370000
+         MNOTE 4,'CC= AND ERR= ARE MUTUALLY EXCLUSIVE'           81148  00380000
+.NODUPE  ANOP  ,                                                 81148  00390000
+&MACPLAB SETC  ''                                                81148  00400000
+         CH    R15,=H'4'     TEST RETURN                         81148  00410000
+         MACPARM &CC0,OP=BL,OPR=BLR,MODE=ONE,NULL=SKIP          GP02241 00420000
+         MACPARM &CC4,OP=BE,OPR=BER,MODE=ONE,NULL=SKIP          GP02241 00430000
+         MACPARM &CC8,OP=BH,OPR=BHR,MODE=ONE,NULL=SKIP          GP02241 00440000
+         AGO   .MEND                                             81148  00450000
+.NOCC    AIF   ('&ERR' EQ 'NO').MEND                             81148  00460000
+&LERR    SETC  '&ERR'                                            81148  00470000
+         AIF   ('&LERR' NE '').DOERR                             81148  00480000
+&LERR    SETC  '&SRVCM@R'                                        81148  00490000
+         AIF   ('&LERR' EQ '').MEND                              81148  00500000
+.DOERR   BXH   R15,R15,&LERR  GO TO SET ERROR MESSAGE            81148  00510000
+.MEND    AIF   (&SRVCM@P OR '&MAP' EQ 'NO').MMEND                87036  00520000
+&SRVCM@P SETB  1                                                 85021  00530000
+         COPY  SERVFLAG                                          85021  00540000
+.MMEND   MEND  ,                                                        00550000

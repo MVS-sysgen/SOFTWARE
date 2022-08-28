@@ -1,0 +1,57 @@
+         MACRO ,                                                        00010000
+&NM      READFDR &TYPE,&OPERAND,&USE=                   ADDED ON 82248  00020000
+         GBLC  &MACPLAB                                                 00030000
+.*                                                                      00040000
+.*   This macro is used for reading FDR dump tapes, in conjunction      00050000
+.*   with the @FDRREAD service routine. The current version requires    00060000
+.*   authorization to diddle the DEB.                                   00070000
+.*                                                                      00080000
+.*   Used by COPYFDR program, and the @OBTAINS and @VOLREAD routines.   00090000
+.*                                                                      00100000
+         LCLA  &I,&J                                                    00110000
+&MACPLAB SETC  '&NM'                                                    00120000
+&I       SETA  0                                                        00130000
+         AIF   ('&TYPE' EQ 'CLOSE').CLOSE                               00140000
+&I       SETA  1                                                        00150000
+         AIF   ('&TYPE' EQ 'TCLOSE').CLOSE                              00160000
+&I       SETA  2                                                        00170000
+         AIF   ('&TYPE' EQ 'OPEN').CHKUSE                               00180000
+&I       SETA  3                                                        00190000
+         AIF   ('&TYPE' EQ 'READ').TEST1                                00200000
+&I       SETA  4                                                        00210000
+         AIF   ('&TYPE' EQ 'NEXT').TEST1                                00220000
+&I       SETA  5                                                GP13222 00230000
+         AIF   ('&TYPE' EQ 'TRACK').TEST1                       GP13222 00240000
+         AIF   ('&TYPE' EQ 'RDM').TEST1                         GP13222 00250000
+&I       SETA  6                                                GP13222 00260000
+         AIF   ('&TYPE' EQ 'MORE').TEST1                        GP13222 00270000
+         AIF   ('&TYPE' EQ 'LOAD' OR '&TYPE' EQ 'INIT').INIT            00280000
+         MNOTE 8,'TYPE OPERAND REQUIRED'                                00290000
+         MEXIT ,                                                        00300000
+.INIT    ANOP  ,                                                        00310000
+&I       SETA  &SYSNDX                                                  00320000
+&NM      ICM   R15,7,@FDRREAD+1   PRIOR LOAD ?                          00330000
+         BNZ   VLR@&I                                                   00340000
+         SERVCALL LPALD,=CL8'@FDRREAD'                                  00350000
+         ST    R0,@FDRREAD                                              00360000
+VLR@&I   DS    0H                                                       00370000
+         MEXIT ,                                                        00380000
+.TEST1   AIF   (T'&OPERAND EQ 'O').CLOSE                                00390000
+         AGO   .LR1                                                     00400000
+.CHKUSE  AIF   (T'&USE EQ 'O').LOAD1                                    00410000
+&J       SETA  128                                                      00420000
+         AIF   ('&USE' EQ 'VTOC').LOAD1                                 00430000
+&J       SETA  0                                                        00440000
+         MNOTE 4,'INVALID USE PARAMETER &USE'                           00450000
+.LOAD1   AIF   (T'&OPERAND NE 'O').LR1                                  00460000
+         MNOTE 8,'FUNCTION &TYPE REQUIRES AN OPERAND'                   00470000
+         MEXIT ,                                                        00480000
+.LR1     MACPARM R1,&OPERAND,NULL=0                                     00490000
+         AIF   (&J EQ 0).CLOSE                                          00500000
+         ICM   R1,8,=AL1(&J)                                            00510000
+.CLOSE   MACPARM R0,&I                                                  00520000
+.BAL     ANOP  ,                                                        00530000
+&MACPLAB L     R15,@FDRREAD                                             00540000
+         BASR  R14,R15                                                  00550000
+&MACPLAB SETC  ''                                                       00560000
+         MEND  ,                                                        00570000

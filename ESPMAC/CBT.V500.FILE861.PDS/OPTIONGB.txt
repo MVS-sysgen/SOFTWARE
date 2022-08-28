@@ -1,0 +1,21 @@
+         GBLA  &SYSPRM#            NUMBER OF SYSPARM TOKENS             00010000
+         GBLA  &SVCJFCB            0 OR MODJFCB SVC NUMBER       82099  00020000
+         GBLA  &SVC@SVC            0 OR @SERVICE ROUTINE SVC     83100  00030000
+         GBLA  &SVCTMSX,&SVCTMSY   0 OR UCC-1 (TMS) SVC X/Y NMBR 83100  00040000
+         GBLB  &BUGBEAR      (WAS &DEBUG - SAME AS HASP)         81331  00050000
+         GBLB  &MVS                1 IF OS/VS2 MVS                      00060000
+         GBLB  &MVSSP              1 IF OS/VS2 MVS/SP            82068  00070000
+         GBLB  &MVSXA              1 IF OS/VS2 MVS/XA (SP2)      82068  00080000
+         GBLB  &MVSESA             1 IF OS/VS2 MVS/ESA (SP3)     90217  00090000
+         GBLB  &SVS                1 IF OS/VS2 SVS                      00100000
+         GBLB  &VS1                1 IF OS/VS1                   82137  00110000
+         GBLC  &CPU                360/370/470                          00120000
+         GBLC  &JES2REL            JES2 LEVEL                    85076  00130000
+         GBLC  &LOCAL              INSTALLATION ACRONYM/NAME            00140000
+         GBLC  &MODEL              360/370/470                          00150000
+         GBLC  &SPVEREL            MVS/SP VERSION/RELEASE/LEVEL  82091  00160000
+         GBLC  &SYSPRMS(10)        SYSPARM TOKENS                       00170000
+         GBLC  &PRTMAC             GEN OPTION FOR LOCAL  MAPS    81142  00180000
+         GBLC  &PRTSOR             GEN OPTION FOR SOURCE         81142  00190000
+         GBLC  &PRTSYS             GEN OPTION FOR SYSTEM MAPS    81142  00200000
+         GBLC  &SYSTEM             MVT/SVS/MVS                          00210000

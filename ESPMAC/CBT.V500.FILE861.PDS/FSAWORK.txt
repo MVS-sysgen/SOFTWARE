@@ -1,0 +1,14 @@
+         MACRO ,                                                        00010000
+&NM      FSAWORK &PFX=FSA                               ADDED ON 81149  00020000
+         LCLC  &NAME                                                    00030000
+&NAME    SETC  'FSAWORK'                                                00040000
+         AIF   ('&NM' EQ '').NONAME                                     00050000
+&NAME    SETC  '&NM'                                                    00060000
+.NONAME  ANOP  ,                                                        00070000
+&NAME    DSECT ,             HEADER FOR WORK AREAS CHAINED FROM TCBFSA  00080000
+&PFX.LINK  DC  A(0)          POINTER TO NEXT AREA ON CHAIN              00090000
+&PFX.ID    DC  CL4' '        NAME OF THIS WORK AREA                     00100000
+&PFX.SPLEN DC  F'0'          SUBPOOL/LENGTH OF THIS ENTRY               00110000
+&PFX.TCB   DC  A(0)          TCB ADDRESS OF OWNER                       00120000
+&PFX.PFXL  EQU *-&PFX.LINK   SIZE OF PREFIX                             00130000
+         MEND  ,                                                        00140000

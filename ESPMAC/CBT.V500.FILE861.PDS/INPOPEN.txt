@@ -1,0 +1,22 @@
+         MACRO                                                          00010000
+&NM      INPOPEN &WORK,&DEV=,&OPT=                    UPDATED ON 93307  00020000
+         LCLA  &I,&J                                                    00030000
+         LCLB  &A,&D,&W,&F,&X,&U                                GP04114 00040000
+&J       SETA  N'&OPT                                                   00050000
+.OPTL    ANOP  ,                                                        00060000
+&I       SETA  &I+1                                                     00070000
+         AIF   (&I GT &J).OPTN                                          00080000
+         AIF   ('&OPT(&I)' EQ '').OPTL                                  00090000
+&A       SETB  (&A OR '&OPT(&I)' EQ 'ABE' OR '&OPT(&I)' EQ 'ABEND')     00100000
+&D       SETB  (&D OR '&OPT(&I)' EQ 'DUMMY')                            00110000
+&W       SETB  (&W OR '&OPT(&I)' EQ 'NOWTO')                            00120000
+&F       SETB  (&F OR '&OPT(&I)' EQ 'JFCB' OR '&OPT(&I)' EQ 'OPENJ')    00130000
+&X       SETB  (&X OR '&OPT(&I)' EQ 'VER' OR '&OPT(&I)' EQ 'EXIST')     00140000
+&U       SETB  (&U OR '&OPT(&I)' EQ 'FOLD')                     GP04114 00150000
+         AGO   .OPTL                                                    00160000
+.OPTN    AIF   (&J EQ (&A+&D+&W+&F+&X+&U)).OPTOK                GP04114 00170000
+         MNOTE 4,'UNDEFINED OR DUPLICATE OPTION SPECIFIED'       82116  00180000
+.OPTOK   ANOP  ,                                                 82116  00190000
+&I       SETA  128*&A+64*&D+32*&W+16*&F+8*&X+1*&U               GP04114 00200000
+&NM      INPCOM 0,0,2,&I,&WORK,DEV=&DEV                                 00210000
+         MEND  ,                                                        00220000

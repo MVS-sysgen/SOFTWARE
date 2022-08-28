@@ -1,0 +1,15 @@
+         MACRO ,                                                        00010000
+&NM      CRMEND &PFX=                                   ADDED ON 85070  00020000
+         GBLC  &CRM@NAM                                                 00030000
+         LCLC  &P                                                       00040000
+&P       SETC  '&PFX'                                                   00050000
+         AIF   ('&P' NE '').HP                                          00060000
+&P       SETC  '&CRM@NAM'                                               00070000
+         AIF   ('&P' NE '').HP                                          00080000
+&P       SETC  'CRX'                                                    00090000
+.HP      ANOP  ,                                                        00100000
+         LTORG ,                                                        00110000
+         SPACE 1                                                        00120000
+&P.LAST  DS    0D                                                       00130000
+&P.SIZE  EQU   &P.LAST-&P.CODE  SIZE OF CSA RELOCATION                  00140000
+         MEND  ,                                                        00150000

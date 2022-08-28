@@ -1,0 +1,24 @@
+         MACRO                                                          00010000
+&NM      PRTL  &VAD,&DEV=,&TITLE=0,&FOOTER=0,&CC=,&OPT=,&MODE=  GP02301 00020000
+.*--------------------------------------------------------------------* 00030000
+.*                                                                    * 00040000
+.*  PRTL SERVES AS A TEMPORARY ADJUNCT TO PRTF, PENDING CORRECTION    * 00050000
+.*  OF PRTF AND PRTS IN 31-BIT ADDRESSING MODE                        * 00060000
+.*                                                                    * 00070000
+.*  PRTL 'LITERAL STRING' - CONVERTED TO VCON AND INVOKES PRTV        * 00080000
+.*                                                                    * 00090000
+.*--------------------------------------------------------------------* 00100000
+         LCLA  &CT,&I                                                   00110000
+         LCLC  &M#                                                      00120000
+&M#      SETC  '&SYSNDX'                                                00130000
+&NM      PRTV  ZZVC&M#,                                                *00140000
+               DEV=&DEV,                                               *00150000
+               TITLE=&TITLE,                                           *00160000
+               FOOTER=&FOOTER,                                         *00170000
+               CC=&CC,                                                 *00180000
+               OPT=&OPT,                                               *00190000
+               MODE=&MODE                                               00200000
+         B     ZZVD&M#                                                  00210000
+ZZVC&M#  VCON  &VAD                                                     00220000
+ZZVD&M#  DS    0H                                                       00230000
+         MEND                                                           00240000

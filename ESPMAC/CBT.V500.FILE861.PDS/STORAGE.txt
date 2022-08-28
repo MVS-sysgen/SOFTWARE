@@ -1,0 +1,72 @@
+         MACRO ,                                                        00010000
+&NM      STORAGE &FUN,&LENGTH=,&ADDR=,&SP=,&BNDRY=,&LOC=,&COND=,       *00020000
+               &CALLRKY=,&RELEASE=                                      00030000
+.*                                                                      00040000
+.*    BACKWARD COMPATIBILITY FOR MVS 3.8 UNDER HERCULES         GP04234 00050000
+.*    ALLOW MOST OPERANDS USING GETMAIN/FREEMAIN                        00060000
+.*                                                                      00070000
+         LCLA  &K,&RK                                                   00080000
+         LCLC  &SB                                              GP08258 00090000
+         AIF   ('&SP' EQ '0').NOPOOL  TREAT AS SP=              GP08258 00100000
+&SB      SETC  '&SP'                                            GP08258 00110000
+.NOPOOL  ANOP  ,                                                GP08258 00120000
+&K       SETA  K'&SB                                                    00130000
+&RK      SETA  K'&LENGTH                                                00140000
+         AIF   ('&FUN' EQ 'OBTAIN').GET                                 00150000
+         AIF   ('&FUN' EQ 'RELEASE').FREE                               00160000
+         MNOTE 8,'STORAGE: FUNCTION &FUN INVALID'                       00170000
+         MEXIT ,                                                        00180000
+.GET     AIF   ('&COND' EQ 'YES').GETC                                  00190000
+         AIF   ('&BNDRY' NE '' OR '&SB' NE '').GETU                     00200000
+&NM      GETMAIN R,A=&ADDR,LV=&LENGTH                                   00210000
+         MEXIT ,                                                        00220000
+.*                                                                      00230000
+.GETC    AIF   ('&SB' EQ '' OR &K LT 3).GETCB                           00240000
+         AIF   ('&SB'(1,1) EQ '(' AND '&SB'(2,1) NE '(' AND            *00250000
+               '&SB'(&K,1) EQ ')' AND '&SB'(&K-1,1) NE ')').GETCR       00260000
+.GETCB   ANOP  ,                                                        00270000
+&NM      GETMAIN RC,A=&ADDR,LV=&LENGTH,BNDRY=&BNDRY,SP=&SB              00280000
+         MEXIT ,                                                        00290000
+.GETCR   ANOP  ,                                                        00300000
+&NM      MACPARM R0,&LENGTH                                             00310000
+         MACPARM R15,&SB     GET SUBPOOL                        GP08089 00320000
+         GETMAIN RC,A=&ADDR,LV=(0),SP=(15),BNDRY=&BNDRY         GP08089 00330000
+         MEXIT ,                                                        00340000
+.*                                                                      00350000
+.GETU    AIF   ('&SB' EQ '' OR &K LT 3).GETUB                           00360000
+         AIF   ('&SB'(1,1) EQ '(' AND '&SB'(2,1) NE '(' AND            *00370000
+               '&SB'(&K,1) EQ ')' AND '&SB'(&K-1,1) NE ')').GETUR       00380000
+.GETUB   ANOP  ,                                                        00390000
+&NM      GETMAIN RU,A=&ADDR,LV=&LENGTH,BNDRY=&BNDRY,SP=&SB              00400000
+         MEXIT ,                                                        00410000
+.GETUR   ANOP  ,                                                        00420000
+&NM      MACPARM R0,&LENGTH                                             00430000
+         MACPARM R15,&SB     GET SUBPOOL                        GP08089 00440000
+         GETMAIN RU,A=&ADDR,LV=(0),SP=(15),BNDRY=&BNDRY         GP08089 00450000
+         MEXIT ,                                                        00460000
+.*                                                                      00470000
+.FREE   AIF   ('&SB' NE '' AND '&LENGTH' EQ '' AND '&ADDR' EQ '').FPOOL 00480000
+         AIF   ('&SB' NE '').FREESP                                     00490000
+&NM      FREEMAIN R,A=&ADDR,LV=&LENGTH                                  00500000
+         MEXIT ,                                                        00510000
+.FREESP  AIF   ('&LENGTH' EQ '' OR &RK LT 3).FREESR                     00520000
+         AIF   ('&LENGTH'(1,1) EQ '(' AND '&LENGTH'(2,1) NE '(' AND    *00530000
+               '&LENGTH'(&RK,1) EQ ')' AND                             *00540000
+               '&LENGTH'(&RK-1,1) NE ')').FRUR                          00550000
+.FREESR  AIF   ('&SB' EQ '' OR &K LT 3).FREEUB                          00560000
+         AIF   ('&SB'(1,1) EQ '(' AND '&SB'(2,1) NE '(' AND            *00570000
+               '&SB'(&K,1) EQ ')' AND '&SB'(&K-1,1) NE ')').FRUR        00580000
+.FREEUB  ANOP  ,                                                        00590000
+&NM      FREEMAIN R,A=&ADDR,LV=&LENGTH,SP=&SB                           00600000
+         MEXIT ,                                                        00610000
+.FRUR  ANOP  ,                                                          00620000
+&NM      MACPARM R0,&LENGTH                                             00630000
+         MACPARM R0,8(R13),OP=ST      SAVE LENGTH                       00640000
+         MACPARM R0,&SB                                                 00650000
+         MACPARM R0,8(R13),OP=STC    COMBINE WITH SUBPOOL               00660000
+         MACPARM R0,8(R13),OP=L      AND RELOAD                 GP08251 00670000
+         FREEMAIN R,A=&ADDR,LV=(0)  LV=&LENGTH,SP=&SB                   00680000
+         MEXIT ,                                                        00690000
+.FPOOL   ANOP  ,                                                        00700000
+&NM      FREEMAIN R,SP=&SB   FREE ENTIRE SUBPOOL                        00710000
+.MEND    MEND  ,                                                        00720000

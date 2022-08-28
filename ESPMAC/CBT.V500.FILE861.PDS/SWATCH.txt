@@ -1,0 +1,220 @@
+         MACRO ,                                                        00010000
+&NM      SWATCH &FUN,&CODE,&PFX=STMR,&PAT=STMP,&TIME=,&SAVE=YES         00020000
+.**                                                                  ** 00030000
+.********************************************************************** 00040000
+.**                                                                  ** 00050000
+.**  MACRO TO RUN A SIMPLE STOP WATCH PROGRAM  (UPDATED 2013-05-12)  ** 00060000
+.**                                                                  ** 00070000
+.**  NAME SWATCH START[,'TEST NAME']  BEGIN TIMING                   ** 00080000
+.**  NAME SWATCH STOP            STOP TIMING                         ** 00090000
+.**  NAME SWATCH SHOW            CALCULATE INTERVAL, AND SHOW ON WTO ** 00100000
+.**                              (SAVES IF FIRST START/STOP USE)     ** 00110000
+.**  NAME SWATCH SAVE            SAVE FOR LATER COMPARISON           ** 00120000
+.**                                                                  ** 00130000
+.**  NAME SWATCH COMPARE         COMPARE CURRENT (AFTER SHOW) WITH   ** 00140000
+.**                                PREVIOUS RESULT                   ** 00150000
+.**                                                                  ** 00160000
+.**  NAME SWATCH DATA            DEFINE DATA. IF DSECT, MOVE FROM    ** 00170000
+.**                                PATTERN WITH INIT FUNCTION.       ** 00180000
+.**                                                                  ** 00190000
+.**  NAME SWATCH PATTERN         DEFINE WORK AREA PATTERN (PFX STMP) ** 00200000
+.**  NAME SWATCH INIT            MOVES PATTERN TO DATA               ** 00210000
+.**                                                                  ** 00220000
+.**  NAME SWATCH CLEAR           PREPARES DATA AREA WITHOUT PATTERN  ** 00230000
+.**                                OR INIT CALL                      ** 00240000
+.**                                                                  ** 00250000
+.**  NAME SWATCH OVERHEAD        RUNS EMPTY STOP/START TO GET        ** 00260000
+.**                                OVERHEAD TIME WITHOUT A LOOP.     ** 00270000
+.**                                                                  ** 00280000
+.**  TIME= SETS GLOBAL MODE (REMAINS UNTIL RESPECIFIED). VALUE IS:   ** 00290000
+.**    JST or CPU - USE APPLICATION CPU TIME ONLY                    ** 00300000
+.**    SRB        - USE SYSTEM OVERHEAD ONLY                         ** 00310000
+.**    ALL or BOTH- USE SUM OF CPU AND SRB TIME                      ** 00320000
+.**                                                                  ** 00330000
+.**  TO BE LINKED WITH MODULE SUBTIMER, AND ENTRY SUBTIMED.          ** 00340000
+.**                                                                  ** 00350000
+.********************************************************************** 00360000
+         GBLA  &ZZSWAM       MODE (0-JST, 1-SRB, 2-BOTH)        GP13118 00370000
+         GBLB  &MVSXA        WHEN DID TIMEUSED APPEAR ?         GP07015 00380000
+         GBLB  &ZZSWAT         SET IF EQU EXPANDED              GP13111 00390000
+         GBLC  &MACPLAB                                         GP03245 00400000
+         LCLC  &P,&LB,&STORE,&LBL                               GP13111 00410000
+&LB      SETC  'ZZT'.'&SYSNDX'                                  GP13111 00420000
+&LBL     SETC  '&NM'                                            GP13111 00430000
+&P       SETC  '&PFX'                                                   00440000
+         AIF   ('&TIME' EQ '').KEEP                             GP13118 00450000
+&ZZSWAM  SETA  1                                                GP13118 00460000
+         AIF   ('&TIME' EQ 'JST' OR '&TIME' EQ 'CPU').KEEP      GP13118 00470000
+&ZZSWAM  SETA  2                                                GP13118 00480000
+         AIF   ('&TIME' EQ 'SRB').KEEP                          GP13118 00490000
+&ZZSWAM  SETA  3                                                GP13118 00500000
+         AIF   ('&TIME' EQ 'BOTH' OR '&TIME' EQ 'ALL').KEEP     GP13118 00510000
+         AIF   ('&TIME' EQ 'TOTAL').KEEP                        GP13118 00520000
+&ZZSWAM  SETA  1                                                GP13118 00530000
+         MNOTE 4,'SWATCH: TIME=&TIME INVALID. USE JST, SRB, OR ALL'     00540000
+.KEEP    ANOP  ,                                                GP13118 00550000
+&STORE   SETC  'STMRSTRT'    PRESET FOR START                   GP13111 00560000
+         AIF   ('&FUN' EQ 'START').BEGIN                                00570000
+&STORE   SETC  'STMRSTOP'    PRESET FOR STOP                    GP13111 00580000
+         AIF   ('&FUN' EQ 'STOP').BEGCOM    SAME AS START CODE  GP13111 00590000
+         AIF   ('&FUN' EQ 'WTO').PRINT                                  00600000
+         AIF   ('&FUN' EQ 'SHOW').PRINT                                 00610000
+         AIF   ('&FUN' EQ 'PRINT').PRINT                                00620000
+         AIF   ('&FUN' EQ 'COMPARE').COMPARE                            00630000
+         AIF   ('&FUN' EQ 'SAVE').SAVE                                  00640000
+         AIF   ('&FUN' EQ 'DATA').DATA                                  00650000
+         AIF   ('&FUN' EQ 'PATTERN').PATTERN                            00660000
+         AIF   ('&FUN' EQ 'INIT').INIT                                  00670000
+         AIF   ('&FUN' EQ 'CLEAR').CLEAR                        GP13111 00680000
+         AIF   ('&FUN' EQ 'OVERHEAD').OVERHD                    GP13118 00690000
+         MNOTE 8,'SWATCH: UNRECOGNIZED FUNCTION &FUN'                   00700000
+         MEXIT ,                                                        00710000
+.OVERHD  ANOP  ,                                                GP13118 00720000
+&NM      SWATCH START,'OVERHEAD',SAVE=NO                        GP13118 00730000
+         SWATCH STOP,SAVE=NO                                    GP13118 00740000
+         XC    &P.OHD,&P.OHD  *TEST                                     00750000
+         LM    R14,R15,&P.STOP                                 GP13118  00760000
+         SL    R15,&P.STRT+4                                   GP13118  00770000
+         BC    3,*+4+4                                          GP13118 00780000
+         S     R14,=F'1'                                        GP13118 00790000
+         S     R14,&P.STRT                                     GP13118  00800000
+         BM    *+8           SHOULD NOT BE NEGATIVE ?           GP13118 00810000
+         STM   R14,R15,&P.OHD                                  GP13118  00820000
+         SWATCH CLEAR                                           GP13118 00830000
+         MEXIT ,                                                GP13118 00840000
+.BEGIN   AIF   ('&CODE' EQ '').NOCODE                                   00850000
+         AIF   ('&CODE'(1,1) EQ '''').STRCODE                           00860000
+&NM      MVC   STMRCODE,=CL(16)'&CODE '                                 00870000
+&LBL     SETC  ''                                               GP13111 00880000
+         AGO   .BEGCOM                                                  00890000
+.STRCODE ANOP  ,                                                        00900000
+&NM      MVC   STMRCODE,=CL(16)&CODE                                    00910000
+&LBL     SETC  ''                                               GP13111 00920000
+         AGO   .BEGCOM                                                  00930000
+.NOCODE  ANOP  ,                                                        00940000
+&NM      MVC   STMRCODE,=CL16' '    NO CODE SPECIFIED                   00950000
+&LBL     SETC  ''                                               GP13111 00960000
+         MNOTE 0,'SWATCH: TEST NAME NOT SPECIFIED'                      00970000
+.BEGCOM  AIF   (&MVSXA).BEGESA  TIMEUSED AVAILABLE ?            GP07015 00980000
+         AIF   ('&SAVE' NE 'YES').NOSAV1                        GP13118 00990000
+&LBL     STM   R14,R1,12(R13)     SAVE A BIT                    GP13118 01000000
+&LBL     SETC  ''                                               GP13118 01010000
+.NOSAV1  AIF   (&ZZSWAT).DONEQU                                 GP13111 01020000
+.*       THIS CODE CALCULATES TOTAL CPU TIME FOR THE CURRENT TCB.     * 01030000
+.*       FOR TASKS WITH MULTIPLE ACTIVE TCBS/SRBS USE AN SVC INSTEAD: * 01040000
+.*         SEE IGC251 IN THE ESPSRC PDS.                              * 01050000
+.*       LCCADTOD HAS THE TIME THE TASK WAS DISPATCHED                * 01060000
+.*       TIME SINCE LAST DISPATCH IS:                                 * 01070000
+.*         CURRENT TOD - LCCADTOD                                     * 01080000
+.*                                                                    * 01090000
+.*       THIS VALUE IS ADDED TO ASCBESTL (TIME=JST/ALL) OR            * 01100000
+.*       ASCBSRBT (TIME=SRB/ALL).                                     * 01110000
+.*                                                                    * 01120000
+.*       CLOCK UNITS ARE CONVERTED TO MIC UNITS (10**-6 SECS)         * 01130000
+.*                                                                    * 01140000
+.*       EQUATES ARE USED TO RELIEVE THE USER FROM INCLUDING ESOTERIC * 01150000
+.*       MAPPING MACROS (IHALCCA, ETC.). THE FIRST A IN EACH NAME HAS * 01160000
+.*       BEEN CHANGED TO @.                                           * 01170000
+.*                                                                    * 01180000
+&ZZSWAT  SETB  1                                                GP13111 01190000
+PS@      EQU   0                                                        01200000
+PS@LCCAV EQU   528                 ADDRESS OF POINTER TO LCC@           01210000
+PS@AOLD  EQU   548                 CURRENT @SCB POINTER         GP13111 01220000
+@SCB     EQU   0                                                GP13111 01230000
+@SCBEJST EQU   64                  ELAPSED JOB-STEP TIMING, TOD CLOCK   01240000
+.*                                 UNITS (64-BITS)                      01250000
+@SCBSRBT EQU   200                 ELAPSED JOB-STEP TIMING, TOD CLOCK   01260000
+.*                                 UNITS (64-BITS)                      01270000
+LCC@     EQU   0                                                GP13111 01280000
+LCC@DTOD EQU   600                OFFSET OF TOD STAMP FROM              01290000
+.*                                DISPATCH OF TCB                       01300000
+.**  GET TIME FROM @SCBEJST/SRBT, AND SUBTRACT UNUSED TIME FROM LCCA    01310000
+.DONEQU  ANOP  ,                                                        01320000
+&LBL     L     R1,PS@AOLD-PS@     GET ASCB ADDRESS              GP13118 01330000
+         AIF   (&ZZSWAM EQ 2).MVSA2                             GP13118 01340000
+.MVSA1   LM    R14,R15,@SCBEJST-@SCB(R1)  GET JOB STEP TIME     GP13118 01350000
+         AIF   (&ZZSWAM EQ 1).MVSAOK                            GP13118 01360000
+         AL    R15,4+@SCBSRBT-@SCB(,R1)   ADD SRB TIME          GP13118 01370000
+         BC    12,*+4+4                                         GP13118 01380000
+         AL    R14,=F'1'                                        GP13118 01390000
+         AL    R14,@SCBSRBT-@SCB(,R1)                           GP13118 01400000
+         AGO   .MVSAOK                                          GP13118 01410000
+.MVSA2   LM    R14,R15,@SCBSRBT-@SCB(R1)  GET SRB TIME          GP13118 01420000
+.MVSAOK  STCK  &STORE             SAVE TOD CLOCK VALUE        GP13118   01430000
+         AL    R15,4+&STORE       SUBTRACT TOD                GP13118   01440000
+         BC    12,*+4+4                                         GP13118 01450000
+         AL    R14,=F'1'                                        GP13118 01460000
+         AL    R14,&STORE                                     GP13118   01470000
+         L     R1,PS@LCCAV-PS@    GET A(LCCA FOR THIS CPU)      GP13118 01480000
+         SL    R15,4+LCC@DTOD-LCC@(,R1)   ADD REMAINING         GP13118 01490000
+         BC    3,*+4+4                                          GP13118 01500000
+         SL    R14,=F'1'                      DISPATCH TIME     GP13118 01510000
+         SL    R14,LCC@DTOD-LCC@(,R1)                           GP13118 01520000
+&LB.X    SRDL  R14,12          CHANGE TO MIC                    GP07015 01530000
+         STM   R14,R15,&STORE  UPDATE CPU TIME                GP07015   01540000
+         AIF   ('&SAVE' NE 'YES').NOSAV2                        GP13118 01550000
+         LM    R14,R1,12(R13)  RESTORE WORK REGISTERS           GP13118 01560000
+.NOSAV2  MEXIT ,                                                GP07015 01570000
+.BEGESA  AIF   (&ZZSWAM EQ 2).ESASRB                            GP13118 01580000
+&LBL     TIMEUSED STORADR=&STORE,CPU=MIC,LINKAGE=SYSTEM       GP07015   01590000
+         AIF   (&ZZSWAM NE 3).MEND                              GP13118 01600000
+         TIMEUSED STORADR=STMRDB,VECTOR=MIC,LINKAGE=SYSTEM      GP13118 01610000
+         LM    R14,R15,&STORE                                 GP13118   01620000
+         AL    R15,STMRDB+4   ADD LOW ORDER                     GP13118 01630000
+         BC    12,*+4+4                                         GP13118 01640000
+         A     R14,=F'1'                                        GP13118 01650000
+         A     R14,STMRDB                                       GP13118 01660000
+         STM   R14,R15,&STORE  UPDATE CPU TIME                GP13118   01670000
+         MEXIT ,                                                        01680000
+.ESASRB  ANOP  ,                                                GP13118 01690000
+&LBL     TIMEUSED STORADR=&STORE,VECTOR=MIC,LINKAGE=SYSTEM    GP13118   01700000
+         MEXIT ,                                                        01710000
+.PRINT   ANOP  ,                                                        01720000
+&NM      LA    R1,STMRWORK                                              01730000
+         L     R15,=V(SUBTIMER)                                         01740000
+         BALR  R14,R15                                                  01750000
+         MEXIT ,                                                        01760000
+.COMPARE ANOP  ,                                                        01770000
+&NM      LA    R1,STMRWORK                                              01780000
+         L     R15,=V(SUBTIMED)                                         01790000
+         BALR  R14,R15                                                  01800000
+         MEXIT ,                                                        01810000
+.INIT    ANOP  ,                                                        01820000
+&NM      MVC   &P.WORK(&PAT.WKLR+L'&PAT.OHD),&PAT.WORK          GP13118 01830000
+         MEXIT ,                                                        01840000
+.CLEAR   ANOP  ,                                                        01850000
+&NM      XC    &P.WORK(&P.WKLR),&P.WORK                         GP13111 01860000
+         MVI   &P.CODE,C' '                                     GP13111 01870000
+         MVC   &P.CODE+1(L'&P.CODE-1),&P.CODE                   GP13111 01880000
+         MVC   &P.COD2,&P.CODE                                  GP13111 01890000
+         MEXIT ,                                                        01900000
+.SAVE    ANOP  ,                                                        01910000
+&NM      MVC   &P.STR2(&P.SVLN),&P.STRT  SAVE THIS TIME'S COUNTERS      01920000
+         MEXIT ,                                                        01930000
+.PATTERN AIF   ('&P' NE '' AND '&P' NE 'STMR').DATA                     01940000
+&P       SETC  'STMP'                                                   01950000
+.DATA    AIF   ('&NM' EQ '').NOEXTRA                                    01960000
+&NM      DS    0D                                                       01970000
+.NOEXTRA ANOP  ,                                                        01980000
+&P.WORK  DS    0D                                                       01990000
+&P.SAVE  DC    18A(0)        LOWER SAVE AREA                            02000000
+&P.DB    DC    D'0'          WORK WORDS                                 02010000
+&P.ITER  DC    F'0'          ITERATION COUNTER (OPTIONAL)               02020000
+&P.LTIM  DC    F'0'          TIME FOR ONE ITERATION             GP13118 02030000
+.*  START OF CURRENT DATA                                               02040000
+&P.STRT  DC    D'0'          STOPWATCH START TIME                       02050000
+&P.STOP  DC    D'0'          STOPWATCH STOP TIME                        02060000
+&P.TIME  DC    F'0'          TIME FOR THIS TEST                         02070000
+&P.CODE  DC    CL16' '       USER'S MNEMONIC CODE FOR THIS FUNCTION     02080000
+&P.SVLN  EQU   *-&P.STRT       LENGTH TO SAVE AFTER WRITE               02090000
+.*  SAVED RESULT FROM AN EARLIER MEASUREMENT                            02100000
+&P.STR2  DC    2F'0'         PRIOR STOPWATCH START TIME                 02110000
+&P.STO2  DC    2F'0'         PRIOR STOPWATCH STOP TIME                  02120000
+&P.TIM2  DC    F'0'          TIME FOR THIS TEST                         02130000
+&P.COD2  DC    CL16' '       PRIOR CODE                                 02140000
+&P.WKLR  EQU   *-&P.WORK       LENGTH TO BE CLEARED             GP13118 02150000
+.*  OTHER STUFF - NOT CLEARED NOR COPIED                        GP13118 02160000
+&P.OHD   DC    D'0'          OVERHEAD (OPTIONAL)                GP13118 02170000
+&P.WTO   DC    XL92'0'       SPACE FOR WTO                              02180000
+&P.WKLN  EQU   *-&P.WORK       LENGTH TO BE MOVED               GP13118 02190000
+.MEND    MEND  ,                                                        02200000

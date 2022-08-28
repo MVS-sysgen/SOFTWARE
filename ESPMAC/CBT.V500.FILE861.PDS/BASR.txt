@@ -1,0 +1,7 @@
+         MACRO ,                                                        00010000
+&NM      BASR  &R,&S                                    ADDED ON 04234  00020000
+.*                                                                      00030000
+.*       THIS MODULE GENERATES A BASR FOR IFOX (MIN. HERC 370)          00040000
+.*                                                                      00050000
+&NM      DC    0H'0',AL.4(0,13,&R,&S)   BASR                            00060000
+         MEND  ,                                                        00070000

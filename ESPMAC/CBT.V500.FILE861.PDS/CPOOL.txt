@@ -1,0 +1,145 @@
+         MACRO ,                                                        00010000
+&NM      CPOOL &FUN,&OPT,&LINKAGE=,&REGS=,&LOC=,&KEY=,&TCB=,&HDR=,     *00020000
+               &PCELLCT=,&SCELLCT=,&CSIZE=,&SP=,&CPID=,&CELL=,         *00030000
+               &MF=S,&VERIFY=,&OWNER=                                   00040000
+         GBLC  &MACPLAB                                                 00050000
+&MACPLAB SETC  '&NM'                                                    00060000
+.********************************************************************** 00070000
+.*                                                                    * 00080000
+.*   THIS VERSION OF THE CPOOL MACRO INTERFACES TO SUBROUTINE         * 00090000
+.*   SUBCPOOL. IT PROVIDES BACKWARD COMPATIBILITY FOR HERCULES        * 00100000
+.*   RUNNING MVS 3.8J                                                 * 00110000
+.*     NOT SUPPORTED ARE KEY, TCB, LIST/WORKAREA, PRIV. SP,           * 00120000
+.*     VERIFY, AND OWNER.                                             * 00130000
+.*                                                                    * 00140000
+.********************************************************************** 00150000
+.*                                                                    * 00160000
+.*       GET    R0 = CPID  @ -> CELL  CALL SUBCPOOL                   * 00170000
+.*       FREE   R0 = CPID, R1 = CELL  CALL SUBPOOL+24*                * 00180000
+.*       BUILD  R1 = PARM LIST        CALL SUBPOOL+28*                * 00190000
+.*       DELETE R0 = CPID             CALL SUBPOOL+32*                * 00200000
+.*                                                                    * 00210000
+.********************************************************************** 00220000
+.*                                                                    * 00230000
+.*   PARM LIST IS SAME AS IBM'S FOR COMPATIBILITY                     * 00240000
+.*      0 - 3     NUMBER OF CELLS REQUESTED                             00250000
+.*      4 - 7     SECONDARY AMOUNT                                      00260000
+.*      8 -11     SIZE OF EACH CELL                                     00270000
+.*     12         SUBPOOL (ONLY 0-127 WORK)                             00280000
+.*     13         KEY(IGNORED)                                          00290000
+.*     14         FLAGS                                                 00300000
+.*         80       LOC HAS REAL (IGNORED)                              00310000
+.*         60       LOC ANY; 20 BELOW (FORCED); 00 RES                  00320000
+.*         10       USER SPECIFIED TCB (IGNORED)                        00330000
+.*         08       USER SPECIFIED KEY (IGNORED)                        00340000
+.*         04       USER SPECIFIED HDR                                  00350000
+.*         03       OWNER IS SYSTEM; 01 PRIMARY; 00 HOME (IGNORED)      00360000
+.*     15         UNUSED                                                00370000
+.*     16-19      TCB (IGNORED)                                         00380000
+.*     20-43      HEADER                                                00390000
+.*                                                                    * 00400000
+.********************************************************************** 00410000
+         GBLC  &MACPLOD                                         GP12154 00420000
+         LCLA  &BOFF         FUNCTION'S BRANCH OFFSET                   00430000
+         LCLC  &ISN          SECONDARY CELL COUNT                       00440000
+         LCLA  &FGLOC,&FGTCB,&FGKEY,&FGHDR,&FGOWN                       00450000
+         LCLC  &VPN,&VSN,&VSZ,&VSP,&VKY,&VTC,&VHD                       00460000
+         AIF   ('&FUN' EQ 'GET').COMMID     NO OFFSET                   00470000
+&BOFF    SETA  24                                                       00480000
+         AIF   ('&FUN' EQ 'FREE').FREECEL   BRANCH WITH POOL ID         00490000
+&BOFF    SETA  28                                                       00500000
+         AIF   ('&FUN' EQ 'BUILD').BUILDER  BRANCH WITH POOL ID         00510000
+&BOFF    SETA  32                                                       00520000
+         AIF   ('&FUN' EQ 'DELETE').COMMID  BRANCH WITH POOL ID         00530000
+         MACPARM MODE=LBL    EXPAND LABEL, IF ANY                       00540000
+ MNOTE 8,'CPOOL: UNSUPPORTED FUNCTION &FUN '                            00550000
+         MEXIT ,                                                        00560000
+.FREECEL MACPARM R1,&CELL,NULL=CELL-ADD                                 00570000
+.COMMID  MACPARM R0,&CPID,OP=L,NULL=POOL-ID  LOAD THE CELL POOL ID      00580000
+.CALL    MACSRVLD SUBCPOOL   GET AD-CON NAME FOR SUBROUTINE             00590000
+         MACPARM R15,&MACPLOD,OP=L  GET SUBROUTINE ADDRESS              00600000
+         AIF   (&BOFF NE 0).U  ONLY GET HAS COND ENTRY                  00610000
+         AIF   ('&OPT' EQ '' OR '&OPT' EQ 'U' OR '&OPT' EQ 'UNCOND').U  00620000
+         AIF   ('&OPT' EQ 'C' OR '&OPT' EQ 'COND').C                    00630000
+ MNOTE 8,'CPOOL: REQUEST NOT COND NOR UNCOND. &OPT INVALID'             00640000
+         AGO   .U                                                       00650000
+.C       O     R15,=X'80000000'  CONDITIONAL REQUEST                    00660000
+.U       AIF   (&BOFF EQ 0).BR  NO OFFSET                               00670000
+         MACPARM R14,&BOFF.(,R15),OP=BAL  GET ENTRY ADDRESS             00680000
+         AIF   (&BOFF NE 28).MEXIT  NOT BUILD                           00690000
+         MACPARM R0,&CPID,OP=ST,MODE=REV                                00700000
+.MEXIT   MEXIT ,                                                        00710000
+.BR      MACPARM R14,(R15),OP=BALR,OPR=BALR                             00720000
+         MACPARM R1,&CELL,OP=ST,MODE=REV,NULL=SKIP  GET RETURNS CELL @  00730000
+         MEXIT ,                                                        00740000
+.BUILDER AIF   ('&MF' EQ '').TYPES                                      00750000
+         AIF   ('&MF(1)' EQ 'L').TYPEL                                  00760000
+         AIF   ('&MF(1)' EQ 'S').TYPES                                  00770000
+         AIF   ('&MF(1)' EQ 'E').TYPEE                                  00780000
+         MACPARM MODE=LBL                                               00790000
+ MNOTE 8,'CPOOL: INVALID TYPE &MF'                                      00800000
+         MEXIT ,                                                        00810000
+.TYPEE   MACPARM R1,&MF(2),NULL=LIST-ADD                                00820000
+         AGO   .POPLIST                                                 00830000
+.TYPES   MACPARM 2,4,OP=CNOP,OPR=CNOP                                   00840000
+         MACPARM R1,*+4+44,OP=BAL  BRANCH AROUND IN-LINE PARM LIST      00850000
+         DC    XL44'0'       IN-LINE PARM LIST                          00860000
+.POPLIST MACPLOP &PCELLCT,0(,R1),NULL=PCELL-CT                          00870000
+&ISN     SETC  '&PCELLCT'                                               00880000
+         AIF   ('&SCELLCT' EQ '').HV2                                   00890000
+&ISN     SETC  '&SCELLCT'                                               00900000
+.HV2     MACPLOP &ISN,4(,R1),NULL=SCELL-#                               00910000
+         MACPLOP &CSIZE,8(,R1),NULL=CELL-SZ                             00920000
+         AIF   ('&SP' EQ '').NOSP                                       00930000
+         MACPLOP &SP,14(,R1),OP=STC                                     00940000
+.NOSP    AIF   ('&KEY' EQ '').NOKEY                                     00950000
+         MACPLOP &KEY,15(,R1),OP=STC                                    00960000
+&FGKEY   SETA  8             KEY SPECIFIED                              00970000
+.NOKEY   AIF   ('&TCB' EQ '').NOTCB                                     00980000
+         MACPLOP &TCB,16(,R1)                                           00990000
+&FGTCB   SETA  16            TCB SPECIFIED                              01000000
+.NOTCB   AIF   ('&HDR' EQ '').NOHDR                                     01010000
+&FGHDR   SETA  4             HDR SPECIFIED                              01020000
+         AIF   ('&HDR'(1,1) NE '''').NOQ                                01030000
+         MACPARM 20(24,R1),=C&HDR,OP=MVC                                01040000
+         AGO   .NOHDR                                                   01050000
+.NOQ     MACPARM R15,&HDR                                               01060000
+         MACPLOP 20(24,R1),0(R15),OP=MVC                                01070000
+.NOHDR   MVI   14(R1),&FGLOC+&FGTCB+&FGKEY+&FGHDR+&FGOWN                01080000
+         AGO   .CALL         CALL THE BUILD FUNCTION                    01090000
+.TYPEL   ANOP  ,                                                        01100000
+&VPN     SETC  '0'                                                      01110000
+&VSN     SETC  '0'                                                      01120000
+&VSZ     SETC  '0'                                                      01130000
+&VSP     SETC  '0'                                                      01140000
+&VKY     SETC  '0'                                                      01150000
+&VTC     SETC  '0'                                                      01160000
+&VHD     SETC  '0'                                                      01170000
+         AIF   (T'&PCELLCT EQ 'O').DPN                                  01180000
+&VPN     SETC  '&PCELLCT'                                               01190000
+&VSN     SETC  '&VPN'                                                   01200000
+.DPN     AIF   (T'&SCELLCT EQ 'O').DSN                                  01210000
+&VSN     SETC  '&SCELLCT'                                               01220000
+.DSN     AIF   (T'&CSIZE EQ 'O').DSZ                                    01230000
+&VSZ     SETC  '&CSIZE'                                                 01240000
+.DSZ     AIF   (T'&SP EQ 'O').DSP                                       01250000
+&VSP     SETC  '&CSIZE'                                                 01260000
+.DSP     AIF   (T'&KEY EQ 'O').DKY                                      01270000
+&VKY     SETC  '&KEY'                                                   01280000
+&FGKEY   SETA  8                                                        01290000
+.DKY     AIF   (T'&TCB EQ 'O').DTC                                      01300000
+&VTC     SETC  '&TCB'                                                   01310000
+&FGTCB   SETA  16                                                       01320000
+.DTC     AIF   (T'&HDR EQ 'O').DHD                                      01330000
+&FGHDR   SETA  4                                                        01340000
+&VHD     SETC  '&HDR'                                                   01350000
+.DHD     MACPARM A(&VPN,&VSN,&VSZ),MODE=ONE,OP=DC                       01360000
+         DC    AL1(&VSP,&VKY,&FGLOC+&FGTCB+&FGKEY+&FGHDR+&FGOWN,0)      01370000
+         AIF   ('&HDR' NE '').HVHD                                      01380000
+         DC    A(&VTC),XL24'0'                                          01390000
+         MEXIT ,                                                        01400000
+.HVHD    AIF   ('&HDR'(1,1) NE '''').PNHD                               01410000
+         DC    A(&VTC),CL24&VHD                                         01420000
+         MEXIT ,                                                        01430000
+.PNHD    DC    A(&VTC),CL24'&VHD '                                      01440000
+         MEND  ,                                                        01450000

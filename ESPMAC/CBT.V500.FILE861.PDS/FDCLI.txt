@@ -1,0 +1,26 @@
+         MACRO                                                          00010000
+&NM      FDCLI &STR,&MASK,&BE=0,&BL=0,&BH=0,&BNE=0                      00020000
+         GBLA  &FDCNTR                                                  00030000
+         LCLA  &T,&C                                                    00040000
+         LCLB  &NOP                                              81133  00050000
+         LCLC  &FDCHAIN,&FL,&FH                                         00060000
+&FDCNTR  SETA  &FDCNTR+1                                                00070000
+&FDCHAIN SETC  'ZFD'.'&FDCNTR'                                          00080000
+&C       SETA  &FDCNTR+1                                                00090000
+         AIF   ('&NM' EQ '').NONAME                                     00100000
+&NM      EQU   *                                                        00110000
+.NONAME  AIF   ('&STR' NE 'END' AND '&STR' NE '*END').PROCESS           00120000
+&FDCHAIN DC    AL1(0)        END OF FD LIST                             00130000
+         MEXIT ,                                                        00140000
+.PROCESS ANOP  ,                                                        00150000
+&FL      SETC  '&BL'                                                    00160000
+&FH      SETC  '&BH'                                                    00170000
+         AIF   ('&BNE' EQ '0').CHECK                                    00180000
+&FL      SETC  '&BNE'                                                   00190000
+&FH      SETC  '&BNE'                                                   00200000
+         AIF   ('&BL' EQ '0' AND '&BH' EQ '0').CHECK                    00210000
+         MNOTE 8,'*** MUTUALLY EXCLUSIVE BNE AND BL/BH'                 00220000
+.CHECK   ANOP  ,                                                        00230000
+&T       SETA  64*&NOP+20                                               00240000
+&FDCHAIN DC AL1(ZFD&C-*,&T),SL2(&BE,&FL,&FH,&STR),AL1(&MASK)            00250000
+         MEND  ,                                                        00260000

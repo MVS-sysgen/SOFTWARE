@@ -1,0 +1,371 @@
+         MACRO -- $FCB3 -- GENERATE 3800 FORMS CONTROL BLOCK IMAGE      00010000
+&LABEL   $FCB3 &LDN,&LPP,&DEFAULT=YES,&INDEX=LEFT,&INDENT=0,           *00020000
+               &SKIP=NO,&LPI=                                    93036  00030000
+.*                                                                      00040000
+.*       AUTHOR UNKNOWN - OBTAINED FROM OLD SHARE OR CBT TAPE           00050000
+.*         $FCB RENAMED TO $FCB2; THIS VERSION ADAPTED FOR IBM 3800     00060000
+.*         AND STC 6100. NOTE THAT THE STC 6100 DOES NOT HAVE THE HALF- 00070000
+.*         INCH MULTIPLE PAPER LENGTH RESTRICTION THE 3800 HAS, AND     00080000
+.*         THAT IT ACCEPTS FORMS LONGER THAN 11 INCHES, HENCE THERE     00090000
+.*         ARE NO CHECKS FOR EITHER CONDITION.                   93006  00100000
+.*       THE 6100 SUPPORTS (HARDWARE FEATURE) PERFORATION OVERPRINTING. 00110000
+.*         THIS IS SET WITH SKIP=NO. CHANGE TO SKIP=YES FOR 3800S.      00120000
+.*         SKIP=NO PRODUCES A "SIGNATURE FRAME" OF 0B0000 AND 000000    00130000
+.*         AROUND THE ACTUAL FCB TEXT (LINE COUNT INCREASED TO MATCH).  00140000
+.*         ADDITIONALLY, IN THIS MODE A LINE DENSITY OF 24/INCH IS      00150000
+.*         SUPPORTED, AND FORMS LENGTH MAY BE MULTIPLE OF 1/6 INCH.     00160000
+.*                                                               93036  00170000
+.*         NOTE THAT CHANNEL ONE MAY APPEAR ONLY ONCE, ON LINE 1.       00180000
+.*       THE DEFAULT, INDEX AND INDENT OPTIONS WERE KEPT TO ALLOW $FCB2 00190000
+.*         DECKS TO BE USED AS IS (WITH FCB2 => FCB3)            93006  00200000
+.*                                                                      00210000
+.********************************************************************** 00220000
+.*                                                                    * 00230000
+.*   NOTE: $FCB3 IS COPIED TO MACLIB AFTER UPDATES FOR USER IMAGELIB  * 00240000
+.*                                                                    * 00250000
+.********************************************************************** 00260000
+         LCLA  &A(336),&LP,&N,&WK,&CC,&LAST,&K,&K1,&LI,&NP,&I,&J,&MAX   00270000
+         LCLA  &O1,&O2                                          GP03245 00280000
+         LCLB  &Q,&C,&PASS,&CCH(12),&DFI,&POF                    93036  00290000
+         LCLC  &V(336),&CH,&BLANK,&B,&B1,&IX,&NAM,&CD,&DV        93036  00300000
+&POF     SETB  ('&SKIP' EQ 'NO')   PERFORATION SKIP              93036  00310000
+&LAST    SETA  N'&SYSLIST          GET NR OF OPERANDS                   00320000
+&DV      SETC  '3800'                                            93036  00330000
+&MAX     SETA  336                                               93036  00340000
+         AIF   (NOT &POF).DV3800                                 93036  00350000
+&MAX     SETA  330                                               93036  00360000
+&DV      SETC  '6100'                                            93036  00370000
+.DV3800  AIF   (&LAST LT 3).MACBAD ERROR IF LT 3                        00380000
+.*                                                                      00390000
+.*             STEP 1 - VERIFY LINES-PER-INCH OPERAND                   00400000
+.*                                                                      00410000
+.OP1     AIF   (T'&LDN NE 'N').OP1BAD  OP1 MUST BE NUMERIC       93006  00420000
+         AIF   (&LDN EQ 6 OR &LDN EQ 8).OP1GUD                   93036  00430000
+         AIF   (&LDN NE 10 AND &LDN NE 12 AND &LDN NE 24).OP1BAD 93036  00440000
+.OP1GUD  ANOP  ,                                                 93036  00450000
+&LI      SETA  &LDN          SET LINES PER INCH                  93006  00460000
+&NP      SETA  &LI/2         NON-PRINTING MARGIN                 93006  00470000
+&CD      SETC  '.....0.1.2.3...........5'(&LI,1)  SET LPI FLAG VALUE    00480000
+.*                                                                      00490000
+.*             STEP 2 - VERIFY LINES-PER-PAGE OPERAND                   00500000
+.*                                                                      00510000
+.OP2     AIF   (T'&SYSLIST(2) NE 'N').OP2BAD  OP2 MUST BE NUMERIC       00520000
+         AIF   (&SYSLIST(2) LE &LI OR &SYSLIST(2) GT &MAX).OP2BAD       00530000
+&LP      SETA  &SYSLIST(2)         SET NR OF LINES PER PAGE             00540000
+&N       SETA  1             SET LOOP INDEX                      93036  00550000
+         AIF   (&POF).OP2I   PRINT OVER FOLD - KEEP LENGTH       93036  00560000
+&LP      SETA  &LP-&LI       ALLOW FOR TOP AND BOTTOM MARGIN     93006  00570000
+.OP2I    ANOP  ,                                                 93036  00580000
+&V(&N)   SETC  '&CD'         PRESET ALL LINES FOR BASIC DENSITY  93036  00590000
+&N       SETA  &N+1                                              93036  00600000
+         AIF   (&N LE &LP).OP2I                                  93036  00610000
+.*                                                               93036  00620000
+.*   LOOK FOR LINE DENSITY OVERRIDES:                            93036  00630000
+.*     LPI=((LPI),(LPI,N),(,N)...)                               93036  00640000
+.*   WHERE (LPI) DOES ONE LINE AT 'LPI' DENSITY                  93036  00650000
+.*       (LPI,N) DOES 'N' LINES AT DENSITY 'LPI'                 93036  00660000
+.*     AND  (,N) DOES 'N' LINES AT DEFAULT DENSITY               93036  00670000
+.*                                                               93036  00680000
+         AIF   (T'&LPI EQ 'O').OP4   NO OVERRIDES                93036  00690000
+&N       SETA  N'&LPI        NUMBER OF SUBOPERANDS               93036  00700000
+&K       SETA  0                                                 93036  00710000
+&I       SETA  1             ARRAY INDEX                         93036  00720000
+.OP3LUP  AIF   (&K GE &N).OP4  ALL DONE                          93036  00730000
+&K       SETA  &K+1                                              93036  00740000
+         AIF   (N'&LPI(&K) LT 1).OP3LUP                          93036  00750000
+&O1      SETA  &LDN          SET DEFAULT LINES PER INCH          93036  00760000
+&O2      SETA  1             SET DEFAULT LINE COUNT              93036  00770000
+         AIF   (N'&LPI(&K) LT 2).OP3S                            93036  00780000
+         AIF   (N'&LPI(&K) GT 2).OP3BAD                          93036  00790000
+         AIF   ('&LPI(&K,1)' EQ '').OP31D                        93036  00800000
+&B       SETC  '&LPI(&K,1)'                                      93036  00810000
+         AIF   (T'&B NE 'N').OP3BAD                              93036  00820000
+&O1      SETA  &B                                                93036  00830000
+.OP31D   AIF   (T'&LPI(&K,2) NE 'N').OP3BAD                      93036  00840000
+&O2      SETA  &LPI(&K,2)                                        93036  00850000
+         AGO   .OP3MAKE                                          93036  00860000
+.OP3S    AIF   (T'&LPI(&K,1) NE 'N').OP3BAD                      93036  00870000
+&O1      SETA  &LPI(&K,1)                                        93036  00880000
+.OP3MAKE AIF   (&O1 EQ 6 OR &O1 EQ 8).OP3GUD                     93036  00890000
+         AIF   (&O1 NE 10 AND &O1 NE 12 AND &O1 NE 24).OP3BAD    93036  00900000
+.OP3GUD  ANOP  ,                                                 93036  00910000
+&B       SETC  '.....0.1.2.3...........5'(&O1,1)  SET LPI FLAG VALUE    00920000
+&J       SETA  &I+&O2                                            93036  00930000
+         AIF   (&J LE &LP+1).OP3FILL                             93036  00940000
+ MNOTE 8,'LPI OPERAND &K &LPI(&K) EXCEEDS NUMBER OF LINES SPECIFIED'    00950000
+         AGO   .OP4                                              93036  00960000
+.OP3FILL ANOP  ,                                                 93036  00970000
+&V(&I)   SETC  '&B'                                              93036  00980000
+&I       SETA  &I+1                                              93036  00990000
+         AIF   (&I LT &J).OP3FILL                                93036  01000000
+         AGO   .OP3LUP                                           93036  01010000
+.OP3BAD  MNOTE 8,'INVALID LPI OPERAND &K : &LPI(&K) '            93036  01020000
+         AGO   .OP3LUP                                           93036  01030000
+.*                                                                      01040000
+.*             STEP 4 - PROCESS OPERANDS                                01050000
+.*                                                                      01060000
+.OP4     ANOP  ,                                                        01070000
+&N       SETA  2                   SET OPERAND CTR TO 2                 01080000
+.OPN     ANOP                      START LOOP                           01090000
+&N       SETA  &N+1                ADD 1 TO OPERAND CTR                 01100000
+         AIF   (&N GT &LAST).ENDSCAN  B IF NO MORE OPERANDS             01110000
+         AIF   (T'&SYSLIST(&N) NE 'N').OPH  B IF NOT NUMERIC OPD        01120000
+         AIF   (&N EQ 3).OP3BAD    ERROR IF OP3 NOT HYPHENATED          01130000
+         AIF   (NOT &C).OPN        IGNORE OP IF INVALID &CC             01140000
+&WK      SETA  &SYSLIST(&N)        SET WORK TO OPERAND VALUE            01150000
+.OPN1    AIF   (&WK LT 1 OR &WK GT &LP).OPLBAD  B IF BAD LINE NR        01160000
+         AIF   (&A(&WK) NE 0 AND &A(&WK) NE &CC).DUPBAD  B IF DUP       01170000
+&A(&WK)  SETA  &CC                 SET &WK-TH LINE TO &CC               01180000
+         AGO   .OPN                LOOP                                 01190000
+.*                                                                      01200000
+.*             STEP 3A - DECODE HYPHENATED OPERAND                      01210000
+.*                                                                      01220000
+.OPH     ANOP                      NON-NUMERIC OPERAND                  01230000
+&K       SETA  K'&SYSLIST(&N)      SET OPERAND CHARACTER COUNT          01240000
+&K1      SETA  0                   SET CHAR CT TO ZERO                  01250000
+&WK      SETA  0                   SET WORK TO ZERO                     01260000
+&PASS    SETB  0                   SHOW FIRST PASS                      01270000
+.*                                                                      01280000
+.*             1ST PASS - FIND CARRIAGE CHANNEL NUMBER                  01290000
+.*             2ND PASS - FIND FIRST LINE NUMBER                        01300000
+.*                                                                      01310000
+.OPH1    ANOP                      START LOOP                           01320000
+&K1      SETA  &K1+1               ADD 1 TO CHAR CTR                    01330000
+         AIF   (&K1 GT &K).OPH3    B IF END OF STRING                   01340000
+&CH      SETC  '&SYSLIST(&N)'(&K1,1)  GET A CHARACTER                   01350000
+         AIF   ('&CH' LT '0' OR '&CH' GT '9').OPH2  B IF NON-NUM        01360000
+&WK      SETA  &WK*10+&CH          COMPILE DECIMAL NUMBER               01370000
+         AGO   .OPH1               LOOP                                 01380000
+.*                                                                      01390000
+.*             NON-NUMERIC CHARACTER FOUND.                             01400000
+.*             IF FIRST PASS, EXPECT HYPHEN.                            01410000
+.*             IF SECOND PASS, ERROR.                                   01420000
+.*                                                                      01430000
+.OPH2    AIF   (&PASS OR '&CH' NE '-').HYPBAD  B IF ERROR               01440000
+&CC      SETA  &WK                 SET CARRIAGE CHANNEL                 01450000
+&WK      SETA  0                   ZERO WORK                            01460000
+&PASS    SETB  1                   SHOW SECOND PASS                     01470000
+         AGO   .OPH1               RETURN TO LOOP                       01480000
+.*                                                                      01490000
+.*             END OF CHARACTER STRING.                                 01500000
+.*             IF FIRST PASS, LOGIC ERROR.                              01510000
+.*             IF SECOND PASS, VERIFY &CC.                              01520000
+.*                                                                      01530000
+.OPH3    AIF   (NOT &PASS).LOGBAD  ERROR IF FIRST PASS                  01540000
+         AIF   (&CC LT 1 OR &CC GT 12).OPCBAD  B IF CC BAD              01550000
+&CCH(&CC) SETB 1                   SHOW CARRIAGE CHANNEL USED           01560000
+&C       SETB  1                   SHOW VALID &CC                       01570000
+         AGO   .OPN1               GO CHECK VALID LINE NR               01580000
+.*                                                                      01590000
+.*             OPERAND SCAN IS ENDED.  TEST ITS SUCCESS.                01600000
+.*                                                                      01610000
+.ENDSCAN AIF   (&Q).QUITBAD        EXIT IF QUIT SWITCH                  01620000
+         AIF   (K'&LABEL LE 4).LABBAD  B IF LABEL NOT SPECIFIED         01630000
+         AIF   ('&LABEL'(1,4) NE 'FCB3').LABBAD                         01640000
+&N       SETA  5                                                        01650000
+&K       SETA  K'&LABEL                                                 01660000
+&NAM     SETC  '&LABEL'(5,&K-4)  MAKE FCB NAME                   93006  01670000
+.LABLOOP AIF   (&N GT &K).END6                                          01680000
+&CH      SETC  '&LABEL'(&N,1)  GET A CHARACTER OF LABEL                 01690000
+&N       SETA  &N+1          SET FOR NEXT TIME                          01700000
+&C       SETB  0                                                        01710000
+&C       SETB  (&C OR ('&CH' GE '0' AND '&CH' LE '9'))                  01720000
+&C       SETB  (&C OR ('&CH' GE 'A' AND '&CH' LE 'I'))                  01730000
+&C       SETB  (&C OR ('&CH' GE 'J' AND '&CH' LE 'R'))                  01740000
+&C       SETB  (&C OR ('&CH' GE 'S' AND '&CH' LE 'Z'))                  01750000
+         AIF   (NOT &C).LABBAD     B IF NOT NUM OR ALPHA                01760000
+         AGO   .LABLOOP                                                 01770000
+.END6    ANOP                                                           01780000
+&DFI     SETB  1             PROVISIONALLY SET DEFAULT IMAGE            01790000
+         AIF   ('&DEFAULT' EQ '' OR '&DEFAULT' EQ 'YES').END7           01800000
+&DFI     SETB  0             SET NO DEFAULT IMAGE AS DEFAULT            01810000
+         AIF   ('&DEFAULT' NE 'NO').DEFBAD                              01820000
+.END7    ANOP  ,                                                        01830000
+.*                                                                      01840000
+.*             ENSURE ALL CHANNELS ARE PUNCHED TO PREVENT RUNAWAY       01850000
+.*                                                                      01860000
+&N       SETA  0                   ZERO CHANNEL COUNTER                 01870000
+&C       SETB  0                   ZERO FIRST-TIME MSG SWITCH           01880000
+&K       SETA  0                   ZERO TOP-DOWN LINE COUNTER           01890000
+&K1      SETA  &LP+1               SET BOTTOM-UP LINE CTR TO MAX+1      01900000
+.END11   ANOP                      START LOOP                           01910000
+&N       SETA  &N+1                ADD ONE TO CHANNEL COUNTER           01920000
+         AIF   (&N GT 12).END19    B IF DONE WITH ALL CHANNELS          01930000
+         AIF   (&CCH(&N)).END11    B IF CHANNEL IS ASSIGNED             01940000
+         AIF   (&C).END12          B IF NOT FIRST TIME                  01950000
+         SPACE 1                                                        01960000
+         MNOTE *,'THE FOLLOWING ASSIGNMENTS OF UNSPECIFIED '            01970000
+         MNOTE *,'CARRIAGE CHANNELS PREVENT RUN-AWAY FORMS ---'         01980000
+&C       SETB  1                   SHOW FIRST-TIME MSG WRITTEN          01990000
+.END12   AIF   (&N EQ 9 OR &N EQ 12).END14  B IF CH 9 OR 12             02000000
+.END13   ANOP                      UNASSIGNED CHANNEL FOUND             02010000
+&K       SETA  &K+1                ADD ONE TO LINE COUNTER              02020000
+         AIF   (&K GT &LP).END17   B IF ALL LINES HAVE CHANNELS         02030000
+         AIF   (&A(&K) NE 0).END13 B IF THIS LINE HAS A CHANNEL         02040000
+&WK      SETA  &K                  SET LINE NUMBER AND                  02050000
+         AGO   .END15              GO ASSIGN CHANNEL TO IT              02060000
+.END14   ANOP                      UNASSIGNED CHANNEL 9 OR 12           02070000
+&K1      SETA  &K1-1               LOWER LINE COUNTER BY ONE            02080000
+         AIF   (&K1 LT 1).END17    B IF ALL LINES HAVE CHANNELS         02090000
+         AIF   (&A(&K1) NE 0).END14  B IF THIS LINE HAS A CHANNEL       02100000
+&WK      SETA  &K1                 SET LINE NUMBER                      02110000
+.END15   ANOP                      ASSIGN CHANNEL TO LINE               02120000
+&BLANK   SETC  ''                  ASSUME CHANNEL 10 OR GREATER         02130000
+         AIF   (&N GT 9).END16     B IF SO                              02140000
+&BLANK   SETC  ' '                 ADD A BLANK FOR CHAN 9 OR LESS       02150000
+.END16   MNOTE *,'   CARRIAGE CHANNEL &BLANK.&N IN LINE &WK'            02160000
+&A(&WK)  SETA  &N                  ASSIGN CHANNEL TO LINE               02170000
+&CCH(&N) SETB  1                   SHOW CHANNEL ASSIGNED                02180000
+         AGO   .END11              B TO START OF LOOP                   02190000
+.END17   AIF   (&CCH(1)).END18     GO IF CHANNEL 1 IS ASSIGNED          02200000
+         MNOTE 4,'ERROR - CARRIAGE CHANNEL 1 IS NOT SPECIFIED AND'      02210000
+         MNOTE *,'CANNOT BE INSERTED.  CHANNEL 1 PUNCH IS'              02220000
+         MNOTE *,'REQUIRED FOR 3800 CARRIAGE-RESTORE FUNCTION.'  93006  02230000
+         AGO   .QUITBAD                                                 02240000
+.END18   MNOTE 0,'WARNING - UNSPECIFIED CARRIAGE CHANNELS'              02250000
+         MNOTE 0,'STARTING WITH CHANNEL &N CAN CAUSE'                   02260000
+         MNOTE 0,'DATA CHECKS.'                                  93036  02270000
+.END19   ANOP  ,                                                        02280000
+&IX      SETC  ''            NO INDEX                                   02290000
+         AIF   (T'&INDENT EQ 'O' OR '&INDENT' EQ '0').SKIPIX            02300000
+         AIF   (T'&INDENT EQ 'N').TESTIND                               02310000
+.BADIND  MNOTE 4,'INDENT MUST BE NUMERIC (0 TO 31)'                     02320000
+         AGO   .QUITBAD                                                 02330000
+.TESTIND AIF   (&INDENT GT 31).BADIND                                   02340000
+&IX      SETC  '10'          SET DEFAULT (LEFT) INDENT                  02350000
+         AIF   (T'&INDEX EQ 'O' OR '&INDEX' EQ 'LEFT').SKIPIX           02360000
+&IX      SETC  '01'          SET RIGHT                                  02370000
+         AIF   ('&INDEX' EQ 'RIGHT').SKIPIX                             02380000
+         MNOTE 4,'INVALID INDEX - SHOULD BE LEFT OR RIGHT'              02390000
+         AGO   .QUITBAD                                                 02400000
+.SKIPIX  ANOP  ,                                                        02410000
+.*                                                                      02420000
+.*             CREATE FORMS CONTROL BUFFER OVERLAY                      02430000
+.*                                                                      02440000
+******************************************************************      02450000
+*                                                                *      02460000
+         MNOTE *,' &DV FORMS CONTROL BUFFER LOAD FOR &LABEL'     93006  02470000
+*                                                                *      02480000
+******************************************************************      02490000
+*                                                                *      02500000
+         SPACE 1                                                        02510000
+&LABEL   CSECT ,                                                        02520000
+         SPACE 1                                                        02530000
+         DC    CL4'&NAM '    FCB3 NAME                                  02540000
+         AIF   (NOT &POF).SKPFLD  SKIP OVER FOLD                 93036  02550000
+         DC    A(&LPP+6)     LINES PER PAGE + SIGNATURE          93036  02560000
+         DC    X'0B0000'     NON-SKIP REQUEST                    93036  02570000
+         AGO   .PROVFD       SKIP SKIP CODE                      93036  02580000
+.SKPFLD  DC    A(&LPP)       LINES PER PAGE                      93006  02590000
+         DC    &NP.AL.4(&CD,0)  NON-PRINTING TOP MARGIN          93006  02600000
+.PROVFD  SPACE 1                                                        02610000
+*                             GENERATE FORMS CONTROL BUFFER             02620000
+&N       SETA  0                   SET CUR BYTE PTR TO ZERO             02630000
+.DOLP    ANOP  ,                   BUILD THE FCB                        02640000
+&N       SETA  &N+1                POINT TO THE NEXT BYTE               02650000
+&K       SETA  &N            REMEMBER THE STARTING POINT         93036  02660000
+         AIF   (&A(&N) NE 0 OR &N GE &LP).DO1                    93036  02670000
+.DOMR    AIF   (&N GE &LP).DOXP                                  93036  02680000
+         AIF   (&A(&N) NE &A(&N+1) OR &V(&N) NE &V(&N+1)).DOXP   93036  02690000
+&N       SETA  &N+1                                              93036  02700000
+         AGO   .DOMR                                             93036  02710000
+.DOXP    ANOP  ,                                                 93036  02720000
+&I       SETA  &N-&K+1       SET NUMBER OF EQUAL LINES           93036  02730000
+         AIF   (&I LT 2).DO1       SKIP DOING THEM IF NONE              02740000
+         DC    &I.AL.4(&V(&N),&A(&N))                            93036  02750000
+         AGO   .DO4          SET FOR NEXT                        93036  02760000
+.DO1     ANOP  ,                                                        02770000
+.*                                                                      02780000
+.*             SELECT PROPERLY-COMMENTED DC STATEMENT                   02790000
+.*                                                                      02800000
+&WK      SETA  &A(&N)              SET WORK TO BYTE'S VALUE             02810000
+         AIF   (&WK EQ 0).DO3      B IF ZERO-DIGIT ENTRY         93036  02820000
+&B       SETC  ''                  SET TWO LCLC VARIABLES               02830000
+         AIF   (&WK GT 9).DO2      B IF ADCON IS TWO DIGITS             02840000
+&B       SETC  ' '                 ELSE ADD BLANK TO COMMENT            02850000
+.* ONE- OR TWO-DIGIT ENTRY                                              02860000
+.DO2     DC AL.4(&V(&N),&A(&N)),0C'      &B.CHAN &B.&WK IS AT LINE &N'  02870000
+         AGO   .DO4                                                     02880000
+.* NO-DIGIT ENTRY                                                       02890000
+.DO3     DC    AL.4(&V(&N),&A(&N))                               93036  02900000
+.DO4     AIF   (&N EQ &LP).END     B IF LAST BYTE PROCESSED             02910000
+         AGO   .DOLP               GO LOOP                              02920000
+.*                                                                      02930000
+.*                                                                      02940000
+.*                                                                      02950000
+.*                                                                      02960000
+.*             DIAGNOSTIC ERROR MESSAGES                                02970000
+.*                                                                      02980000
+.OP1BAD  MNOTE 4,'INVALID OPERAND 1 - &SYSLIST(1) -'                    02990000
+         MNOTE *,'FIRST OPERAND MUST BE EITHER 6 OR 8.'                 03000000
+&Q       SETB  1                                                        03010000
+         AGO   .OP2                                                     03020000
+.*                                                                      03030000
+.OP2BAD  MNOTE 4,'INVALID OPERAND 2 - &SYSLIST(2) -'                    03040000
+         MNOTE *,'SECOND OPERAND MUST BE A NUMBER GREATER THAN 1'       03050000
+         MNOTE *,'AND NOT GREATER THAN &MAX.'                    93036  03060000
+&Q       SETB  1                                                        03070000
+         AGO   .OP4                                                     03080000
+.*                                                                      03090000
+.OP4BAD  MNOTE 4,'INVALID OPERAND 3 - &SYSLIST(3) -'                    03100000
+         MNOTE *,'THIRD OPERAND MUST HAVE A CARRIAGE CHANNEL'           03110000
+         MNOTE *,'NUMBER, A HYPHEN, AND A LINE NUMBER.'                 03120000
+&Q       SETB  1                                                        03130000
+         AGO   .OPN                                                     03140000
+.*                                                                      03150000
+.OPLBAD  AIF   (T'&SYSLIST(&N) NE 'N').OPLBADA                          03160000
+         MNOTE 4,'INVALID OPERAND &N - &SYSLIST(&N) -'                  03170000
+         AGO   .OPLBADB                                                 03180000
+.OPLBADA MNOTE 4,'INVALID SUBOPERAND &WK OF OPERAND &N - &SYSLIST(&N) -X03190000
+               '                                                        03200000
+.OPLBADB MNOTE *,'LINE NUMBER MUST BE GREATER THAN 1 AND '              03210000
+         MNOTE *,'NOT GREATER THAN &LP..'                               03220000
+&Q       SETB  1                                                        03230000
+         AGO   .OPN                                                     03240000
+.*                                                                      03250000
+.DUPBAD  MNOTE 4,'DUPLICATE SPECIFICATION - OPERAND &N ASSIGNS'         03260000
+         MNOTE *,'CARRIAGE CHANNEL &CC TO LINE &WK, WHICH WAS'          03270000
+         MNOTE *,'PREVIOUSLY ASSIGNED CHANNEL &A(&WK)..'                03280000
+&Q       SETB  1                                                        03290000
+         AGO   .OPN                                                     03300000
+.*                                                                      03310000
+.HYPBAD  MNOTE 4,'INVALID OPERAND &N - &SYSLIST(&N) -'                  03320000
+         AIF   (&PASS).HYPBADA                                          03330000
+         MNOTE *,'UNRECOGNIZABLE CHARACTER ''&CH'''                     03340000
+         AGO   .HYPBADB                                                 03350000
+.HYPBADA MNOTE *,'UNRECOGNIZABLE CHARACTER ''&CH'' IN LINE NUMBER.'     03360000
+.HYPBADB ANOP                                                           03370000
+&Q       SETB  1                                                        03380000
+         AGO   .OPN                                                     03390000
+.*                                                                      03400000
+.OPCBAD  MNOTE 4,'INVALID OPERAND &N - &SYSLIST(&N) -'                  03410000
+         MNOTE *,'CARRIAGE CHANNEL MUST BE GREATER THAN 0'              03420000
+         MNOTE *,'AND NOT GREATER THAN 12.'                             03430000
+&C       SETB  0                   SHOW INVALID &CC                     03440000
+&Q       SETB  1                                                        03450000
+         AGO   .OPN                                                     03460000
+.*                                                                      03470000
+.LOGBAD  MNOTE 4,'INTERNAL LOGIC ERROR AT OPERAND &N'                   03480000
+         AGO   .QUITBAD                                                 03490000
+.*                                                                      03500000
+.MACBAD  MNOTE 4,'TOO FEW OPERANDS SPECIFIED.  AT LEAST LINES PER'      03510000
+         MNOTE *,'INCH, LINES PER PAGE, AND ONE CARRIAGE CONTROL'       03520000
+         MNOTE *,'PUNCH MUST BE SPECIFIED.'                             03530000
+         AIF   (N'&SYSLIST EQ 2).OP1                                    03540000
+         AGO   .QUITBAD                                                 03550000
+.*                                                                      03560000
+.QUITBAD MNOTE *,'FCB WILL NOT BE GENERATED'                            03570000
+         MEXIT                                                          03580000
+.*                                                                      03590000
+.LABBAD  MNOTE 8,'ERROR - LABEL MISSING OR INCORRECT (NOT FCB3XXXX)'    03600000
+         AGO   .QUITBAD                                                 03610000
+.*                                                                      03620000
+.DEFBAD  MNOTE 8,'ERROR - DEFAULT OPTION MUST BE ''YES'' OR ''NO'''     03630000
+         AGO   .QUITBAD                                                 03640000
+.*                                                                      03650000
+.END     AIF   (NOT &POF).ENDSKP                                 93036  03660000
+         DC    X'000000'     FAKE BOTTOM MARGIN                  93036  03670000
+         MEXIT ,                                                 93036  03680000
+.ENDSKP  DC    &NP.AL.4(&CD,0)   NON-PRINTING BOTTOM MARGIN      93006  03690000
+         SPACE 2                                                        03700000
+         MEND                                                           03710000

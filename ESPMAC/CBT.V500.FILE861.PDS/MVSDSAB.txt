@@ -1,0 +1,96 @@
+         MACRO                                                          00010000
+&NM      MVSDSAB &DDNAME=,&DCBPTR=,&DSABPTR=,&TCBPTR=,&RETCODE=,       *00020000
+               &RSNCODE=,&MF=                                           00030000
+         GBLB  &MVSESA       IF ESA, USE IBM'S MACRO AND SERVICE        00040000
+         GBLC  &MACPLAB      FIRST LABEL EXPANDED, IF ANY               00050000
+.********************************************************************** 00060000
+.*                                                                    * 00070000
+.*   THIS MACRO LINKS TO LOCAL SUBROUTINE SUBDSAB FOR EARLY SYSTEMS   * 00080000
+.*   (E.G., MVS 3.8J). FOR ESA AND LATER, IT INVOKES IBM'S GETDSAB    * 00090000
+.*   SERVICE                                                          * 00100000
+.*                                                                    * 00110000
+.********************************************************************** 00120000
+         LCLC  &MF1,&MF2,&MF3,&LLN,&@REQ,&@TCB,&@RSN,&@RET              00130000
+         LCLA  &I,&J,&K,&#REQ                                           00140000
+&MF1     SETC  '&MF(1)'                                                 00150000
+&MF2     SETC  '&MF(2)'                                                 00160000
+&MF3     SETC  '&MF(3)'                                                 00170000
+&LLN     SETC  '5'           NUMBER OF WORDS IN LIST                    00180000
+         AIF   (NOT &MVSESA).USELOCL                                    00190000
+&NM      GETDSAB &SYSLIST(1),DDNAME=&DDNAME,DCBPTR=&DCBPTR, *           00200000
+               DSABPTR=&DSABPTR,TCBPTR=&TCBPTR,                        *00210000
+               RETCODE=&RETCODE,RSNCODE=&RSNCODE,MF=&MF                 00220000
+         MEXIT ,                                                        00230000
+.USELOCL ANOP ,                                                         00240000
+         AIF   ('&MF1' EQ 'L').LIST                                     00250000
+&MACPLAB SETC  '&NM'         LABEL TO BE EXPANDED                       00260000
+         AIF   ('&MF1' EQ 'S' OR '&MF1' EQ '').STND                     00270000
+         AIF   ('&MF1' EQ 'E').EXEC                                     00280000
+         MNOTE 8,'MF=&MF1 NOT A SUPPORTED OPTION'                       00290000
+         MEXIT ,                                                        00300000
+.*                                                                      00310000
+.LIST    AIF   ('&MF3' NE '').LISTEX                                    00320000
+&MF3     SETC  '0A'          DEFAULT ALIGNMENT                          00330000
+.LISTEX  AIF   ('&MF3' EQ '0F' OR '&MF3' EQ '0D' OR                    *00340000
+               '&MF3' EQ '0A').LISTAOK                                  00350000
+         MNOTE 4,'MF= &MF3 NOT SUPPORTED; USING 0F'                     00360000
+&MF3     SETC  '0A'          FORCED ALIGNMENT                           00370000
+.LISTAOK AIF   ('&SYSLIST(1)' NE '').LISTBAD                            00380000
+         AIF   ('&DDNAME' NE '').LISTBAD                                00390000
+         AIF   ('&DCBPTR' NE '').LISTBAD                                00400000
+         AIF   ('&DSABPTR' NE '').LISTBAD                               00410000
+         AIF   ('&TCBPTR' NE '').LISTBAD                                00420000
+         AIF   ('&RETCODE' NE '').LISTBAD                               00430000
+         AIF   ('&RSNCODE' EQ '').LISTEXP                               00440000
+.LISTBAD MNOTE 4,'KEYWORD SETTINGS IGNORED FOR MF=L'                    00450000
+.LISTEXP ANOP  ,                                                        00460000
+&MF2     DS    &MF3                                                     00470000
+&NM      MACPARM MODE=LABEL  EXPAND ADDITIONAL LABEL, IF NEEDED         00480000
+         DC    &LLN.AL4(0)                                              00490000
+         MEXIT ,                                                        00500000
+.*                                                                      00510000
+.STND    ANOP  ,                                                        00520000
+         MACPARM R1,*+4*&LLN+4,OP=BAL                                   00530000
+         DC    &LLN.AL4(0)                                              00540000
+         AGO   .EXECC                                                   00550000
+.*                                                                      00560000
+.EXEC    AIF   ('&MF2' NE '').EXECR1                                    00570000
+         MNOTE 8,'MF=(E,LIST) NEEDS LIST ADDRESS'                       00580000
+         MEXIT ,                                                        00590000
+.EXECR1  MACPARM R1,&MF2                                                00600000
+.EXECC   MACPARM 0(4*&LLN,R1),0(R1),OP=XC  CLEAR LIST                   00610000
+         AIF   ('&DCBPTR' EQ '' AND '&DDNAME' EQ '').NODUPE             00620000
+         MNOTE 8,'DCBPTR AND DDNAME ARE MUTUALLY EXCLUSIVE'             00630000
+         MEXIT ,                                                        00640000
+.EXCDCB  MNOTE 8,'FIRST/NEXT AND DCBPTR= ARE MUTUALLY EXCLUSIVE'        00650000
+         MEXIT ,                                                        00660000
+.EXCDDN  MNOTE 8,'FIRST/NEXT AND DDNAME= ARE MUTUALLY EXCLUSIVE'        00670000
+         MEXIT ,                                                        00680000
+.NODUPE  AIF   ('&SYSLIST(1)' NE '' AND '&DCBPTR' NE '').EXCDCB         00690000
+         AIF   ('&SYSLIST(1)' NE '' AND '&DDNAME' NE '').EXCDDN         00700000
+&#REQ    SETA  1             GET FIRST DSAB                             00710000
+&@REQ    SETC  '0'           NO ADDRESS NEEDED                          00720000
+         AIF   ('&SYSLIST(1)' EQ 'FIRST').OTHR   LOOK FOR OTHERS        00730000
+&#REQ    SETA  2             GET NEXT DSAB                              00740000
+&@REQ    SETC  '0'           NO ADDRESS NEEDED                          00750000
+         AIF   ('&SYSLIST(1)' EQ 'NEXT').OTHR   LOOK FOR OTHERS         00760000
+         AIF   ('&SYSLIST(1)' EQ '').TREQ   LOOK FOR NON-CHAINED        00770000
+         MNOTE 8,'UNSUPPORTED POSITIONAL: &SYSLIST(1)'                  00780000
+         MEXIT ,                                                        00790000
+.TREQ    AIF   ('&DDNAME' NE '').SETDCB                                 00800000
+&#REQ    SETA  3             GET DSAB BY DDNAME                         00810000
+&@REQ    SETC  '&DDNAME'     DDN ADDRESS NEEDED                         00820000
+         AGO   .OTHR                                                    00830000
+.SETDCB  ANOP  ,                                                        00840000
+&#REQ    SETA  4             GET DSAB BY DCB                            00850000
+&@REQ    SETC  '&DCBPTR'     DCB ADDRESS NEEDED                         00860000
+.OTHR    ANOP  ,                                                        00870000
+         MVI   0(R1),&#REQ   SET REQUEST TYPE                           00880000
+         MACPLOP &@REQ,4(R1)   PASS REQUEST ADDRESS OR 0                00890000
+         MACPLOP &DSABPTR,8(R1)                                         00900000
+         MACPLOP &TCBPTR,12(R1),NULL=SKIP                               00910000
+         MACPARM R15,=V(SUBDSAB),OP=L                                   00920000
+         MACPARM R14,R15,OP=BALR,OPR=BALR                               00930000
+         MACPARM R15,&RETCODE,OP=ST,NULL=SKIP                           00940000
+         MACPARM R0,&RSNCODE,OP=ST,NULL=SKIP                            00950000
+         MEND  ,                                                        00960000

@@ -1,0 +1,23 @@
+         MACRO ,                                                        00010000
+&NM      TSX   &R,&A,&AMODE=ANY                         ADDED ON 90308  00020000
+.*                                                                      00030000
+.*       THIS MACRO CALLS A SUB-ROUTINE IN 31 OR 24 BIT MODE.           00040000
+.*       IF AMODE=24, THE USER'S ADDRESS IS OVERRIDDEN                  00050000
+.*       IF AMODE=31, THE USER'S ADDRESS IS FORCED TO 31-BIT MODE.      00060000
+.*       IN PRE-XA SYSTEMS, ACTS AS BAL/BALR                            00070000
+.*                                                                      00080000
+         GBLB  &MVSXA                                                   00090000
+&NM      MACPARM R15,&A      LOAD DESTINATION ADDRESS TO R15            00100000
+         AIF   (NOT &MVSXA).BALR                                        00110000
+         AIF   ('&AMODE' EQ 'ANY' OR 'AMODE' EQ '').BASSMX              00120000
+         AIF   ('&AMODE' EQ '24' OR '&AMODE' EQ 'AM24').BASSM24         00130000
+         AIF   ('&AMODE' EQ '31' OR '&AMODE' EQ 'AM31').BASSM31         00140000
+         MNOTE 4,'INVALID AMODE OPERAND - USE: ANY, 24 OR 31'           00150000
+         AGO   .BASSMX                                                  00160000
+.BASSM24 MACPARM R15,=X'7FFFFFFF',OP=N  KILL 31-BIT MODE BIT            00170000
+         AGO   .BASSMX                                                  00180000
+.BASSM31 MACPARM R15,=X'80000000',OP=O  SET 31-BIT MODE                 00190000
+.BASSMX  MACPARM &R,R15,OP=BASSM,OPR=BASSM,MODE=EQU                     00200000
+         MEXIT ,                                                        00210000
+.BALR    MACPARM &R,(R15),OP=BAL,OPR=BALR                               00220000
+         MEND  ,                                                        00230000

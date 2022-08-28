@@ -1,0 +1,126 @@
+*********************************************************************** 00010003
+*                                                                     * 00020003
+*                                                                     * 00030003
+*          COPYRIGHT 1978, 1981 BY SHMUEL (SEYMOUR J.) METZ           * 00040003
+*                                                                     * 00050003
+*                   ALL RIGHTS RESERVED.                              * 00060003
+*                                                                     * 00070003
+*                                                                     * 00080003
+* MATERIAL IN THIS LIBRARY IS MADE AVAILABLE SUBJECT TO THE           * 00090003
+* FOLLOWING CONDITIONS:                                               * 00100003
+*                                                                     * 00110003
+*                                                                     * 00120003
+* 1.)  ALL COPYRIGHT NOTICES MUST BE RETAINED, AS WELL AS ALL CODE    * 00130003
+*      INTENDED TO GENERATE A COPYRIGHT NOTICE IN LISTINGS,           * 00140003
+*      IN OBJECT CODE, OR IN FORMATTED DUMPS.  ALL GRANTS OF          * 00150003
+*      PERMISSION TO COPY AND/OR USE THIS MATERIAL ARE CONTINGENT ON  * 00160003
+*      ADHERANCE TO THIS REQUIREMENT.                                 * 00170003
+*                                                                     * 00180003
+*                                                                     * 00190003
+* 2.)  NO MEMBERS MAY BE DISTRIBUTED WITHOUT EXPLICIT PERMISSION      * 00200003
+*      FROM ME, EXCEPT AS SPECIFIED BELOW.                            * 00210003
+*                                                                     * 00220003
+*                                                                     * 00230003
+* 3.)  MATERIAL SUBMITTED BY ME TO PROJECTS OF SHARE, INC.  MAY BE    * 00240003
+*      FURTHER DISTRIBUTED ONLY IN ACCORDANCE WITH THE BYLAWS OF      * 00250003
+*      SHARE, INC. AND THE RELEVANT PROJECT, AS AUGMENTED BY ANY      * 00260003
+*      TERMS AND CONDITIONS ON THE SUBMITTAL FORM.                    * 00270003
+*                                                                     * 00280003
+*                                                                     * 00290003
+* 4.) PERMISSION IS GRANTED FOR BOTH USE AND MARKETING OF THIS        * 00300003
+*     MATERIAL TO:                                                    * 00310003
+*        EXPERT SYSTEM PROGRAMMING                                    * 00320003
+*        176 OLD STAGE COACH ROAD                                     * 00330003
+*        BRADFORD, VERMONT  05033-8844                                * 00340003
+*        802-222-5117                                                 * 00350003
+*                                                                     * 00360003
+*        PINKERTON COMPUTER CONSULTANTS, INC.                         * 00370003
+*        1900 N BEAUREGARD ST                                         * 00380003
+*        FALLS CHURCH, VIRGINIA   22041                               * 00390003
+*        703-820-5571                                                 * 00400003
+*                                                                     * 00410003
+*                                                                     * 00420003
+* 5.)  PERMISSION IS GIVEN TO BOTH USE THIS MATERIAL AND TO           * 00430003
+*      DISTRIBUTE IT IN CONJUNCTION WITH SCRIPT OR OTHER UOW SOFTWARE * 00440003
+*      TO:                                                            * 00450003
+*        COMPUTING CENTRE                                             * 00460003
+*        UNIVERSITY OF WATERLOO                                       * 00470003
+*        WATERLOO, ONTARIO, CANADA                                    * 00480003
+*                                                                     * 00490003
+*                                                                     * 00500003
+* 6.) USE AND DISTRIBUTION PERMISSION IS GIVEN TO THE FOLLOWING       * 00510003
+*     SPECIFIC INDIVIDUALS:                                           * 00520003
+*        THOMAS A. LITTLE                                             * 00530003
+*        MITRE CORPORATION                                            * 00540003
+*        BEDFORD, MASSACHUSSETTS                                      * 00550003
+*                                                                     * 00560003
+*        BRUCE UTTLEY                                                 * 00570003
+*        COMPUTING CENTRE                                             * 00580003
+*        UNIVERSITY OF WATERLOO                                       * 00590003
+*                                                                     * 00600003
+*        GERHARD POSTPISCHIL                                          * 00610003
+*        ESP, INC.                                                    * 00620003
+*                                                                     * 00630003
+*                                                                     * 00640003
+* 7.)  USE AND DISTRIBUTION PERMISSION IS GIVEN TO THE FOLLOWING:     * 00650003
+*        COMPUTER CENTER                                              * 00660003
+*        TECHNION, ISRAEL INSTITUTE OF TECHNOLOGY                     * 00670003
+*        TECHNION CITY                                                * 00680003
+*        HAIFA, ISRAEL                                                * 00690003
+*                                                                     * 00700003
+*                                                                     * 00710003
+* 8.)  PERMISSION TO BOTH USE AND TO MAKE AVAILABLE FOR CUSTOMER USE  * 00720003
+*      IS GIVEN TO THE FOLLOWING:                                     * 00730003
+*      COMPUTER NETWORK CORPORATION / CONSUMERS COMPUTER SERVICES, INC. 00740003
+*      5185 MACARTHUR BOULEVARD                                       * 00750003
+*      WASHINGTON, D.C.  20016                                        * 00760003
+*                                                                     * 00770003
+*                                                                     * 00780003
+* 9.)  WHILE IT IS NOT A REQUIREMENT OF DISTRIBUTION, RECIPIENTS OF   * 00790003
+*      THIS MATERIAL ARE REQUESTED TO FORWARD TO ME ANY CORRECTIONS   * 00800003
+*      OR ENHANCEMENTS WHICH THEY FEEL MAY BE OF GENERAL INTEREST, OR * 00810003
+*      WHICH THEY WOULD LIKE TO SEE INCORPORATED IN FUTURE VERSIONS.  * 00820003
+*      WHERE IT APPEARS REASONABLE, I WILL ENDEAVOR TO INCORPORATE    * 00830003
+*      ANY SUCH ENHANCEMENTS, ALTHOUGH I MAY ELECT TO ISOLATE THEM    * 00840003
+*      WITH AN AIF.  MAJOR CHANGES WILL BE IDENTIFIED WITH THE NAME   * 00850003
+*      AND INSTALLATION OF THE AUTHOR, UNLESS ANONIMITY IS REQUESTED. * 00860003
+*                                                                     * 00870003
+*                                                                     * 00880003
+*10.)  NO REPRESENTATIONS ARE MADE AS TO THE USABILITY OR CORRECTNESS * 00890003
+*      OF ANY OF THIS MATERIAL; HOWEVER, IF YOU REPORT ANY ERRORS I   * 00900003
+*      WILL ATTEMPT TO CORRECT THEM.                                  * 00910003
+*                                                                     * 00920003
+*                                                                     * 00930003
+*11.)  MATERIAL IN THESE LIBRARIES MARKED WITH A COPYRIGHT NOTICE     * 00940003
+*      FOR EXPERT SYSTEM PROGRAMMING, INC. MAY BE USED IN ACCORDANCE  * 00950003
+*      WITH THE ABOVE RULES.                                          * 00960003
+*                                                                     * 00970003
+*                                                                     * 00980003
+*12.)  MATERIAL MARKED IN ANY FASHION AS COPYRIGHTED BY OR            * 00990003
+*      PROPRIETARY TO ANYONE OTHER THAN G. POSTPISCHIL, S. METZ,      * 01000003
+*      OR ESP, INC. SHOULD NOT BE IN THIS LIBRARY.  PLEASE DELETE     * 01010003
+*      ANY SUCH MEMBERS AND INFORM S. METZ OR G. POSTPISCHIL (CARE OF * 01020003
+*      EXPERT SYSTEM PROGRAMMING) OF THE ERROR.                       * 01030003
+*                                                                     * 01040003
+*                                                                     * 01050003
+*13.)  MATERIAL NOT MARKED AS PROPRIETARY OR COPYRIGHTED IS BELIEVED  * 01060003
+*      TO BE IN THE PUBLIC DOMAIN; MUCH OF IT HAS BEEN ACQUIRED FROM  * 01070003
+*      SHARE, INC. AND SIMILAR SOURCES.  THE MEMBERS DERIVING FROM    * 01080003
+*      CBT, JES2, AND MVS MODS TAPES MAY BE BACK-LEVEL OR             * 01090003
+*      SIGNIFICANTLY CHANGED FROM THE VERSIONS AVAILABLE FROM SHARE:  * 01100003
+*      USE YOUR OWN JUDGEMENT.                                        * 01110003
+*                                                                     * 01120003
+*                                                                     * 01130003
+*14.)  ALL IBM MAPPING MACROS ARE BELIEVED TO BE FROM PUBLIC-DOMAIN   * 01140003
+*      SOURCES; HOWEVER, THEY ARE ALSO BELIEVED TO BE VALID ONLY FOR  * 01150003
+*      THE SYSTEM AND PTF LEVEL I AM CURRENTLY RUNNING FROM.  IN      * 01160003
+*      PARTICULAR, SOME OF THEM MAY BE HIT BY MULTIPLE PROGRAM        * 01170003
+*      PRODUCTS AT YOUR INSTALLATION, AND SHOULD BE REPLACED FROM     * 01180003
+*      THE APPROPRIATE OPTIONAL SOURCE PVTMAC OR AMODGEN.             * 01190003
+*                                                                     * 01200003
+*                                                                     * 01210003
+*                                                                     * 01220003
+*      REVIEW OF MEMBERS OPTIONDF, OPTIONGB, AND SYSPARM IN ASM.MAC   * 01230003
+*      IS SUGGESTED PRIOR TO ASSEMBLING ANY OF THIS MATERIAL.         * 01240003
+*                                                                     * 01250003
+*********************************************************************** 01260003

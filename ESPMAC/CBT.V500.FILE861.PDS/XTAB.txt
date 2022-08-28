@@ -1,0 +1,4 @@
+         MACRO                                                          00010000
+&NM      XTAB  &STRING,&XCT                                             00020000
+&NM      BTAB  &STRING,,&XCT                                            00030000
+         MEND                                                           00040000

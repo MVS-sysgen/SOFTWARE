@@ -1,0 +1,19 @@
+         MACRO                                                          00001000
+         WTLTP &TYPE,&I                                                 00002000
+         AIF   ('&TYPE' EQ 'C').CONTROL                                 00003000
+         AIF   ('&TYPE' EQ 'L').LABEL                                   00004000
+         AIF   ('&TYPE' EQ 'D').DATA                                    00005000
+         AIF   ('&TYPE' EQ 'DE').DEND                                   00006000
+         AIF   ('&TYPE' EQ 'E').END                                     00007000
+         MNOTE 12,'LINETYPE # &I IS NOT C, L, D, DE, OR E - DE ASSUMED' 00008000
+         AGO   .DEND                                                    00009000
+.CONTROL DC    XL2'8000'                                                00010000
+         MEXIT                                                          00011000
+.LABEL   DC    XL2'4000'                                                00012000
+         MEXIT                                                          00013000
+.DATA    DC    XL2'2000'                                                00014000
+         MEXIT                                                          00015000
+.DEND    DC    XL2'3000'                                                00016000
+         MEXIT                                                          00017000
+.END     DC    XL2'1000'                                                00018000
+         MEND                                                           00019000

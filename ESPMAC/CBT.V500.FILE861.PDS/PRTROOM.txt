@@ -1,0 +1,4 @@
+         MACRO                                                          00010000
+&NM      PRTROOM &COUNT,&DEV=,&OPT=                              90309  00020000
+&NM      PRTCOM PRTROOM,FUN=3,A1=&COUNT,DEV=&DEV,OPT=&OPT               00030000
+         MEND                                                           00040000

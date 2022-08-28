@@ -1,0 +1,121 @@
+         MACRO                                                          00010000
+&NM      MSORT &ADDR=,&SIZE=,&OFF=,&COMPL=,&NUM=,&RET=R14,&EXIT=,      *00020000
+               &ORDER=A                                                 00030000
+.*--------------------------------------------------------------------* 00040000
+.*                                                                    * 00050000
+.*     ADAPTED FROM SORT APPEARING IN 'FORTRAN PROGRAMMING' BY        * 00060000
+.*     FREDRIC STUART, WILEY '69. ORIGINATED BY D.L. SHELL, MODIFIED  * 00070000
+.*     BY MARLENE METZNER (PRATT&WHITNEY).                            * 00080000
+.*                                                                    * 00090000
+.*     INPUT PARAMETERS :                                             * 00100000
+.*     ADDR  ADDRESS OF LIST TO BE SORTED; REL-EXP OR (REG 2-12)      * 00110000
+.*     SIZE  SIZE OF LIST ENTRY; SELF-DEFINING TERM OR (REG 2-12)     * 00120000
+.*     OFF   OFFSET OF COMPARE STRING FROM START OF ENTRY;  -''-      * 00130000
+.*     COMPL LENGTH OF COMPARE STRING;                      -''-      * 00140000
+.*     NUMBER  NUMBER OF ENTRIES IN LIST;                   -''-      * 00150000
+.*                                                               92052* 00160000
+.*     WHEN THE EXIT= PARAMETER IS SPECIFIED, OFF AND COMPL ARE NOT   * 00170000
+.*     USED.  THE CODE INVOKES THE EXIT USING SORT'S R0-R9; R4 POINTS * 00180000
+.*     TO CURRENT ENTRY, R8 TO NEXT ENTRY, USER RETURNS TO R14 WITH   * 00190000
+.*     CC 2 TO SWAP ENTRIES, CC 0 OR 1 TO RETAIN.                92052* 00200000
+.*                                                               92052* 00210000
+.*     THE AREA POINTED TO BY REGISTER 13 IS USED TO SAVE CALLER'S    * 00220000
+.*     REGISTERS AND AS A WORK AREA FOR RE-ENTRANCY.                  * 00230000
+.*                                                                    * 00240000
+.*     RET   RETURN REGISTER                                          * 00250000
+.*           BR TO RET - ERROR IN PARAMETERS OR VALUES                * 00260000
+.*           B TO RET+4 - COMPLETED                                   * 00270000
+.*                                                                    * 00280000
+.*     ADDED ORDER=A / ORDER=D FOR SORT DIRECTION               GP04020 00290000
+.*                                                                    * 00300000
+.*--------------------------------------------------------------------* 00310000
+         GBLC  &MACPLAB                                                 00320000
+         LCLA  &I                                                       00330000
+         LCLC  &ORDBC                                                   00340000
+&MACPLAB SETC  ''                                                       00350000
+&I       SETA  &SYSNDX                                                  00360000
+&ORDBC   SETC  'ADDR'                                           GP04020 00370000
+         AIF   ('&ADDR' EQ '').MISSOP                           GP04020 00380000
+&ORDBC   SETC  'SIZE'                                           GP04020 00390000
+         AIF   ('&SIZE' EQ '').MISSOP                           GP04020 00400000
+         AIF   ('&EXIT' NE '' AND '&EXIT' NE '0').NOOFF NO NEED GP04234 00410000
+&ORDBC   SETC  'OFF'                                            GP04020 00420000
+         AIF   ('&OFF' EQ '').MISSOP                            GP04020 00430000
+&ORDBC   SETC  'COMPL'                                          GP04020 00440000
+         AIF   ('&COMPL' EQ '').MISSOP                          GP04020 00450000
+.NOOFF   ANOP  ,                                                GP04234 00460000
+&ORDBC   SETC  'NUM'                                            GP04020 00470000
+         AIF   ('&NUM' EQ '').MISSOP                            GP04020 00480000
+&ORDBC   SETC  'RET'                                            GP04020 00490000
+         AIF   ('&RET' EQ '').MISSOP                            GP04020 00500000
+&ORDBC   SETC  'H'           ASCENDING (BNH)                            00510000
+         AIF   ('&ORDER' EQ 'A').ORDNUNG                                00520000
+&ORDBC   SETC  'L'           DESCENDING (BNL)                           00530000
+         AIF   ('&ORDER' EQ 'D').ORDNUNG                                00540000
+         MNOTE 8,'MSORT: ORDER MUST BE A (ASCENDING) OR D (DESCENDING)' 00550000
+&ORDBC   SETC  'H'           ASCENDING (BNH)                            00560000
+.ORDNUNG ANOP  ,                                                        00570000
+&NM      STM   R14,R9,20(R13)   SAVE REGISTERS                   92052  00580000
+         LA    R0,1                    MAKE CONSTANT                    00590000
+         AIF   ('&EXIT' EQ '' OR '&EXIT' EQ '0').NOEXIT          92052  00600000
+         MACPARM R15,&EXIT,OP=LA                                 92052  00610000
+         LTR   R15,R15       VALID EXIT ?                        92052  00620000
+         BZR   R14           NO; RETURN ERROR                    92052  00630000
+         ST    R15,12(,R13)  SAVE EXIT ADDRESS                   92052  00640000
+         AGO   .NOCLC                                            92052  00650000
+.NOEXIT  MVC   12(6,R13),SRT&I.Z       MOVE PATTERN CLC                 00660000
+         MACPARM R9,&OFF,OP=LA         GET COMPARE OFFSET               00670000
+         STC   R9,15(,R13)             STASH INTO CLC                   00680000
+         STC   R9,17(,R13)              FOR COMPARE                     00690000
+         MACPARM R9,&COMPL,OP=LA       GET COMPARE LENGTH               00700000
+         SR    R9,R0                   LENGTH FOR CLC                   00710000
+         BM    SRT&I.Y                 TAKE ERROR EXIT                  00720000
+         STC   R9,13(,R13)             SET INTO CLC LENGTH FIELD        00730000
+.NOCLC   MACPARM R2,&SIZE,OP=LA        GET SIZE OF ENTRY                00740000
+         LR    R3,R2                   COPY INTO EXECUTE REGISTER       00750000
+         SR    R3,R0                   DECREMENT FOR EXECUTE            00760000
+         BM    SRT&I.Y                 TAKE ERROR EXIT                  00770000
+         MACPARM R9,&NUM,OP=L          GET NUMBER OF ENTRIES    GP09245 00780000
+         CR    R9,R0                   CHECK AT LEAST TWO ENTRIES       00790000
+         BNH   SRT&I.B                 TAKE GOOD EXIT IF NONE           00800000
+         MR    R8,R2                   CONVERT TO TABLE LENGTH          00810000
+         MACPARM R1,&ADDR,OP=LA        GET TABLE BASE ADDRESS           00820000
+         LR    R7,R9                   COPY TO SUBLIST                  00830000
+SRT&I.A  SRL   R7,1                    HALVE SUBLIST SIZE               00840000
+         XR    R6,R6                     CLEAR FOR DIVIDE               00850000
+         DR    R6,R2                   CONVERT TO LIST ENTRIES          00860000
+         MR    R6,R2                   BACK TO INT(M/S)                 00870000
+         LTR   R7,R7                   ANY LEFT TO BE DONE ?            00880000
+         BP    SRT&I.C                 YES; PROCEED                     00890000
+SRT&I.B  LM    R14,R9,20(R13)    RESTORE USER'S REGISTERS        92052  00900000
+         B     4(,&RET)                TAKE GOOD EXIT                   00910000
+SRT&I.C  LR    R6,R9                   GET ENTRY SIZE                   00920000
+         SR    R6,R7                   GET SIZE OF OTHER HALF           00930000
+         XR    R5,R5                   CLEAR COUNTER                    00940000
+SRT&I.D  LA    R4,0(R5,R1)             GET ADDRESS OF NEXT ELEMENT      00950000
+SRT&I.E  LA    R8,0(R4,R7)             GET ADDRESS OF OTHER ELEMENT     00960000
+         AIF   ('&EXIT' EQ '' OR '&EXIT' EQ '0').EXCOMP          92052  00970000
+         L     R15,12(,R13)  LOAD EXIT ADDRESS                   92052  00980000
+         BASR  R14,R15       INVOKE THE EXIT                     92052  00990000
+         AGO   .COMPAR       BRANCH AS SET BY USER               92052  01000000
+.EXCOMP  EX    0,12(,R13)              COMPARE THE TWO                  01010000
+.COMPAR  BN&ORDBC SRT&I.F              IN SEQUENCE - SKIP FLIP          01020000
+         EX    R3,SRT&I.Z+6            FLIP THE                         01030000
+         EX    R3,SRT&I.Z+12             TWO                            01040000
+         EX    R3,SRT&I.Z+6                LIST ENTRIES                 01050000
+         SR    R4,R7                   GET NEXT ELEMENT                 01060000
+         CR    R4,R1                   BACK TO START OF TABLE ?         01070000
+         BNL   SRT&I.E                 NO; TRY AGAIN                    01080000
+SRT&I.F  AR    R5,R2                   NEXT COMPARE ELEMENT ADDRESS     01090000
+         CR    R5,R6                   DONE THIS PART OF LIST ?         01100000
+         BNL   SRT&I.A                 YES; GET ANOTHER SUBLIST         01110000
+         B     SRT&I.D                 ELSE PROCEED                     01120000
+SRT&I.Y  LM    R14,R9,20(R13)  RESTORE REGISTERS                 92052  01130000
+         BR    &RET                    TAKE ERROR EXIT                  01140000
+SRT&I.Z  CLC   0(0,R4),0(R8)           PATTERN COMPARE                  01150000
+         XC    0(0,R4),0(R8)           FLIP 1/3                         01160000
+         XC    0(0,R8),0(R4)           FLIP  2                          01170000
+         MEXIT ,                                                GP04020 01180000
+.MISSOP  MNOTE 8,'MSORT: MISSING OPERAND &ORDBC'                GP04020 01190000
+&NM      MACPARM R14,OP=BR,MODE=ONE  EXPAND LABEL & ERROR RETURN        01200000
+         MEND  ,                                                        01210000

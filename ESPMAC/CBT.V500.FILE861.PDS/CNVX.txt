@@ -1,0 +1,20 @@
+         MACRO                                                          00010000
+&NM      CNVX  &R,&AD,&LEN                                              00020000
+         GBLB  &INLINE(50)                                              00030000
+         GBLB  &MVS,&MVSXA,&MVSESA,&OS390,&Z900                 GP04234 00040000
+         LCLC  &L                                                       00050000
+&INLINE(7) SETB 1                                                       00060000
+&L       SETC  'L'''                                                    00070000
+&NM      MACPARM R0,&R                                                  00080000
+         MACPARM R1,&AD                                                 00090000
+         AIF   ('&LEN' NE '').LEN                                       00100000
+         AIF   ('&AD'(1,1) EQ '(').TLEN                                 00110000
+         MACPARM R15,&L&AD                                              00120000
+         AGO   .BAL                                                     00130000
+.TLEN    AIF   ('&LEN' NE '').LEN                                       00140000
+         MNOTE 4,'LENGTH REQUIRED'                                      00150000
+.LEN     ANOP                                                           00160000
+         MACPARM R15,&LEN                                               00170000
+.BAL     ANOP                                                           00180000
+         MACPARM R14,XCONVERT,OP=BAL                                    00190000
+         MEND                                                           00200000

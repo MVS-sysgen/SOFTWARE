@@ -1,0 +1,31 @@
+         MACRO ,                                                 88150  00010000
+&NM      SUBENT &SAVE=YES,&WRK=R14,&BASE=R12   SUBROUTINE ENTRY  88150  00020000
+.********************************************************************** 00030000
+.*                                                                   ** 00040000
+.*   DEFINE SUBROUTINE ENTRY; USES SAVE AREA STACK                   ** 00050000
+.*                                                                   ** 00060000
+.********************************************************************** 00070000
+         LCLC  &N                                                88150  00080000
+         DROP  ,             DROP EVERYTHING                     88150  00090000
+&NM      STM   R14,R12,12(R13)                                   88150  00100000
+         AIF   (N'&BASE LE 1).ONEBASE                            88150  00110000
+         BALSR &BASE(1),0                                        88150  00120000
+&N       SETC  '&NM'.'ZZZZ'                                      88150  00130000
+&N       SETC  '&N'(1,4).'BASE'                                  88150  00140000
+         USING &N,&BASE(1),&BASE(2)                              88150  00150000
+&N       LA    &BASE(2),2048(,&BASE(1))                          88150  00160000
+         LA    &BASE(2),2048(,&BASE(2))                          88150  00170000
+         AGO   .COMBASE                                          88150  00180000
+.ONEBASE BALSR &BASE,0       MAKE LOCAL BASE                     88150  00190000
+&N       SETC  '&NM'.'ZZZZ'                                      88150  00200000
+&N       SETC  '&N'(1,4).'BASE'                                  88150  00210000
+&N       DS    0H            LOCAL BASE                          88150  00220000
+         USING &N,&BASE                                          88150  00230000
+.COMBASE USING RENTWORK,R11  GLOBAL BASE PASSED BY CALLER        88150  00240000
+         USING DYNWORK,R10   DYNAMIC WORK AREA ALSO PASSED       88150  00250000
+         AIF   ('&SAVE' EQ 'NO').NOSAVE                          88150  00260000
+         LA    &WRK,72(,R13)   GET LOWER SAVE AREA               88150  00270000
+         ST    R13,4(,&WRK)                                      88150  00280000
+         ST    &WRK,8(,R13)  LINK                                88150  00290000
+         LR    R13,&WRK      FLIP                                88150  00300000
+.NOSAVE  MEND  ,                                                 88150  00310000

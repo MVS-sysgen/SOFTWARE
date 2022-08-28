@@ -1,0 +1,29 @@
+         MACRO ,                                                        00010000
+&N       SETCC &CODE,&REAS,&RESULT=                    NEW 2003.091 GYP 00020000
+.*                                                                      00030000
+.*   SETCC replaces a condition code, and optional reason code,         00040000
+.*   provided it is higher than the current one.                        00050000
+.*                                                                      00060000
+.*   For unconditional setting see MVICC and OICC                       00070000
+.*                                                                      00080000
+.*   &CODE MAY NOT SPECIFY A REGISTER                                   00090000
+.*                                                                      00100000
+         GBLC  &ZZCCNAM                                                 00110000
+         LCLC  &L,&T                                                    00120000
+&L       SETC  'L'''                                                    00130000
+&T       SETC  'ZZ'.'&SYSNDX'.'X'                                       00140000
+         AIF   ('&RESULT' EQ '').NONEW                                  00150000
+&ZZCCNAM SETC  '&RESULT'                                                00160000
+.NONEW   AIF   ('&ZZCCNAM' NE '').NODEF                                 00170000
+         MNOTE *,'SETCC: RESULT= NOT SPECIFIED - DEFAULTED TO RETCODE'  00180000
+&ZZCCNAM SETC  'RETCODE'                                                00190000
+.NODEF   ANOP  ,                                                        00200000
+&N MACPARM &ZZCCNAM+&L&ZZCCNAM-1,&CODE,OP=CLI,OPR=CLM,NULL=SKIP,       *00210000
+               MODE=REV                                                 00220000
+         MACPARM &T,OP=BNL,MODE=ONE   NO CHANGE UNLESS HIGHER CODE      00230000
+   MACPARM &ZZCCNAM+&L&ZZCCNAM-1,&CODE,OP=MVI,OPR=STC,NULL=SKIP,       *00240000
+               MODE=REV                                                 00250000
+   MACPARM &ZZCCNAM+&L&ZZCCNAM+3,&REAS,OP=MVI,OPR=STC,NULL=SKIP,       *00260000
+               MODE=REV                                                 00270000
+&T       MACPARM MODE=LABEL                                             00280000
+         MEND  ,                                                        00290000

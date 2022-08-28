@@ -1,0 +1,20 @@
+         MACRO ,                                                        00010000
+&NM      CSREP &NEW,&OLD,&WK1=R14,&WK2=R15                       87001  00020000
+         GBLC  &MACPLAB                                                 00030000
+         LCLC  &N                                                       00040000
+         LCLA  &K                                                       00050000
+&K       SETA  K'&NEW                                                   00060000
+&N       SETC  '&SYSNDX'                                                00070000
+&L       SETC  'CS'.'&SYSNDX'                                           00080000
+&MACPARM SETC  '&NM'                                                    00090000
+         AIF   (&K LT 3).OLD                                            00100000
+         AIF   ('&NEW'(1,1) NE '(' OR '&NEW'(&K,1) NE ')').OLD          00110000
+         AIF   ('&NEW'(2,1) EQ '(').OLD        ((EXPRESSION)) ?         00120000
+         AIF   ('&NEW'(&K-1,1) EQ ')').OLD     ((EXPRESSION)) ?         00130000
+&WK2     SETC  '&NEW(1)'                                                00140000
+         AGO   .COM                                                     00150000
+.OLD     MACPARM &WK2,&NEW,OP=L           LOAD NEW VALUE                00160000
+.COM     MACPARM &WK1,&OLD,OP=L,OPR=L     LOAD OLD VALUE                00170000
+&L.L     CS    &WK1,&WK2,&OLD  REPLACE                                  00180000
+         BNZ   &L.L          ELSE TRY AGAIN                             00190000
+         MEND  ,                                                        00200000

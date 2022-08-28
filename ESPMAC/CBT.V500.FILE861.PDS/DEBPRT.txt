@@ -1,0 +1,19 @@
+         MACRO ,                                                        00010000
+         DEBPRT &N,&WK=R0                             ADDED ON 20080418 00020000
+         GBLB  &ZZDEPRT                                                 00030000
+.*                                                                      00040000
+.*    THIS MACRO TOGGLES DEBUG PRINTING ON AND OFF                      00050000
+.*                                                                      00060000
+         AIF   (NOT &ZZDEPRT AND '&N' EQ 'OFF').MEND                    00070000
+         AIF   (&ZZDEPRT AND '&N' EQ 'ON').MEND                         00080000
+         AIF   ('&N' EQ 'ON').PUSH                                      00090000
+         AIF   ('&N' EQ 'OFF').POP                                      00100000
+&ZZDEPRT SETB  (NOT &ZZDEPRT)     FLIP                                  00110000
+         AIF   (NOT &ZZDEPRT).POP                                       00120000
+.PUSH    PUSH PRINT                                                     00130000
+         PRINT ON,GEN,DATA                                              00140000
+&ZZDEPRT SETB  1                                                        00150000
+         MEXIT ,                                                        00160000
+.POP     POP   PRINT                                                    00170000
+&ZZDEPRT SETB  0                                                        00180000
+.MEND    MEND  ,                                                        00190000

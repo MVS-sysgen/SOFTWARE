@@ -1,0 +1,67 @@
+         MACRO ,                                                        00010000
+&NM      TRENT &TAB,&VAL,&OFF,&FILL=                    ADDED ON 86311  00020000
+.*                                                                      00030000
+.*   This macro is used to create translate and translate and test      00040000
+.*     tables in compact fashion.                                       00050000
+.*                                                                      00060000
+.*   The table may be built by (separate) DC statements, or by          00070000
+.*     a TRENT entry with a FILL= operand and a name field.     GP12005 00080000
+.*                                                                      00090000
+.*   Any name field is attached to first expanded DC, if any            00100000
+.*     First positional is name of table to be modified; may be         00110000
+.*       null after first occurrence and after a FILL                   00120000
+.*     Second positional is value to be placed in table; may be         00130000
+.*       null after first occurrence. May be expression.                00140000
+.*     Subsequent values are offsets in self-defining form, i.e.,       00150000
+.*       X'nn', C'x', integer, equate value, or absolute expression.    00160000
+.*     A sublist may be used, offset in first value, repeat count       00170000
+.*       in second.                                                     00180000
+.*     When the last parm is null, no final ' ORG ' is created.         00190000
+.*       (requested by trailing comma)                                  00200000
+.*     When no parameters are supplied, a final ' ORG ' is expanded.    00210000
+.*                                                                      00220000
+.*       ex.:  upper case translate:                                    00230000
+.*       UPTAB DC    256AL1(*-UPTAB)     or                             00240000
+.*       UPTAB TRENT FILL=(*-UPTAB)                                     00250000
+.*             TRENT UPTAB,*-UPTAB+X'40',(X'81',9),(X'91',9),(X'A2,8)   00260000
+.*                                                                      00270000
+         GBLC  &ZZ@TAB,&ZZ@VAL                                          00280000
+         LCLC  &N                                                       00290000
+         LCLA  &I,&J                                                    00300000
+&J       SETA  N'&SYSLIST                                               00310000
+&N       SETC  '&NM'                                                    00320000
+         AIF   (T'&FILL EQ 'O').DATA                            GP12005 00330000
+         AIF   ('&N' NE '').BUILD                               GP12005 00340000
+         MNOTE 8,'TRENT WITH FILL= REQUIRES A LABEL'            GP12005 00350000
+         MEXIT ,                                                GP12005 00360000
+.*   BUILD TRANSLATE OR TRT TABLE                               GP12005 00370000
+.*                                                              GP12005 00380000
+.BUILD   ANOP  ,                                                GP12005 00390000
+&N       DC    256AL1(&FILL)                                    GP12005 00400000
+&ZZ@TAB  SETC  '&N'                                             GP12005 00410000
+&N       SETC  ''                                               GP12005 00420000
+         AIF   (&J EQ 0).MEND                                   GP12005 00430000
+.*   EXPAND TABLE MODIFICATIONS                                         00440000
+.*                                                                      00450000
+.DATA    AIF   (&J EQ 0).ORG                                            00460000
+         AIF   ('&TAB' EQ '').NOTAB                                     00470000
+&ZZ@TAB  SETC  '&TAB'                                                   00480000
+.NOTAB   AIF   ('&VAL' EQ '').NOVAL                                     00490000
+&ZZ@VAL  SETC  '&VAL'                                                   00500000
+.NOVAL   AIF   (&J LT 3).MEND                                           00510000
+&I       SETA  2                                                        00520000
+.LOOP    AIF   (&I GE &J).DONE                                          00530000
+&I       SETA  &I+1                                                     00540000
+         AIF   ('&SYSLIST(&I)' EQ '').LOOP                              00550000
+         AIF   (N'&SYSLIST(&I) EQ 2).PAIR                               00560000
+         ORG   &ZZ@TAB+&SYSLIST(&I)                                     00570000
+&N       DC    AL1(&ZZ@VAL)                                             00580000
+&N       SETC  ''                                                       00590000
+         AGO   .LOOP                                                    00600000
+.PAIR    ORG   &ZZ@TAB+&SYSLIST(&I,1)                                   00610000
+&N       DC    (&SYSLIST(&I,2))AL1(&ZZ@VAL)                             00620000
+&N       SETC  ''                                                       00630000
+         AGO   .LOOP                                                    00640000
+.DONE    AIF   ('&SYSLIST(&J)' EQ '').MEND                              00650000
+.ORG     ORG   ,                                                        00660000
+.MEND    MEND  ,                                                        00670000

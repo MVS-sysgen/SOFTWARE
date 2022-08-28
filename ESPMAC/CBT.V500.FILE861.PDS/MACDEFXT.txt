@@ -1,0 +1,35 @@
+         MACRO ,                                                        00010000
+         MACDEFXT &NAME,&TYPE                            ADDED  GP05250 00020000
+.*                                                                      00030000
+.*  (POOR) REPLACEMENT FOR D' ATTRIBUTE TO ALLOW ASSEMBLY UNDER ASM XF  00040000
+.*                                                                      00050000
+         GBLC  &ZZEXTNM(100) NAMES OF PREVIOUSLY DEFINED EXTERNALS      00060000
+         GBLA  &ZZEXTFG      0 ON ERROR; 1 IF ADDED; 2 IF OLD           00070000
+         GBLA  &ZZEXT##      NUMBER OF EXTERNALS DEFINED                00080000
+.*                                                                      00090000
+         LCLC  &WHAT   TYPE: EXTRN, WXTRN, OR 'OTHER' (NAME SAVED ONLY) 00100000
+         LCLA  &I,&J                                                    00110000
+&ZZEXTFG SETA  0             SET ERROR                                  00120000
+         AIF   ('&NAME' EQ '').MEND    NULL SUBSTITUTE?                 00130000
+         AIF   ('&TYPE' EQ 'OTHER').TYPOK                               00140000
+&WHAT    SETC  'WXTRN'       MOST FREQUENT ?                            00150000
+         AIF   ('&TYPE' EQ 'WXTRN').TYPOK                               00160000
+&WHAT    SETC  'EXTRN'       DEFAULT                                    00170000
+         AIF   (T'&TYPE EQ 'O' OR '&TYPE' EQ 'EXTRN').TYPOK             00180000
+         MNOTE 8,'MACDEFXT: UNSUPPORTED TYPE &TYPE - NOT EXRTN, WXTRN'  00190000
+.TYPOK   AIF   (&I GE &ZZEXT##).NEW                                     00200000
+&I       SETA  &I+1                                                     00210000
+         AIF   ('&ZZEXTNM(&I)' NE '&NAME').TYPOK                        00220000
+&ZZEXTFG SETA  2             SET OLD                                    00230000
+         MEXIT ,             PREVIOUSLY DEFINED - NO ACTION             00240000
+.*                                                                      00250000
+.FULL    MNOTE 4,'MACDEFXT: NAME TABLE FULL - NAME NOT SAVED'           00260000
+         MEXIT ,             PREVIOUSLY DEFINED - NO ACTION             00270000
+.*                                                                      00280000
+.NEW     AIF   ('&TYPE' EQ 'OTHER').JUSTADD                             00290000
+         &WHAT &NAME                                                    00300000
+.JUSTADD AIF   (&ZZEXT## GT 99).FULL                                    00310000
+&ZZEXT## SETA  &ZZEXT##+1                                               00320000
+&ZZEXTNM(&ZZEXT##) SETC '&NAME'   REMEMBER THE NAME                     00330000
+&ZZEXTFG SETA  1             SET NEW                                    00340000
+.MEND    MEND  ,             PREVIOUSLY DEFINED - NO ACTION             00350000

@@ -1,0 +1,21 @@
+         MACRO                                                          00010000
+&NM      FDROOM &N                                      ADDED ON 82109  00020000
+         GBLA  &FDCNTR                                                  00030000
+         LCLA  &T,&C                                                    00040000
+         LCLC  &FDCHN                                                   00050000
+&FDCNTR  SETA  &FDCNTR+1                                                00060000
+&FDCHN   SETC  'ZFD'.'&FDCNTR'                                          00070000
+&C       SETA  &FDCNTR+1                                                00080000
+         AIF   ('&NM' EQ '').NONAME                                     00090000
+&NM      EQU   *                                                        00100000
+.NONAME  AIF   ('&N' NE 'END' AND '&N' NE '*END').PROCESS               00110000
+&FDCHN   DC    AL1(0)        END OF FD LIST                             00120000
+         MEXIT ,                                                        00130000
+.PROCESS ANOP  ,                                                        00140000
+&T       SETA  30                                                       00150000
+         AIF   (T'&N EQ 'O').DFLT                                       00160000
+&FDCHN   DC    AL1(ZFD&C-*,&T),AL1(0,&N)                                00170000
+         MEXIT ,                                                        00180000
+.DFLT    ANOP  ,                                                        00190000
+&FDCHN   DC    AL1(ZFD&C-*,&T),AL1(0,1)                                 00200000
+         MEND  ,                                                        00210000
