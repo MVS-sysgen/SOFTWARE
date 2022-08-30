@@ -26,6 +26,8 @@ for i in CBT.V500.FILE861.PDS/*; do
     member=${m##*/}
     echo "./ ADD NAME=$member"
     cat "$i"
+    [ -n "$(tail -c1 $i)" ] && echo >> $i
+
 done
 echo '@@'
 echo "//*"

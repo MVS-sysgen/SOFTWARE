@@ -26,6 +26,8 @@ for i in macros/*; do
     member=${m##*/}
     echo "./ ADD NAME=$member"
     cat "$i"
+    # Add a newline if it doesn't end in a newline
+    [ -n "$(tail -c1 $i)" ] && echo >> $i
 done
 echo '@@'
 echo "//*"
