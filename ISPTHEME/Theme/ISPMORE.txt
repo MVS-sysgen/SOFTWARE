@@ -1,0 +1,48 @@
+)ATTR
+ + TYPE(TEXT)   INTENS(LOW)  SKIP(ON)    COLOR(GREEN)
+ % TYPE(TEXT)   INTENS(HIGH) SKIP(ON)    COLOR(WHITE)
+ _ TYPE(INPUT)  INTENS(LOW)  JUST(LEFT)  COLOR(TURQ)
+ # TYPE(INPUT)  INTENS(LOW)  JUST(ASIS)
+ ~ TYPE(INPUT)  INTENS(HIGH) JUST(LEFT)
+ ! TYPE(INPUT)  INTENS(HIGH) JUST(RIGHT)
+ { TYPE(TEXT)   INTENS(LOW)  SKIP(ON)    COLOR(TURQ)
+ } TYPE(TEXT)   INTENS(LOW)  SKIP(ON)    COLOR(BLUE)
+ ] TYPE(OUTPUT) INTENS(HIGH) JUST(LEFT)
+ [ TYPE(OUTPUT) INTENS(HIGH) JUST(RIGHT)
+)BODY WIDTH(&ZSCREENW) EXPAND(//)
+}                     Additional Products
++
++ Option ===>_ZCMD
++                                                     
+% R {RAKF       + RAKF Administrator Panels          / /
+% G {Games      + TSO Games                          / /
+% C {Calendar   + A calendar for ISPF                / /
+%
+%
+% 
+%
+%
+%
+%
+%
+%
+%
+%
+% 
+~  Add more items by editing SYSGEN.ISPF.PLIB(ISPMORE)
+%
+)INIT
+  .HELP = ISP00000
+  &ZPRIM = YES        /* ALWAYS A PRIMARY OPTION MENU      */
+  &ZHTOP = ISP00000   /* TUTORIAL TABLE OF CONTENTS        */
+  &ZHINDEX = ISP91000 /* TUTORIAL INDEX - 1ST PAGE isptutor*/
+)PROC
+  &ZSEL = TRANS(TRUNC(&ZCMD,'.')
+                R,'PANEL(ISPRAKF)'
+                G,'PANEL(ISPGAMES)'
+                C,'PANEL(CALENDR)'
+              ' ',' '
+                X,'EXIT'
+                *,'?' )
+  &ZTRAIL = .TRAIL
+)END

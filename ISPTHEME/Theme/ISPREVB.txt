@@ -1,0 +1,63 @@
+)ATTR
+ + TYPE(TEXT)   INTENS(LOW)  SKIP(ON)    COLOR(GREEN)
+ % TYPE(TEXT)   INTENS(HIGH) SKIP(ON)    COLOR(WHITE)
+ $ TYPE(TEXT)   INTENS(LOW)  SKIP(ON)    COLOR(YELLOW)
+ _ TYPE(INPUT)  INTENS(LOW)  JUST(LEFT)  COLOR(TURQ)
+ # TYPE(TEXT)   INTENS(LOW)  SKIP(ON) COLOR(TURQ)
+ ~ TYPE(TEXT)   INTENS(LOW)  SKIP(ON) COLOR(BLUE)
+ ! TYPE(INPUT)  INTENS(HIGH) JUST(RIGHT)
+ { TYPE(OUTPUT) INTENS(LOW)  JUST(LEFT)
+ } TYPE(OUTPUT) INTENS(LOW)  JUST(RIGHT)
+ ] TYPE(OUTPUT) INTENS(HIGH) JUST(LEFT)
+ [ TYPE(OUTPUT) INTENS(HIGH) JUST(RIGHT)
+)BODY WIDTH(&ZSCREENW) EXPAND(//)
+~--------------------------  REVIEW - ENTRY PANEL  ----/-/----------------------
+%Command ===>_ZCMD                                                             +
+%
++
+~ISPF Library:
++
++   Project  . ._revbproj+
++   Group  . . ._revbgrp +
++   Type . . . ._revbtype+
++   Member . . ._revbmem +       (Blank for member selection list)
++
++
+~Other partitioned or sequential dataset:
++
++   Name  . . . . . . ._revbdsn                                     +
++   Volume Serial . . ._z     +   (If not cataloged)
++
++Data set password  . ._revbpswd+(If password protected)
++
++
+)INIT
+.ZVARS = (REVBVOL)
+)REINIT
+ &REVBMEM = ''
+)PROC
+ IF (&REVBDSN NE '')
+   &REVBQUO = TRUNC(&REVBDSN, 1)         /* thank you Jim Ruddy
+   IF (&REVBQUO = '''')
+     &REVBDSN   = .TRAIL
+     &REVBDSN   = TRUNC (&REVBDSN,'''')
+     &REVBDSN   = '''&REVBDSN'''
+   &REVBDSNZ    = &REVBDSN
+   &REVS = &ZSCBR
+   IF (&REVBVOL NE '')
+     &ZSEL      = 'CMD(REVIEW &REVBDSNZ VOL(&REVBVOL))'
+   ELSE
+     &ZSEL      = 'CMD(REVIEW &REVBDSNZ)'
+ ELSE
+   VER (&REVBPROJ,NB)
+   VER (&REVBGRP,NB)
+   VER (&REVBTYPE,NB)
+   IF (&REVBMEM EQ '')
+     &REVBDSNZ   = '''&REVBPROJ..&REVBGRP..&REVBTYPE'''
+     &REVS = &ZSCML
+   ELSE
+     &REVBDSNZ   = '''&REVBPROJ..&REVBGRP..&REVBTYPE(&REVBMEM)'''
+     &REVS = &ZSCBR
+   &ZSEL      = 'CMD(REVIEW &REVBDSNZ)'
+ VPUT (REVBPROJ,REVBGRP,REVBTYPE) PROFILE
+)END

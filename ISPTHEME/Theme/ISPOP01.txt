@@ -1,0 +1,56 @@
+)ATTR
+ + TYPE(TEXT)   INTENS(LOW)  SKIP(ON)    COLOR(GREEN)
+ % TYPE(TEXT)   INTENS(HIGH) SKIP(ON)    COLOR(WHITE)
+ $ TYPE(TEXT)   INTENS(LOW)  SKIP(ON)    COLOR(YELLOW)
+ _ TYPE(INPUT)  INTENS(LOW)  JUST(LEFT)  COLOR(TURQ)
+ # TYPE(INPUT)  INTENS(LOW)  JUST(ASIS)
+ ~ TYPE(TEXT)   INTENS(LOW)  SKIP(ON) COLOR(BLUE)
+ ! TYPE(INPUT)  INTENS(HIGH) JUST(RIGHT)
+ { TYPE(OUTPUT) INTENS(LOW)  JUST(LEFT)
+ } TYPE(OUTPUT) INTENS(LOW)  JUST(RIGHT)
+ ] TYPE(OUTPUT) INTENS(HIGH) JUST(LEFT)
+ [ TYPE(OUTPUT) INTENS(HIGH) JUST(RIGHT)
+)BODY WIDTH(&ZSCREENW) EXPAND(//)
+~-------------------------  TERMINAL CHARACTERISTICS  ----------/-/-------------
++Command ===>_ZCMD
+%
++Terminal Type     ===>_ZTERM   +(3277   - 3275/3277 terminal)
+$                                (3277A  - 3275/3277 with APL keyboard)
++                                (3278   - 3276/3278/3279/3290 terminal)
+$                                (3278A  - 3276/3278/3279/3290 APL)
+$                                (3278T  - 3276/3278/3290 TEXT keyboard)
++
++Number of PF Keys ===>_Z   +    (12 or 24)
++
++Input Field Pad   ===>_Z+       (N - Nulls) (B - Blanks) (Special Characters -
++                                 must not be the same as COMMAND DELIMITER)
++
++Command Delimiter ===>_Z+       (Special character for command stacking)
++
++Screen Format     ===>_Z   +    (Select one of the following:)
++ (3278 Model 5 only)            (DATA - Format based on data width)
++                                (STD  - Always format 24 lines by 80 chars)
++                                (MAX  - Always format 27 lines by 132 chars)
++
+$ (3290 Only)                    (PART - Format using hardware partitions -
+$                                 effective the next ISPF invocation.)
++
+)INIT
+.ZVARS='(ZKEYS,ZPAD,ZDEL,ZSCRFMT)'
+  .HELP = ISP00000
+  &ZPRIM = NO         /* NOT A PRIMARY OPTION MENU         */
+  &ZHTOP = ISP00000   /* TUTORIAL TABLE OF CONTENTS        */
+  &ZHINDEX = ISP01100 /* TUTORIAL INDEX - 1ST PAGE isptutor*/
+)PROC
+  VER (&ZTERM,NB,LIST,3277,3277A,3278,3278A,3278T)
+  VER (&ZKEYS,NB,LIST,12,012,0012,24,024,0024)
+  IF  (&ZKEYS EQ 12)
+   &ZKEYS = '0012'
+  ELSE
+  IF  (&ZKEYS EQ 24)
+   &ZKEYS = '0024'
+  ELSE
+  VER (&ZPAD,NB,LEN,EQ,1)
+  VER (&ZDEL,NB,LEN,EQ,1)
+  VER (&ZSCRFMT,NB,LIST,DATA,STD,MAX,PART)
+)END

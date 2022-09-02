@@ -1,0 +1,58 @@
+)ATTR
+ + TYPE(TEXT)   INTENS(LOW)  SKIP(ON)    COLOR(GREEN)
+ % TYPE(TEXT)   INTENS(HIGH) SKIP(ON)    COLOR(WHITE)
+ _ TYPE(INPUT)  INTENS(LOW)  JUST(LEFT)  COLOR(TURQ)
+ # TYPE(INPUT)  INTENS(LOW)  JUST(ASIS)
+ ~ TYPE(INPUT)  INTENS(HIGH) JUST(LEFT)
+ ! TYPE(INPUT)  INTENS(HIGH) JUST(RIGHT)
+ { TYPE(TEXT)   INTENS(LOW)  SKIP(ON)    COLOR(TURQ)
+ } TYPE(TEXT)   INTENS(LOW)  SKIP(ON)    COLOR(BLUE)
+ ] TYPE(OUTPUT) INTENS(HIGH) JUST(LEFT)
+ [ TYPE(OUTPUT) INTENS(HIGH) JUST(RIGHT)
+)BODY WIDTH(&ZSCREENW) EXPAND(//)
+}                     Wally ISPF Primary Option Menu
++
++ Option ===>_ZCMD
++                                                     
+% 0 {Settings   + Specify terminal and user parms    / /+USERID   :{&ZUSER  +
+% 1 {Browse     + Display source data using Review   / /+TIME     :{&ZTIMEL +
+% 2 {Edit       + Change source data using Revedit   / /+TERMINAL :{&ZTERM  +
+% 3 {Utilities  + Perform utility functions          / /+SCREEN   :{&ZSCREEN+
+% 4 {Foreground + Invoke language processors         / /+LANGUAGE :{&ZLANG  +
+% 5 {Batch      + Submit job for language processing / /+PANEL    :{&ZPANELID
+% 6 {Command    + Enter TSO command or CLIST         / /+APPL ID  :{&ZAPPLID+
+% 7 {Dialog Test+ Perform dialog testing             / /+PRIM     :{&ZPRIM  +
+% A {ACETEST    + APF-authorized test facility       / /+PF KEYS  :{&ZKEYS  +
+% C {Changes    + Summary of changes for this release/ /{SYSTEMID : &ZSYSID +
+% T {Tutorial   + Display information about ISPF     / /{PROC     : &ZSYSPROC
+% SD{RevOut     + System display held job output     / /{RELEASE  : &ZVERSION
+% X {EXIT       + Terminate ISPF using log and list defaults 
+% M {More         Additional Products
+% 
++      Enter{X+to terminate ISPF using log and list defaults
+%
+)INIT
+  .HELP = ISP00000
+  &ZPRIM = YES        /* ALWAYS A PRIMARY OPTION MENU      */
+  &ZHTOP = ISP00000   /* TUTORIAL TABLE OF CONTENTS        */
+  &ZHINDEX = ISP91000 /* TUTORIAL INDEX - 1ST PAGE isptutor*/
+)PROC
+  &ZSEL = TRANS(TRUNC(&ZCMD,'.')
+                0,'PANEL(ISPOP0)'
+                1,'PANEL(ISPREVB) NEWAPPL(ISR)'
+                2,'PANEL(ISPREVE) NEWAPPL(ISR)'
+                3,'PANEL(ISPUTILS)'
+                4,'PANEL(ISRFPA)'
+                5,'PGM(ISRJB1) PARM(ISRJPA) NOCHECK'
+                6,'CMD(ISPOPT6)'
+                7,'PANEL(ISPOPT7)'
+                A,'CMD(ACETEST) NEWAPPL(ACE) NOCHECK'
+                C,'PANEL(ISPOPC0)'
+                T,'PGM(ISPTUTOR) PARM(ISP00000)'
+                SD,'CMD(REVOUT *)  NEWAPPL(ISR)'
+                M,'PANEL(ISPMORE)'
+              ' ',' '
+                X,'EXIT'
+                *,'?' )
+  &ZTRAIL = .TRAIL
+)END

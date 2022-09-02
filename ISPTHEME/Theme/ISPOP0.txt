@@ -1,0 +1,47 @@
+)ATTR
+ + TYPE(TEXT)   INTENS(LOW)  SKIP(ON)    COLOR(GREEN)
+ % TYPE(TEXT)   INTENS(HIGH) SKIP(ON)    COLOR(WHITE)
+ $ TYPE(TEXT)   INTENS(LOW)  SKIP(ON)    COLOR(YELLOW)
+ _ TYPE(INPUT)  INTENS(LOW)  JUST(LEFT)  COLOR(TURQ)
+ # TYPE(TEXT)   INTENS(LOW)  SKIP(ON) COLOR(TURQ)
+ ~ TYPE(TEXT)   INTENS(LOW)  SKIP(ON) COLOR(BLUE)
+ ! TYPE(INPUT)  INTENS(HIGH) JUST(RIGHT)
+ { TYPE(OUTPUT) INTENS(LOW)  JUST(LEFT)
+ } TYPE(OUTPUT) INTENS(LOW)  JUST(RIGHT)
+ ] TYPE(OUTPUT) INTENS(HIGH) JUST(LEFT)
+ [ TYPE(OUTPUT) INTENS(HIGH) JUST(RIGHT)
+)BODY WIDTH(&ZSCREENW) EXPAND(//)
+~-------------------------  ISPF Parameter Options  -----/-/--------------------
++ Option ===>_ZCMD
+%
+% 1 #Terminal  + - Specify terminal characteristics
+$ 2 $Log/List    - Specify ISPF log and list defaults
+% 3 #PF Keys   + - Specify PF keys for 3278 terminal with 24 PFkeys
+$ 4 $Display     - Specify screen display characteristics
+$ 5 $List        - Specify list data set characteristics
+$ 6 $Graphic     - Specify GDDM graphic print parameters
+$ 7 $Environ     - Specify ENVIRON command settings
+$ 8 $Keylist     - Modify key list(s)
+$ 9 $Dialog Test - Specify Dialog Test option
+%
+)INIT
+  .HELP = ISP00000
+  &ZPRIM = NO         /* not A PRIMARY OPTION MENU         */
+  &ZHTOP = ISP00000   /* TUTORIAL TABLE OF CONTENTS        */
+  &ZHINDEX = ISP01000 /* TUTORIAL INDEX - 1ST PAGE isptutor*/
+)PROC
+  &ZSEL = TRANS(TRUNC(&ZCMD,'.')
+                1,'PGM(ISPOPT01)'
+/*              2,'PANEL(ISPOP02)'                */
+                3,'PGM(ISPOPT03)'
+/*              4,'PANEL(ISPOP04)'                */
+/*              5,'PANEL(ISPOP05)'                */
+/*              6,'PANEL(ISPOP06)'                */
+/*              7,'PANEL(ISPOP07)'                */
+/*              8,'PANEL(ISPOP08)'                */
+/*              9,'PANEL(ISPOP09)'                */
+              ' ',' '
+                X,'EXIT'
+                *,'?' )
+  &ZTRAIL = .TRAIL
+)END

@@ -1,0 +1,45 @@
+)ATTR
+ + TYPE(TEXT)   INTENS(LOW)  SKIP(ON)    COLOR(GREEN)
+ % TYPE(TEXT)   INTENS(HIGH) SKIP(ON)    COLOR(WHITE)
+ ¬ TYPE(TEXT)   INTENS(LOW)  SKIP(ON)    COLOR(YELLOW)
+ _ TYPE(INPUT)  INTENS(LOW)  JUST(LEFT)  COLOR(TURQ)
+ # TYPE(INPUT)  INTENS(LOW)  JUST(ASIS)
+ ~ TYPE(TEXT)   INTENS(LOW)  SKIP(ON) COLOR(BLUE)
+ ! TYPE(INPUT)  INTENS(HIGH) JUST(RIGHT)
+ { TYPE(OUTPUT) INTENS(LOW)  JUST(LEFT)
+ } TYPE(OUTPUT) INTENS(LOW)  JUST(RIGHT)
+ Ý TYPE(OUTPUT) INTENS(HIGH) JUST(LEFT)
+ ¨ TYPE(OUTPUT) INTENS(HIGH) JUST(RIGHT)
+)BODY WIDTH(&ZSCREENW) EXPAND(//)
+~-------------------------  PF KEY DEFINITION  -------/-/-----------------------
++Command ===>_ZCMD
++
++Number of PF keys ===>{Z   + Terminal Type ===>{ZTERM
++
++PF1  ===>_zpf01
++PF2  ===>_zpf02
++PF3  ===>_zpf03
++PF4  ===>_zpf04
++PF5  ===>_zpf05
++PF6  ===>_zpf06
++PF7  ===>_zpf07
++PF8  ===>_zpf08
++PF9  ===>_zpf09
++PF10 ===>_zpf10
++PF11 ===>_zpf11
++PF12 ===>_zpf12
++
++LABEL1  ===>_zpfl01  +  LABEL2  ===>_zpfl02  + LABEL3  ===>_zpfl03  +
++LABEL4  ===>_zpfl04  +  LABEL5  ===>_zpfl05  + LABEL6  ===>_zpfl06  +
++LABEL7  ===>_zpfl07  +  LABEL8  ===>_zpfl08  + LABEL9  ===>_zpfl09  +
++LABEL10 ===>_zpfl10  +  LABEL11 ===>_zpfl11  + LABEL12 ===>_zpfl12  +
++
++  Press Enter key to save changes. Enter END to save changes and exit.
+)INIT
+.ZVARS='(ZKEYS)'
+  .HELP = ISP00000
+  &ZPRIM = NO         /* NOT A PRIMARY OPTION MENU         */
+  &ZHTOP = ISP00000   /* TUTORIAL TABLE OF CONTENTS        */
+  &ZHINDEX = ISP01100 /* TUTORIAL INDEX - 1ST PAGE isptutor*/
+)PROC
+)END
