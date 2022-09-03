@@ -1,0 +1,57 @@
+Item,Title,SYSC,Link
+ALIST,TSO command lists information about all allocated datasets,No,https://www.jaymoseley.com/hercules/cbt_ware/alist.htm
+CATLG,TSO commands adds three IEHPROGM functions,No,https://www.jaymoseley.com/hercules/cbt_ware/catlg.htm
+CONSAMS,execute IDCAMS commands from system console ,No,https://www.jaymoseley.com/hercules/cbt_ware/consams.htm
+DD,TSO command displays the attributes of datasets,No,https://www.jaymoseley.com/hercules/cbt_ware/dd.htm
+DDN,TSO command shorthand version of ALLOC,No,https://www.jaymoseley.com/hercules/cbt_ware/ddn.htm
+DISKMAP,Prints report of dataset allocation on selected DASD volumes ,No,https://www.jaymoseley.com/hercules/cbt_ware/diskmap.htm
+DSAT,TSO command displays data set information by index level.,No,https://www.jaymoseley.com/hercules/cbt_ware/dsat.htm
+DUDASD,TSO command displays DASD unit information on TSO User's screen,No,https://www.jaymoseley.com/hercules/cbt_ware/dudasd.htm
+DUTAPES,TSO command display TAPE unit information on TSO User's screen (also STC),No,https://www.jaymoseley.com/hercules/cbt_ware/dutapes.htm
+DYNALLOC,subroutine allows COBOL main program to dynamically allocate datasets ,Yes,https://www.jaymoseley.com/hercules/cbt_ware/dynalloc.htm
+FILEATTR,subroutine allows COBOL main program to retrieve dataset attributes ,Yes,https://www.jaymoseley.com/hercules/cbt_ware/fileattr.htm
+FIND,TSO command searchs members of PDS for string (similar to 'check' function of PDSUPDTE),No,https://www.jaymoseley.com/hercules/cbt_ware/find.htm
+FINDFILE,TSO command displays the catalog and DASD location of a specified dataset,No,https://www.jaymoseley.com/hercules/cbt_ware/findfile.htm
+FREEALL,TSO command frees all allocated datasets,No,https://www.jaymoseley.com/hercules/cbt_ware/freeall.htm
+GDGCOPY,copies Generation Data Groups in correct order ,Yes,https://www.jaymoseley.com/hercules/cbt_ware/gdgcopy.htm
+IBHLSPAC,list all availble space on DASD that are online ,No,https://www.jaymoseley.com/hercules/cbt_ware/ibhlspac.htm
+IEHMAP,"analyze DASD, print listing of contents, recover bad VTOC entries ",Yes,https://www.jaymoseley.com/hercules/cbt_ware/iehmap.htm
+INSTREAM,TSO command to copy statements embedded in CLIST to a dataset ,No,https://www.jaymoseley.com/hercules/cbt_ware/instream.htm
+LISTDD,TSO command to list attributes of allocated datasets ,No,https://www.jaymoseley.com/hercules/cbt_ware/listdd.htm
+LISTPDS,list and/or punch source libraries or datasets ,Yes,https://www.jaymoseley.com/hercules/cbt_ware/listpds.htm
+LISTSPC,TSO command displays dataset allocation and freespace information,No,https://www.jaymoseley.com/hercules/cbt_ware/listspc.htm
+LISTVOL,TSO command displays volume(s) on which dataset is allocated,No,https://www.jaymoseley.com/hercules/cbt_ware/listvol.htm
+LM,TSO command displays directory for Partitioned Datasets,No,https://www.jaymoseley.com/hercules/cbt_ware/lm.htm
+MEMBER,TSO command to display information about a member of PDS. ,No,https://www.jaymoseley.com/hercules/cbt_ware/member.htm
+MNEMAC,Extended mnemonic macros for IFOX assembler ,No,https://www.jaymoseley.com/hercules/cbt_ware/mnemac.htm
+MS,TSO command displays various system statistics and execution information.,No,https://www.jaymoseley.com/hercules/cbt_ware/ms.htm
+OFFLOAD,unload Partitioned Dataset contents to sequential dataset (see PDSLOAD) ,Yes,https://www.jaymoseley.com/hercules/cbt_ware/offload.htm
+PDSBLKS,TSO command to display directory blocks allocated/used for a Partitioned Dataset ,No,https://www.jaymoseley.com/hercules/cbt_ware/pdsblks.htm
+PDSGEN,generate card images from one or more PDS libraries ,Yes,https://www.jaymoseley.com/hercules/cbt_ware/pdsgen.htm
+PDSLOAD,reload Partitioned Dataset contents from sequential dataset (see OFFLOAD) ,Yes,https://www.jaymoseley.com/hercules/cbt_ware/pdsload.htm
+PDSPRINT,print/punch members of partitioned datasets ,Yes,https://www.jaymoseley.com/hercules/cbt_ware/pdsprint.htm
+PDSPROGM,provides the functions of IEHPROGM with simpler control statements ,Yes,https://www.jaymoseley.com/hercules/cbt_ware/pdsprogm.htm
+PDSUPDTE,allows global modifications of contents of libraries ,Yes,https://www.jaymoseley.com/hercules/cbt_ware/pdsupdte.htm
+PDSUR,Unload/Reload PDS in IEHMOVE format ,Yes,https://www.jaymoseley.com/hercules/cbt_ware/pdsur.htm
+PRINTALL,read any dataset and prints contents with optional hex dump. ,No,https://www.jaymoseley.com/hercules/cbt_ware/printall.htm
+PRINTOFF,TSO command prints PDS or sequential dataset to SYSOUT,No,https://www.jaymoseley.com/hercules/cbt_ware/printoff.htm
+PTFSEL,lists and optionally copies PTFs from an input PTF file ,Yes,https://www.jaymoseley.com/hercules/cbt_ware/ptfsel.htm
+RLSE,TSO command releases unused space allocated to DASD resident datasets,No,https://www.jaymoseley.com/hercules/cbt_ware/rlse.htm
+SETPFKEY,allows console Program Function Keys to be set at IPL time ,Yes,https://www.jaymoseley.com/hercules/cbt_ware/setpfkey.htm
+SHOWASM,"TSO command display aux storage, page/swap dataset information",No,https://www.jaymoseley.com/hercules/cbt_ware/showasm.htm
+SHOWDSCB,batch program to decode and display DSCB information for dataset(s) ,No,https://www.jaymoseley.com/hercules/cbt_ware/showdscb.htm
+SHOWSMF,display information about SMF datasets (TSO command or STC) ,Yes,https://www.jaymoseley.com/hercules/cbt_ware/showsmf.htm
+SLACLE,SLAC Modifications to the OS/VS Linkage Editor ,No,https://www.jaymoseley.com/hercules/cbt_ware/slacle.htm
+STACK,TSO command capture output from PUTGET I/O of next TSO command,No,https://www.jaymoseley.com/hercules/cbt_ware/stack.htm
+SUPERGEN,"like IEBGENER, but with many more options ",Yes,https://www.jaymoseley.com/hercules/cbt_ware/supergen.htm
+SUPERLST,formatted VTOC and track map listing ,Yes,https://www.jaymoseley.com/hercules/cbt_ware/superlst.htm
+SYSREPRO,"another IEBGENER clone, but with some useful features ",Yes,https://www.jaymoseley.com/hercules/cbt_ware/sysrepro.htm
+TAPEMAP,analyze tapes and report on contents of datasets ,Yes,https://www.jaymoseley.com/hercules/cbt_ware/tapemap.htm
+TAPESCAN,report (and copy) contents of datasets on tapes ,Yes,https://www.jaymoseley.com/hercules/cbt_ware/tapescan.htm
+VOLS,TSO command to display online DASD volumes + available space ,No,https://www.jaymoseley.com/hercules/cbt_ware/vols.htm
+VSAMLIST,VSAM Catalog List Utility ,Yes,https://www.jaymoseley.com/hercules/cbt_ware/vsamlist.htm
+VTOC,TSO command to display DASD VTOC information ,No,https://www.jaymoseley.com/hercules/cbt_ware/vtoc.htm
+VTOCLIST,user friendly formatted VTOC,Yes,https://www.jaymoseley.com/hercules/cbt_ware/vtoclist.htm
+ZAPDSCB,batch program to change DSCB attributes of any DASD dataset ,Yes,https://www.jaymoseley.com/hercules/cbt_ware/zapdscb.htm
+ZDUMPTP,generalized dump of tape datasets in hex format ,Yes,https://www.jaymoseley.com/hercules/cbt_ware/ztdumptp.htm
+ZZRELINK,builds JCL to re link edit load module(s),Yes,https://www.jaymoseley.com/hercules/cbt_ware/zzrelink.htm
