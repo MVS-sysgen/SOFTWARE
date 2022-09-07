@@ -1,0 +1,24 @@
+)F FUNCTION -
+  The CFLDSI CLIST displays session allocations using LISTALC and
+  LISTDSI.
+
+)X SYNTAX  -
+         CFLDSI DD(xxxx)
+
+  REQUIRED - NONE
+  DEFAULTS - NONE
+  ALIAS    -
+)O OPERANDS -
+
+))DD       - optional, DD (data definition name) to be listed
+
+
+  Sample Commands
+
+  1) CFLDSI
+     Displays all session allocated DDs w/ associated DSNs
+
+  2) CFLDSI DD(ISPCLIB)
+     Displays allocated datasets ONLY for DD ISPCLIB including some
+     dataset attributes
+

@@ -1,0 +1,24 @@
+)F FUNCTION -
+  The CLDSI CLIST displays dataset attributes using LISTDSI.
+
+)X SYNTAX  -
+         CLDSI DSN(xxxx)
+
+  REQUIRED - DSN
+  DEFAULTS - NONE
+  ALIAS    -
+)O OPERANDS -
+
+))DSN      - DSN (dataset name)
+             DSN in quotes is fully qualified, otherwise, prefix DSN
+             with USERID
+
+
+  Sample Commands
+
+  1) CLDSI DSN('''HERC01.TEST.CNTL''')
+     Displays dataset attributes for 'HERC01.TEST.CNTL'
+
+  2) CLDSI DSN(TEST.CNTL)
+     Displays dataset attributes for 'userid.TEST.CNTL'
+

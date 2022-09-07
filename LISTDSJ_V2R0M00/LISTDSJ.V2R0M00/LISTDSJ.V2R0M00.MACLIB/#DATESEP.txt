@@ -1,0 +1,29 @@
+         MACRO                                                          LB2000a
+&NAME    #DATESEP  &DS                                                  LB1100b
+.*****************************************************************      LB1100b
+.*       Date Separator Character Configuration                  *      LB1100b
+.*****************************************************************      LB1100b
+         MNOTE 'DATESEP:  Valid values are:           '                 LB1100b
+         MNOTE '          D=dash    (-)    default ** '                 LB1100b
+         MNOTE '          P=period  (.)               '                 LB1100b
+         MNOTE '          S=slash   (/)               '                 LB1100b
+         AIF   ('&DS' EQ 'D').DSD                                       LB1100b
+         AIF   ('&DS' EQ 'P').DSP                                       LB1100b
+         AIF   ('&DS' EQ 'S').DSS                                       LB1100b
+.DSDFLT  ANOP                                                           LB1100b
+         MNOTE '  Applied DEFAULT date separator as DASH'               LB1100b
+         MVI   DATESEP,C'-'        Date Separator default value <---    LB1001f
+         MEXIT                                                          LB1100b
+.DSD     ANOP                                                           LB1100b
+         MNOTE '  Applied date separator as DASH'                       LB1100b
+         MVI   DATESEP,C'-'        Date Separator - Dash                LB1010a
+         MEXIT                                                          LB1100b
+.DSP     ANOP                                                           LB1100b
+         MNOTE '  Applied date separator as PERIOD'                     LB1100b
+         MVI   DATESEP,C'.'        Date Separator . Period              LB1010a
+         MEXIT                                                          LB1100b
+.DSS     ANOP                                                           LB1100b
+         MNOTE '  Applied date separator as SLASH'                      LB1100b
+         MVI   DATESEP,C'/'        Date Separator / Slash               LB1010a
+         MEXIT                                                          LB1100b
+         MEND                                                           LB2000a
