@@ -1,0 +1,419 @@
+         TITLE 'CHKDSNMS - Message Processor for CHKDSN               '
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+*
+*  ==================================================================
+*
+*   CCC    HH   HH  KK   KK  DDDDD     SSSS   NN   NN  MM   MM   SSSS
+*  CC  CC  HH   HH  KK  KK   DD  DD   SS  SS  NN   NN  MMM MMM  SS  SS
+* CC       HH   HH  KK K     DD   DD  SS      NNN  NN  MM M MM  SS
+* CC       HHHHHHH  KKK      DD   DD   SSSS   NN N NN  MM M MM   SSSS
+* CC       HH   HH  KK KK    DD   DD      SS  NN  NNN  MM   MM      SS
+*  CC  CC  HH   HH  KK  KK   DD  DD   SS  SS  NN   NN  MM   MM  SS  SS
+*   CCC    HH   HH  KK   KK  DDDDD     SSSS   NN   NN  MM   MM   SSSS
+*
+*  ==================================================================
+*
+*  Program: CHKDSNMS
+*
+*     This program stores all messages for CHKDSN to provide a central
+*  and common processor to return message text using a parameter
+*  address list as follows:
+*
+*     FW#1  Input     F      Message Number requested
+*     FW#2  Input     F      Starting address to received message text
+*     FW#3  Input     F      Length of above area to received content
+*     FW#4  Output    F      Length of message text moved after call
+*
+*     L    R1,parm addr list
+*     call CHKDSNMS
+*     LTR  R15,R15
+*     .
+*     .
+*     .
+*
+*
+*
+*
+         EJECT
+*  CHKDSN Programs Called:
+*  ==================================================================
+*
+*    o  GETMAIN/FREEMAIN       Working Storage
+*
+*
+         EJECT
+*  Table 1 - Program Register Usage
+*
+*  +------+----------------------------------------------------------+
+*  | REG  |                                                          |
+*  |USAGE |  DESCRIPTION                                             |
+*  +------+----------------------------------------------------------+
+*  |  R13 |  Calling program registers (R14-R12) upon entry          |
+*  |  R14 |  Calling program return address upon entry               |
+*  |  R15 |  Called  program entry address  upon entry               |
+*  |  R1  |  Called  program parms starting address                  |
+*  +------+----------------------------------------------------------+
+*  |  R0  |  Working Register                                        |
+*  |  R1  |  Working Register                                        |
+*  |  R2  |  Working Register                                        |
+*  |  R3  |  Working Register                                        |
+*  |  R4  |  Working Register                                        |
+*  |  R5  |  Working Register                                        |
+*  |  R6  |  Working Register                                        |
+*  |  R7  |  Working Register                                        |
+*  |  R8  |  Working Register                                        |
+*  |  R9  |  Address of WORKAREA via GETMAIN/FREEMAIN                |
+*  |  R10 |  Base Register 1                                         |
+*  |  R11 |  Working Register                                        |
+*  |  R12 |  Working Register                                        |
+*  |  R13 |  Address of SAVEAREA                                     |
+*  +------+----------------------------------------------------------+
+*  |  R15 |  Return Code upon exit                                   |
+*  +------+----------------------------------------------------------+
+*
+         EJECT
+*  Table 2 - Return Codes
+*
+*  +------+----------------------------------------------------------+
+*  |RETURN|                                                          |
+*  | CODE |  DESCRIPTION                                             |
+*  +------+----------------------------------------------------------+
+*  |  00  |  Message found                                           |
+*  +------+----------------------------------------------------------+
+*  |  02  |  Message not found, but message text returned            |
+*  +------+----------------------------------------------------------+
+*  |  12  |  No PARMS                                                |
+*  +------+----------------------------------------------------------+
+*
+         EJECT
+*  Macros and SYSLIB Location:
+*  ==================================================================
+*
+*  Macro     Description                         Library
+*  --------  ----------------------------------  --------------------
+*  YREGS     Register Equates                    SYS2.MACLIB
+*
+*
+*  References:
+*  ==================================================================
+*
+*  - None
+*
+*
+         EJECT
+*  Change History: <CHGHIST>
+*  ==================================================================
+*
+*  MM/DD/CCYY Version  Name / Description
+*  ---------- -------  --------------------------------------------
+*
+*  07/30/2020 1.0.00   Larry Belmontes Jr.
+*                      - Initial version released to MVS 3.8J
+*                        hobbyist public domain
+*
+*
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+         EJECT
+CHKDSNMS CSECT
+         USING CHKDSNMS,R10        my BASE REGISTER(S)
+         PRINT NOGEN
+*
+*     * /********************************************************/
+*     * /* Save regs and declare base registers R10,R11,R12     */
+*     * /* including saving R1 (PARMS) in R2                    */
+*     * /* - R1  myPARMS address on entry                       */
+*     * /* - R15 myENTRY address on entry                       */
+*     * /********************************************************/
+         STM   R14,R12,12(R13)     Save calling program registers
+         LR    R10,R15             Load base1 w R15
+         LR    R15,R13             Save callers registers
+         LR    R2,R1               Save PARM addr
+*
+*     * /********************************************************/
+*     * /* Program Eyecatcher                                   */
+*     * /********************************************************/
+         B     OVRSTAMP            Branch past eye-catcher
+MYSTAMP  EQU   *
+PGMID    DC    CL8'CHKDSNMS'       My Program STAMP
+         DC    CL8'MVS3.8J '       OS
+         DC    CL8'V1.0.00 '       .Version
+         DC    CL8'07302020'       ..date  MMDDCCYY
+         DC    CL1' '
+PGMDS    DC    CL8'&SYSDATE'       Assemble Date
+         DC    CL3' - '            .and
+PGMTS    DC    CL8'&SYSTIME'       ..Time
+         DC    C'Copyright (C) 2020'
+         DC    C'Larry Belmontes, Jr. '
+         DC    C'https://ShareABitofIT.net/CHKDSN-in-MVS38J'
+MYSTAMPL EQU   *-MYSTAMP
+OVRSTAMP DS    0H
+*
+         EJECT
+*     * /********************************************************/
+*     * /* GETMAIN, working storage, using R9                   */
+*     * /* - R0  Working register                               */
+*     * /* - R1  Working register (GETMAIN address)             */
+*     * /* - R9  Working Storage DSECT address                  */
+*     * /********************************************************/
+         LA    R0,WSAREAL          R0 = size of Workarea DSECT
+         GETMAIN   R,LV=(R0)       Get Storage, R1 = addr of storage
+         LTR   R15,R15             Did we get the storage?
+         BNZ   NOMAINS             NO, return with rc in R15
+         LR    R9,R1               YES. R9 = Workarea DSECT Register
+         USING WSDSECT,R9          Tell Assembler
+*
+*     * /********************************************************/
+*     * /* Update Save Areas for caller and calling programs    */
+*     * /* - R1  myPARMS address on entry  (restored)           */
+*     * /********************************************************/
+         LR    R15,R13             Save callers savearea addr
+         LA    R13,SAVEAREA        Load Addr of my savearea
+         ST    R15,4(,R13)         Chain callers to my savearea
+         ST    R13,8(,R15)         Chain my savearea to callers
+         LR    R1,R2               Restore R1 as PARM addr
+*
+         EJECT
+*     * /********************************************************/
+*     * /* Get PARAMETER information passed to program          */
+*     * /* - R1 myPARMS address on entry                        */
+*     * /* - R4 Starting parms address                          */
+*     * /* - R6 Parm Length                                     */
+*     * /* - R3, R4, R5 Working Register                        */
+*     * /********************************************************/
+PARMS    EQU   *                   We have a parm...
+         LTR   R1,R1               Do I have a PARM?
+         BNZ   PARMIN              YES, check parm length
+         MVC   RCEXIT,=F'12'       NO, return with RC=12 (no parm)
+         B     MYEXIT              Branch to MYEXIT
+PARMIN   EQU   *                   NO,  must be PARM addr
+PARMSXT  EQU   *                   We have a parm...
+*
+         EJECT
+*     * /********************************************************/
+*     * /* Find and return message text                         */
+*     * /* - R1 Starting parms address                          */
+*     * /* - R2, R3, R4, R5, R6, R7, R8 Working Register        */
+*     * /********************************************************/
+         MVC   RCEXIT,=F'0'        Initialize RCEXIT
+         USING PARMAL,R1           Tell Assembler
+         LA    R2,MSGTENT#         Number of MSGTBL entries
+         LA    R3,MSGTBL           Starting address of MSGTBL
+         USING TBLMSG,R3           Tell Assembler
+         L     R6,PDMSG            Address of PDMSG
+         L     R7,PDMSGL           Length of PDMSG
+LOOK4MSG EQU   *
+         CLC   TMSGNUM,MSGTEOT     End of message table?
+         BE    MSGNOTFN            Yes, message not found!
+         CLC   TMSGNUM,PMSGNBR     Message number?
+         BE    MSGFOUND            Yes, message found
+         LA    R3,TBLMSGL(R3)      Bump up to next entry
+         BCT   R2,LOOK4MSG         Look again...
+*                                  Exhausted msg table, not found!
+*                                  Construct not found msg by
+*                                  repurposing R3 to use DSECT
+         LA    R3,MANUALTE         Reset R3- addrs of manual msg entry
+         L     R2,MSGTEOT          End of Msg Table value (x'ffffffff')
+         ST    R2,0(R3)
+         LA    R2,MSGNFND          Address of MSGNFND message
+         ST    R2,4(R3)
+         LA    R2,L'MSGNFND        Length of MSGNFND message
+         ST    R2,8(R3)
+MSGNOTFN EQU   *                   Requested message not found
+         MVC   RCEXIT,=F'2'
+MSGFOUND EQU   *                   Requested message found
+         L     R8,TMSGTXTL         Length of TMSGTXT
+         CR    R7,R8               Sufficient length to recv TMSGTXT?
+         BL    MSGSMALR            No, use smaller length
+         B     MSGOKLEN            YES, use msg txt length
+MSGSMALR EQU   *
+         LR    R8,R7
+MSGOKLEN EQU   *
+         BCTR  R8,0                Adjust for EX MVC
+         L     R5,TMSGTXT
+         EX    R8,MVCMSG           EX MVC of MSG
+         LA    R8,1(R8)            Restore length of TMSGTXT
+         ST    R8,PMSGTXTL         Set message length moved
+         CLC   TMSGNUM,MSGTEOT     End of message table?
+         BNE   MYEXIT              No, done...
+         L     R8,PMSGNBR          Yes, indicate message number
+         CVD   R8,DW               Convert to decimal
+         UNPK  08(05,R6),DW+5(03)  Unpack and
+         OI    08+05-01(R6),X'F0'  ... force and F zone
+         B     MYEXIT              Done...
+*
+MVCMSG   MVC   0(0,R6),0(R5)       Move message to requestor area
+*
+         EJECT
+*     * /********************************************************/
+*     * /* - Restore savearea, FREEMAIN, and                    */
+*     * /*   return to caller                                   */
+*     * /********************************************************/
+MYEXIT   EQU   *
+*
+*        STM   R0,R1,DW            SAVE    R0,R1  to   DW before TPUT
+*        TPUT  DJMSG,L'DJMSG
+*        LM    R0,R1,DW            RESTORE R0,R1  from DW after  TPUT
+*
+*     * /--------------------------------------------------------/
+*     * /* R1 = my Working Storage Address from GETMAIN         */
+*     * /********************************************************/
+         LR    R1,R13              Working Storage Addr
+*
+*     * /--------------------------------------------------------/
+*     * /* Get callers savearea into R13 and overlay my R15     */
+*     * /* to be returned to caller                             */
+*     * /--------------------------------------------------------/
+         L     R13,SAVEAREA+4      Restore R13
+         L     R5,RCEXIT           Set R15 to my exit value
+*
+*     * /--------------------------------------------------------/
+*     * /* Working Storage FREEMAIN                             */
+*     * /--------------------------------------------------------/
+         LA    R0,WSAREAL          Size of WSAREA DSECT
+         FREEMAIN  R,LV=(R0),A=(R1)    Free Storage
+*
+*     * /--------------------------------------------------------/
+*     * /* Restore caller registers and return to caller        */
+*     * /--------------------------------------------------------/
+         LR    R15,R5              R15 = RC for exit
+NOMAINS  EQU   *
+         L     R14,12(R13)         Restore R14
+         LM    R0,R12,20(R13)      Restore R0 thru R12
+         BR    R14                 Return to caller
+*
+         TITLE 'CHKDSNMS - Literal Pool                               '
+         LTORG
+*
+         TITLE 'CHKDSNMS - Message Address Table / Message Text       '
+*     * /********************************************************/
+*     * /* Message Address Table                                */
+*     * /********************************************************/
+MSGTBL   DS    0F
+*              MSGNUM ,MSGTXT    ,MSGTXTL
+*              -------,----------,-----------
+         DC    A(4004),A(MSG4004),A(L'MSG4004)
+         DC    A(4009),A(MSG4009),A(L'MSG4009)
+         DC    A(4020),A(MSG4020),A(L'MSG4020)
+         DC    A(4021),A(MSG4021),A(L'MSG4021)
+         DC    A(4025),A(MSG4025),A(L'MSG4025)
+         DC    A(4041),A(MSG4041),A(L'MSG4041)
+         DC    A(4042),A(MSG4042),A(L'MSG4042)
+         DC    A(4043),A(MSG4043),A(L'MSG4043)
+         DC    A(4044),A(MSG4044),A(L'MSG4044)
+         DC    A(4045),A(MSG4045),A(L'MSG4045)
+         DC    A(4046),A(MSG4046),A(L'MSG4046)
+         DC    A(4097),A(MSG4097),A(L'MSG4097)
+         DC    X'FFFFFFFF',A(MSGNFND),A(L'MSGNFND)     Last Entry
+MSGTBLL  EQU   *-MSGTBL            Length of MSGTBL
+MSGTENTL EQU   12                  Length of each MSGTBL entry
+MSGTENT# EQU   (*-MSGTBL)/MSGTENTL Number of MSGTBL entries
+*
+MSGTEOT  DC    X'FFFFFFFF'
+         EJECT
+*     * /********************************************************/
+*     * /* Message Text                                         */
+*     * /********************************************************/
+MSGS     EQU   *
+MSGNFND  DC    C'Message nnnnn not found'
+MSG4004  DC    C'Parm not supplied'
+MSG4009  DC    C'No variables found'
+MSG4020  DC    C'RC=xxx LOCATE  CAMLST NAME error'
+MSG4021  DC    C'RC=xxx OBTAIN  CAMLST SEARCH error'
+MSG4025  DC    C'Cataloged and Request volume not equal'
+MSG4041  DC    C'RC=xxx PDS Allocate Error'
+MSG4042  DC    C'RC=xxx PDS Open Error'
+MSG4043  DC    C'PDS member not found'
+MSG4044  DC    C'RC=xxx PDS Close Error'
+MSG4045  DC    C'RC=xxx PDS Free Error'
+MSG4046  DC    C'DSN not PDS (DSORG=PO) for MBR request'
+MSG4097  DC    C'Cannot link to IKJDAIR'
+MSGSL    EQU   *-MSGS
+*
+         TITLE 'CHKDSNMS - Equates                                    '
+*     * /********************************************************/
+*     * /* Register Equates                                     */
+*     * /********************************************************/
+         YREGS                     Register EQU as Rn or Rnn
+*
+*R0       EQU   0
+*R1       EQU   0
+*R2       EQU   0
+*R3       EQU   0
+*R4       EQU   0
+*R5       EQU   0
+*R6       EQU   0
+*R7       EQU   0
+*R8       EQU   0
+*R9       EQU   0
+*R10      EQU   0
+*R11      EQU   0
+*R12      EQU   0
+*R13      EQU   0
+*R14      EQU   0
+*R15      EQU   0
+*
+         TITLE 'CHKDSNMS - DSECTS                                     '
+*     * /********************************************************/
+*     * /* Parameter Address List                               */
+*     * /********************************************************/
+PARMAL   DSECT
+PMSGNBR  DS    F                   Message Number
+PDMSG    DS    F                   Starting address to receive text
+PDMSGL   DS    F                   Length of area to receive text
+PMSGTXTL DS    F                   Length of message text moved
+PARMALL  EQU   *-PARMAL            Length of Parameter Address List
+*
+*     * /********************************************************/
+*     * /* Message Address Table                                */
+*     * /********************************************************/
+TBLMSG   DSECT
+TMSGNUM  DS    A                   Message Number
+TMSGTXT  DS    A                   Message Text Starting address
+TMSGTXTL DS    A                   Message Text Length
+TBLMSGL  EQU   *-TBLMSG            Length of Message Address Table
+*
+         TITLE 'CHKDSNMS - Working Storage Variables                  '
+*     * /********************************************************/
+*     * /* Working Storage  DSECT                               */
+*     * /********************************************************/
+WSDSECT  DSECT
+WSAREA   EQU   *
+*
+*     * /********************************************************/
+*     * /* mySAVEARA                                            */
+*     * /********************************************************/
+SAVEAREA DS    18F                 my Savearea
+*                      +00  A(savearea of current CSECT)
+*                      +04  A(savearea of calling CSECT)
+*                      +08  A(savearea of called  CSECT)
+*                      +12  R14
+*                      +16  R15
+*                      +20  R0
+*                      +24  R1
+*                      +28  R2
+*                      +32  R3
+*                      +36  R4
+*                      +40  R5
+*                      +44  R6
+*                      +48  R7
+*                      +52  R8
+*                      +56  R9
+*                      +60  R10
+*                      +64  R11
+*                      +68  R12
+*
+*     * /********************************************************/
+*     * /* Misc Variables                                       */
+*     * /********************************************************/
+SAVER15  DS    F                   R15 Hold
+DW       DS    D                   Double Word area
+FW       DS    F                   Full Word   area
+RCEXIT   DS    F                   Exit RC
+RC       DS    CL2                 Return Code
+*
+MANUALTE DS    3F                  Manual entry of MSGTBL row
+*
+WSAREAE  EQU   *                   Working Storage END
+WSAREAL  EQU   WSAREAE-WSAREA      Working Storage Area Length
+*
+         END   CHKDSNMS

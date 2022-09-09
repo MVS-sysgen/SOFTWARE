@@ -1,0 +1,37 @@
+)F FUNCTION -
+  The CHKDSN command checks for existence of a DSN or DSN(member)
+  in the system catalog and cataloged volume.  Additionally, CHKDSN
+  will search the DSN for existence of a PDS member, if member name is
+  provided.
+
+)X Statement SYNTAX  -
+
+         CHKDSN DSN VOL(volser) MBR(member) QUIET CATLG
+
+  REQUIRED - NAME
+  DEFAULTS - NONE
+  ALIAS    - NONE
+
+)O OPERANDS -
+  DSN  is positional and must appear as the first parameter
+
+))NAME     - required, dataset name is fully-qualified when enclosed
+             in single quotes.  Dataset name without single quotes
+             will be prefixed with USERID.
+
+))VOL      - optional, target volume for uncataloged dataset name.
+             Note: System Catalog search is bypassed.
+
+))MBR      - optional, PDS member name
+             PDS member name can be part of the DSN (dataset name) or
+             provided using the MBR keyword
+
+))QUIET    - optional, suppress display of messages.
+
+))CATLG    - optional, force catalog search.
+             Validate cataloged and requested VOL match (equal).
+             If not equal, the DSN is considered not found.
+
+             Note: DSN must be catalogued and VOL keyword must be
+             provided.
+

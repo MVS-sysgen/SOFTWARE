@@ -1,0 +1,249 @@
+PROC 0 DEBUG                          /* CUTIL00 Utility Driver     */ -LB1100
+      TPMNM(CUTIL00)                   /* TPM name                  */ -LB1100
+      PANELID(PCUTIL00)                /* Panel name                */ -LB1100
+      PMSG(Y)                          /* Panel Messages Y=yes N-no */  LB1100
+
+/********************************************************************/
+/*                                                                  */
+/* CLIST: CCUTIL0I                                                  */
+/*                                                                  */
+/* Author: Larry Belmontes Jr.                                      */
+/*         https://ShareABitOfIT.net/CUTIL00-for-mvs-3-8j/          */
+/*         Copyright (C) 2020-2021  Larry Belmontes, Jr.            */
+/*                                                                  */
+/*                                                                  */
+/* Description:                                                     */
+/* ---------------------------------------------------------------  */
+/*                                                                  */
+/* ISPF 2.0 Panel driver to invoke CUTIL00.                         */
+/*                                                                  */
+/* Note: Program CLS is used to clear display screen.               */
+/*                                                                  */
+/* Disclaimer:                                                      */
+/* ================================================================ */
+/*                                                                  */
+/*    No guarantee; No warranty; Install / Use at your own risk.    */
+/*                                                                  */
+/*    This software is provided "AS IS" and without any expressed   */
+/* or implied warranties, including, without limitation, the        */
+/* implied warranties of merchantability and fitness for a          */
+/* particular purpose.                                              */
+/*                                                                  */
+/*    The author requests keeping authors name intact in any        */
+/* modified versions.                                               */
+/*                                                                  */
+/*    In addition, the author requests submissions regarding any    */
+/* code modifications / enhancements and/or associated comments     */
+/* for consideration into a subsequent release (giving credit       */
+/* to contributor(s)) thus, improving overall functionality         */
+/* benefiting the MVS 3.8J hobbyist public domain community.        */
+/*                                                                  */
+/*                                                                  */
+/*                                                                  */
+/* Change History: <CHGHIST>                                        */
+/* ================================================================ */
+/* MM/DD/CCYY Version  Name / Description                           */
+/* ---------- -------  -------------------------------------------- */
+/* 04/10/2021 1.1.00   Larry Belmontes Jr.                          */  LB1100
+/*                     - Replace CLIST variable with PROC variables */  LB1100
+/*                       to allow overrides when PROC is started    */  LB1100
+/*                       (DEBUG, TPMNM, PANELID, PMSG)              */  LB1100
+/*                     - On DEBUG, display VAR01 and VAR02          */  LB1100
+/*                       including ISPF DISPLAY PANEL RC            */  LB1100
+/*                     - Detect and display truncation message      */  LB1100
+/*                       for VAR01 and VAR02                        */  LB1100
+/*                                                                  */  LB1100
+/* 03/20/2020 1.0.00   Larry Belmontes Jr.                          */
+/*                     - Initial version released to MVS 3.8J       */
+/*                       hobbyist public domain                     */
+/*                                                                  */
+/********************************************************************/
+
+
+  /******************************************************************/
+  /* TSO CLIST Control Statement                                    */
+  /******************************************************************/
+  CONTROL MAIN
+
+  /******************************************************************/
+  /* ISPF Control statement                                         */
+  /******************************************************************/
+  ISPEXEC CONTROL ERRORS RETURN
+
+  /******************************************************************/
+  /* First-time Enter Data message                                  */
+  /******************************************************************/
+  IF &PMSG EQ Y THEN -                                                  LB1100
+    DO
+      SET &ZERRSM  = &STR(Enter Data)
+      SET &ZERRLM  = &STR(Enter function and variables for &TPMNM CP)
+      SET &ZERRMSG = &STR(CUTIL00Z)
+    END
+
+  /******************************************************************/
+  /* DISPLAY PANEL                                                  */
+  /******************************************************************/
+  GETDATA:  +
+  IF &PMSG EQ Y THEN -                                                  LB1100
+    ISPEXEC DISPLAY PANEL(&PANELID) MSG(&ZERRMSG)
+  ELSE -
+    ISPEXEC DISPLAY PANEL(&PANELID)
+  SET RC = &LASTCC
+
+  IF &DEBUG = DEBUG THEN -                                              LB1100
+    DO                                                                  LB1100
+      WRITE DISPLAY PANEL   RC=&RC                                      LB1100
+      WRITE VAR01='&VAR01'                                              LB1100
+      WRITE VAR02='&VAR02'                                              LB1100
+    END                                                                 LB1100
+                                                                        LB1100
+  /******************************************************************/
+  /* EXIT on PF3 or PF4                                             */
+  /******************************************************************/
+  IF &RC = 8 THEN GOTO DONE
+
+  SET VAR01L =      /* reset length of VAR01  */
+  SET VAR02L =      /* reset length of VAR02  */
+  SET ERRMSG =      /* reset ERRMSG           */
+  SET CD =          /* reset RC               */
+
+  /******************************************************************/
+  /* GETDATA on PF1 HELP, Help screen displayed by ISPF 2.0         */
+  /******************************************************************/
+  IF &KEYPRESS EQ PF01 THEN -
+      DO
+        IF &PMSG EQ Y THEN -                                            LB1100
+          DO
+            SET ZERRSM = &STR(HELP PANEL PROCESSED)
+            SET ZERRLM = &STR(PF1 Help panel displayed)
+            SET &ZERRMSG = &STR(CUTIL00Z)
+          END
+        GOTO GETDATA
+      END
+
+  /******************************************************************/
+  /* Process request on ENTER, otherwise leave display content      */
+  /* as-is and GETDATA                                              */
+  /******************************************************************/
+  IF &KEYPRESS EQ PF00 THEN
+  ELSE -
+    DO
+      IF &PMSG EQ Y THEN -                                              LB1100
+        DO
+          SET ZERRSM = &STR(INVALID PF KEY)
+          SET ZERRLM = &STR(Invalid PF key detected, no action taken.)
+          SET &ZERRMSG = &STR(CUTIL00Z)
+        END
+      GOTO GETDATA
+    END
+
+  /******************************************************************/
+  /* Build Command Line                                             */
+  /******************************************************************/
+  SET CMDLINE = &TPMNM
+  IF &STR(&FUNCT) > &STR( ) THEN -
+    DO
+      SET PARMS   = &STR(&FUNCT VAR01)
+      /* using VAR02?  */
+      IF &UV2 = Y THEN -
+        SET PARMS = &STR(&PARMS)&STR( VAR02)
+      ELSE -
+      IF &UV2 = $ THEN -
+        SET PARMS = &STR(&PARMS)&STR( $NOVAR2)
+      ELSE -
+        SET PARMS = &STR(&PARMS)&STR( )
+      SET CMDLINE = &STR(&CMDLINE &PARMS)
+      /* insert QUOTE keyword?  */
+      IF &UQ1 = &STR(Y) THEN -
+        SET CMDLINE = &STR(&CMDLINE)&STR( QUOTE)
+    /* set vars to NULL             */
+      IF &STR(&VAR01) = NULL  THEN -                                    LB1100
+        SET VAR01 =
+      IF &STR(&VAR02) = NULL  THEN -                                    LB1100
+        SET VAR02 =
+    END
+  ELSE -
+    /* no function, pass null parms */
+    SET PARMS   = &STR()
+
+
+  /******************************************************************/
+  /* QUOTE parm needs $NOVAR2 when VAR2 is no.                      */
+  /******************************************************************/
+  IF &UV2 = N AND &UQ1 = Y THEN +
+    DO
+      SET UV2=&STR($)
+      SET CMDLINE = &STR(&TPMNM &STR(&FUNCT) VAR01 $NOVAR2 QUOTE)
+    END
+
+  /******************************************************************/
+  /* EXECUTE TPM                                                    */
+  /******************************************************************/
+  &CMDLINE
+  SET RC = &LASTCC
+
+  /******************************************************************/  LB1100
+  /* CHECK FOR TRUNCATED RESULTS (VAR01 and VAR02)                  */  LB1100
+  /******************************************************************/  LB1100
+  SET VAR01TR =                                                         LB1100
+  SET VAR02TR =                                                         LB1100
+  IF &LENGTH(&STR(&VAR01)) > 78 THEN -                                  LB1100
+    DO                                                                  LB1100
+      SET VAR01 = &SUBSTR(1:78,&STR(&VAR01)                             LB1100
+      SET VAR01TR = &STR(** value truncated **)                         LB1100
+    END                                                                 LB1100
+  IF &LENGTH(&STR(&VAR02)) > 78 THEN -                                  LB1100
+    DO                                                                  LB1100
+      SET VAR02 = &SUBSTR(1:78,&STR(&VAR02)                             LB1100
+      SET VAR02TR = &STR(** value truncated **)                         LB1100
+    END                                                                 LB1100
+                                                                        LB1100
+  IF &DEBUG = DEBUG THEN +                                              LB1100
+    DO
+      CLS
+      WRITE CMDLINE='&CMDLINE'   RC=&RC
+    END
+
+  /******************************************************************/  LB1100
+  /* LIST VARIABLES FOR UNSTR FUNCTION                              */  LB1100
+  /******************************************************************/  LB1100
+  IF &STR(&FUNCT) = UNSTR THEN DO
+  /*WRITE VAR010 = '&VAR010' */                                         LB1100
+    SET CTR = 0
+    DO WHILE &CTR <= &VAR010
+      SET EVALLN = &STR(&&VAR01&CTR)
+      WRITE VAR01&CTR = '&EVALLN'
+      SET CTR = &CTR + 1
+    END
+  END
+
+  SET CD = &RC
+
+  /******************************************************************/
+  /* PANEL PROCESSING COMPLETE                                      */
+  /******************************************************************/
+
+  IF &PMSG EQ Y THEN -                                                  LB1100
+    DO
+      SET ZERRSM = &STR(&TPMNM RC=&RC)
+      SET ZERRLM = &STR(RC=&RC &CMDLINE)
+      SET &ZERRMSG = &STR(CUTIL00Z)
+    END
+
+  /******************************************************************/
+  /* GET ANOTHER REQUEST FROM PANEL                                 */
+  /******************************************************************/
+  GOTO GETDATA
+
+  /******************************************************************/
+  /* DONE...                                                        */
+  /******************************************************************/
+  DONE: +
+  IF &DEBUG = DEBUG THEN +                                              LB1100
+    WRITE BYE...
+
+  EXIT CODE(0)
+
+
+END   /* END PROC                     */
+

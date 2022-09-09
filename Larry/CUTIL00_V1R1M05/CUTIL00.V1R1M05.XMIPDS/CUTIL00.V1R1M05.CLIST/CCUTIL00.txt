@@ -1,0 +1,166 @@
+PROC 1 FUNCT VAR01() VAR02($N$) UQ1() CLS(Y) VERBOSE(Y)
+
+/********************************************************************/
+/*                                                                  */
+/* CLIST: CCUTIL00                                                  */
+/*                                                                  */
+/* Author: Larry Belmontes Jr.                                      */
+/*         https://ShareABitOfIT.net/CUTIL00-for-mvs-3-8j/          */
+/*         Copyright (C) 2020-2021  Larry Belmontes, Jr.            */
+/*                                                                  */
+/*                                                                  */
+/* Description:                                                     */
+/* ================================================================ */
+/*                                                                  */
+/* Test harness to invoke CUTIL00 from TSO.                         */
+/*                                                                  */
+/*                                                                  */
+/* Command Syntax:                                                  */
+/* ================================================================ */
+/*                                                                  */
+/* CCUTIL00 FUNCT VAR01('xx.') VAR02('yyy yy')                      */
+/*                                                                  */
+/*   FUNCT (Required) CUTIL00 Function                              */
+/*   VAR01 (Required) Content for VAR01 in quotes                   */
+/*   VAR02 (Optional) Content for VAR02 in quotes                   */
+/*                    dependent on function                         */
+/*   CLS   (Y/N)      Clear screen displaying results               */
+/*                    default=Y                                     */
+/*   VERBOSE (Y/N)    Display header and command line               */
+/*                    default=Y                                     */
+/*                                                                  */
+/*   Example:                                                       */
+/*   CCUTIL00 TRIM VAR01(' TRIM  MY SPACE   ') VAR02(X)             */
+/*                                                                  */
+/*                                                                  */
+/*   Sample Output:                                                 */
+/*   --- CCUTIL00: CUTIL00 TEST TOOL                                */
+/*                                                                  */
+/*   CUTIL00 TRIM  VAR01                                            */
+/*                                                                  */
+/*   --- CUTIL00 RESPONSE ..........................................*/
+/*    RC    =0 SUCCESSFUL REQUEST                                   */
+/*    VAR01 =' TRIM  MY SPACE   '                                   */
+/*    VAR01L=00018                                                  */
+/*    VAR02 ='TRIM  MY SPACE'                                       */
+/*    VAR02L=00014                                                  */
+/*                                                                  */
+/*   --- CCUTIL00: CUTIL00 TEST TOOL   ...DONE!  TRIM               */
+/*                                                                  */
+/*                                                                  */
+/* Disclaimer:                                                      */
+/* ================================================================ */
+/*                                                                  */
+/*    No guarantee; No warranty; Install / Use at your own risk.    */
+/*                                                                  */
+/*    This software is provided "AS IS" and without any expressed   */
+/* or implied warranties, including, without limitation, the        */
+/* implied warranties of merchantability and fitness for a          */
+/* particular purpose.                                              */
+/*                                                                  */
+/*    The author requests keeping authors name intact in any        */
+/* modified versions.                                               */
+/*                                                                  */
+/*    In addition, the author requests submissions regarding any    */
+/* code modifications / enhancements and/or associated comments     */
+/* for consideration into a subsequent release (giving credit       */
+/* to contributor(s)) thus, improving overall functionality         */
+/* benefiting the MVS 3.8J hobbyist public domain community.        */
+/*                                                                  */
+/*                                                                  */
+/*                                                                  */
+/* Change History:                                                  */
+/* ================================================================ */
+/* MM/DD/CCYY Version  Name / Description                           */
+/* ---------- -------  -------------------------------------------- */
+/* 03/20/2020 1.0.00   Larry Belmontes Jr.                          */
+/*                     - Initial version released to MVS 3.8J       */
+/*                       hobbyist public domain                     */
+/*                                                                  */
+/********************************************************************/
+
+/*********************************************/
+/* Clear Screen                              */
+/*********************************************/
+IF &CLS = Y THEN -
+  CLS
+
+SET TPM = &STR(CUTIL00)
+SET MYPROC = &STR(CCUTIL00)
+IF &VERBOSE = Y THEN DO
+  WRITE --- &MYPROC: &TPM Test Tool
+  WRITE
+  END
+
+/*********************************************/
+/* Default CUTIL00 return values             */
+/*********************************************/
+SET ERRMSG =
+SET VAR01L =
+SET VAR02L =
+
+/*********************************************/
+/* Default CUTIL00 command string            */
+/* -- ABOUT does not need var parms          */
+/* -- VEXIST uses VAR01 content for VAR1     */
+/*********************************************/
+IF &STR(&FUNCT) = VEXIST THEN -
+  SET CMDLINE= &STR(&TPM &FUNCT &VAR01)
+ELSE -
+  IF &STR(&FUNCT) = ABOUT THEN -
+    SET CMDLINE= &STR(&TPM &FUNCT)
+  ELSE -
+    SET CMDLINE= &STR(&TPM &FUNCT VAR01)
+
+/*********************************************/
+/* Build CUTIL00 command string              */
+/* based on VAR02 options                    */
+/*********************************************/
+IF &STR(&VAR02) = $N$ THEN DO
+  SET VAR02  =
+  END
+ELSE -
+  IF &STR(&VAR02) = $NOVAR2 THEN DO
+    SET VAR02  =
+    SET CMDLINE= &STR(&CMDLINE $NOVAR2)
+    END
+  ELSE DO
+    SET CMDLINE= &STR(&CMDLINE VAR02)
+    END
+
+/*********************************************/
+/* Execute CUTIL00 and display results       */
+/*********************************************/
+&CMDLINE
+SET RC = &LASTCC
+IF &VERBOSE = Y THEN DO
+  WRITE &CMDLINE
+  WRITE
+  END
+WRITE --- &TPM Response ..........................................
+WRITE  RC    =&RC &ERRMSG
+WRITE  VAR01 ='&VAR01'
+WRITE  VAR01L=&VAR01L
+WRITE  VAR02 ='&VAR02'
+WRITE  VAR02L=&VAR02L
+IF &STR(&FUNCT) = UNSTR THEN DO
+  WRITE  - &FUNCT VARIABLE(S) CREATED: &VAR010
+  SET CTR = 0
+  DO WHILE &CTR <= &VAR010
+    SET EVALLN = &STR(&&VAR01&CTR)
+    WRITE  VAR01&CTR = '&EVALLN'
+    SET CTR = &CTR + 1
+  END
+END
+
+WRITE --- &MYPROC: &TPM Test Tool  ... Done!  &FUNCT
+WRITE
+
+
+/*********************************************/
+/* Exit point                                */
+/*********************************************/
+ENDIT: -
+END
+
+EXIT CODE(0)

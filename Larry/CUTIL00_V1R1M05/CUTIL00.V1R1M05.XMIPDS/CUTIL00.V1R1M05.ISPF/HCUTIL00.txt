@@ -1,0 +1,92 @@
+/********************************************************************/
+/*                                                                  */
+/* PANEL: HCUTIL00                                                  */
+/*                                                                  */
+/* Author: Larry Belmontes Jr.                                      */
+/*         https://ShareABitOfIT.net/CUTIL00-for-mvs-3-8j/          */
+/*         Copyright (C) 2020-2021  Larry Belmontes, Jr.            */
+/*                                                                  */
+/*                                                                  */
+/* Description:                                                     */
+/* ---------------------------------------------------------------  */
+/*                                                                  */
+/* ISPF 2.0 HELP for panel PCUTIL00                                 */
+/*                                                                  */
+/*                                                                  */
+/* Disclaimer:                                                      */
+/* ================================================================ */
+/*                                                                  */
+/*    No guarantee; No warranty; Install / Use at your own risk.    */
+/*                                                                  */
+/*    This software is provided "AS IS" and without any expressed   */
+/* or implied warranties, including, without limitation, the        */
+/* implied warranties of merchantability and fitness for a          */
+/* particular purpose.                                              */
+/*                                                                  */
+/*    The author requests keeping authors name intact in any        */
+/* modified versions.                                               */
+/*                                                                  */
+/*    In addition, the author requests submissions regarding any    */
+/* code modifications / enhancements and/or associated comments     */
+/* for consideration into a subsequent release (giving credit       */
+/* to contributor(s)) thus, improving overall functionality         */
+/* benefiting the MVS 3.8J hobbyist public domain community.        */
+/*                                                                  */
+/*                                                                  */
+/*                                                                  */
+/* Change History: <CHGHIST>                                        */
+/* ================================================================ */
+/* MM/DD/CCYY Version  Name / Description                           */
+/* ---------- -------  -------------------------------------------- */
+/* 10/05/2021 1.1.05   Larry Belmontes Jr.                          */  LB1105
+/*                     - Removed hard-coded version on panel        */  LB1105
+/*                     - Removed EXPAND characters on panel         */  LB1105
+/*                                                                  */  LB1105
+/* 04/10/2021 1.1.00   Larry Belmontes Jr.                          */  LB1100
+/*                     - Changed version and panel description.     */  LB1100
+/*                                                                  */  LB1100
+/* 03/20/2020 1.0.00   Larry Belmontes Jr.                          */
+/*                     - Initial version released to MVS 3.8J       */
+/*                       hobbyist public domain                     */
+/*                                                                  */
+/********************************************************************/
+)ATTR
+!   TYPE(OUTPUT) INTENS(LOW) CAPS(OFF) JUST(ASIS)
+[   TYPE(TEXT)   INTENS(HIGH)                      COLOR(TURQ)
+[   TYPE(TEXT)   INTENS(LOW)                       COLOR(PINK)
+{   TYPE(TEXT)   INTENS(HIGH)                      COLOR(GREEN)
+}   TYPE(TEXT)   INTENS(HIGH)                      COLOR(YELLOW)
+)BODY WIDTH(&ZSCREENW) EXPAND(//)
+%--HELP--------------------}CUTIL00 for MVS38J%---------------------------------
+%COMMAND ===>_ZCMD                                     +   %PANEL    - &ZPANELID
++                                                          %USERID   - &ZUSER  +
++                                                                              +
++ This panel is used to invoke CUTIL00 as a driver of a single function        +
++ as an interactive unit test facility.                                        +
++                                                                              +
++ o%FUNCTION  +Function to be performed                                        +
++ o%VAR1 Quote}Y+VAR1 content and length is determined by quote}(')+delimiters +
++             }N+VAR1 content is 78 bytes in length                            +
++ o%VAR2 Use  }Y+VAR2 specified in command line                                +
++             }N+VAR2 is%NOT+specified in command line                         +
++             }$%$NOVAR2+placeholder is used as VAR2 in command line           +
++               +(same as%NOT+specifying a VAR2 variable name)                 +
++                                                                              +
++ o{command line displayed here for invoked function                           +
++ o%Return CD +Return code and error message from operation                    +
++ o%VAR1      +VAR1 input of 78 bytes in length or delimited by single quotes  +
++             }Len=+represents length of a VAR1 result.                        +
++ o%VAR2      +VAR2 input is always 78 bytes in length.                        +
++             }Len=+represents length of a VAR2 result.                        +
++                                                                              +
++                                                                              +
++%Note:[VAR1 and VAR2 limited to 78 characters due to panel presentation.      +
+)INIT
+.CURSOR = ZCMD
+)PROC
+
+&RESP0 = .RESP
+&KEYPRESS = .PFKEY
+
+)END
+

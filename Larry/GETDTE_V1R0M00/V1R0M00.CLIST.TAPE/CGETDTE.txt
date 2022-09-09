@@ -1,0 +1,143 @@
+PROC 0
+
+/********************************************************************/
+/*                                                                  */
+/*    CLIST: $GETDTE                                                */
+/*                                                                  */
+/* Author: Larry Belmontes Jr.                                      */
+/*         https://ShareABitofIT.net/GETDTE-in-MVS38J               */
+/*         Copyright (C) 2013-2020  Larry Belmontes, Jr.            */
+/*                                                                  */
+/* Description:                                                     */
+/* ---------------------------------------------------------------  */
+/*                                                                  */
+/* IVP CLIST to validate GETDTE                                     */
+/* and demonstrate various call types under TSO                     */
+/*                                                                  */
+/*                                                                  */
+/* Disclaimer:                                                      */
+/* ================================================================ */
+/*                                                                  */
+/*    No guarantee; No warranty; Install / Use at your own risk.    */
+/*                                                                  */
+/*    This software is provided "AS IS" and without any expressed   */
+/* or implied warranties, including, without limitation, the        */
+/* implied warranties of merchantability and fitness for a          */
+/* particular purpose.                                              */
+/*                                                                  */
+/*    The author requests keeping authors name intact in any        */
+/* modified versions.                                               */
+/*                                                                  */
+/*    In addition, the author requests readers to submit any        */
+/* code modifications / enhancements and associated comments        */
+/* for consideration into a subsequent release (giving credit       */
+/* to contributor(s)) thus, improving overall functionality         */
+/* and further benefiting the MVS 3.8J hobbyist public domain       */
+/* community.                                                       */
+/*                                                                  */
+/*                                                                  */
+/*                                                                  */
+/*                                                                  */
+/* Change History:                                                  */
+/* ================================================================ */
+/* MM/DD/CCYY VERSION  NAME / DESCRIPTION                           */
+/* ---------- -------  -------------------------------------------- */
+/* 07/30/2020 1.0.00   Larry Belmontes Jr.                          */
+/*                     - Initial version released to MVS 3.8J       */
+/*                       hobbyist public domain                     */
+/*                                                                  */
+/********************************************************************/
+
+/*                                                                  */
+/* EXAMPLE 1: TSO CALL FOR GETDTE WITH NO PARM                      */
+/* UNDER TSO, PARMS ARE ALWAYS IGNORED.                             */
+/* EXPECTED RESULT:                                                 */
+/*    RETURN RESULTS IN CLIST VARIABLE RDTEANSR                     */
+/*                                                                  */
+WRITE
+SET RDTEANSR =
+CALL 'SYS2.LINKLIB(GETDTE)'
+SET RC=&LASTCC
+WRITE 1 GETDTE RC=&RC (TSO CALL W NO PARM)
+IF &RC=0 THEN -
+ WRITE 1 RDTEANSR='&RDTEANSR'
+/*                                                                  */
+/* EXAMPLE 2: TSO CALL FOR GETDTE WITH PARM                         */
+/* UNDER TSO, PARMS ARE ALWAYS IGNORED.                             */
+/* EXPECTED RESULT:                                                 */
+/*    RETURN RESULTS IN CLIST VARIABLE RDTEANSR                     */
+/*                                                                  */
+WRITE
+SET RDTEANSR =
+CALL 'SYS2.LINKLIB(GETDTE)' 'TSO'
+SET RC=&LASTCC
+WRITE 2 GETDTE RC=&RC (TSO CALL W PARM)
+IF &RC=0 THEN -
+ WRITE 2 RDTEANSR='&RDTEANSR'
+/*                                                                  */
+/* EXAMPLE 3: TSO CMD  FOR GETDTE WITH NO PARMS IN CMD LINE         */
+/* UNDER TSO, PARMS ARE ALWAYS IGNORED.                             */
+/* EXPECTED RESULT:                                                 */
+/*    RETURN RESULTS IN CLIST VARIABLE RDTEANSR                     */
+/*                                                                  */
+WRITE
+SET RDTEANSR =
+GETDTE
+SET RC=&LASTCC
+WRITE 3 GETDTE RC=&RC (TSO CP W NO PARM)
+IF &RC=0 THEN -
+ WRITE 3 RDTEANSR='&RDTEANSR'
+/*                                                                  */
+/* EXAMPLE 4: TSO CMD  FOR GETDTE WITH PARM  IN CMD LINE            */
+/* UNDER TSO, PARMS ARE ALWAYS IGNORED.                             */
+/* EXPECTED RESULT:                                                 */
+/*    RETURN RESULTS IN CLIST VARIABLE RDTEANSR                     */
+/*                                                                  */
+WRITE
+SET RDTEANSR =
+GETDTE TSO
+SET RC=&LASTCC
+WRITE 4 GETDTE RC=&RC (TSO CP W PARM IN CMD LINE)
+IF &RC=0 THEN -
+ WRITE 4 RDTEANSR='&RDTEANSR'
+/*                                                                  */
+/* EXAMPLE 5: TSO CMD  FOR GETDTE WITH PARMS IN CMD LINE            */
+/* UNDER TSO, PARMS ARE ALWAYS IGNORED.                             */
+/* EXPECTED RESULT:                                                 */
+/*    RETURN RESULTS IN CLIST VARIABLE RDTEANSR                     */
+/*                                                                  */
+WRITE
+SET RDTEANSR =
+GETDTE XXO XY2
+SET RC=&LASTCC
+WRITE 5 GETDTE RC=&RC (TSO CP W PARM IN CMD LINE)
+IF &RC=0 THEN -
+  DO
+    WRITE 5 RDTEANSR='&RDTEANSR'
+    WRITE
+    WRITE SPLIT TO VARIOUS COMPONENTS using RDTECOMA NAMES...
+    WRITE RDATE='&SUBSTR(01:14,&RDTEANSR)'
+    WRITE RDATEMM='&SUBSTR(01:02,&RDTEANSR)'
+    WRITE RDATEDD='&SUBSTR(04:05,&RDTEANSR)'
+    WRITE RDATECC='&SUBSTR(07:08,&RDTEANSR)'
+    WRITE RDATEYY='&SUBSTR(09:10,&RDTEANSR)'
+    WRITE RDATEJJJ='&SUBSTR(12:14,&RDTEANSR)'
+    WRITE RTIME='&SUBSTR(16:26,&RDTEANSR)'
+    WRITE RTIMEHH='&SUBSTR(16:17,&RDTEANSR)'
+    WRITE RTIMEMM='&SUBSTR(19:20,&RDTEANSR)'
+    WRITE RTIMESS='&SUBSTR(22:23,&RDTEANSR)'
+    WRITE RTIMETT='&SUBSTR(25:26,&RDTEANSR)'
+    WRITE RMONTHN='&SUBSTR(27:35,&RDTEANSR)'
+    WRITE RDAY#='&SUBSTR(36:36,&RDTEANSR)'
+    WRITE RDAYN='&SUBSTR(37:45,&RDTEANSR)'
+    WRITE RJOBNAM='&SUBSTR(46:53,&RDTEANSR)'
+    WRITE RSTEPNAM='&SUBSTR(54:61,&RDTEANSR)'
+    WRITE RPROCSTP='&SUBSTR(62:69,&RDTEANSR)'
+    WRITE RENV='&SUBSTR(70:74,&RDTEANSR)'
+    WRITE RPARMTY='&SUBSTR(75:80,&RDTEANSR)'
+  END
+
+END
+
+EXIT CODE(0)
+

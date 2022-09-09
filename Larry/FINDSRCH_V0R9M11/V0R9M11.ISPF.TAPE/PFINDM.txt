@@ -1,0 +1,165 @@
+/********************************************************************/
+/*                                                                  */
+/*    PANEL: PFINDM                                                 */
+/*                                                                  */
+/* Author: Larry Belmontes Jr.                                      */
+/*         https://ShareABitofIT.net/FINDSRCH-in-MVS38J             */
+/*         Copyright (C) 2020-2021 Larry Belmontes, Jr.             */
+/*                                                                  */
+/*                                                                  */
+/* Description:                                                     */
+/* ---------------------------------------------------------------  */
+/*                                                                  */
+/* ISPF 2.x FIND Menu Panel                                         */
+/*                                                                  */
+/*                                                                  */
+/* Disclaimer:                                                      */
+/* ================================================================ */
+/*                                                                  */
+/*    No guarantee; No warranty; Install / Use at your own risk.    */
+/*                                                                  */
+/*    This software is provided "AS IS" and without any expressed   */
+/* or implied warranties, including, without limitation, the        */
+/* implied warranties of merchantability and fitness for a          */
+/* particular purpose.                                              */
+/*                                                                  */
+/*    The author requests keeping authors name intact in any        */
+/* modified versions.                                               */
+/*                                                                  */
+/*    In addition, the author requests readers to submit any        */
+/* code modifications / enhancements and associated comments        */
+/* for consideration into a subsequent release (giving credit       */
+/* to contributor(s)) thus, improving overall functionality         */
+/* and further benefiting the MVS 3.8J hobbyist public domain       */
+/* community.                                                       */
+/*                                                                  */
+/*                                                                  */
+/*                                                                  */
+/* Change History:                                                  */
+/* ================================================================ */
+/* MM/DD/CCYY Version  Name / Description                           */
+/* ---------- -------  -------------------------------------------- */
+/* 10/23/2020 0.9.10   Larry Belmontes Jr.                          */
+/*                     - Added options 4 and 5                      */
+/*                                                                  */
+/* 09/26/2020 0.9.00   Larry Belmontes Jr.                          */
+/*                     - Initial version released to MVS 3.8J       */
+/*                       hobbyist public domain                     */
+/*                                                                  */
+/********************************************************************/
+)ATTR
+%   TYPE(TEXT)   INTENS(HIGH)
++   TYPE(TEXT)   INTENS(LOW)
+_   TYPE(INPUT)  INTENS(HIGH) CAPS(ON) JUST(LEFT)
+[   TYPE(TEXT)   INTENS(HIGH)                      COLOR(TURQ)
+]   TYPE(TEXT)   INTENS(LOW)       HILITE(USCORE)  COLOR(PINK)
+{   TYPE(TEXT)   INTENS(HIGH)                      COLOR(GREEN)
+}   TYPE(TEXT)   INTENS(HIGH)                      COLOR(YELLOW)
+$   TYPE(TEXT)   INTENS(LOW)       HILITE(REVERSE) COLOR(BLUE)
+?   TYPE(OUTPUT) INTENS(LOW)           JUST(LEFT)
+)BODY WIDTH(&ZSCREENW) EXPAND(\\)
+%----------------------$        FINDSRCH Menu        %--------------------------
+%COMMAND ===>_ZCMD                                                             +
++
+% 1 [Find{MEMBER[in}DSL                                                ?Z
+% 2 [List Datasets in}DSL                                              ?Z
+% 3 [Find members in}DSL[with{SEARCHstr
+%   [  optionally grouped by{MEMBER[
+% 4 [Find{MEMBER[in system libraries
+% 5 [Find{MEMBER[in allocated{DDName
+%
+%
+%}DSL%(Dataset List) includes dataset names with{DSNstr%located at{DSNstrPOS%
+% where {S[start%of DSN, or {E[end%of DSN, or  {C[contained%in DSN.
+%
+{DSNstrPOS%===>_Z+ S/E/C
+{DSNstr%======>_F1DSN                                         +
+{DDName%======>_F1DDN   +
+{MEMBER%======>_F1MEMBER+
+{SEARCHstr %==>_F1SRCH                                      +Use single quotes
+{Fast Search%=>_Z+ Y/N  Stop string member search after first found occurrence
+{ListAll DSN%=>_Z+ Y/N  List all datasets processed (options 1-3)
+%
++
+)INIT
+.ZVARS = '(ZUSER ZPANELID F1LVL F1QK F1ALLDSN)'
+.HELP = HFINDM
+.CURSOR = ZCMD
+&PRM2 = ''
+&RESP0 = .RESP
+&KEYPRESS = .PFKEY
+&LSCREEN = &ZSCREEN
+VPUT (LSCREEN) SHARED
+
+VGET (F1MEMBER F1DSN F1SRCH F1QK F1ALLDSN) PROFILE
+VGET (F1LVL F1DDN) PROFILE
+
+)REINIT
+.CURSOR = ZCMD
+&RESP0 = .RESP
+&KEYPRESS = .PFKEY
+REFRESH(*)          /* refresh all fields */
+
+)PROC
+
+&RESP0 = .RESP
+&KEYPRESS = .PFKEY
+
+&OPTS = TRUNC (&ZCMD,'.')              /* Option Selected */
+&OPTT = .TRAIL                         /* Option Trail    */
+
+IF (&KEYPRESS EQ PF00)        /* ENTER key  */
+  IF (&OPTS EQ 1)
+    VER (&F1LVL,NB,MSG=FIND001)
+    VER (&F1LVL,LIST,C,S,E,MSG=FIND003)
+    VER (&F1DSN,NB,MSG=FIND001)
+    VER (&F1DSN,DSNAME,MSG=FIND002)
+    VER (&F1MEMBER,NB,MSG=FIND001)
+    VER (&F1ALLDSN,NB,MSG=FIND001)
+    VER (&F1ALLDSN,LIST,Y,N,MSG=FIND003)
+  IF (&OPTS EQ 2)
+    VER (&F1LVL,NB,MSG=FIND001)
+    VER (&F1LVL,LIST,C,S,E,MSG=FIND003)
+    VER (&F1DSN,NB,MSG=FIND001)
+    VER (&F1DSN,DSNAME,MSG=FIND002)
+    VER (&F1ALLDSN,NB,MSG=FIND001)
+    VER (&F1ALLDSN,LIST,Y,N,MSG=FIND003)
+  IF (&OPTS EQ 3)
+    VER (&F1LVL,NB,MSG=FIND001)
+    VER (&F1LVL,LIST,C,S,E,MSG=FIND003)
+    VER (&F1DSN,NB,MSG=FIND001)
+    VER (&F1DSN,DSNAME,MSG=FIND002)
+    /*   &F1MEMBER is optional   */
+    VER (&F1SRCH,NB,MSG=FIND001)
+    VER (&F1QK,NB,MSG=FIND001)
+    VER (&F1QK,LIST,Y,N,MSG=FIND003)
+    VER (&F1ALLDSN,NB,MSG=FIND001)
+    VER (&F1ALLDSN,LIST,Y,N,MSG=FIND003)
+  IF (&OPTS EQ 4)
+    VER (&F1MEMBER,NB,MSG=FIND001)
+  IF (&OPTS EQ 5)
+    VER (&F1MEMBER,NB,MSG=FIND001)
+    IF (&F1DDN > ' ')
+      &PRM2 = 'DD(&F1DDN)'
+    ELSE
+      &PRM2 = ''
+
+  &DEBUG = ''                          /* Default NO DEBUG*/
+
+  VPUT (F1MEMBER F1DSN F1SRCH F1QK F1ALLDSN) PROFILE
+  VPUT (F1LVL F1DDN) PROFILE
+
+  IF (&OPTT = DEBUG)
+    &DEBUG = 'DEBUG'
+
+  &ZSEL = TRANS( TRUNC (&ZCMD,'.')     /* Process options */
+                1,'CMD(%CMEMFIND &DEBUG) NEWAPPL(FIND)'
+                2,'CMD(%CVOL &DEBUG) NEWAPPL(FIND)'
+                3,'CMD(%CSRCH &DEBUG) NEWAPPL(FIND)'
+                4,'CMD(%CLOC8 &DEBUG) NEWAPPL(FIND)'
+                5,'CMD(%CMEMINDD &DEBUG MEM(&F1MEMBER) &PRM2) NEWAPPL(FIND)'
+              ' ',' '
+                *,'?' )
+  &ZTRAIL = .TRAIL
+
+)END

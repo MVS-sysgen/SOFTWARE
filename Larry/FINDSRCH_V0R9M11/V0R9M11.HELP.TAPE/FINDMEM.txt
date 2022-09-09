@@ -1,0 +1,33 @@
+)F FUNCTION -
+  The FINDMEM command is used to find FIRST occurrence of
+  member in a concatenation.  ISPF variables created are:
+
+    FMCONCAT - CONCATENATION NUMBER WHERE MEMBER WAS FOUND.
+    FMDSNAME - DSNAME WHERE MEMBER WAS FOUND
+    FMLIB    - LIBRARY TYPE WHERE MEMBER WAS FOUND
+                 'PRIVATE', 'LINKLIST' OR 'STEPLIB'
+    FMMSG    - ERROR MSG WHEN NON ZERO RC
+    FMDIRENT - UNFORMATTED DIRECTORY ENTRY FROM BLDL
+    FMLKEDDT - LINK EDIT DATE
+
+  RETURN CODES: (&LASTCC)
+    00 - MEMBER FOUND
+    04 - MEMBER NOT FOUND
+    16 - PARM ERROR
+    20 - DDNAME NOT ALLOCATED
+
+  WRITTEN BY: ROB WUNDERLICH
+
+)X SYNTAX  -
+         FINDMEM member dd
+
+  REQUIRED - member
+  DEFAULTS - dd, defaults to LINKLIST if not specified
+  ALIAS    - none
+
+)O OPERANDS -
+)) member           - The MEMBER name to find
+
+)) dd               - optional, DDNAME to search. If not specified,
+                      LINKLIST is searched.
+

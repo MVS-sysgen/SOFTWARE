@@ -1,0 +1,88 @@
+/********************************************************************/
+/*                                                                  */
+/*    PANEL: HSRCH                                                  */
+/*                                                                  */
+/* Author: Larry Belmontes Jr.                                      */
+/*         https://ShareABitofIT.net/FINDSRCH-in-MVS38J             */
+/*         Copyright (C) 2020-2021 Larry Belmontes, Jr.             */
+/*                                                                  */
+/*                                                                  */
+/* Description:                                                     */
+/* ---------------------------------------------------------------  */
+/*                                                                  */
+/* ISPF 2.x Help panel for PSRCH                                    */
+/*                                                                  */
+/*                                                                  */
+/* Disclaimer:                                                      */
+/* ================================================================ */
+/*                                                                  */
+/*    No guarantee; No warranty; Install / Use at your own risk.    */
+/*                                                                  */
+/*    This software is provided "AS IS" and without any expressed   */
+/* or implied warranties, including, without limitation, the        */
+/* implied warranties of merchantability and fitness for a          */
+/* particular purpose.                                              */
+/*                                                                  */
+/*    The author requests keeping authors name intact in any        */
+/* modified versions.                                               */
+/*                                                                  */
+/*    In addition, the author requests readers to submit any        */
+/* code modifications / enhancements and associated comments        */
+/* for consideration into a subsequent release (giving credit       */
+/* to contributor(s)) thus, improving overall functionality         */
+/* and further benefiting the MVS 3.8J hobbyist public domain       */
+/* community.                                                       */
+/*                                                                  */
+/*                                                                  */
+/*                                                                  */
+/* Change History:                                                  */
+/* ================================================================ */
+/* MM/DD/CCYY Version  Name / Description                           */
+/* ---------- -------  -------------------------------------------- */
+/* 10/23/2021 0.9.10   Larry Belmontes Jr.                          */
+/*                     - Updated VRM on panel                       */
+/*                                                                  */
+/* 09/26/2020 0.9.00   Larry Belmontes Jr.                          */
+/*                     - Initial version released to MVS 3.8J       */
+/*                       hobbyist public domain                     */
+/*                                                                  */
+/********************************************************************/
+)ATTR
+ + TYPE(TEXT)   INTENS(LOW)  SKIP(ON)    COLOR(GREEN)
+ % TYPE(TEXT)   INTENS(HIGH) SKIP(ON)    COLOR(WHITE)
+ ~ TYPE(TEXT)   INTENS(LOW)  SKIP(ON)    COLOR(YELLOW)
+ [ TYPE(TEXT)   INTENS(LOW)  SKIP(ON)    COLOR(TURQ)
+ ? TYPE(TEXT)   INTENS(LOW)  HILITE(REVERSE) COLOR(BLUE)
+ _ TYPE(INPUT)  INTENS(LOW)  JUST(LEFT)  COLOR(TURQ)
+ # TYPE(INPUT)  INTENS(LOW)  JUST(ASIS)
+ ! TYPE(INPUT)  INTENS(HIGH) JUST(RIGHT)
+ { TYPE(OUTPUT) INTENS(LOW)  JUST(LEFT)
+ } TYPE(OUTPUT) INTENS(LOW)  JUST(RIGHT)
+)BODY EXPAND(//)
+%--Tutorial----------?  Search String Results  %---------------------~v0.9.10 %-
+%Command ===>_ZCMD                                                     {Z
+%
+[Find members in+DSL[with+SEARCHstr%obtains a list of datasets from DASD
+%VTOCs (catalogued and not catalogued) containing the specified~DSNstrPOS
+%and~DSNstr%value.  Each dataset includes dataset name, member name, found
+%(see below for designations), found count, and volume.
+%
+%Results are scrollable and include dataset name, member name (see below),
+%found count and volume name.
+%
+% [>*NONE*<%designates no members met string search for DSN
+% [ MBR->> %designates total member count containing search string
+% [ HIT->> %designates total hits across all members with search string
+% [Member  %designates member name
+%
+%Summary totals include DSNs Extracted, DSNs Searched, DSN w NoHits,
+%Found Mbrs and Total Hits.
+%
+%Each dataset listed may be conveniently Browsed or Edited.
+)INIT
+ .CURSOR = ZCMD
+ .ZVARS = (ZPANELID)
+
+)PROC
+
+)END

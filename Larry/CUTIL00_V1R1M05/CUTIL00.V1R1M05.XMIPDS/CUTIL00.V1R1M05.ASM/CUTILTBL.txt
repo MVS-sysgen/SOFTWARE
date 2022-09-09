@@ -1,0 +1,722 @@
+         TITLE 'CUTILTBL - Tables Processor for CUTIL00               ' LB1105z
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+*
+*  ==================================================================
+*
+*    CCCC  UU   UU TTTTTTT IIIIIII LL      TTTTTTT BBBBBB  LL
+*   CC  CC UU   UU   TT      II    LL        TT    BB   BB LL
+*  CC      UU   UU   TT      II    LL        TT    BB   B  LL
+*  CC      UU   UU   TT      II    LL        TT    BBBBB   LL
+*  CC      UU   UU   TT      II    LL        TT    BB   B  LL
+*   CC  CC UU   UU   TT      II    LL        TT    BB   BB LL
+*    CCCC    UUU     TT    IIIIIII LLLLLLL   TT    BBBBBB  LLLLLLL
+*
+*  ==================================================================
+*  1234567-1234567-1234567-1234567-1234567-1234567-1234567-1234567
+*
+*  Program: CUTILTBL
+*
+*  Author: Larry Belmontes Jr.
+*          https://ShareABitOfIT.net/CUTIL00-for-mvs-3-8j/
+*          Copyright (C) 2020-2021 Larry Belmontes, Jr.
+*
+*  Disclaimer:
+*  ===================================================================
+*
+*     No guarantee; No warranty; Install / Use at your own risk.
+*
+*     This software is provided "AS IS" and without any expressed
+*  or implied warranties, including, without limitation, the
+*  implied warranties of merchantability and fitness for a
+*  particular purpose.
+*
+*     The author requests keeping authors name intact in any
+*  modified versions.
+*
+*     In addition, the author requests submissions regarding any
+*  code modifications / enhancements and/or associated comments
+*  for consideration into a subsequent release (giving credit
+*  to contributor(s)) thus, improving overall functionality
+*  benefiting the MVS 3.8J hobbyist public domain community.
+*
+*
+         EJECT
+*  Overview:
+*  ================================================================
+*
+*     This program is the central table processor for CUTIL00 using     LB1105z
+*  the following parameter address list:                                LB1105z
+*
+*       o   Input     CL4    Request Type
+*       o   I/O       F      Parm 1 based on request type
+*       o   I/O       F      Parm 2 based on request type
+*       o   I/O       F      Parm 3 based on request type
+*       o   I/O       F      Parm 4 based on request type
+*       o   I/O       F      Parm 5 based on request type
+*       o   I/O       F      Parm 6 based on request type
+*
+*     L    R1,parm addr list
+*     CALL CUTILTBL
+*     LTR  R15,R15
+*     .
+*     .
+*     .
+*
+*
+*
+*
+         EJECT
+*  Programs Called:
+*  ==================================================================
+*
+*    o  GETMAIN/FREEMAIN       Working Storage
+*
+*
+         EJECT
+*  Table 1 - Program Register Usage
+*
+*  +------+----------------------------------------------------------+
+*  | REG  |                                                          |
+*  |USAGE |  DESCRIPTION                                             |
+*  +------+----------------------------------------------------------+
+*  |  R13 |  Calling program registers (R14-R12) upon entry          |
+*  |  R14 |  Calling program return address upon entry               |
+*  |  R15 |  Called  program entry address  upon entry               |
+*  |  R1  |  Called  program parms starting address                  |
+*  +------+----------------------------------------------------------+
+*  |  R0  |  Working Register                                        |
+*  |  R1  |  Working Register                                        |
+*  |  R2  |  Working Register                                        |
+*  |  R3  |  Working Register                                        |
+*  |  R4  |  Working Register                                        |
+*  |  R5  |  Working Register                                        |
+*  |  R6  |  Working Register                                        |
+*  |  R7  |  Working Register                                        |
+*  |  R8  |  Working Register                                        |
+*  |  R9  |  Address of WORKAREA via GETMAIN/FREEMAIN                |
+*  |  R10 |  Base Register 1                                         |
+*  |  R11 |  Working Register                                        |
+*  |  R12 |  Working Register                                        |
+*  |  R13 |  Address of SAVEAREA                                     |
+*  +------+----------------------------------------------------------+
+*  |  R15 |  Return Code upon exit                                   |
+*  +------+----------------------------------------------------------+
+*
+         EJECT
+*  Table 2 - Return Codes
+*
+*  +------+----------------------------------------------------------+
+*  |RETURN|                                                          |
+*  | CODE |  DESCRIPTION                                             |
+*  +------+----------------------------------------------------------+
+*  |  00  |  Successful Request                                      |
+*  +------+----------------------------------------------------------+
+*  |  04  |  Table entry not found (for table search requests only)  |
+*  +------+----------------------------------------------------------+
+*  |  12  |  No PARMS                                                |
+*  +------+----------------------------------------------------------+
+*  |  16  |  Invalid Request Type                                    |
+*  +------+----------------------------------------------------------+
+*
+         EJECT
+*  Macros and SYSLIB Location:
+*  ==================================================================
+*
+*  Macro     Description                         Library
+*  --------  ----------------------------------  --------------------
+*  YREGS     Register Equates                    SYS2.MACLIB
+*
+*
+*  References:
+*  ==================================================================
+*
+*  - None
+*
+*
+         EJECT
+*  Change History: <CHGHIST>
+*  ==================================================================
+*
+*  MM/DD/CCYY Version  Name / Description
+*  ---------- -------  --------------------------------------------
+*
+*  10/05/2021 1.1.05   Larry Belmontes Jr.                              LB1105
+*                      - Added messages 4071-4075                       LB1105a
+*                      - Misc updates to program documentation          LB1105z
+*                                                                       LB1105
+*  04/10/2021 1.1.00   Larry Belmontes Jr.
+*                      - Initial version released to MVS 3.8J
+*                        hobbyist public domain
+*
+*
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+         EJECT
+CUTILTBL CSECT
+         USING CUTILTBL,R10        my BASE REGISTER(S)
+         PRINT NOGEN
+*
+*     * /********************************************************/
+*     * /* Save regs and declare base registers R10             */
+*     * /* including saving R1 (PARMS) in R2                    */
+*     * /* - R1  myPARMS address on entry                       */
+*     * /* - R15 myENTRY address on entry                       */
+*     * /********************************************************/
+         STM   R14,R12,12(R13)     Save calling program registers
+         LR    R10,R15             Load base1 w R15
+         LR    R15,R13             Save callers registers
+         LR    R2,R1               Save PARM addr
+*
+*     * /********************************************************/
+*     * /* Program Eyecatcher                                   */
+*     * /********************************************************/
+         B     OVRSTAMP            Branch past eye-catcher
+MYSTAMP  EQU   *
+PGMID    DC    CL8'CUTILTBL'       My Program STAMP
+         DC    CL8'MVS3.8J '       OS
+         DC    CL8'V1.1.00 '       .Version
+         DC    CL8'04102021'       ..date  MMDDCCYY
+         DC    CL1' '
+PGMDS    DC    CL8'&SYSDATE'       Assemble Date
+         DC    CL3' - '            .and
+PGMTS    DC    CL8'&SYSTIME'       ..Time
+         DC    C'Copyright (C) 2021'
+         DC    C'Larry Belmontes, Jr. '
+         DC    C'https://ShareABitofIT.net/CUTIL00-for-MVS-3-8J'        LB1105z
+MYSTAMPL EQU   *-MYSTAMP
+OVRSTAMP DS    0H
+*
+         EJECT
+*     * /********************************************************/
+*     * /* GETMAIN, working storage, using R9                   */
+*     * /* - R0  Working register (Size of Workarea)            */
+*     * /* - R1  Working register (GETMAIN address)             */
+*     * /* - R9  Working Storage DSECT address  **              */
+*     * /********************************************************/
+         LA    R0,WSAREAL          R0 = size of Workarea DSECT
+         GETMAIN   R,LV=(R0)       Get Storage, R1 = addr of storage
+         LTR   R15,R15             Did we get the storage?
+         BNZ   NOMAINS             NO, return with rc in R15
+         LR    R9,R1               YES. R9 = Workarea DSECT Register
+         USING WSDSECT,R9          Tell Assembler
+*
+*     * /********************************************************/
+*     * /* Update Save Areas for caller and calling programs    */
+*     * /* - R1  myPARMS address on entry  (restored)           */
+*     * /********************************************************/
+         LR    R15,R13             Save callers savearea addr
+         LA    R13,SAVEAREA        Load Addr of my savearea
+         ST    R15,4(,R13)         Chain callers to my savearea
+         ST    R13,8(,R15)         Chain my savearea to callers
+         LR    R1,R2               Restore R1 as PARM addr
+*
+         EJECT
+*     * /********************************************************/
+*     * /* Get PARAMETER information passed to program          */
+*     * /* - R1 myPARMS address on entry                        */
+*     * /********************************************************/
+PARMS    EQU   *
+         LTR   R1,R1               Do I have a PARM?
+         BNZ   PARMIN              YES, check parms
+         MVC   RCEXIT,=F'12'       NO, return with RC=12 (no parm)
+         B     MYEXIT              Branch to MYEXIT
+*
+*     * /********************************************************/
+*     * /* Process Request Type                                 */
+*     * /* - R1 Starting parms address                          */
+*     * /********************************************************/
+PARMIN   EQU   *
+         MVC   MVCR8$6(MVCR8$6L),MVCR8$6#     Init MVC for EX
+         MVC   RCEXIT,=F'0'        Initialize RCEXIT
+*
+         CLC   =C'1DOW',0(R1)      DOW Table Request
+         BE    REQDOW
+         CLC   =C'2MM ',0(R1)      MM Table Reuqest
+         BE    REQMM
+         CLC   =C'2J2M',0(R1)      JJJ to MM Table Request
+         BE    REQJ2M
+         CLC   =C'3ULC',0(R1)      Upper-Lower Case Table Reqest
+         BE    REQULC
+         CLC   =C'3RVR',0(R1)      Reverse Table Request
+         BE    REQRVR
+         CLC   =C'9ERR',0(R1)      Error Message Request
+         BE    REQERR
+*
+         MVC   RCEXIT,=F'16'       Invalid Request Type
+         B     MYEXIT              Branch to MYEXIT
+*
+PARMSXT  EQU   *                   We have a parm...
+*
+         EJECT
+*     * /********************************************************/
+*     * /* Search for Day of Week                               */
+*     * /* - R2 Number of message table entries                 */
+*     * /* - R3 Address of message table                        */
+*     * /* - R5 Address of Parm 2                               */
+*     * /*                                                      */
+*     * /* - Parm 1: CL4 Request '1DOW'                         */
+*     * /* - Parm 2: A   Addr of DOW  e.g DCCDOW CL1            */
+*     * /* - Parm 3: A   Addr of DOWTBL entry (on return)       */
+*     * /********************************************************/
+REQDOW   EQU   *
+         LA    R2,DOWTBL#          R2=Number of DOWTBL entries
+         LA    R3,DOWTBL           R3=Starting address of DOWTBL
+         L     R5,4(R1)            R5=Starting address of DCCDOW
+CHKDOW   EQU   *
+         CLC   0(1,R3),0(R5)       Match DOW ?
+         BE    FNDDOW              Yes, found it...
+         LA    R3,DOWTBLL(R3)      No, look at next entry
+         BCT   R2,CHKDOW           Check again
+         MVC   RCEXIT,=F'04'       DOW not found, invalid DOW
+         B     MYEXIT              Branch to MYEXIT
+FNDDOW   EQU   *
+         ST    R3,8(R1)            DOW Row starting addr
+         B     MYEXIT              Done...
+*
+         EJECT
+*     * /********************************************************/
+*     * /* Search for Month Table Entry using MM                */
+*     * /* - R2 Number of message table entries                 */
+*     * /* - R3 Address of message table                        */
+*     * /* - R5 Address of Parm 2                               */
+*     * /*                                                      */
+*     * /* - Parm 1: CL4 Request '2MM '                         */
+*     * /* - Parm 2: A   Addr of MM   e.g DCMMM+1 CL2           */
+*     * /* - Parm 3: A   Addr of MMTBL  entry (on return)       */
+*     * /********************************************************/
+REQMM    EQU   *
+         LA    R2,MMTBL#           R2=Number of MMTBL entries
+         LA    R3,MMTBL            R3=Starting address of MMTBL
+         L     R5,4(R1)            R5=Starting address of MM
+CHKMM    EQU   *
+         CLC   0(2,R3),0(R5)       Match MM ?
+         BE    FNDMM               Yes, found it..
+         LA    R3,MMTBLL(R3)       No, look at next entry
+         BCT   R2,CHKMM            Check again
+         MVC   RCEXIT,=F'04'       MM not found, invalid MM
+         B     MYEXIT              Branch to MYEXIT
+FNDMM    EQU   *
+         ST    R3,8(R1)            MMTBL Row starting addr
+         B     MYEXIT              Done...
+*
+         EJECT
+*     * /********************************************************/
+*     * /* Search for Month Table Entry using JJJ               */
+*     * /* - R4 Address of message table                        */
+*     * /* - R3 Number of message table entries                 */
+*     * /* - R5 Length of message table entry                   */
+*     * /* - R6 Address of Parm 2                               */
+*     * /* - R7 Address of Parm 3                               */
+*     * /* - R8 Address of Parm 4                               */
+*     * /*                                                      */
+*     * /* - Parm 1: CL4 Request '2J2M'                         */
+*     * /* - Parm 2: A   Addr of JJJ  e.g PKJJJ   PL3           */
+*     * /* - Parm 3: A   Addr of packed leap year indicator     */
+*     * /*                            e.g DC#LEAP PL1           */
+*     * /* - Parm 4: A   Addr of full-work field                */
+*     * /*                            e.g FW      F             */
+*     * /* - Parm 5: A   Addr of MMTBL  entry (on return)       */
+*     * /********************************************************/
+REQJ2M   EQU   *
+
+         LA    R4,MMTBLE           R4=End Address of MonthTable
+         LA    R5,MMTBLL           R3=Length of table entry
+         SR    R4,R5               R4=Address of Last MonthTable Entry
+         LA    R3,MMTBL#           R3=12 Months
+         L     R6,4(R1)            R6=Starting address of PKJJJ
+         L     R7,8(R1)            R7=Starting address of DC#LEAP
+         L     R8,12(R1)           R8=Starting address of FW
+CHKMMJJJ EQU   *
+*        PACK  FW(2),4(3,R4)       Pack start month days from table
+         PACK  0(2,R8),4(3,R4)     Pack start month days from table
+         CLC   0(2,R4),=C'01'      JAN?
+         BE    NOADJLY             Yes, bypass adjust for leap year
+*        AP    FW(2),0(1,R7)       No, adjust for leap year when MM >1
+         AP    0(2,R8),0(1,R7)     No, adjust for leap year when MM >1
+NOADJLY  EQU   *
+*        CP    FW(2),0(3,R6)       MM JJ < JJJ
+         CP    0(2,R8),0(3,R6)     MM JJ < JJJ
+         BL    FNDMMJJJ            Yes, found month table entry MM
+         SR    R4,R5               No, Point to prev MonthTable Entry
+         BCT   R3,CHKMMJJJ         Check again...
+         MVC   RCEXIT,=F'04'       JJJ not found, invalid JJJ
+         B     MYEXIT              Branch to MYEXIT
+FNDMMJJJ EQU   *
+         ST    R4,16(R1)           MMTBL Row starting addr
+         B     MYEXIT              Done...
+*
+         EJECT
+*     * /********************************************************/
+*     * /* Return TRTBL starting address                        */
+*     * /* - R3 Address of TRTBL table                          */
+*     * /*                                                      */
+*     * /* - Parm 1: CL4 Request '2ULC'                         */
+*     * /* - Parm 2: A   Addr of TRTBL table  (on return)       */
+*     * /********************************************************/
+REQULC   EQU   *
+         LA    R3,TRTBL            R3=Starting address of TRTBL
+         ST    R3,4(R1)            TRTBL Row starting addr
+         B     MYEXIT              Done...
+*
+         EJECT
+*     * /********************************************************/
+*     * /* Return TREVRS starting address                       */
+*     * /* - R3 Address of TREVRS table                         */
+*     * /*                                                      */
+*     * /* - Parm 1: CL4 Request '3RVR'                         */
+*     * /* - Parm 2: A   Addr of TREVRS table (on return)       */
+*     * /********************************************************/
+REQRVR   EQU   *
+         LA    R3,TREVRS           R3=Starting address of TREVRS
+         ST    R3,4(R1)            TREVRS Row starting addr
+         B     MYEXIT              Done...
+*
+         EJECT
+*     * /********************************************************/
+*     * /* Process ERRMSG                                       */
+*     * /* - R2 Number of message table entries                 */
+*     * /* - R3 Address of message table                        */
+*     * /* - R8 Address of Parm 2                               */
+*     * /*                                                      */
+*     * /* - Parm 1: CL4 Request '9ERR'                         */
+*     * /* - Parm 2: A   Addr of full-word return code          */
+*     * /*                       e.g RC       A                 */
+*     * /* - Parm 3: A   Addr of error message text area        */
+*     * /*                       e.g ERRMSG   CL30              */
+*     * /********************************************************/
+REQERR   EQU   *
+         LA    R2,MSGTBL#          R2=Number of MSGTBL entries
+         LA    R3,MSGTBL           R3=Starting address of MSGTBL
+         L     R6,4(R1)            R5=Error Number
+         ST    R6,FW
+         L     R6,8(R1)            R5=Starting address of ERRMSG
+CHKERR   EQU   *
+         CLC   0(4,R3),FW          Match ERRNO ?
+         BE    FNDERR              Yes, found it...
+         LA    R3,MSGTBLL(R3)      No, look at next entry
+         BCT   R2,CHKERR           Check again
+NFNDERR  EQU   *
+         LA    R8,MSGNFND          R6=Starting address of MSGxxxx
+         LA    R7,L'MSGNFND        R7=Length of MSGxxxx
+         B     MOVERR
+FNDERR   EQU   *
+         L     R8,4(R3)            R6=Starting address of MSGxxxx
+         L     R7,8(R3)            R7=Length of MSGxxxx
+MOVERR   EQU   *
+         BCTR  R7,0                Adjust for EX MVC
+         EX    R7,MVCR8$6          Move R8 to R6 for len of R7
+         MVC   RCEXIT,FW           Return Err no in R15
+         B     MYEXIT              Done...
+*
+         EJECT
+*     * /********************************************************/
+*     * /* - Restore savearea, FREEMAIN, and                    */
+*     * /*   return to caller                                   */
+*     * /********************************************************/
+MYEXIT   EQU   *
+*
+*        STM   R0,R1,DW            SAVE    R0,R1  to   DW before TPUT
+*        TPUT  DJMSG,L'DJMSG
+*        LM    R0,R1,DW            RESTORE R0,R1  from DW after  TPUT
+*
+*     * /--------------------------------------------------------/
+*     * /* R1 = my Working Storage Address from GETMAIN         */
+*     * /********************************************************/
+         LR    R1,R13              Working Storage Addr
+*
+*     * /--------------------------------------------------------/
+*     * /* Get callers savearea into R13 and overlay my R15     */
+*     * /* to be returned to caller                             */
+*     * /--------------------------------------------------------/
+         L     R13,SAVEAREA+4      Restore R13
+         L     R5,RCEXIT           Set R15 to my exit value
+*
+*     * /--------------------------------------------------------/
+*     * /* Working Storage FREEMAIN                             */
+*     * /--------------------------------------------------------/
+         LA    R0,WSAREAL          Size of WSAREA DSECT
+         FREEMAIN  R,LV=(R0),A=(R1)    Free Storage
+*
+*     * /--------------------------------------------------------/
+*     * /* Restore caller registers and return to caller        */
+*     * /--------------------------------------------------------/
+         LR    R15,R5              R15 = RC for exit
+NOMAINS  EQU   *
+         L     R14,12(R13)         Restore R14
+         LM    R0,R12,20(R13)      Restore R0 thru R12
+         BR    R14                 Return to caller
+*
+         TITLE 'CUTILTBL - Constants                                  '
+*
+MVCR8$6# MVC   0(0,R6),0(R8)       MVC R8 to R6
+MVCR8$6L EQU   *-MVCR8$6#
+*
+         TITLE 'CUTILTBL - Literal Pool                               '
+         LTORG
+*
+         TITLE 'CUTILTBL - Day of Week Table                          '
+*     * /********************************************************/
+*     * /* Day of Week Table                                    */
+*     * /********************************************************/
+DOWTBL   EQU   *
+*                +----------------- 1 C    Weekday Number
+*                |+---------------- 9 C    Weekday name
+*                ||
+         DC    C'0Sunday   '
+DOWTBLL  EQU   *-DOWTBL                    Length of table entry
+         DC    C'1Monday   '
+         DC    C'2Tuesday  '
+         DC    C'3Wednesday'
+         DC    C'4Thursday '
+         DC    C'5Friday   '
+         DC    C'6Saturday '
+DOWTBL#  EQU   (*-DOWTBL)/DOWTBLL          Number of table entries
+*
+         TITLE 'CUTILTBL - Month Parameter Table                      '
+*     * /********************************************************/
+*     * /* Month Parameter Table                                */
+*     * /********************************************************/
+MMTBL    EQU   *
+*                +----------------- 2 C    Month Number
+*                | +--------------- 2 C    Days in month
+*                | | +------------- 3 C    Days at start of month
+*                | | |  +---------- 1 C    Term 0,3,2,5,0,3,5,1,4,6,2,4
+*                | | |  |+--------- 9 C    Monthname
+*                | | |  ||
+         DC    C'01310000January  '
+MMTBLL   EQU   *-MMTBL                     Length of table entry
+         DC    C'02280313February '
+         DC    C'03310592March    '
+         DC    C'04300905April    '
+         DC    C'05311200May      '
+         DC    C'06301513June     '
+         DC    C'07311815July     '
+         DC    C'08312121August   '
+         DC    C'09302434September'
+         DC    C'10312736October  '
+         DC    C'11303042November '
+         DC    C'12313344December '
+MMTBLE   EQU   *                           End of table
+MMTBL#   EQU   (*-MMTBL)/MMTBLL            Number of table entries
+         TITLE 'CUTILTBL - Upper-Lower Case Table                     '
+*     * /********************************************************/
+*     * /* Upper-Lower Case Table                               */
+*     * /********************************************************/
+*TRTAB    DC    256AL1(*-TRTAB)
+*         ORG   TRTAB+C'A'
+*         DC    C'abcdefghi'
+*         ORG   TRTAB+C'J'
+*         DC    C'jklmnopqr'
+*         ORG   TRTAB+C'S'
+*         DC    C'stuvwxyz'
+*         ORG   ,
+*     * /********************************************************/
+*     * /* Upper-Lower Case Table                               */
+*     * /********************************************************/
+TRTBL    DC    0XL256'0'
+         DC    (C'A')AL1(*-TRTBL),9AL1(*-TRTBL-X'40')
+         DC    (C'J'-(*-TRTBL))AL1(*-TRTBL),9AL1(*-TRTBL-X'40')
+         DC    (C'S'-(*-TRTBL))AL1(*-TRTBL),8AL1(*-TRTBL-X'40')
+         DC    (256-(*-TRTBL))AL1(*-TRTBL)
+         TITLE 'CUTILTBL - Translate Reverse Table                    '
+*     * /********************************************************/
+*     * /* Translate table reverse it!                          */
+*     * /********************************************************/
+*     * /* abcdefghi  to  zyxwvutsr                             */
+*     * /* jklmnopqr  to  qponmlkji                             */
+*     * /*  stuvwxyz  to   hgfedcba                             */
+*     * /* ABCDEFGHI  to  ZYXWVUTSR                             */
+*     * /* jklmnopqr  to  qponmlkji                             */
+*     * /*  stuvwxyz  to   hgfedcba                             */
+*     * /* 0123456789 to  9876543210                            */
+*     * /********************************************************/
+TREVRS   DC    256C' '             256 blanks
+         ORG   TREVRS+C'a'
+         DC    C'zyxwvutsr'
+         ORG   TREVRS+C'j'
+         DC    C'qponmlkji'
+         ORG   TREVRS+C's'
+         DC    C'hgfedcba'
+         ORG   TREVRS+C'A'
+         DC    C'ZYXWVUTSR'              tr string(5),TREVRS
+         ORG   TREVRS+C'J'
+         DC    C'QPONMLKJI'
+         ORG   TREVRS+C'S'
+         DC    C'HGFEDCBA'
+         ORG   TREVRS+C'0'
+         DC    C'9876543210'
+         TITLE 'CUTILTBL - Message Address Table / Message Text       '
+*     * /********************************************************/
+*     * /* Message Address Table                                */
+*     * /********************************************************/
+MSGTBL   DS    0F
+*              MSGNUM ,MSGTXT    ,MSGTXTL
+*              -------,----------,-----------
+         DC    A(4000),A(MSG4000),A(L'MSG4000)
+         DC    A(4001),A(MSG4001),A(L'MSG4001)
+         DC    A(4002),A(MSG4002),A(L'MSG4002)
+         DC    A(4004),A(MSG4004),A(L'MSG4004)
+         DC    A(4005),A(MSG4005),A(L'MSG4005)
+         DC    A(4008),A(MSG4008),A(L'MSG4008)
+         DC    A(4009),A(MSG4009),A(L'MSG4009)
+         DC    A(4010),A(MSG4010),A(L'MSG4010)
+         DC    A(4011),A(MSG4011),A(L'MSG4011)
+         DC    A(4012),A(MSG4012),A(L'MSG4012)
+         DC    A(4014),A(MSG4014),A(L'MSG4014)
+         DC    A(4015),A(MSG4015),A(L'MSG4015)
+         DC    A(4016),A(MSG4016),A(L'MSG4016)
+         DC    A(4017),A(MSG4017),A(L'MSG4017)
+         DC    A(4018),A(MSG4018),A(L'MSG4018)
+         DC    A(4019),A(MSG4019),A(L'MSG4019)
+         DC    A(4020),A(MSG4020),A(L'MSG4020)
+         DC    A(4021),A(MSG4021),A(L'MSG4021)
+         DC    A(4022),A(MSG4022),A(L'MSG4022)
+         DC    A(4023),A(MSG4023),A(L'MSG4023)
+         DC    A(4030),A(MSG4030),A(L'MSG4030)
+         DC    A(4031),A(MSG4031),A(L'MSG4031)
+         DC    A(4032),A(MSG4032),A(L'MSG4032)
+         DC    A(4033),A(MSG4033),A(L'MSG4033)
+         DC    A(4034),A(MSG4034),A(L'MSG4034)
+         DC    A(4035),A(MSG4035),A(L'MSG4035)
+         DC    A(4036),A(MSG4036),A(L'MSG4036)
+         DC    A(4037),A(MSG4037),A(L'MSG4037)
+         DC    A(4038),A(MSG4038),A(L'MSG4038)
+         DC    A(4039),A(MSG4039),A(L'MSG4039)
+         DC    A(4040),A(MSG4040),A(L'MSG4040)
+         DC    A(4047),A(MSG4047),A(L'MSG4047)
+         DC    A(4048),A(MSG4048),A(L'MSG4048)
+         DC    A(4049),A(MSG4049),A(L'MSG4049)
+         DC    A(4050),A(MSG4050),A(L'MSG4050)
+         DC    A(4051),A(MSG4051),A(L'MSG4051)
+         DC    A(4060),A(MSG4060),A(L'MSG4060)
+         DC    A(4071),A(MSG4071),A(L'MSG4071)                          LB1105a
+         DC    A(4072),A(MSG4072),A(L'MSG4072)                          LB1105a
+         DC    A(4073),A(MSG4073),A(L'MSG4073)                          LB1105a
+         DC    A(4074),A(MSG4074),A(L'MSG4074)                          LB1105a
+         DC    A(4075),A(MSG4075),A(L'MSG4075)                          LB1105a
+         DC    A(4098),A(MSG4098),A(L'MSG4098)
+MSGTLAST DC    X'FFFFFFFF',A(MSGNFND),A(L'MSGNFND)  Must be Last Entry
+MSGTBLL  EQU   *-MSGTLAST                  Length of table entry
+MSGTBLE  EQU   *                           End of table
+MSGTBL#  EQU   (*-MSGTBL)/MSGTBLL          Number of table entries
+*
+         EJECT
+*     * /********************************************************/
+*     * /* Message Text                                         */
+*     * /********************************************************/
+MSGS     EQU   *
+MSGNFND  DC    C'Message not found'
+MSGDONE  DC    C'Successful Request '
+MSG4000  DC    C'FALSE'
+MSG4001  DC    C'TRUE'
+MSG4002  DC    C'VAR1 not found'
+MSG4004  DC    C'No PARM'
+MSG4005  DC    C'WORD GT 8 bytes'
+MSG4008  DC    C'CPPL no PARM'
+MSG4009  DC    C'Too many words'
+MSG4010  DC    C'SETVAR no content'
+MSG4011  DC    C'Invalid Function'
+MSG4012  DC    C'VAR2 not updated'
+MSG4014  DC    C'VAR1 GT 256 bytes'
+MSG4015  DC    C'VAR2 required'
+MSG4016  DC    C'VAR2 not found'
+MSG4017  DC    C'VAR2 GT 256 bytes'
+MSG4018  DC    C'VAR2 null'
+MSG4019  DC    C'VAR1 null'
+MSG4020  DC    C'ERRMSG cannot create updt'
+MSG4021  DC    C'VAR1 required'
+MSG4022  DC    C'VAR2 not required'
+MSG4023  DC    C'Result GT 256'
+MSG4030  DC    C'No begin "'
+MSG4031  DC    C'No end "'
+MSG4032  DC    C'Start GT End'
+MSG4033  DC    C'Invalid char'
+MSG4034  DC    C'Not numeric'
+MSG4035  DC    C'Too many digits'
+MSG4036  DC    C'Null value not allowed'
+MSG4037  DC    C'No begin QUOTE'
+MSG4038  DC    C'No end QUOTE'
+MSG4039  DC    C'No end QUOTE found'
+MSG4040  DC    C'Invalid length'
+MSG4047  DC    C'Invalid DD'
+MSG4048  DC    C'Invalid DOW'
+MSG4049  DC    C'Invalid MM'
+MSG4050  DC    C'Invalid DD for MM'
+MSG4051  DC    C'Invalid JJJ'
+MSG4060  DC    C'Call error w CUTILTBL'
+MSG4071  DC    C'Invalid Function:date-to-MDCY'                         LB1105a
+MSG4072  DC    C'Invalid Function:date-from-MDCYJ'                      LB1105a
+MSG4073  DC    C'Invalid Function:date-to-JCY'                          LB1105a
+MSG4074  DC    C'Invalid Function:date CYJ-'                            LB1105a
+MSG4075  DC    C'Invalid Function:date MDCY-'                           LB1105a
+MSG4098  DC    C'Cannot link to IKJCT441'
+*
+MSGSL    EQU   *-MSGS
+*
+         TITLE 'CUTILTBL - Equates                                    '
+*     * /********************************************************/
+*     * /* Register Equates                                     */
+*     * /********************************************************/
+         YREGS                     Register EQU as Rn or Rnn
+*
+*R0       EQU   0
+*R1       EQU   0
+*R2       EQU   0
+*R3       EQU   0
+*R4       EQU   0
+*R5       EQU   0
+*R6       EQU   0
+*R7       EQU   0
+*R8       EQU   0
+*R9       EQU   0
+*R10      EQU   0
+*R11      EQU   0
+*R12      EQU   0
+*R13      EQU   0
+*R14      EQU   0
+*R15      EQU   0
+*
+         TITLE 'CUTILTBL - Working Storage Variables                  '
+*     * /********************************************************/
+*     * /* Working Storage  DSECT                               */
+*     * /********************************************************/
+WSDSECT  DSECT
+WSAREA   EQU   *
+*
+*     * /********************************************************/
+*     * /* mySAVEARA                                            */
+*     * /********************************************************/
+SAVEAREA DS    18F                 my Savearea
+*                      +00  A(savearea of current CSECT)
+*                      +04  A(savearea of calling CSECT)
+*                      +08  A(savearea of called  CSECT)
+*                      +12  R14
+*                      +16  R15
+*                      +20  R0
+*                      +24  R1
+*                      +28  R2
+*                      +32  R3
+*                      +36  R4
+*                      +40  R5
+*                      +44  R6
+*                      +48  R7
+*                      +52  R8
+*                      +56  R9
+*                      +60  R10
+*                      +64  R11
+*                      +68  R12
+*
+*     * /********************************************************/
+*     * /* Misc Variables                                       */
+*     * /********************************************************/
+SAVER15  DS    F                   R15 Hold
+DW       DS    D                   Double Word area
+FW       DS    F                   Full Word   area
+RCEXIT   DS    F                   Exit RC
+*RC       DS    CL2                 Return Code
+*
+MVCR8$6  MVC   0(0,R6),0(R8)       MVC R8 to R6 (ERRMSG)
+*
+WSAREAE  EQU   *                   Working Storage END
+WSAREAL  EQU   WSAREAE-WSAREA      Working Storage Area Length
+*
+         END   CUTILTBL

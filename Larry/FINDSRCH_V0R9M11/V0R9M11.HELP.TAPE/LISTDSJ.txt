@@ -1,0 +1,80 @@
+)F FUNCTION -
+  The LISTDSJ command sets CLIST variables for dataset
+  attributes and other information.
+)X SYNTAX  -
+         LISTDSJ NAME VOL(vvvvvv) DIR PNL ABOUT DS(x) DF(n)             LB1010
+                 FILE DLn                                               LB1010
+  REQUIRED - NAME
+  DEFAULTS - NONE
+  ALIAS    - LISTDSI                                                    LB1020
+)O OPERANDS -
+  Parameters can appear in any order except NAME which must be the
+  first parameter
+))NAME     - DSN (dataset name) or DDNAME (see FILE keyword)            LB1010
+             DSN in quotes is fully qualified, otherwise, prefix DSN    LB1010
+             with USERID                                                LB1010
+))VOLUME   - optional, target volume for data set name
+  or VOL     bypassing catalog search.                                  LB1010
+))DIRECTORY- optional, retrieve PDS directory information.              LB1010
+  or DIR     Ignored when file is not Partitioned.                      LB1010
+             is not Partitioned.
+             NOTE: Last Referenced Date is updated when file open.
+))PNL      - CLIST symbolic names use short format, &Snn.
+             See Table 3, column 'S#' in program documentation
+             for name specifics.
+))ABOUT    - optional, display LISTDSJ date time stamp on TSO
+             session screen.
+             NOTE: A data set name is required as the first parameter   LB1040
+             followed by the ABOUT keyword.  No dataset information     LB1040
+             is retrieved.                                              LB1040
+             All CLIST variables will contain default values of
+             question marks (?).
+))DS       - optional, date separator to be used for dates              LB1001a
+             Note: default value is DS(S) slash                         LB1001a
+             DS(D) use dash   (-)                                       LB1001a
+             DS(P) use period (.)                                       LB1001a
+             DS(S) use slash  (/)  DEFAULT <--                          LB1001a
+))DF       - optional, date format layout for MDY type dates            LB1001b
+             Note: default value is DF(3)    YYYY_MM_DD                 LB1001b
+             DF(1) use date format MM_DD_CCYY                           LB1001b
+             DF(2) use date format DD_MM_CCYY                           LB1001b
+             DF(3) use date format YYYY_MM_DD  DEFAULT <--              LB1001b
+             DF(4) use date format YYYY_DD_MM                           LB1001b
+))FILE     - optional, use NAME as a DDNAME for an allocated dataset    LB1010
+))DLn      - optional, create PDS directory list with ISPF statistics   LB1001h
+             Note: ISPLINK must be available to utilize ISPF table      LB1001h
+                   services.  Otherwise, this parameter is ignored.     LB1001h
+             DL0   ISPF table name DIRLST0 is created                   LB1001h
+             DL1   ISPF table name DIRLST1 is created                   LB1001h
+))TSOB      - optional, bypass test validation of executing under TSO.  LB1040c
+             Used when executing under batch TSO.                       LB1040c
+
+
+  Sample Commands
+
+  1) LISTDSJ 'HERC01.TEST.CNTL' ABOUT                                   LB1010
+     Displays LISTDSJ date time stamp on TSO session screen and
+     sets all LISTDSJ SYS* CLIST variables to question marks (?).
+
+  2) LISTDSJ 'HERC01.TEST.CNTL'                                         LB1010
+     Dataset attributes and other information for HERC01.TEST.CNTL
+     are set for each LISTDSJ SYS* CLIST variable excluding
+     DIRECTORY information.
+
+  3) LISTDSJ 'HERC01.TEST.CNTL' DIR                                     LB1010
+     Dataset attributes and other information for HERC01.TEST.CNTL
+     are set for each LISTDSJ SYS* CLIST variable including
+     DIRECTORY information.
+     Note: Last Referenced Date updated when file opened.
+
+  4) LISTDSJ 'HERC01.TEST.CNTL' PNL                                     LB1010
+     Dataset attributes and other information for HERC01.TEST.CNTL
+     are set for each LISTDSJ Snn CLIST variable excluding
+     DIRECTORY information.
+     Note: Short name notation is used for this request (&Snn).
+
+  5) LISTDSJ SYSPROC FILE                                               LB1010
+     Dataset attributes and other information for dataset name          LB1010
+     associated with DDNAME SYSPROC are set for each LISTDSJ SYS*       LB1010
+     CLIST variables excluding DIRECTORY information.                   LB1010
+                                                                        LB1010

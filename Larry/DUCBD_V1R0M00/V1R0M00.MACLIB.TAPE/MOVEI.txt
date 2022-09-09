@@ -1,0 +1,82 @@
+         MACRO
+&NAME    MOVEI &P,&M
+**********************************************************************
+*   Macro:  MOVEI     V1R0M00    07/30/2020
+*  Author:  Larry Belmontes Jr.
+*           https://ShareABitofIT.net/SHRABIT-MACLIB-in-mvs-3-8j
+*           Copyright (C) 2020-2021  Larry Belmontes, Jr.
+**********************************************************************
+.*********************************************************************
+.*       Macro Description:                                          *
+.*       ------------------                                          *
+.*       o  &P length must be >0 and <= 256 bytes.                   *
+.*       o  If &M is blank or 'INIT' Initialize R6 and R8            *
+.*          - Initialize R6 and R8 for use in MOVEn macros           *
+.*          - R6=Current Address of &P as pointer                    *
+.*          - R8=Current Length  of &P as bytes moved into &P        *
+.*       o  If &M is 'INIT' or 'ONLY'                                *
+.*          - Initialize &P to spaces (x'40')                        *
+.*       o  Data moves starting at PTR (R6) and R8 augments by 1 for *
+.*          each byte.                                               *
+.*                                                                   *
+.*       Examples:                                                   *
+.*       ---------                                                   *
+.*       MOVEI VAR           Init R6=addr of VAR, R8=0  VAR=?        *
+.*       MOVEI VAR,INIT      Init R6=addr of VAR, R8=0  VAR=spaces   *
+.*       MOVEI VAR,ONLY      Init VAR=spaces                         *
+.*                                                                   *
+.*       - Uses R6,R8                                                *
+.*********************************************************************
+*  Disclaimer:
+*  ===================================================================
+*
+*     No guarantee; No warranty; Install / Use at your own risk.
+*
+*     This software is provided "AS IS" and without any expressed
+*  or implied warranties, including, without limitation, the
+*  implied warranties of merchantability and fitness for a
+*  particular purpose.
+*
+*     The author requests keeping authors name intact in any
+*  modified versions.
+*
+*     In addition, the author requests readers to submit any
+*  code modifications / enhancements and associated comments
+*  for consideration into a subsequent release (giving credit
+*  to contributor(s)) thus, improving overall functionality
+*  and further benefiting the MVS 3.8J hobbyist public domain
+*  community.
+*
+*
+         LCLA  &A
+         LCLC  &C
+&A       SETA  L'&P          Length of VAR
+&C       SETC  '&NAME'       Label
+         AIF   (&A LE 0).TOOSHRT
+         AIF   (&A GT 256).TOOLONG
+         AIF   ('&M' EQ '').RINIT
+         AIF   ('&M' EQ 'INIT').RINIT
+         AIF   ('&M' EQ 'ONLY').VARINIT
+         MNOTE 12,'Parm 2 must be ONLY'
+         AGO    .ENDME
+.RINIT   ANOP
+&NAME    LA    6,&P                  Addr of String
+         LA    8,0                   Length of String
+         MNOTE 'Set R6 and R8 for &P'
+&C       SETC   ''
+         AIF   ('&M' EQ 'INIT').ENDME
+.VARINIT ANOP
+&C       MVI   &P,C' '               Blank TEXT
+         AIF   (&A EQ 1).BPMVC
+         MVC   &P+1(L'&P-1),&P
+.BPMVC   ANOP
+         MNOTE 'Blank &A bytes for &P'
+         AGO    .ENDME
+.TOOSHRT ANOP
+         MNOTE 12,'&P must be > 0 bytes'
+         AGO    .ENDME
+.TOOLONG ANOP
+         MNOTE 12,'&P length > 256 bytes'
+         AGO    .ENDME
+.ENDME   ANOP
+         MEND

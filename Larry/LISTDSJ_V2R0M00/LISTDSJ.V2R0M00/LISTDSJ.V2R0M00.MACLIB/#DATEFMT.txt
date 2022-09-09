@@ -1,0 +1,30 @@
+         MACRO                                                          LB2000a
+&NAME    #DATEFMT  &DF                                                  LB1100b
+.*****************************************************************      LB1100b
+.*       Date Format Character Configuration                     *      LB1100b
+.*****************************************************************      LB1100b
+         MNOTE 'DATEFMT:  Valid values are:           '                 LB1100b
+         MNOTE '          1=MM_DD_CCYY                '                 LB1100b
+         MNOTE '          2=DD_MM_CCYY                '                 LB1100b
+         MNOTE '          3=CCYY_MM_DD     default ** '                 LB1100b
+         MNOTE '          4=CCYY_DD_MM                '                 LB1100b
+         AIF   ('&DF' EQ '1').DF1                                       LB1100b
+         AIF   ('&DF' EQ '2').DF2                                       LB1100b
+         AIF   ('&DF' EQ '3').DF3                                       LB1100b
+         AIF   ('&DF' EQ '4').DF4                                       LB1100b
+.DFDFLT  MVI   DATEFMT,C'3'        Date Format    default value <---    LB1001f
+         MNOTE '  Applied DEFAULT date format of CCYY_MM_DD'            LB1100b
+         MEXIT                                                          LB1100b
+.DF1     MVI   DATEFMT,C'1'        Date Format    1 MM_DD_CCYY          LB1010a
+         MNOTE '  Applied date format MM_DD_CCYY'                       LB1100b
+         MEXIT                                                          LB1100b
+.DF2     MVI   DATEFMT,C'2'        Date Format    2 DD_MM_CCYY          LB1010a
+         MNOTE '  Applied date format DD_MM_CCYY'                       LB1100b
+         MEXIT                                                          LB1100b
+.DF3     MVI   DATEFMT,C'3'        Date Format    3 CCYY_MM_DD          LB1010a
+         MNOTE '  Applied date format CCYY_MM_DD'                       LB1100b
+         MEXIT                                                          LB1100b
+.DF4     MVI   DATEFMT,C'4'        Date Format    4 CCYY_DD_MM          LB1010a
+         MNOTE '  Applied date format CCYY_DD_MM'                       LB1100b
+         MEXIT                                                          LB1100b
+         MEND                                                           LB2000a

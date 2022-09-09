@@ -1,0 +1,64 @@
+
+The following excerpts for SVC 99 Return Codes is from IBM's
+GC28-0627-2 OS/VS2 MVS System Programming Library Job Mgmt manual.
+
+A portion of this manual (pages 27-32) contain relevant SVC 99
+return codes, reason codes and other descriptive information.
+
+CCOMPR may generate error message CMPR000E during allocating or
+unallocating a temporary file in this format:
+
+    CMPR000E RC=0012 Alloc1 OUT       ERR=0860 INFO=0002
+    CMPR000E RC=rrrr Unalloc1 DD-OUT  ERR=eeee INFO=iiii
+    CMPR000E RC=rrrr xxxxxxxxxxxxxxxx ERR=eeee INFO=iiii
+
+    rrrr - RC in decimal value, see below (SVC 99 Return Codes list)
+           for description.
+
+    eeee - ERR in decimal value, convert to hex,
+           see attached except of GC28-0627-2 OS/VS2 MVS Sys Pgm
+           manual for full description.
+
+    iiii - INFO in decimal value, represents error class,
+           see attached except of GC28-0627-2 OS/VS2 MVS Sys Pgm
+           manual for full description.
+
+    xxxx - Eye-catcher text for representing error thrown code point.
+
+
+SVC 99 Return Codes*
+===================
+
+Note: The labels used in this topic are assigned by macros IEFZB4D0
+      and IEFZB4D2.
+
+When the SVC 99 routines return control to the requesting program,
+register 15 contains a return code. Depending on the return code,
+the S99ERROR and S99INFO fields in the input request block (S99RB)
+may additionally contain error and information reason codes
+respectively. The return codes that can be returned in register 15
+are shown in Figure 6.
+
+
+Code    Meaning
+----    ---------------------------------------------------------------------
+  0     Successful completion; there will also be an information reason
+        code if a non-terminating error occurred during request processing.
+
+  4     An error resulted from the current environment, the unavailability
+        of a system resource, or a system routine failure; there will also
+        be an error reason code.
+
+  8     The installation validation routine denied this request.
+        (See "Installation Input Validation Routine" for additional
+        information.)
+
+ 12     The error is due to an invalid parameter list; there will also be
+        an error reason code from class 3. (Class 3 reason codes are
+        listed in Figure 7.)
+
+
+
+* Source for SVC 99 is from IBM's reference manual
+  GC28-0627-2 OS/VS2 MVS System Programming Library Job Management.
+

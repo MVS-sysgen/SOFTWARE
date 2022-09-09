@@ -1,0 +1,1881 @@
+PROC 0
+
+CONTROL MAIN
+
+/********************************************************************/
+/*                                                                  */
+/* CLIST: CCUTIL0V                                                  */
+/*                                                                  */
+/* Author: Larry Belmontes Jr.                                      */
+/*         https://ShareABitOfIT.net/CUTIL00-for-mvs-3-8j/          */
+/*         Copyright (C) 2020-2021  Larry Belmontes, Jr.            */
+/*                                                                  */
+/*                                                                  */
+/* Description:                                                     */
+/* ================================================================ */
+/*                                                                  */
+/* Validation CLIST to execute each CUTIL00 function and print      */
+/* results.  This CLIST should be submitted under TSO Batch.        */
+/*                                                                  */
+/* Contains samples from program documentation.                     */
+/*                                                                  */
+/* Command Syntax:                                                  */
+/* ================================================================ */
+/*                                                                  */
+/* CCUTIL00                                                         */
+/*                                                                  */
+/*   This is a simple CLIST that invokes CUTIL00 multiple times     */
+/*   using the following approach for each test:                    */
+/*         1 - SET variables to be used by CUTIL00 function         */
+/*         2 - Invoke CUTIL00                                       */
+/*         3 - Print results from CUTIL00                           */
+/*                                                                  */
+/*   Example:                                                       */
+/*   CCUTIL00                                                       */
+/*                                                                  */
+/*                                                                  */
+/* Disclaimer:                                                      */
+/* ================================================================ */
+/*                                                                  */
+/*    No guarantee; No warranty; Install / Use at your own risk.    */
+/*                                                                  */
+/*    This software is provided "AS IS" and without any expressed   */
+/* or implied warranties, including, without limitation, the        */
+/* implied warranties of merchantability and fitness for a          */
+/* particular purpose.                                              */
+/*                                                                  */
+/*    The author requests keeping authors name intact in any        */
+/* modified versions.                                               */
+/*                                                                  */
+/*    In addition, the author requests submissions regarding any    */
+/* code modifications / enhancements and/or associated comments     */
+/* for consideration into a subsequent release (giving credit       */
+/* to contributor(s)) thus, improving overall functionality         */
+/* benefiting the MVS 3.8J hobbyist public domain community.        */
+/*                                                                  */
+/*                                                                  */
+/*                                                                  */
+/* Change History:                                                  */
+/* ================================================================ */
+/* MM/DD/CCYY Version  Name / Description                           */
+/* ---------- -------  -------------------------------------------- */
+/* 10/05/2021 1.1.05   Larry Belmontes Jr.                          */  LB1105
+/*                     - Add tests for LEN, SLEN, OVERLAY,          */  LB1105
+/*                       UTDSN, TRUNC                               */  LB1105
+/*                                                                  */  LB1105
+/* 04/10/2021 1.1.00   Larry Belmontes Jr.                          */  LB1100
+/*                     - Add tests for PUT1V, GET1V, MCAL           */  LB1100
+/*                                                                  */  LB1100
+/* 03/20/2020 1.0.00   Larry Belmontes Jr.                          */
+/*                     - Initial version released to MVS 3.8J       */
+/*                       hobbyist public domain                     */
+/*                                                                  */
+/********************************************************************/
+
+SET TSTHDR = &STR(====> TEST )
+SET I = 0
+
+WRITE
+WRITE ***** Testing CUTIL00 after installation   *** &SYSDATE &SYSTIME
+WRITE *****        program documention samples   ***
+WRITE
+
+WRITE /\/\/\*00  A B O U T                         /\/\/\-----------
+/********************************************************************/
+/* *00 ABOUT from program documentation                             */
+/********************************************************************/
+SET MYCMD = &STR(CUTIL00 ABOUT  MYDATA  MYRESULT)
+WRITE &STR(&TSTHDR)&I: &MYCMD
+SET MYDATA  =
+SET MYDATAL =
+SET MYRESULT =
+SET MYRESULTL =
+SET ERRMSG =
+&MYCMD
+SET RC = &LASTCC
+WRITE  RC       =&RC
+WRITE  ERRMSG   =&ERRMSG
+WRITE  MYDATA   ='&MYDATA'
+WRITE  MYDATAL  =&MYDATAL
+WRITE  MYRESULT ='&MYRESULT'
+WRITE  MYRESULTL=&MYRESULTL
+IF &RC EQ 0 THEN WRITE  ** PASSED PER RC **
+IF &RC NE 0 THEN WRITE  ** FAILED PER RC **   <<===XX
+WRITE
+WRITE /\/\/\*01  L T R I M                         /\/\/\-----------
+/********************************************************************/
+/* *01 LTRIM from program documentation                             */
+/********************************************************************/
+SET I = &I + 1
+SET MYCMD = &STR(CUTIL00 LTRIM  MYDATA  MYRESULT)
+WRITE &STR(&TSTHDR)&I: &MYCMD
+SET MYDATA  = &STR(   leading spaces)
+SET MYDATAL =
+SET MYRESULT =
+SET MYRESULTL =
+SET ERRMSG =
+&MYCMD
+SET RC = &LASTCC
+WRITE  RC       =&RC
+WRITE  ERRMSG   =&ERRMSG
+WRITE  MYDATA   ='&MYDATA'
+WRITE  MYDATAL  =&MYDATAL
+WRITE  MYRESULT ='&MYRESULT'
+WRITE  MYRESULTL=&MYRESULTL
+IF &RC EQ 0 THEN WRITE  ** PASSED PER RC **
+IF &RC NE 0 THEN WRITE  ** FAILED PER RC **   <<===XX
+WRITE
+WRITE /\/\/\*02  R T R I M                         /\/\/\-----------
+/********************************************************************/
+/* RTRIM  from program documentation                                */
+/********************************************************************/
+SET I = &I + 1
+SET MYCMD = &STR(CUTIL00 RTRIM  MYDATA  MYRESULT)
+WRITE &STR(&TSTHDR)&I: &MYCMD
+SET MYDATA  = &STR(trailing spaces  )
+SET MYDATAL =
+SET MYRESULT =
+SET MYRESULTL =
+SET ERRMSG =
+&MYCMD
+SET RC = &LASTCC
+WRITE  RC       =&RC
+WRITE  ERRMSG   =&ERRMSG
+WRITE  MYDATA   ='&MYDATA'
+WRITE  MYDATAL  =&MYDATAL
+WRITE  MYRESULT ='&MYRESULT'
+WRITE  MYRESULTL=&MYRESULTL
+IF &RC EQ 0 THEN WRITE  ** PASSED PER RC **
+IF &RC NE 0 THEN WRITE  ** FAILED PER RC **   <<===XX
+WRITE
+WRITE /\/\/\*03  T R I M                           /\/\/\-----------
+/********************************************************************/
+/* *03 TRIM from program documentation                              */
+/********************************************************************/
+SET I = &I + 1
+SET MYCMD = &STR(CUTIL00 TRIM  MYDATA  MYRESULT)
+WRITE &STR(&TSTHDR)&I: &MYCMD
+SET MYDATA  = &STR( trim   my  data )
+SET MYDATAL =
+SET MYRESULT =
+SET MYRESULTL =
+SET ERRMSG =
+&MYCMD
+SET RC = &LASTCC
+WRITE  RC       =&RC
+WRITE  ERRMSG   =&ERRMSG
+WRITE  MYDATA   ='&MYDATA'
+WRITE  MYDATAL  =&MYDATAL
+WRITE  MYRESULT ='&MYRESULT'
+WRITE  MYRESULTL=&MYRESULTL
+IF &RC EQ 0 THEN WRITE  ** PASSED PER RC **
+IF &RC NE 0 THEN WRITE  ** FAILED PER RC **   <<===XX
+WRITE
+WRITE /\/\/\*04  T R I M #                         /\/\/\-----------
+/********************************************************************/
+/* *04 TRIM$ from program documentation                             */
+/********************************************************************/
+SET I = &I + 1
+SET MYCMD = &STR(CUTIL00 TRIM$ MYDATA  MYRESULT)
+WRITE &STR(&TSTHDR)&I: &MYCMD
+SET MYDATA  = &STR( trim   my  data )
+SET MYDATAL =
+SET MYRESULT =
+SET MYRESULTL =
+SET ERRMSG =
+&MYCMD
+SET RC = &LASTCC
+WRITE  RC       =&RC
+WRITE  ERRMSG   =&ERRMSG
+WRITE  MYDATA   ='&MYDATA'
+WRITE  MYDATAL  =&MYDATAL
+WRITE  MYRESULT ='&MYRESULT'
+WRITE  MYRESULTL=&MYRESULTL
+IF &RC EQ 0 THEN WRITE  ** PASSED PER RC **
+IF &RC NE 0 THEN WRITE  ** FAILED PER RC **   <<===XX
+WRITE
+WRITE /\/\/\*05  I N D E X                         /\/\/\-----------
+/********************************************************************/
+/* *05 INDEX from program documentation                             */
+/********************************************************************/
+SET I = &I + 1
+SET MYCMD = &STR(CUTIL00 INDEX MYDATA  DLMTR)
+WRITE &STR(&TSTHDR)&I: &MYCMD
+SET MYDATA  = &STR(my, string, ok?   )
+SET MYDATAL =
+SET DLMTR = &STR(",")
+SET DLMTRL =
+SET ERRMSG =
+&MYCMD
+SET RC = &LASTCC
+WRITE  RC       =&RC
+WRITE  ERRMSG   =&ERRMSG
+WRITE  MYDATA   ='&MYDATA'
+WRITE  MYDATAL  =&MYDATAL
+WRITE  DLMTR    ='&DLMTR'
+WRITE  DLMTRL   =&DLMTRL
+IF &RC EQ 3 THEN WRITE  ** PASSED PER RC **
+IF &RC NE 3 THEN WRITE  ** FAILED PER RC **   <<===XX
+WRITE
+WRITE /\/\/\*06  I N D E X B                       /\/\/\-----------
+/********************************************************************/
+/* *06 INDEXB from program documentation                            */
+/********************************************************************/
+SET I = &I + 1
+SET MYCMD = &STR(CUTIL00 INDEXB MYDATA  DLMTR)
+WRITE &STR(&TSTHDR)&I: &MYCMD
+SET MYDATA  = &STR(my, string, ok?   )
+SET MYDATAL =
+SET DLMTR = &STR(",")
+SET DLMTRL =
+SET ERRMSG =
+&MYCMD
+SET RC = &LASTCC
+WRITE  RC       =&RC
+WRITE  ERRMSG   =&ERRMSG
+WRITE  MYDATA   ='&MYDATA'
+WRITE  MYDATAL  =&MYDATAL
+WRITE  DLMTR    ='&DLMTR'
+WRITE  DLMTRL   =&DLMTRL
+IF &RC EQ 11 THEN WRITE  ** PASSED PER RC **
+IF &RC NE 11 THEN WRITE  ** FAILED PER RC **   <<===XX
+WRITE
+WRITE /\/\/\*07  I S N U M                         /\/\/\-----------
+/********************************************************************/
+/* *07 ISNUM from program documentation                             */
+/********************************************************************/
+SET I = &I + 1
+SET MYCMD = &STR(CUTIL00 ISNUM  MYDATA)
+WRITE &STR(&TSTHDR)&I: &MYCMD
+SET MYDATA  = &STR(0123456789)
+SET MYDATAL =
+SET MYRESULT =             /* not used for this function */
+SET MYRESULTL =
+SET ERRMSG =
+&MYCMD
+SET RC = &LASTCC
+WRITE  RC       =&RC
+WRITE  ERRMSG   =&ERRMSG
+WRITE  MYDATA   ='&MYDATA'
+WRITE  MYDATAL  =&MYDATAL
+WRITE  MYRESULT ='&MYRESULT'
+WRITE  MYRESULTL=&MYRESULTL
+IF &RC EQ 4001 THEN WRITE  ** PASSED PER RC **
+IF &RC NE 4001 THEN WRITE  ** FAILED PER RC **   <<===XX
+WRITE
+WRITE /\/\/\*08  I S A L P H A                     /\/\/\-----------
+/********************************************************************/
+/* *08 ISALPHA from program documentation                           */
+/********************************************************************/
+SET I = &I + 1
+SET MYCMD = &STR(CUTIL00 ISALPHA MYDATA)
+WRITE &STR(&TSTHDR)&I: &MYCMD
+SET MYDATA  = &STR(abCDEfghiJ)
+SET MYDATAL =
+SET MYRESULT =             /* not used for this function */
+SET MYRESULTL =
+SET ERRMSG =
+&MYCMD
+SET RC = &LASTCC
+WRITE  RC       =&RC
+WRITE  ERRMSG   =&ERRMSG
+WRITE  MYDATA   ='&MYDATA'
+WRITE  MYDATAL  =&MYDATAL
+WRITE  MYRESULT ='&MYRESULT'
+WRITE  MYRESULTL=&MYRESULTL
+IF &RC EQ 4001 THEN WRITE  ** PASSED PER RC **
+IF &RC NE 4001 THEN WRITE  ** FAILED PER RC **   <<===XX
+WRITE
+WRITE /\/\/\*09  I S L O W E R                     /\/\/\-----------
+/********************************************************************/
+/* *09 ISLOWER from program documentation                           */
+/********************************************************************/
+SET I = &I + 1
+SET MYCMD = &STR(CUTIL00 ISLOWER MYDATA          )
+WRITE &STR(&TSTHDR)&I: &MYCMD
+SET MYDATA  = &STR(abcdefghij)
+SET MYDATAL =
+SET MYRESULT =             /* not used for this function */
+SET MYRESULTL =
+SET ERRMSG =
+&MYCMD
+SET RC = &LASTCC
+WRITE  RC       =&RC
+WRITE  ERRMSG   =&ERRMSG
+WRITE  MYDATA   ='&MYDATA'
+WRITE  MYDATAL  =&MYDATAL
+WRITE  MYRESULT ='&MYRESULT'
+WRITE  MYRESULTL=&MYRESULTL
+IF &RC EQ 4000 THEN WRITE  ** PASSED PER RC **
+IF &RC NE 4000 THEN WRITE  ** FAILED PER RC **   <<===XX
+WRITE
+WRITE /\/\/\*10  I S U P P E R                     /\/\/\-----------
+/********************************************************************/
+/* *10 ISUPPER from program documentation                           */
+/********************************************************************/
+SET I = &I + 1
+SET MYCMD = &STR(CUTIL00 ISUPPER MYDATA          )
+WRITE &STR(&TSTHDR)&I: &MYCMD
+SET MYDATA  = &STR(ABCDEFGHIJ)
+SET MYDATAL =
+SET MYRESULT =             /* not used for this function */
+SET MYRESULTL =
+SET ERRMSG =
+&MYCMD
+SET RC = &LASTCC
+WRITE  RC       =&RC
+WRITE  ERRMSG   =&ERRMSG
+WRITE  MYDATA   ='&MYDATA'
+WRITE  MYDATAL  =&MYDATAL
+WRITE  MYRESULT ='&MYRESULT'
+WRITE  MYRESULTL=&MYRESULTL
+IF &RC EQ 4001 THEN WRITE  ** PASSED PER RC **
+IF &RC NE 4001 THEN WRITE  ** FAILED PER RC **   <<===XX
+WRITE
+WRITE /\/\/\*11  I S B L A N K                     /\/\/\-----------
+/********************************************************************/
+/* *11 ISBLANK from program documentation                           */
+/********************************************************************/
+SET I = &I + 1
+SET MYCMD = &STR(CUTIL00 ISBLANK MYDATA)
+WRITE &STR(&TSTHDR)&I: &MYCMD
+SET MYDATA  = &STR(         )
+SET MYDATAL =
+SET MYRESULT =             /* not used for this function */
+SET MYRESULTL =
+SET ERRMSG =
+&MYCMD
+SET RC = &LASTCC
+WRITE  RC       =&RC
+WRITE  ERRMSG   =&ERRMSG
+WRITE  MYDATA   ='&MYDATA'
+WRITE  MYDATAL  =&MYDATAL
+WRITE  MYRESULT ='&MYRESULT'
+WRITE  MYRESULTL=&MYRESULTL
+IF &RC EQ 4001 THEN WRITE  ** PASSED PER RC **
+IF &RC NE 4001 THEN WRITE  ** FAILED PER RC **   <<===XX
+WRITE
+WRITE /\/\/\*12  I S D S N                         /\/\/\-----------
+/********************************************************************/
+/* *12 ISDSN from program documentation                             */
+/********************************************************************/
+SET I = &I + 1
+SET MYCMD = &STR(CUTIL00 ISDSN   MYDATA )
+WRITE &STR(&TSTHDR)&I: &MYCMD
+SET MYDATA  = &STR(A.A1234567)
+SET MYDATAL =
+SET MYRESULT =             /* not used for this function */
+SET MYRESULTL =
+SET ERRMSG =
+&MYCMD
+SET RC = &LASTCC
+WRITE  RC       =&RC
+WRITE  ERRMSG   =&ERRMSG
+WRITE  MYDATA   ='&MYDATA'
+WRITE  MYDATAL  =&MYDATAL
+WRITE  MYRESULT ='&MYRESULT'
+WRITE  MYRESULTL=&MYRESULTL
+IF &RC EQ 4001 THEN WRITE  ** PASSED PER RC **
+IF &RC NE 4001 THEN WRITE  ** FAILED PER RC **   <<===XX
+WRITE
+WRITE /\/\/\*13  E C H O                           /\/\/\-----------
+/********************************************************************/
+/* *13 ECHO from program documentation                              */
+/********************************************************************/
+SET I = &I + 1
+SET MYCMD = &STR(CUTIL00 ECHO    MYDATA)
+WRITE &STR(&TSTHDR)&I: &MYCMD
+SET MYDATA  = &STR(my data to display.)
+SET MYDATAL =
+SET MYRESULT =             /* not used for this function */
+SET MYRESULTL =
+SET ERRMSG =
+WRITE  CUTIL00 ECHO of MYDATA follows...
+&MYCMD
+SET RC = &LASTCC
+WRITE  RC       =&RC
+WRITE  ERRMSG   =&ERRMSG
+WRITE  MYDATA   ='&MYDATA'
+WRITE  MYDATAL  =&MYDATAL
+WRITE  MYRESULT ='&MYRESULT'
+WRITE  MYRESULTL=&MYRESULTL
+IF &RC EQ 0 THEN WRITE  ** PASSED PER RC **
+IF &RC NE 0 THEN WRITE  ** FAILED PER RC **   <<===XX
+WRITE
+WRITE /\/\/\*14  E C H O Q                         /\/\/\-----------
+/********************************************************************/
+/* *14 ECHOQ from program documentation                             */
+/********************************************************************/
+SET I = &I + 1
+SET MYCMD = &STR(CUTIL00 ECHOQ   MYDATA)
+WRITE &STR(&TSTHDR)&I: &MYCMD
+SET MYDATA  = &STR(my data to display.)
+SET MYDATAL =
+SET MYRESULT =             /* not used for this function */
+SET MYRESULTL =
+SET ERRMSG =
+WRITE  CUTIL00 ECHOQ of MYDATA follows...
+&MYCMD
+SET RC = &LASTCC
+WRITE  RC       =&RC
+WRITE  ERRMSG   =&ERRMSG
+WRITE  MYDATA   ='&MYDATA'
+WRITE  MYDATAL  =&MYDATAL
+WRITE  MYRESULT ='&MYRESULT'
+WRITE  MYRESULTL=&MYRESULTL
+IF &RC EQ 0 THEN WRITE  ** PASSED PER RC **
+IF &RC NE 0 THEN WRITE  ** FAILED PER RC **   <<===XX
+WRITE
+WRITE /\/\/\*15  R E V R S                         /\/\/\-----------
+/********************************************************************/
+/* *15 REVRS from program documentation                             */
+/********************************************************************/
+SET I = &I + 1
+SET MYCMD = &STR(CUTIL00 REVRS   MYDATA MYRESULT)
+WRITE &STR(&TSTHDR)&I: &MYCMD
+SET MYDATA  = &STR(ABCDEFGHIJKLM96%QRS)
+SET MYDATAL =
+SET MYRESULT =
+SET MYRESULTL =
+SET ERRMSG =
+&MYCMD
+SET RC = &LASTCC
+WRITE  RC       =&RC
+WRITE  ERRMSG   =&ERRMSG
+WRITE  MYDATA   ='&MYDATA'
+WRITE  MYDATAL  =&MYDATAL
+WRITE  MYRESULT ='&MYRESULT'
+WRITE  MYRESULTL=&MYRESULTL
+IF &RC EQ 0 THEN WRITE  ** PASSED PER RC **
+IF &RC NE 0 THEN WRITE  ** FAILED PER RC **   <<===XX
+WRITE
+WRITE /\/\/\*16  U P P E R C                       /\/\/\-----------
+/********************************************************************/
+/* *16 UPPERC from program documentation                            */
+/********************************************************************/
+SET I = &I + 1
+SET MYCMD = &STR(CUTIL00 UPPERC  MYDATA)
+WRITE &STR(&TSTHDR)&I: &MYCMD
+SET MYDATA  = &STR(abCdeFgHIJklmnopqrS)
+SET MYDATAL =
+SET MYRESULT =
+SET MYRESULTL =
+SET ERRMSG =
+&MYCMD
+SET RC = &LASTCC
+WRITE  RC       =&RC
+WRITE  ERRMSG   =&ERRMSG
+WRITE  MYDATA   ='&MYDATA'
+WRITE  MYDATAL  =&MYDATAL
+WRITE  MYRESULT ='&MYRESULT'
+WRITE  MYRESULTL=&MYRESULTL
+IF &RC EQ 0 THEN WRITE  ** PASSED PER RC **
+IF &RC NE 0 THEN WRITE  ** FAILED PER RC **   <<===XX
+WRITE  CUTIL00 ECHOQ of MYDATA follows...
+CUTIL00 ECHOQ  MYDATA
+WRITE
+WRITE /\/\/\*17  L O W E R C                       /\/\/\-----------
+/********************************************************************/
+/* *17 LOWERC from program documentation                            */
+/********************************************************************/
+SET I = &I + 1
+SET MYCMD = &STR(CUTIL00 LOWERC  MYDATA  MYRESULT)
+WRITE &STR(&TSTHDR)&I: &MYCMD
+SET MYDATA  = &STR(abCdeFgHIJklmnopqrS)
+SET MYDATAL =
+SET MYRESULT =
+SET MYRESULTL =
+SET ERRMSG =
+&MYCMD
+SET RC = &LASTCC
+WRITE  RC       =&RC
+WRITE  ERRMSG   =&ERRMSG
+WRITE  MYDATA   ='&MYDATA'
+WRITE  MYDATAL  =&MYDATAL
+WRITE  MYRESULT ='&MYRESULT'
+WRITE  MYRESULTL=&MYRESULTL
+WRITE  CUTIL00 ECHOQ of MYDATA follows...
+IF &RC EQ 0 THEN WRITE  ** PASSED PER RC **
+IF &RC NE 0 THEN WRITE  ** FAILED PER RC **   <<===XX
+CUTIL00 ECHOQ   MYDATA
+WRITE
+WRITE /\/\/\*18  C O U N T                         /\/\/\-----------
+/********************************************************************/
+/* *18 COUNT from program documentati                               */
+/********************************************************************/
+SET I = &I + 1
+SET MYCMD = &STR(CUTIL00 COUNT   MYDATA  SRCHPRMS)
+WRITE &STR(&TSTHDR)&I: &MYCMD
+SET MYDATA  = &STR(My name is Dino, big Dino.)
+SET MYDATAL =
+SET SRCHPRMS = &STR("Dino")    /* Search Parms           */
+SET SRCHPRMSL =
+SET ERRMSG =
+&MYCMD
+SET RC = &LASTCC
+WRITE  RC       =&RC
+WRITE  ERRMSG   =&ERRMSG
+WRITE  MYDATA   ='&MYDATA'
+WRITE  MYDATAL  =&MYDATAL
+WRITE  SRCHPRMS ='&SRCHPRMS'
+WRITE  SRCHPRMSL=&SRCHPRMSL
+IF &RC EQ 2 THEN WRITE  ** PASSED PER RC **
+IF &RC NE 2 THEN WRITE  ** FAILED PER RC **   <<===XX
+WRITE
+WRITE /\/\/\*19  F I N D                           /\/\/\-----------
+/********************************************************************/
+/* *19 FIND from program documentation                              */
+/********************************************************************/
+SET I = &I + 1
+SET MYCMD = &STR(CUTIL00 FIND    MYDATA  SRCHPRMS)
+WRITE &STR(&TSTHDR)&I: &MYCMD
+SET MYDATA  = &STR(My name is Dino, big Dino.)
+SET MYDATAL =
+SET SRCHPRMS = &STR("Dino")    /* Search Parms           */
+SET SRCHPRMSL =
+SET ERRMSG =
+&MYCMD
+SET RC = &LASTCC
+WRITE  RC       =&RC
+WRITE  ERRMSG   =&ERRMSG
+WRITE  MYDATA   ='&MYDATA'
+WRITE  MYDATAL  =&MYDATAL
+WRITE  SRCHPRMS ='&SRCHPRMS'
+WRITE  SRCHPRMSL=&SRCHPRMSL
+IF &RC EQ 12 THEN WRITE  ** PASSED PER RC **
+IF &RC NE 12 THEN WRITE  ** FAILED PER RC **   <<===XX
+WRITE
+WRITE /\/\/\*20  F I N D L                         /\/\/\-----------
+/********************************************************************/
+/* *20 FINDL from program documentation                             */
+/********************************************************************/
+SET I = &I + 1
+SET MYCMD = &STR(CUTIL00 FINDL   MYDATA  SRCHPRMS)
+WRITE &STR(&TSTHDR)&I: &MYCMD
+SET MYDATA  = &STR(My name is Dino, big Dino.)
+SET MYDATAL =
+SET SRCHPRMS = &STR("Dino")    /* Search Parms           */
+SET SRCHPRMSL =
+SET ERRMSG =
+&MYCMD
+SET RC = &LASTCC
+WRITE  RC       =&RC
+WRITE  ERRMSG   =&ERRMSG
+WRITE  MYDATA   ='&MYDATA'
+WRITE  MYDATAL  =&MYDATAL
+WRITE  SRCHPRMS ='&SRCHPRMS'
+WRITE  SRCHPRMSL=&SRCHPRMSL
+IF &RC EQ 22 THEN WRITE  ** PASSED PER RC **
+IF &RC NE 22 THEN WRITE  ** FAILED PER RC **   <<===XX
+WRITE
+WRITE /\/\/\*21  C E N T E R                       /\/\/\-----------
+/********************************************************************/
+/* *21 CENTER from program documentation                            */
+/********************************************************************/
+SET I = &I + 1
+SET MYCMD = &STR(CUTIL00 CENTER  MYDATA  MYRESULT)
+WRITE &STR(&TSTHDR)&I: &MYCMD
+SET MYDATA  = &STR(Center this T E X T ...       )
+SET MYDATAL =
+SET MYRESULT =
+SET MYRESULTL =
+SET ERRMSG =
+&MYCMD
+SET RC = &LASTCC
+WRITE  RC       =&RC
+WRITE  ERRMSG   =&ERRMSG
+WRITE  MYDATA   ='&MYDATA'
+WRITE  MYDATAL  =&MYDATAL
+WRITE  MYRESULT ='&MYRESULT'
+WRITE  MYRESULTL=&MYRESULTL
+IF &RC EQ 0 THEN WRITE  ** PASSED PER RC **
+IF &RC NE 0 THEN WRITE  ** FAILED PER RC **   <<===XX
+WRITE
+WRITE /\/\/\*22  L J U S T                         /\/\/\-----------
+/********************************************************************/
+/* *22 LJUST from program documentation                             */
+/********************************************************************/
+SET I = &I + 1
+SET MYCMD = &STR(CUTIL00 LJUST   MYDATA  MYRESULT)
+WRITE &STR(&TSTHDR)&I: &MYCMD
+SET MYDATA  = &STR( JUSTIFY this text    )
+SET MYDATAL =
+SET MYRESULT =
+SET MYRESULTL =
+SET ERRMSG =
+&MYCMD
+SET RC = &LASTCC
+WRITE  RC       =&RC
+WRITE  ERRMSG   =&ERRMSG
+WRITE  MYDATA   ='&MYDATA'
+WRITE  MYDATAL  =&MYDATAL
+WRITE  MYRESULT ='&MYRESULT'
+WRITE  MYRESULTL=&MYRESULTL
+IF &RC EQ 0 THEN WRITE  ** PASSED PER RC **
+IF &RC NE 0 THEN WRITE  ** FAILED PER RC **   <<===XX
+WRITE
+WRITE /\/\/\*23  R J U S T                         /\/\/\-----------
+/********************************************************************/
+/* *23 RJUST from program documentation                             */
+/********************************************************************/
+SET I = &I + 1
+SET MYCMD = &STR(CUTIL00 RJUST   MYDATA  MYRESULT)
+WRITE &STR(&TSTHDR)&I: &MYCMD
+SET MYDATA  = &STR( JUSTIFY this text    )
+SET MYDATAL =
+SET MYRESULT =
+SET MYRESULTL =
+SET ERRMSG =
+&MYCMD
+SET RC = &LASTCC
+WRITE  RC       =&RC
+WRITE  ERRMSG   =&ERRMSG
+WRITE  MYDATA   ='&MYDATA'
+WRITE  MYDATAL  =&MYDATAL
+WRITE  MYRESULT ='&MYRESULT'
+WRITE  MYRESULTL=&MYRESULTL
+IF &RC EQ 0 THEN WRITE  ** PASSED PER RC **
+IF &RC NE 0 THEN WRITE  ** FAILED PER RC **   <<===XX
+WRITE
+WRITE /\/\/\*24  Z F I L L                         /\/\/\-----------
+/********************************************************************/
+/* *24 ZFILL from program documentation                             */
+/********************************************************************/
+SET I = &I + 1
+SET MYCMD = &STR(CUTIL00 ZFILL   MYDATA  MYRESULT)
+WRITE &STR(&TSTHDR)&I: &MYCMD
+SET MYDATA  = &STR(12   )
+SET MYDATAL =
+SET MYRESULT =
+SET MYRESULTL =
+SET ERRMSG =
+&MYCMD
+SET RC = &LASTCC
+WRITE  RC       =&RC
+WRITE  ERRMSG   =&ERRMSG
+WRITE  MYDATA   ='&MYDATA'
+WRITE  MYDATAL  =&MYDATAL
+WRITE  MYRESULT ='&MYRESULT'
+WRITE  MYRESULTL=&MYRESULTL
+IF &RC EQ 0 THEN WRITE  ** PASSED PER RC **
+IF &RC NE 0 THEN WRITE  ** FAILED PER RC **   <<===XX
+WRITE
+WRITE /\/\/\*25  W O R D S                         /\/\/\-----------
+/********************************************************************/
+/* *25 WORDS from program documentation                             */
+/********************************************************************/
+SET I = &I + 1
+SET MYCMD = &STR(CUTIL00 WORDS   MYDATA)
+WRITE &STR(&TSTHDR)&I: &MYCMD
+SET MYDATA  = &STR(  one two three33 four., five )
+SET MYDATAL =
+SET MYRESULT =             /* not used for this function */
+SET MYRESULTL =
+SET ERRMSG =
+&MYCMD
+SET RC = &LASTCC
+WRITE  RC       =&RC
+WRITE  ERRMSG   =&ERRMSG
+WRITE  MYDATA   ='&MYDATA'
+WRITE  MYDATAL  =&MYDATAL
+WRITE  MYRESULT ='&MYRESULT'
+WRITE  MYRESULTL=&MYRESULTL
+IF &RC EQ 5 THEN WRITE  ** PASSED PER RC **
+IF &RC NE 5 THEN WRITE  ** FAILED PER RC **   <<===XX
+WRITE
+WRITE /\/\/\*26  G E N #                           /\/\/\-----------
+/********************************************************************/
+/* *26 GEN# from program documentation                              */
+/********************************************************************/
+SET I = &I + 1
+SET MYCMD = &STR(CUTIL00 GEN#    MYDATA)
+WRITE &STR(&TSTHDR)&I: &MYCMD
+SET MYDATA  = 0
+SET MYDATAL =
+SET MYRESULT =             /* not used for this function */
+SET MYRESULTL =
+SET ERRMSG =
+&MYCMD
+SET RC = &LASTCC
+WRITE  RC       =&RC
+WRITE  ERRMSG   =&ERRMSG
+WRITE  MYDATA   ='&MYDATA'
+WRITE  MYDATAL  =&MYDATAL
+WRITE  MYRESULT ='&MYRESULT'
+WRITE  MYRESULTL=&MYRESULTL
+IF &RC EQ 0 THEN WRITE  ** PASSED PER RC **
+IF &RC NE 0 THEN WRITE  ** FAILED PER RC **   <<===XX
+WRITE
+WRITE /\/\/\*27  D D 2 D S N                       /\/\/\-----------
+/********************************************************************/
+/* *27 DD2DSN from program documentation                            */
+/********************************************************************/
+SET I = &I + 1
+SET MYCMD = &STR(CUTIL00 DD2DSN  MYDATA MYRESULT)
+WRITE &STR(&TSTHDR)&I: &MYCMD
+SET MYDATA  = &STR(SYSPROC)
+SET MYDATAL =
+SET MYRESULT =
+SET MYRESULTL =
+SET ERRMSG =
+&MYCMD
+SET RC = &LASTCC
+WRITE  RC       =&RC
+WRITE  ERRMSG   =&ERRMSG
+WRITE  MYDATA   ='&MYDATA'
+WRITE  MYDATAL  =&MYDATAL
+WRITE  MYRESULT ='&MYRESULT'
+WRITE  MYRESULTL=&MYRESULTL
+IF &RC EQ 0 THEN WRITE  ** PASSED PER RC **
+IF &RC NE 0 THEN WRITE  ** FAILED PER RC **   <<===XX
+WRITE
+WRITE /\/\/\*28  J O B I N F O                     /\/\/\-----------
+/********************************************************************/
+/* *28 JOBINFO from program documentation                           */
+/********************************************************************/
+SET I = &I + 1
+SET MYCMD = &STR(CUTIL00 JOBINFO MYDATA)
+WRITE &STR(&TSTHDR)&I: &MYCMD
+SET MYDATA  = &STR(123456789012345678901234)
+SET MYDATAL =
+SET MYRESULT =             /* not used for this function */
+SET MYRESULTL =
+SET ERRMSG =
+&MYCMD
+SET RC = &LASTCC
+WRITE  RC       =&RC
+WRITE  ERRMSG   =&ERRMSG
+WRITE  MYDATA   ='&MYDATA'
+WRITE  MYDATAL  =&MYDATAL
+WRITE  MYRESULT ='&MYRESULT'
+WRITE  MYRESULTL=&MYRESULTL
+IF &RC EQ 0 THEN WRITE  ** PASSED PER RC **
+IF &RC NE 0 THEN WRITE  ** FAILED PER RC **   <<===XX
+WRITE
+WRITE /\/\/\*29  D A Y S M M                       /\/\/\-----------
+/********************************************************************/
+/* *29 DAYSMM from program documentation                            */
+/********************************************************************/
+SET I = &I + 1
+SET MYCMD = &STR(CUTIL00 DAYSMM   MYDATA)
+WRITE &STR(&TSTHDR)&I: &MYCMD
+SET MYDATA  = &STR(022016)
+SET MYDATAL =
+SET MYRESULT =             /* not used for this function */
+SET MYRESULTL =
+SET ERRMSG =
+&MYCMD
+SET RC = &LASTCC
+WRITE  RC       =&RC
+WRITE  ERRMSG   =&ERRMSG
+WRITE  MYDATA   ='&MYDATA'
+WRITE  MYDATAL  =&MYDATAL
+WRITE  MYRESULT ='&MYRESULT'
+WRITE  MYRESULTL=&MYRESULTL
+IF &RC EQ 29 THEN WRITE  ** PASSED PER RC **
+IF &RC NE 29 THEN WRITE  ** FAILED PER RC **   <<===XX
+WRITE
+WRITE /\/\/\*30  D A Y S Y Y                       /\/\/\-----------
+/********************************************************************/
+/* *30 DAYSYY from program documentation                            */
+/********************************************************************/
+SET I = &I + 1
+SET MYCMD = &STR(CUTIL00 DAYSYY   MYDATA)
+WRITE &STR(&TSTHDR)&I: &MYCMD
+SET MYDATA  = &STR(2020)
+SET MYDATAL =
+SET MYRESULT =             /* not used for this function */
+SET MYRESULTL =
+SET ERRMSG =
+&MYCMD
+SET RC = &LASTCC
+WRITE  RC       =&RC
+WRITE  ERRMSG   =&ERRMSG
+WRITE  MYDATA   ='&MYDATA'
+WRITE  MYDATAL  =&MYDATAL
+WRITE  MYRESULT ='&MYRESULT'
+WRITE  MYRESULTL=&MYRESULTL
+IF &RC EQ 366 THEN WRITE  ** PASSED PER RC **
+IF &RC NE 366 THEN WRITE  ** FAILED PER RC **   <<===XX
+WRITE
+WRITE /\/\/\*31  I S L E A P                       /\/\/\-----------
+/********************************************************************/
+/* *31 ISLEAP from program documentation                            */
+/********************************************************************/
+SET I = &I + 1
+SET MYCMD = &STR(CUTIL00 ISLEAP   MYDATA)
+WRITE &STR(&TSTHDR)&I: &MYCMD
+SET MYDATA  = &STR(2020)
+SET MYDATAL =
+SET MYRESULT =             /* not used for this function */
+SET MYRESULTL =
+SET ERRMSG =
+&MYCMD
+SET RC = &LASTCC
+WRITE  RC       =&RC
+WRITE  ERRMSG   =&ERRMSG
+WRITE  MYDATA   ='&MYDATA'
+WRITE  MYDATAL  =&MYDATAL
+WRITE  MYRESULT ='&MYRESULT'
+WRITE  MYRESULTL=&MYRESULTL
+IF &RC EQ 4001 THEN WRITE  ** PASSED PER RC **
+IF &RC NE 4001 THEN WRITE  ** FAILED PER RC **   <<===XX
+WRITE
+WRITE /\/\/\*32  C Y J - D 8                       /\/\/\-----------
+/********************************************************************/
+/* *32 CYJ-D8 from program documentation                            */
+/********************************************************************/
+SET I = &I + 1
+SET MYCMD = &STR(CUTIL00 CYJ-D8   MYDATA MYRESULT)
+WRITE &STR(&TSTHDR)&I: &MYCMD
+SET MYDATA  = &STR(2020061)
+SET MYDATAL =
+SET MYRESULT =
+SET MYRESULTL =
+SET ERRMSG =
+&MYCMD
+SET RC = &LASTCC
+WRITE  RC       =&RC
+WRITE  ERRMSG   =&ERRMSG
+WRITE  MYDATA   ='&MYDATA'
+WRITE  MYDATAL  =&MYDATAL
+WRITE  MYRESULT ='&MYRESULT'
+WRITE  MYRESULTL=&MYRESULTL
+IF &RC EQ 0 THEN WRITE  ** PASSED PER RC **
+IF &RC NE 0 THEN WRITE  ** FAILED PER RC **   <<===XX
+WRITE
+WRITE /\/\/\*33  C Y J - D A Y                     /\/\/\-----------
+/********************************************************************/
+/* *33 CYJ-DAY from program documentation                           */
+/********************************************************************/
+SET I = &I + 1
+SET MYCMD = &STR(CUTIL00 CYJ-DAY  MYDATA MYRESULT)
+WRITE &STR(&TSTHDR)&I: &MYCMD
+SET MYDATA  = &STR(1981061)
+SET MYDATAL =
+SET MYRESULT =
+SET MYRESULTL =
+SET ERRMSG =
+&MYCMD
+SET RC = &LASTCC
+WRITE  RC       =&RC
+WRITE  ERRMSG   =&ERRMSG
+WRITE  MYDATA   ='&MYDATA'
+WRITE  MYDATAL  =&MYDATAL
+WRITE  MYRESULT ='&MYRESULT'
+WRITE  MYRESULTL=&MYRESULTL
+IF &RC EQ 0 THEN WRITE  ** PASSED PER RC **
+IF &RC NE 0 THEN WRITE  ** FAILED PER RC **   <<===XX
+CUTIL00 ECHOQ   MYDATA
+CUTIL00 ECHOQ   MYRESULT
+WRITE
+WRITE /\/\/\*34  C Y J - D O W                     /\/\/\-----------
+/********************************************************************/
+/* *34 CYJ-DOW from program documentation                           */
+/********************************************************************/
+SET I = &I + 1
+SET MYCMD = &STR(CUTIL00 CYJ-DOW  MYDATA MYRESULT)
+WRITE &STR(&TSTHDR)&I: &MYCMD
+SET MYDATA  = &STR(1980061)
+SET MYDATAL =
+SET MYRESULT =
+SET MYRESULTL =
+SET ERRMSG =
+&MYCMD
+SET RC = &LASTCC
+WRITE  RC       =&RC
+WRITE  ERRMSG   =&ERRMSG
+WRITE  MYDATA   ='&MYDATA'
+WRITE  MYDATAL  =&MYDATAL
+WRITE  MYRESULT ='&MYRESULT'
+WRITE  MYRESULTL=&MYRESULTL
+IF &RC EQ 0 THEN WRITE  ** PASSED PER RC **
+IF &RC NE 0 THEN WRITE  ** FAILED PER RC **   <<===XX
+CUTIL00 ECHOQ   MYDATA
+CUTIL00 ECHOQ   MYRESULT
+WRITE
+WRITE /\/\/\*35  C Y J - M D C Y                   /\/\/\-----------
+/********************************************************************/
+/* *35 CYJ-MDCY from program documentation                          */
+/********************************************************************/
+SET I = &I + 1
+SET MYCMD = &STR(CUTIL00 CYJ-MDCY MYDATA MYRESULT)
+WRITE &STR(&TSTHDR)&I: &MYCMD
+SET MYDATA  = &STR(2020061)
+SET MYDATAL =
+SET MYRESULT =
+SET MYRESULTL =
+SET ERRMSG =
+&MYCMD
+SET RC = &LASTCC
+WRITE  RC       =&RC
+WRITE  ERRMSG   =&ERRMSG
+WRITE  MYDATA   ='&MYDATA'
+WRITE  MYDATAL  =&MYDATAL
+WRITE  MYRESULT ='&MYRESULT'
+WRITE  MYRESULTL=&MYRESULTL
+IF &RC EQ 0 THEN WRITE  ** PASSED PER RC **
+IF &RC NE 0 THEN WRITE  ** FAILED PER RC **   <<===XX
+WRITE
+WRITE /\/\/\*36  J C Y - D 8                       /\/\/\-----------
+/********************************************************************/
+/* *36 JCY-D8 from program documentation                            */
+/********************************************************************/
+SET I = &I + 1
+SET MYCMD = &STR(CUTIL00 JCY-D8   MYDATA MYRESULT)
+WRITE &STR(&TSTHDR)&I: &MYCMD
+SET MYDATA  = &STR(1612017)
+SET MYDATAL =
+SET MYRESULT =
+SET MYRESULTL =
+SET ERRMSG =
+&MYCMD
+SET RC = &LASTCC
+WRITE  RC       =&RC
+WRITE  ERRMSG   =&ERRMSG
+WRITE  MYDATA   ='&MYDATA'
+WRITE  MYDATAL  =&MYDATAL
+WRITE  MYRESULT ='&MYRESULT'
+WRITE  MYRESULTL=&MYRESULTL
+IF &RC EQ 0 THEN WRITE  ** PASSED PER RC **
+IF &RC NE 0 THEN WRITE  ** FAILED PER RC **   <<===XX
+WRITE
+WRITE /\/\/\*37  J C Y - D A Y                     /\/\/\-----------
+/********************************************************************/
+/* *37 JCY-DAY from program documentation                           */
+/********************************************************************/
+SET I = &I + 1
+SET MYCMD = &STR(CUTIL00 JCY-DAY  MYDATA MYRESULT)
+WRITE &STR(&TSTHDR)&I: &MYCMD
+SET MYDATA  = &STR(0611981)
+SET MYDATAL =
+SET MYRESULT =
+SET MYRESULTL =
+SET ERRMSG =
+&MYCMD
+SET RC = &LASTCC
+WRITE  RC       =&RC
+WRITE  ERRMSG   =&ERRMSG
+WRITE  MYDATA   ='&MYDATA'
+WRITE  MYDATAL  =&MYDATAL
+WRITE  MYRESULT ='&MYRESULT'
+WRITE  MYRESULTL=&MYRESULTL
+IF &RC EQ 0 THEN WRITE  ** PASSED PER RC **
+IF &RC NE 0 THEN WRITE  ** FAILED PER RC **   <<===XX
+CUTIL00 ECHOQ   MYDATA
+CUTIL00 ECHOQ   MYRESULT
+WRITE
+WRITE /\/\/\*38  J C Y - D O W                     /\/\/\-----------
+/********************************************************************/
+/* *38 JCY-DOW from program documentation                           */
+/********************************************************************/
+SET I = &I + 1
+SET MYCMD = &STR(CUTIL00 JCY-DOW  MYDATA MYRESULT)
+WRITE &STR(&TSTHDR)&I: &MYCMD
+SET MYDATA  = &STR(0611981)
+SET MYDATAL =
+SET MYRESULT =
+SET MYRESULTL =
+SET ERRMSG =
+&MYCMD
+SET RC = &LASTCC
+WRITE  RC       =&RC
+WRITE  ERRMSG   =&ERRMSG
+WRITE  MYDATA   ='&MYDATA'
+WRITE  MYDATAL  =&MYDATAL
+WRITE  MYRESULT ='&MYRESULT'
+WRITE  MYRESULTL=&MYRESULTL
+IF &RC EQ 0 THEN WRITE  ** PASSED PER RC **
+IF &RC NE 0 THEN WRITE  ** FAILED PER RC **   <<===XX
+CUTIL00 ECHOQ   MYDATA
+CUTIL00 ECHOQ   MYRESULT
+WRITE
+WRITE /\/\/\*39  J C Y - M D C Y                   /\/\/\-----------
+/********************************************************************/
+/* *39 JCY-MDCY from program documentation                          */
+/********************************************************************/
+SET I = &I + 1
+SET MYCMD = &STR(CUTIL00 JCY-MDCY MYDATA MYRESULT)
+WRITE &STR(&TSTHDR)&I: &MYCMD
+SET MYDATA  = &STR(1612017)
+SET MYDATAL =
+SET MYRESULT =
+SET MYRESULTL =
+SET ERRMSG =
+&MYCMD
+SET RC = &LASTCC
+WRITE  RC       =&RC
+WRITE  ERRMSG   =&ERRMSG
+WRITE  MYDATA   ='&MYDATA'
+WRITE  MYDATAL  =&MYDATAL
+WRITE  MYRESULT ='&MYRESULT'
+WRITE  MYRESULTL=&MYRESULTL
+IF &RC EQ 0 THEN WRITE  ** PASSED PER RC **
+IF &RC NE 0 THEN WRITE  ** FAILED PER RC **   <<===XX
+WRITE
+WRITE /\/\/\*40  M D C Y - D 8                     /\/\/\-----------
+/********************************************************************/
+/* *40 MDCY-D8 from program documentation                            */
+/********************************************************************/
+SET I = &I + 1
+SET MYCMD = &STR(CUTIL00 MDCY-D8   MYDATA MYRESULT)
+WRITE &STR(&TSTHDR)&I: &MYCMD
+SET MYDATA  = &STR(12101990)
+SET MYDATAL =
+SET MYRESULT =
+SET MYRESULTL =
+SET ERRMSG =
+&MYCMD
+SET RC = &LASTCC
+WRITE  RC       =&RC
+WRITE  ERRMSG   =&ERRMSG
+WRITE  MYDATA   ='&MYDATA'
+WRITE  MYDATAL  =&MYDATAL
+WRITE  MYRESULT ='&MYRESULT'
+WRITE  MYRESULTL=&MYRESULTL
+IF &RC EQ 0 THEN WRITE  ** PASSED PER RC **
+IF &RC NE 0 THEN WRITE  ** FAILED PER RC **   <<===XX
+WRITE
+WRITE /\/\/\*41  M D C Y - D A Y                   /\/\/\-----------
+/********************************************************************/
+/* *41 MDCY-DAY from program documentation                             */
+/********************************************************************/
+SET I = &I + 1
+SET MYCMD = &STR(CUTIL00 MDCY-DAY MYDATA MYRESULT)
+WRITE &STR(&TSTHDR)&I: &MYCMD
+SET MYDATA  = &STR(12101990)
+SET MYDATAL =
+SET MYRESULT =
+SET MYRESULTL =
+SET ERRMSG =
+&MYCMD
+SET RC = &LASTCC
+WRITE  RC       =&RC
+WRITE  ERRMSG   =&ERRMSG
+WRITE  MYDATA   ='&MYDATA'
+WRITE  MYDATAL  =&MYDATAL
+WRITE  MYRESULT ='&MYRESULT'
+WRITE  MYRESULTL=&MYRESULTL
+IF &RC EQ 0 THEN WRITE  ** PASSED PER RC **
+IF &RC NE 0 THEN WRITE  ** FAILED PER RC **   <<===XX
+CUTIL00 ECHOQ   MYDATA
+CUTIL00 ECHOQ   MYRESULT
+WRITE
+WRITE /\/\/\*42     M D C Y - D O W                   /\/\/\-----------
+/********************************************************************/
+/* *42 MDCY-DOW from program documentation                          */
+/********************************************************************/
+SET I = &I + 1
+SET MYCMD = &STR(CUTIL00 MDCY-DOW MYDATA MYRESULT)
+WRITE &STR(&TSTHDR)&I: &MYCMD
+SET MYDATA  = &STR(12101990)
+SET MYDATAL =
+SET MYRESULT =
+SET MYRESULTL =
+SET ERRMSG =
+&MYCMD
+SET RC = &LASTCC
+WRITE  RC       =&RC
+WRITE  ERRMSG   =&ERRMSG
+WRITE  MYDATA   ='&MYDATA'
+WRITE  MYDATAL  =&MYDATAL
+WRITE  MYRESULT ='&MYRESULT'
+WRITE  MYRESULTL=&MYRESULTL
+IF &RC EQ 0 THEN WRITE  ** PASSED PER RC **
+IF &RC NE 0 THEN WRITE  ** FAILED PER RC **   <<===XX
+CUTIL00 ECHOQ   MYDATA
+CUTIL00 ECHOQ   MYRESULT
+WRITE
+WRITE /\/\/\*43  M D C Y - C Y J                   /\/\/\-----------
+/********************************************************************/
+/* *43 MDCY-CYJ from program documentation                          */
+/********************************************************************/
+SET I = &I + 1
+SET MYCMD = &STR(CUTIL00 MDCY-CYJ  MYDATA MYRESULT)
+WRITE &STR(&TSTHDR)&I: &MYCMD
+SET MYDATA  = &STR(12101990)
+SET MYDATAL =
+SET MYRESULT =
+SET MYRESULTL =
+SET ERRMSG =
+&MYCMD
+SET RC = &LASTCC
+WRITE  RC       =&RC
+WRITE  ERRMSG   =&ERRMSG
+WRITE  MYDATA   ='&MYDATA'
+WRITE  MYDATAL  =&MYDATAL
+WRITE  MYRESULT ='&MYRESULT'
+WRITE  MYRESULTL=&MYRESULTL
+IF &RC EQ 0 THEN WRITE  ** PASSED PER RC **
+IF &RC NE 0 THEN WRITE  ** FAILED PER RC **   <<===XX
+WRITE
+WRITE /\/\/\*44  D M C Y - D 8                     /\/\/\-----------
+/********************************************************************/
+/* *44 DMCY-D8 from program documentation                           */
+/********************************************************************/
+SET I = &I + 1
+SET MYCMD = &STR(CUTIL00 DMCY-D8   MYDATA MYRESULT)
+WRITE &STR(&TSTHDR)&I: &MYCMD
+SET MYDATA  = &STR(15071987)
+SET MYDATAL =
+SET MYRESULT =
+SET MYRESULTL =
+SET ERRMSG =
+&MYCMD
+SET RC = &LASTCC
+WRITE  RC       =&RC
+WRITE  ERRMSG   =&ERRMSG
+WRITE  MYDATA   ='&MYDATA'
+WRITE  MYDATAL  =&MYDATAL
+WRITE  MYRESULT ='&MYRESULT'
+WRITE  MYRESULTL=&MYRESULTL
+IF &RC EQ 0 THEN WRITE  ** PASSED PER RC **
+IF &RC NE 0 THEN WRITE  ** FAILED PER RC **   <<===XX
+WRITE
+WRITE /\/\/\*45  D M C Y - D A Y                   /\/\/\-----------
+/********************************************************************/
+/* *45 DMCY-DAY from program documentation                          */
+/********************************************************************/
+SET I = &I + 1
+SET MYCMD = &STR(CUTIL00 DMCY-DAY MYDATA MYRESULT)
+WRITE &STR(&TSTHDR)&I: &MYCMD
+SET MYDATA  = &STR(15071987)
+SET MYDATAL =
+SET MYRESULT =
+SET MYRESULTL =
+SET ERRMSG =
+&MYCMD
+SET RC = &LASTCC
+WRITE  RC       =&RC
+WRITE  ERRMSG   =&ERRMSG
+WRITE  MYDATA   ='&MYDATA'
+WRITE  MYDATAL  =&MYDATAL
+WRITE  MYRESULT ='&MYRESULT'
+WRITE  MYRESULTL=&MYRESULTL
+IF &RC EQ 0 THEN WRITE  ** PASSED PER RC **
+IF &RC NE 0 THEN WRITE  ** FAILED PER RC **   <<===XX
+CUTIL00 ECHOQ   MYDATA
+CUTIL00 ECHOQ   MYRESULT
+WRITE
+WRITE /\/\/\*46  D M C Y - D O W                   /\/\/\-----------
+/********************************************************************/
+/* *46 DMCY-DOW from program documentation                          */
+/********************************************************************/
+SET I = &I + 1
+SET MYCMD = &STR(CUTIL00 DMCY-DOW MYDATA MYRESULT)
+WRITE &STR(&TSTHDR)&I: &MYCMD
+SET MYDATA  = &STR(15071987)
+SET MYDATAL =
+SET MYRESULT =
+SET MYRESULTL =
+SET ERRMSG =
+&MYCMD
+SET RC = &LASTCC
+WRITE  RC       =&RC
+WRITE  ERRMSG   =&ERRMSG
+WRITE  MYDATA   ='&MYDATA'
+WRITE  MYDATAL  =&MYDATAL
+WRITE  MYRESULT ='&MYRESULT'
+WRITE  MYRESULTL=&MYRESULTL
+IF &RC EQ 0 THEN WRITE  ** PASSED PER RC **
+IF &RC NE 0 THEN WRITE  ** FAILED PER RC **   <<===XX
+CUTIL00 ECHOQ   MYDATA
+CUTIL00 ECHOQ   MYRESULT
+WRITE
+WRITE /\/\/\*47  D M C Y - C Y J                   /\/\/\-----------
+/********************************************************************/
+/* *47 DMCY-CYJ from program documentation                          */
+/********************************************************************/
+SET I = &I + 1
+SET MYCMD = &STR(CUTIL00 DMCY-CYJ  MYDATA MYRESULT)
+WRITE &STR(&TSTHDR)&I: &MYCMD
+SET MYDATA  = &STR(15071987)
+SET MYDATAL =
+SET MYRESULT =
+SET MYRESULTL =
+SET ERRMSG =
+&MYCMD
+SET RC = &LASTCC
+WRITE  RC       =&RC
+WRITE  ERRMSG   =&ERRMSG
+WRITE  MYDATA   ='&MYDATA'
+WRITE  MYDATAL  =&MYDATAL
+WRITE  MYRESULT ='&MYRESULT'
+WRITE  MYRESULTL=&MYRESULTL
+IF &RC EQ 0 THEN WRITE  ** PASSED PER RC **
+IF &RC NE 0 THEN WRITE  ** FAILED PER RC **   <<===XX
+WRITE
+WRITE /\/\/\*48  C Y M D - D 8                     /\/\/\-----------
+/********************************************************************/
+/* *48 CYMD-D8 from program documentation                           */
+/********************************************************************/
+SET I = &I + 1
+SET MYCMD = &STR(CUTIL00 CYMD-D8   MYDATA MYRESULT)
+WRITE &STR(&TSTHDR)&I: &MYCMD
+SET MYDATA  = &STR(19951231)
+SET MYDATAL =
+SET MYRESULT =
+SET MYRESULTL =
+SET ERRMSG =
+&MYCMD
+SET RC = &LASTCC
+WRITE  RC       =&RC
+WRITE  ERRMSG   =&ERRMSG
+WRITE  MYDATA   ='&MYDATA'
+WRITE  MYDATAL  =&MYDATAL
+WRITE  MYRESULT ='&MYRESULT'
+WRITE  MYRESULTL=&MYRESULTL
+IF &RC EQ 0 THEN WRITE  ** PASSED PER RC **
+IF &RC NE 0 THEN WRITE  ** FAILED PER RC **   <<===XX
+WRITE
+WRITE /\/\/\*49  C Y M D - D A Y                   /\/\/\-----------
+/********************************************************************/
+/* *49 CYMD-DAY from program documentation                          */
+/********************************************************************/
+SET I = &I + 1
+SET MYCMD = &STR(CUTIL00 CYMD-DAY MYDATA MYRESULT)
+WRITE &STR(&TSTHDR)&I: &MYCMD
+SET MYDATA  = &STR(19951231)
+SET MYDATAL =
+SET MYRESULT =
+SET MYRESULTL =
+SET ERRMSG =
+&MYCMD
+SET RC = &LASTCC
+WRITE  RC       =&RC
+WRITE  ERRMSG   =&ERRMSG
+WRITE  MYDATA   ='&MYDATA'
+WRITE  MYDATAL  =&MYDATAL
+WRITE  MYRESULT ='&MYRESULT'
+WRITE  MYRESULTL=&MYRESULTL
+IF &RC EQ 0 THEN WRITE  ** PASSED PER RC **
+IF &RC NE 0 THEN WRITE  ** FAILED PER RC **   <<===XX
+CUTIL00 ECHOQ   MYDATA
+CUTIL00 ECHOQ   MYRESULT
+WRITE
+WRITE /\/\/\*50  C Y M D - D O W                   /\/\/\-----------
+/********************************************************************/
+/* *50 CYMD-DOW from program documentation                          */
+/********************************************************************/
+SET I = &I + 1
+SET MYCMD = &STR(CUTIL00 CYMD-DOW MYDATA MYRESULT)
+WRITE &STR(&TSTHDR)&I: &MYCMD
+SET MYDATA  = &STR(19951231)
+SET MYDATAL =
+SET MYRESULT =
+SET MYRESULTL =
+SET ERRMSG =
+&MYCMD
+SET RC = &LASTCC
+WRITE  RC       =&RC
+WRITE  ERRMSG   =&ERRMSG
+WRITE  MYDATA   ='&MYDATA'
+WRITE  MYDATAL  =&MYDATAL
+WRITE  MYRESULT ='&MYRESULT'
+WRITE  MYRESULTL=&MYRESULTL
+IF &RC EQ 0 THEN WRITE  ** PASSED PER RC **
+IF &RC NE 0 THEN WRITE  ** FAILED PER RC **   <<===XX
+CUTIL00 ECHOQ   MYDATA
+CUTIL00 ECHOQ   MYRESULT
+WRITE
+WRITE /\/\/\*51  C Y M D - C Y J                   /\/\/\-----------
+/********************************************************************/
+/* *51 CYMD-CYJ from program documentation                          */
+/********************************************************************/
+SET I = &I + 1
+SET MYCMD = &STR(CUTIL00 CYMD-CYJ  MYDATA MYRESULT)
+WRITE &STR(&TSTHDR)&I: &MYCMD
+SET MYDATA  = &STR(19951231)
+SET MYDATAL =
+SET MYRESULT =
+SET MYRESULTL =
+SET ERRMSG =
+&MYCMD
+SET RC = &LASTCC
+WRITE  RC       =&RC
+WRITE  ERRMSG   =&ERRMSG
+WRITE  MYDATA   ='&MYDATA'
+WRITE  MYDATAL  =&MYDATAL
+WRITE  MYRESULT ='&MYRESULT'
+WRITE  MYRESULTL=&MYRESULTL
+IF &RC EQ 0 THEN WRITE  ** PASSED PER RC **
+IF &RC NE 0 THEN WRITE  ** FAILED PER RC **   <<===XX
+WRITE
+WRITE /\/\/\*52  C Y D M - D 8                     /\/\/\-----------
+/********************************************************************/
+/* *52 CYDM-D8 from program documentation                           */
+/********************************************************************/
+SET I = &I + 1
+SET MYCMD = &STR(CUTIL00 CYDM-D8   MYDATA MYRESULT)
+WRITE &STR(&TSTHDR)&I: &MYCMD
+SET MYDATA  = &STR(19951605)
+SET MYDATAL =
+SET MYRESULT =
+SET MYRESULTL =
+SET ERRMSG =
+&MYCMD
+SET RC = &LASTCC
+WRITE  RC       =&RC
+WRITE  ERRMSG   =&ERRMSG
+WRITE  MYDATA   ='&MYDATA'
+WRITE  MYDATAL  =&MYDATAL
+WRITE  MYRESULT ='&MYRESULT'
+WRITE  MYRESULTL=&MYRESULTL
+IF &RC EQ 0 THEN WRITE  ** PASSED PER RC **
+IF &RC NE 0 THEN WRITE  ** FAILED PER RC **   <<===XX
+WRITE
+WRITE /\/\/\*53  C Y D M - D A Y                   /\/\/\-----------
+/********************************************************************/
+/* *53 CYDM-DAY from program documentation                          */
+/********************************************************************/
+SET I = &I + 1
+SET MYCMD = &STR(CUTIL00 CYDM-DAY MYDATA MYRESULT)
+WRITE &STR(&TSTHDR)&I: &MYCMD
+SET MYDATA  = &STR(19951605)
+SET MYDATAL =
+SET MYRESULT =
+SET MYRESULTL =
+SET ERRMSG =
+&MYCMD
+SET RC = &LASTCC
+WRITE  RC       =&RC
+WRITE  ERRMSG   =&ERRMSG
+WRITE  MYDATA   ='&MYDATA'
+WRITE  MYDATAL  =&MYDATAL
+WRITE  MYRESULT ='&MYRESULT'
+WRITE  MYRESULTL=&MYRESULTL
+IF &RC EQ 0 THEN WRITE  ** PASSED PER RC **
+IF &RC NE 0 THEN WRITE  ** FAILED PER RC **   <<===XX
+CUTIL00 ECHOQ   MYDATA
+CUTIL00 ECHOQ   MYRESULT
+WRITE
+WRITE /\/\/\*54  C Y D M - D O W                   /\/\/\-----------
+/********************************************************************/
+/* *54 CYDM-DOW from program documentation                          */
+/********************************************************************/
+SET I = &I + 1
+SET MYCMD = &STR(CUTIL00 CYDM-DOW MYDATA MYRESULT)
+WRITE &STR(&TSTHDR)&I: &MYCMD
+SET MYDATA  = &STR(19951605)
+SET MYDATAL =
+SET MYRESULT =
+SET MYRESULTL =
+SET ERRMSG =
+&MYCMD
+SET RC = &LASTCC
+WRITE  RC       =&RC
+WRITE  ERRMSG   =&ERRMSG
+WRITE  MYDATA   ='&MYDATA'
+WRITE  MYDATAL  =&MYDATAL
+WRITE  MYRESULT ='&MYRESULT'
+WRITE  MYRESULTL=&MYRESULTL
+IF &RC EQ 0 THEN WRITE  ** PASSED PER RC **
+IF &RC NE 0 THEN WRITE  ** FAILED PER RC **   <<===XX
+CUTIL00 ECHOQ   MYDATA
+CUTIL00 ECHOQ   MYRESULT
+WRITE
+WRITE /\/\/\*55  C Y D M - C Y J                   /\/\/\-----------
+/********************************************************************/
+/* *55 CYDM-CYJ from program documentation                          */
+/********************************************************************/
+SET I = &I + 1
+SET MYCMD = &STR(CUTIL00 CYDM-CYJ  MYDATA MYRESULT)
+WRITE &STR(&TSTHDR)&I: &MYCMD
+SET MYDATA  = &STR(19951605)
+SET MYDATAL =
+SET MYRESULT =
+SET MYRESULTL =
+SET ERRMSG =
+&MYCMD
+SET RC = &LASTCC
+WRITE  RC       =&RC
+WRITE  ERRMSG   =&ERRMSG
+WRITE  MYDATA   ='&MYDATA'
+WRITE  MYDATAL  =&MYDATAL
+WRITE  MYRESULT ='&MYRESULT'
+WRITE  MYRESULTL=&MYRESULTL
+IF &RC EQ 0 THEN WRITE  ** PASSED PER RC **
+IF &RC NE 0 THEN WRITE  ** FAILED PER RC **   <<===XX
+WRITE
+WRITE /\/\/\*56  F I L L                           /\/\/\-----------
+/********************************************************************/
+/* *56 FILL from program documentation                              */
+/********************************************************************/
+SET I = &I + 1
+SET MYCMD = &STR(CUTIL00 FILL     MYDATA MYPARMS )
+WRITE &STR(&TSTHDR)&I: &MYCMD
+SET MYDATA  = &STR(1)
+SET MYDATAL =
+SET MYPARMS  = &STR(*20)   /* 20 *'s in VAR1             */
+SET MYPARMSL  =
+SET ERRMSG =
+&MYCMD
+SET RC = &LASTCC
+WRITE  RC       =&RC
+WRITE  ERRMSG   =&ERRMSG
+WRITE  MYDATA   ='&MYDATA'
+WRITE  MYDATAL  =&MYDATAL
+WRITE  MYPARMS  ='&MYPARMS'
+WRITE  MYPARMSL =&MYPARMSL
+IF &RC EQ 0 THEN WRITE  ** PASSED PER RC **
+IF &RC NE 0 THEN WRITE  ** FAILED PER RC **   <<===XX
+WRITE
+WRITE /\/\/\*57  L S T R I P                       /\/\/\-----------
+/********************************************************************/
+/* *57 LSTRIP from program documentation                            */
+/********************************************************************/
+SET I = &I + 1
+SET MYCMD = &STR(CUTIL00 LSTRIP   MYDATA MYPARMS )
+WRITE &STR(&TSTHDR)&I: &MYCMD
+SET MYDATA  = &STR(,,28,BC,)
+SET MYDATAL =
+SET MYPARMS  = &STR(,)
+SET MYPARMSL  =
+SET ERRMSG =
+&MYCMD
+SET RC = &LASTCC
+WRITE  RC       =&RC
+WRITE  ERRMSG   =&ERRMSG
+WRITE  MYDATA   ='&MYDATA'
+WRITE  MYDATAL  =&MYDATAL
+WRITE  MYPARMS  ='&MYPARMS'
+WRITE  MYPARMSL =&MYPARMSL
+IF &RC EQ 0 THEN WRITE  ** PASSED PER RC **
+IF &RC NE 0 THEN WRITE  ** FAILED PER RC **   <<===XX
+WRITE
+WRITE /\/\/\*58  R S T R I P                       /\/\/\-----------
+/********************************************************************/
+/* *58 RSTRIP from program documentation                            */
+/********************************************************************/
+SET I = &I + 1
+SET MYCMD = &STR(CUTIL00 RSTRIP   MYDATA MYPARMS )
+WRITE &STR(&TSTHDR)&I: &MYCMD
+SET MYDATA  = &STR(,,28,BC,)
+SET MYDATAL =
+SET MYPARMS  = &STR(,)
+SET MYPARMSL  =
+SET ERRMSG =
+&MYCMD
+SET RC = &LASTCC
+WRITE  RC       =&RC
+WRITE  ERRMSG   =&ERRMSG
+WRITE  MYDATA   ='&MYDATA'
+WRITE  MYDATAL  =&MYDATAL
+WRITE  MYPARMS  ='&MYPARMS'
+WRITE  MYPARMSL =&MYPARMSL
+IF &RC EQ 0 THEN WRITE  ** PASSED PER RC **
+IF &RC NE 0 THEN WRITE  ** FAILED PER RC **   <<===XX
+WRITE
+WRITE /\/\/\*59  S T R I P                         /\/\/\-----------
+/********************************************************************/
+/* *59 STRIP from program documentation                             */
+/********************************************************************/
+SET I = &I + 1
+SET MYCMD = &STR(CUTIL00 STRIP    MYDATA MYPARMS )
+WRITE &STR(&TSTHDR)&I: &MYCMD
+SET MYDATA  = &STR(,,28,BC,)
+SET MYDATAL =
+SET MYPARMS  = &STR(,)
+SET MYPARMSL  =
+SET ERRMSG =
+&MYCMD
+SET RC = &LASTCC
+WRITE  RC       =&RC
+WRITE  ERRMSG   =&ERRMSG
+WRITE  MYDATA   ='&MYDATA'
+WRITE  MYDATAL  =&MYDATAL
+WRITE  MYPARMS  ='&MYPARMS'
+WRITE  MYPARMSL =&MYPARMSL
+IF &RC EQ 0 THEN WRITE  ** PASSED PER RC **
+IF &RC NE 0 THEN WRITE  ** FAILED PER RC **   <<===XX
+WRITE
+WRITE /\/\/\*60  S T R I P $                       /\/\/\-----------
+/********************************************************************/
+/* *60 STRIP$ from program documentation                            */
+/********************************************************************/
+SET I = &I + 1
+SET MYCMD = &STR(CUTIL00 STRIP$   MYDATA MYPARMS )
+WRITE &STR(&TSTHDR)&I: &MYCMD
+SET MYDATA  = &STR(,,28,BC,)
+SET MYDATAL =
+SET MYPARMS  = &STR(,)
+SET MYPARMSL  =
+SET ERRMSG =
+&MYCMD
+SET RC = &LASTCC
+WRITE  RC       =&RC
+WRITE  ERRMSG   =&ERRMSG
+WRITE  MYDATA   ='&MYDATA'
+WRITE  MYDATAL  =&MYDATAL
+WRITE  MYPARMS  ='&MYPARMS'
+WRITE  MYPARMSL =&MYPARMSL
+IF &RC EQ 0 THEN WRITE  ** PASSED PER RC **
+IF &RC NE 0 THEN WRITE  ** FAILED PER RC **   <<===XX
+WRITE
+WRITE /\/\/\*61  C O N C A T                       /\/\/\-----------
+/********************************************************************/
+/* *61 CONCAT from program documentation                            */
+/********************************************************************/
+SET I = &I + 1
+SET MYCMD = &STR(CUTIL00 CONCAT   MYDATA MYRESULT)
+WRITE &STR(&TSTHDR)&I: &MYCMD
+SET MYDATA  = &STR(String data 1.)
+SET MYDATAL =
+SET MYRESULT = &STR(A result string 2.)
+SET MYRESULTL =
+SET ERRMSG =
+&MYCMD
+SET RC = &LASTCC
+WRITE  RC       =&RC
+WRITE  ERRMSG   =&ERRMSG
+WRITE  MYDATA   ='&MYDATA'
+WRITE  MYDATAL  =&MYDATAL
+WRITE  MYRESULT ='&MYRESULT'
+WRITE  MYRESULTL=&MYRESULTL
+IF &RC EQ 0 THEN WRITE  ** PASSED PER RC **
+IF &RC NE 0 THEN WRITE  ** FAILED PER RC **   <<===XX
+WRITE
+WRITE /\/\/\*62  U N S T R                         /\/\/\-----------
+/********************************************************************/
+/* *62 UNSTR from program documentation                             */
+/********************************************************************/
+SET I = &I + 1
+SET MYCMD = &STR(CUTIL00 UNSTR    MYDATA MYPARMS )
+WRITE &STR(&TSTHDR)&I: &MYCMD
+SET MYDATA  = &STR(1234567 and so on . I am 78 long. )
+SET MYDATAL =
+SET MYPARMS  = &STR(7)
+SET MYPARMSL  =
+SET ERRMSG =
+&MYCMD
+SET RC = &LASTCC
+WRITE  RC       =&RC
+WRITE  ERRMSG   =&ERRMSG
+WRITE  MYDATA   ='&MYDATA'
+WRITE  MYDATAL  =&MYDATAL
+WRITE  MYPARMS  ='&MYPARMS'
+WRITE  MYPARMSL =&MYPARMSL
+IF &RC EQ 0 THEN WRITE  ** PASSED PER RC **
+IF &RC NE 0 THEN WRITE  ** FAILED PER RC **   <<===XX
+SET CTR = 0
+DO WHILE &CTR <= &MYDATA0
+  SET EVALLN = &STR(&&MYDATA&CTR)
+  WRITE  MYDATA&CTR = '&EVALLN'
+  SET CTR = &CTR + 1
+END
+WRITE
+WRITE /\/\/\*63  R E P L A C E                     /\/\/\-----------
+/********************************************************************/
+/* *63 REPLACE from program documentation                           */
+/********************************************************************/
+SET I = &I + 1
+SET MYCMD = &STR(CUTIL00 REPLACE  MYDATA MYPARMS )
+WRITE &STR(&TSTHDR)&I: &MYCMD
+SET MYDATA  = &STR(1234567 AND SO ON . I AM 7879.)
+SET MYDATAL =
+SET MYPARMS  = &STR("SO ON ","890123456--")
+SET MYPARMSL  =
+SET ERRMSG =
+&MYCMD
+SET RC = &LASTCC
+WRITE  RC       =&RC
+WRITE  ERRMSG   =&ERRMSG
+WRITE  MYDATA   ='&MYDATA'
+WRITE  MYDATAL  =&MYDATAL
+WRITE  MYPARMS  ='&MYPARMS'
+WRITE  MYPARMSL =&MYPARMSL
+IF &RC EQ 0 THEN WRITE  ** PASSED PER RC **
+IF &RC NE 0 THEN WRITE  ** FAILED PER RC **   <<===XX
+WRITE
+WRITE /\/\/\*64  V E X I S T                       /\/\/\-----------
+/********************************************************************/
+/* *64 VEXIST from program documentation                            */
+/********************************************************************/
+SET I = &I + 1
+SET MYCMD = &STR(CUTIL00 VEXIST   MYDATA )
+WRITE &STR(&TSTHDR)&I: &MYCMD
+SET MYDATA  = &STR(TEST)
+SET MYDATAL =
+SET MYRESULT =
+SET MYRESULTL =
+SET ERRMSG =
+&MYCMD
+SET RC = &LASTCC
+WRITE  RC       =&RC
+WRITE  ERRMSG   =&ERRMSG
+WRITE  MYDATA   ='&MYDATA'
+WRITE  MYDATAL  =&MYDATAL
+WRITE  MYRESULT ='&MYRESULTL'
+WRITE  MYRESULTL=&MYRESULTL
+IF &RC EQ 4 THEN WRITE  ** PASSED PER RC **
+IF &RC NE 4 THEN WRITE  ** FAILED PER RC **   <<===XX
+WRITE
+WRITE /\/\/\*65  T D S N                           /\/\/\-----------
+/********************************************************************/
+/* *65 TDSN from program documentation                              */
+/********************************************************************/
+SET I = &I + 1
+SET MYCMD = &STR(CUTIL00 TDSN     MYDATA )
+WRITE &STR(&TSTHDR)&I: &MYCMD
+SET MYDATA  =&STR(HERC01.CARDS)
+SET MYDATAL =
+SET MYRESULT =
+SET MYRESULTL =
+SET ERRMSG =
+&MYCMD
+SET RC = &LASTCC
+WRITE  RC       =&RC
+WRITE  ERRMSG   =&ERRMSG
+WRITE  MYDATA   ='&MYDATA'
+WRITE  MYDATAL  =&MYDATAL
+WRITE  MYRESULT ='&MYRESULTL'
+WRITE  MYRESULTL=&MYRESULTL
+IF &RC EQ 0 THEN WRITE  ** PASSED PER RC **
+IF &RC NE 0 THEN WRITE  ** FAILED PER RC **   <<===XX
+WRITE
+WRITE /\/\/\*66  N O W                             /\/\/\-----------
+/********************************************************************/
+/* *66 NOW from program documentation                               */
+/********************************************************************/
+SET I = &I + 1
+SET MYCMD = &STR(CUTIL00 NOW      MYDATA )
+WRITE &STR(&TSTHDR)&I: &MYCMD
+SET MYDATA  =
+SET MYDATAL =
+SET MYRESULT =
+SET MYRESULTL =
+SET ERRMSG =
+&MYCMD
+SET RC = &LASTCC
+WRITE  RC       =&RC
+WRITE  ERRMSG   =&ERRMSG
+WRITE  MYDATA   ='&MYDATA'
+WRITE  MYDATAL  =&MYDATAL
+WRITE  MYRESULT ='&MYRESULTL'
+WRITE  MYRESULTL=&MYRESULTL
+IF &RC EQ 0 THEN WRITE  ** PASSED PER RC **
+IF &RC NE 0 THEN WRITE  ** FAILED PER RC **   <<===XX
+WRITE
+WRITE /\/\/\*67  P A D                             /\/\/\-----------
+/********************************************************************/
+/* *67 PAD from program documentation                               */
+/********************************************************************/
+SET I = &I + 1
+SET MYCMD = &STR(CUTIL00 PAD      MYDATA MYRESULT)
+WRITE &STR(&TSTHDR)&I: &MYCMD
+SET MYDATA  =&STR(PAD ME TO 30 LONG)
+SET MYDATAL =
+SET MYRESULT =&STR( 30)
+SET MYRESULTL =
+SET ERRMSG =
+&MYCMD
+SET RC = &LASTCC
+WRITE  RC       =&RC
+WRITE  ERRMSG   =&ERRMSG
+WRITE  MYDATA   ='&MYDATA'
+WRITE  MYDATAL  =&MYDATAL
+WRITE  MYRESULT ='&MYRESULTL'
+WRITE  MYRESULTL=&MYRESULTL
+IF &RC EQ 0 THEN WRITE  ** PASSED PER RC **
+IF &RC NE 0 THEN WRITE  ** FAILED PER RC **   <<===XX
+WRITE
+WRITE /\/\/\*68  G E T 1 V                         /\/\/\-----------    LB1100
+/********************************************************************/  LB1100
+/* *68 GET1V from program documentation                             */  LB1100
+/********************************************************************/  LB1100
+SET I = &I + 1                                                          LB1100
+SET MYCMD = &STR(CUTIL00 GET1V    MYDATA MYPEEK)                        LB1100
+WRITE &STR(&TSTHDR)&I: &MYCMD                                           LB1100
+SET MYDATA  =&STR(THE TABLE TOP IS CLEAR)                               LB1100
+SET MYDATAL =                                                           LB1100
+SET MYPEEK =&STR(x11)                                                   LB1100
+SET MYPEEKL =                                                           LB1100
+SET ERRMSG =                                                            LB1100
+&MYCMD                                                                  LB1100
+SET RC = &LASTCC                                                        LB1100
+WRITE  RC       =&RC                                                    LB1100
+WRITE  ERRMSG   =&ERRMSG                                                LB1100
+WRITE  MYDATA   ='&MYDATA'                                              LB1100
+WRITE  MYDATAL  =&MYDATAL                                               LB1100
+WRITE  MYPEEK   ='&MYPEEK'                                              LB1100
+WRITE  MYPEEKL  =&MYPEEKL                                               LB1100
+IF &RC EQ 0 THEN WRITE  ** PASSED PER RC **                             LB1100
+IF &RC NE 0 THEN WRITE  ** FAILED PER RC **   <<===XX                   LB1100
+WRITE                                                                   LB1100
+WRITE /\/\/\*69  P U T 1 V                         /\/\/\-----------    LB1100
+/********************************************************************/  LB1100
+/* *69 PUT1V from program documentation                             */  LB1100
+/********************************************************************/  LB1100
+SET I = &I + 1                                                          LB1100
+SET MYCMD = &STR(CUTIL00 PUT1V    MYDATA MYPOKE)                        LB1100
+WRITE &STR(&TSTHDR)&I: &MYCMD                                           LB1100
+SET MYDATA  =&STR(THE TABLE TOP IS CLEAR)                               LB1100
+SET MYDATAL =                                                           LB1100
+SET MYPOKE =&STR(N22)                                                   LB1100
+SET MYPOKEL =                                                           LB1100
+SET ERRMSG =                                                            LB1100
+&MYCMD                                                                  LB1100
+SET RC = &LASTCC                                                        LB1100
+WRITE  RC       =&RC                                                    LB1100
+WRITE  ERRMSG   =&ERRMSG                                                LB1100
+WRITE  MYDATA   ='&MYDATA'                                              LB1100
+WRITE  MYDATAL  =&MYDATAL                                               LB1100
+WRITE  MYPOKE   ='&MYPOKE'                                              LB1100
+WRITE  MYPOKEL  =&MYPOKEL                                               LB1100
+IF &RC EQ 0 THEN WRITE  ** PASSED PER RC **                             LB1100
+IF &RC NE 0 THEN WRITE  ** FAILED PER RC **   <<===XX                   LB1100
+WRITE                                                                   LB1100
+WRITE /\/\/\*70  M C A L                           /\/\/\-----------    LB1100
+/********************************************************************/  LB1100
+/* *70 MCAL from program documentation                              */  LB1100
+/********************************************************************/  LB1100
+SET I = &I + 1                                                          LB1100
+SET MYCMD = &STR(CUTIL00 MCAL     MYDATA MYCALNDR)                      LB1100
+WRITE &STR(&TSTHDR)&I: &MYCMD                                           LB1100
+SET MYDATA  =                                                           LB1100
+SET MYDATAL =                                                           LB1100
+SET MYCALNDR =                                                          LB1100
+SET MYCALNDRL =                                                         LB1100
+SET ERRMSG =                                                            LB1100
+&MYCMD                                                                  LB1100
+SET RC = &LASTCC                                                        LB1100
+WRITE  RC       =&RC                                                    LB1100
+WRITE  ERRMSG   =&ERRMSG                                                LB1100
+WRITE  MYDATA   ='&MYDATA'                                              LB1100
+WRITE  MYDATAL  =&MYDATAL                                               LB1100
+WRITE  MYCALNDR ='&MYCALNDR'                                            LB1100
+WRITE  MYCALNDRL =&MYCALNDRL                                            LB1100
+IF &RC EQ 0 THEN WRITE  ** PASSED PER RC **                             LB1100
+IF &RC NE 0 THEN WRITE  ** FAILED PER RC **   <<===XX                   LB1100
+SET SCOL = 1                                                            LB1100
+SET LOOPN = 7                                                           LB1100
+DO WHILE &LOOPN > 0                                                     LB1100
+ WRITE     &SUBSTR(&SCOL:&SCOL+20,&MYCALNDR)                            LB1100
+ SET LOOPN = &LOOPN - 1                                                 LB1100
+ SET SCOL  = &SCOL  + 21                                                LB1100
+END                                                                     LB1100
+WRITE                                                                   LB1100
+WRITE /\/\/\*71  L E N                             /\/\/\-----------    LB1105
+/********************************************************************/  LB1105
+/* *72 LEN from program documentation                               */  LB1105
+/********************************************************************/  LB1105
+SET I = &I + 1                                                          LB1105
+SET MYCMD = &STR(CUTIL00 MCAL     MYDATA         )                      LB1105
+WRITE &STR(&TSTHDR)&I: &MYCMD                                           LB1105
+SET MYDATA  = &STR( MY WORD IN THE STRING    )                          LB1105
+SET MYDATAL =                                                           LB1105
+SET MYRESULT =                                                          LB1105
+SET MYRESULTL =                                                         LB1105
+SET ERRMSG =                                                            LB1105
+&MYCMD                                                                  LB1105
+SET RC = &LASTCC                                                        LB1105
+WRITE  RC       =&RC                                                    LB1105
+WRITE  ERRMSG   =&ERRMSG                                                LB1105
+WRITE  MYDATA   ='&MYDATA'                                              LB1105
+WRITE  MYDATAL  =&MYDATAL                                               LB1105
+WRITE  MYRESULT ='&MYRESULT'                                            LB1105
+WRITE  MYRESULTL =&MYRESULTL                                            LB1105
+IF &RC EQ 22 THEN WRITE  ** PASSED PER RC **                            LB1105
+IF &RC NE 22 THEN WRITE  ** FAILED PER RC **   <<===XX                  LB1105
+WRITE                                                                   LB1105
+WRITE /\/\/\*73  S L E N                           /\/\/\-----------    LB1105
+/********************************************************************/  LB1105
+/* *73 SLEN from program documentation                              */  LB1105
+/********************************************************************/  LB1105
+SET I = &I + 1                                                          LB1105
+SET MYCMD = &STR(CUTIL00 SLEN     MYDATA         )                      LB1105
+WRITE &STR(&TSTHDR)&I: &MYCMD                                           LB1105
+SET MYDATA  = &STR( MY WORD IN THE STRING    )                          LB1105
+SET MYDATAL =                                                           LB1105
+SET MYRESULT =                                                          LB1105
+SET MYRESULTL =                                                         LB1105
+SET ERRMSG =                                                            LB1105
+&MYCMD                                                                  LB1105
+SET RC = &LASTCC                                                        LB1105
+WRITE  RC       =&RC                                                    LB1105
+WRITE  ERRMSG   =&ERRMSG                                                LB1105
+WRITE  MYDATA   ='&MYDATA'                                              LB1105
+WRITE  MYDATAL  =&MYDATAL                                               LB1105
+WRITE  MYRESULT ='&MYRESULT'                                            LB1105
+WRITE  MYRESULTL =&MYRESULTL                                            LB1105
+IF &RC EQ 26 THEN WRITE  ** PASSED PER RC **                            LB1105
+IF &RC NE 26 THEN WRITE  ** FAILED PER RC **   <<===XX                  LB1105
+WRITE                                                                   LB1105
+WRITE /\/\/\*74  O V E R L A Y                     /\/\/\-----------    LB1105
+/********************************************************************/  LB1105
+/* *74 OVERLAY from program documentation                           */  LB1105
+/********************************************************************/  LB1105
+SET I = &I + 1                                                          LB1105
+SET MYCMD = &STR(CUTIL00 OVERLAY  MYDATA MYOPARM)                       LB1105
+WRITE &STR(&TSTHDR)&I: &MYCMD                                           LB1105
+SET MYDATA  = &STR( MY TEXT TO BE OVERLAYED OK!! )                      LB1105
+SET MYDATAL =                                                           LB1105
+SET MYOPARM = &STR("----- ",7)                                          LB1105
+SET MYOPARML =                                                          LB1105
+SET ERRMSG =                                                            LB1105
+&MYCMD                                                                  LB1105
+SET RC = &LASTCC                                                        LB1105
+WRITE  RC       =&RC                                                    LB1105
+WRITE  ERRMSG   =&ERRMSG                                                LB1105
+WRITE  MYDATA   ='&MYDATA'                                              LB1105
+WRITE  MYDATAL  =&MYDATAL                                               LB1105
+WRITE  MYOPARM  ='&MYOPARM'                                             LB1105
+WRITE  MYOPARML =&MYOPARML                                              LB1105
+IF &RC EQ 00 THEN WRITE  ** PASSED PER RC **                            LB1105
+IF &RC NE 00 THEN WRITE  ** FAILED PER RC **   <<===XX                  LB1105
+WRITE                                                                   LB1105
+WRITE /\/\/\*75  U T D S N                         /\/\/\-----------    LB1105
+/********************************************************************/  LB1105
+/* *75 UTDSN   from program documentation                           */  LB1105
+/********************************************************************/  LB1105
+SET I = &I + 1                                                          LB1105
+SET MYCMD = &STR(CUTIL00 UTDSN    MYDATA)                               LB1105
+WRITE &STR(&TSTHDR)&I: &MYCMD                                           LB1105
+SET MYDATA  = &STR(CARDS)                                               LB1105
+SET MYDATAL =                                                           LB1105
+SET MYRESULT =                                                          LB1105
+SET MYRESULTL =                                                         LB1105
+SET ERRMSG =                                                            LB1105
+&MYCMD                                                                  LB1105
+SET RC = &LASTCC                                                        LB1105
+WRITE  RC       =&RC                                                    LB1105
+WRITE  ERRMSG   =&ERRMSG                                                LB1105
+WRITE  MYDATA   ='&MYDATA'                                              LB1105
+WRITE  MYDATAL  =&MYDATAL                                               LB1105
+WRITE  MYRESULT ='&MYRESULT'                                            LB1105
+WRITE  MYRESULTL =&MYRESULTL                                            LB1105
+IF &RC EQ 00 THEN WRITE  ** PASSED PER RC **                            LB1105
+IF &RC NE 00 THEN WRITE  ** FAILED PER RC **   <<===XX                  LB1105
+WRITE                                                                   LB1105
+WRITE /\/\/\*76  T R U N C                         /\/\/\-----------    LB1105
+/********************************************************************/  LB1105
+/* *76 TRUNC   from program documentation                           */  LB1105
+/********************************************************************/  LB1105
+SET I = &I + 1                                                          LB1105
+SET MYCMD = &STR(CUTIL00 TRUNC MYDATA MYTRUNC)                          LB1105
+WRITE &STR(&TSTHDR)&I: &MYCMD                                           LB1105
+SET MYDATA  = &STR(THE MAN WALKED HERE)                                 LB1105
+SET MYDATAL =                                                           LB1105
+SET MYTRUNC = &STR(x07)                                                 LB1105
+SET MYTRUNCL =                                                          LB1105
+SET ERRMSG =                                                            LB1105
+&MYCMD                                                                  LB1105
+SET RC = &LASTCC                                                        LB1105
+WRITE  RC       =&RC                                                    LB1105
+WRITE  ERRMSG   =&ERRMSG                                                LB1105
+WRITE  MYDATA   ='&MYDATA'                                              LB1105
+WRITE  MYDATAL  =&MYDATAL                                               LB1105
+WRITE  MYTRUNC  ='&MYTRUNC'                                             LB1105
+WRITE  MYTRUNCL =&MYTRUNCL                                              LB1105
+IF &RC EQ 00 THEN WRITE  ** PASSED PER RC **                            LB1105
+IF &RC NE 00 THEN WRITE  ** FAILED PER RC **   <<===XX                  LB1105
+WRITE                                                                   LB1105
+
+
+WRITE ***** Testing CUTIL00 concluded. . . . . .  *** &SYSDATE &SYSTIME
+
+
+ENDIT: -
+END
+
+EXIT CODE(0)

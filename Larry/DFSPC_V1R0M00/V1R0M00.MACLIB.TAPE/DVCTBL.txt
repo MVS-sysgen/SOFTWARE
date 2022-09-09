@@ -1,0 +1,58 @@
+         MACRO
+&NAME    DVCTBL
+         PUSH  PRINT
+         PRINT GEN
+**********************************************************************
+*   Macro:  DVCTBL    V1R0M00    07/30/2020
+*  Author:  Larry Belmontes Jr.
+*           https://ShareABitofIT.net/SHRABIT-MACLIB-in-mvs-3-8j
+*           Copyright (C) 2020-2021  Larry Belmontes, Jr.
+**********************************************************************
+**********************************************************************
+*              8 bytes   /  DVCLST Table-------------------------    *
+*              per entry+   01 bytes, device type code               *
+*                        \  07 bytes, Device Type                    *
+**********************************************************************
+*  Disclaimer:
+*  ===================================================================
+*
+*     No guarantee; No warranty; Install / Use at your own risk.
+*
+*     This software is provided "AS IS" and without any expressed
+*  or implied warranties, including, without limitation, the
+*  implied warranties of merchantability and fitness for a
+*  particular purpose.
+*
+*     The author requests keeping authors name intact in any
+*  modified versions.
+*
+*     In addition, the author requests readers to submit any
+*  code modifications / enhancements and associated comments
+*  for consideration into a subsequent release (giving credit
+*  to contributor(s)) thus, improving overall functionality
+*  and further benefiting the MVS 3.8J hobbyist public domain
+*  community.
+*
+*
+DVCLST$  DC    X'00',CL7'??***??'
+DVCLST$L EQU   *-DVCLST$           Table Entry length
+         DC    X'01',CL7'2311   '
+         DC    X'02',CL7'2301   '
+         DC    X'03',CL7'2303   '
+         DC    X'04',CL7'9345   '
+         DC    X'05',CL7'2321   '
+         DC    X'06',CL7'2305-1 '
+         DC    X'07',CL7'2305-2 '
+         DC    X'08',CL7'2314   '
+         DC    X'09',CL7'3330   '
+         DC    X'0A',CL7'3340   '
+         DC    X'0B',CL7'3350   '
+         DC    X'0C',CL7'3375   '
+         DC    X'0D',CL7'3330-11'
+         DC    X'0E',CL7'3380   '
+         DC    X'0F',CL7'3390   '
+DVCLST$E EQU   (*-DVCLST$)/DVCLST$L  Table Entries
+*
+*              END OF DVCTBL
+         POP   PRINT
+         MEND

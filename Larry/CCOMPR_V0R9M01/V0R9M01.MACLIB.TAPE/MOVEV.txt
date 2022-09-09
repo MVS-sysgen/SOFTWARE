@@ -1,0 +1,78 @@
+         MACRO
+&NAME    MOVEV &P,&OL
+**********************************************************************
+*   Macro:  MOVEV     V1R0M00    07/30/2020
+*  Author:  Larry Belmontes Jr.
+*           https://ShareABitofIT.net/SHRABIT-MACLIB-in-mvs-3-8j
+*           Copyright (C) 2020-2021  Larry Belmontes, Jr.
+**********************************************************************
+.*********************************************************************
+.*       Macro Description:                                          *
+.*       ------------------                                          *
+.*       o  Move data from &P starting at R6 and augmenting R6 and R8*
+.*          by length of &P.                                         *
+.*          by 1 for each byte moved.                                *
+.*       o  &P length defaults to L'&P or value of &OL               *
+.*       o  &OL must be numeric, if specified.                       *
+.*       o  &P length must be >0 and <= 256 bytes.                   *
+.*       o  MOVEI must be executed to set R6 and R8 prior to using   *
+.*          this macro                                               *
+.*          - R6=Current Address of &P as pointer                    *
+.*          - R8=Current Length  of &P as bytes moved into &P        *
+.*                                                                   *
+.*       Examples:                                                   *
+.*       ---------                                                   *
+.*       MOVEV PARM           Move PARM for length of PARM           *
+.*       MOVEV PARM,20        Move PARM for length of 20             *
+.*                                                                   *
+.*       - Uses R6,R8                                                *
+.*********************************************************************
+*  Disclaimer:
+*  ===================================================================
+*
+*     No guarantee; No warranty; Install / Use at your own risk.
+*
+*     This software is provided "AS IS" and without any expressed
+*  or implied warranties, including, without limitation, the
+*  implied warranties of merchantability and fitness for a
+*  particular purpose.
+*
+*     The author requests keeping authors name intact in any
+*  modified versions.
+*
+*     In addition, the author requests readers to submit any
+*  code modifications / enhancements and associated comments
+*  for consideration into a subsequent release (giving credit
+*  to contributor(s)) thus, improving overall functionality
+*  and further benefiting the MVS 3.8J hobbyist public domain
+*  community.
+*
+*
+         LCLA  &A,&B
+&A       SETA  L'&P          Length of VAR
+&B       SETA  K'&OL         Count  of VAR
+         AIF   (&A GT 256).TOOLONG
+         AIF   (&B GT 0).GOTOL
+&B       SETA  &A
+         AGO    .CONT01
+.GOTOL   ANOP
+         AIF   (&B GT 3).OL2BIG
+         AIF   (&OL GT 256).OL2BIG2
+&B       SETA  &OL
+.CONT01  ANOP
+&NAME    MVC   0(&B,6),&P
+         LA    6,&B.(6)               adj addr
+         LA    8,&B.(8)               adj len
+         MNOTE 'Moving &B bytes from &P to R6 pointer'
+         AGO    .ENDME
+.OL2BIG  ANOP
+         MNOTE 12,'Override Length > 3 digits'
+         AGO    .ENDME
+.OL2BIG2 ANOP
+         MNOTE 12,'Override Length > 256'
+         AGO    .ENDME
+.TOOLONG ANOP
+         MNOTE 12,'&P length > 256 bytes'
+         AGO    .ENDME
+.ENDME   ANOP
+         MEND

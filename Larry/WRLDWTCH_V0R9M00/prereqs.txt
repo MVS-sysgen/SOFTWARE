@@ -1,0 +1,20 @@
+* WRLDWTCH for MVS3.8J / Hercules                                               
+* ===============================                                               
+*
+*
+*  Author:  Larry Belmontes Jr.
+*           https://ShareABitofIT.net/WRLDWTCH-in-MVS38J
+*           Copyright (C) 2018  Larry Belmontes, Jr.
+*
+*  MM/DD/CCYY Version  Name / Description
+*  ---------- -------  -----------------------------------------------
+*  09/22/2018 0.9.00   Larry Belmontes Jr.  
+*                      - Initial version released to MVS 3.8J
+*                        hobbyist public domain
+*
+*
+*  Prerequisite: User Modifications             
+*  ===================================================================
+*
+*     No user-mods are needed for this software distribution.     
+*

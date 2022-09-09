@@ -1,0 +1,169 @@
+PROC 0 DEBUG MEM() DD()
+
+/********************************************************************/
+/*                                                                  */
+/* CLIST: CMEMINDD                                                  */
+/*                                                                  */
+/* Author: Larry Belmontes Jr.                                      */
+/*         https://ShareABitofIT.net/FINDSRCH-in-MVS38J             */
+/*         Copyright (C) 2020-2021 Larry Belmontes, Jr.             */
+/*                                                                  */
+/*                                                                  */
+/* Description:                                                     */
+/* ---------------------------------------------------------------  */
+/*                                                                  */
+/* This CLIST uses ISPF services under ISPF product from Wally      */
+/* Mclaughlin, version 2.1 or greater.                              */
+/*                                                                  */
+/* Starting variables are fetched via an ISPF VGET,                 */
+/*                                                                  */
+/*      VGET (F1MEMBER F1DSN F1SRCH F1QK F1ALLDSN) PROFILE          */
+/*                                                                  */
+/* The FINDMEM CP will create ISPF variables for the requested      */
+/* member which include:                                            */
+/*                                                                  */
+/*      FMCONCAT - CONCATENATION NUMBER WHERE MEMBER WAS FOUND      */
+/*      FMDSNAME - DSNAME WHERE MEMBER WAS FOUND                    */
+/*      FMLIB    - LIBRARY TYPE WHERE MEMBER WAS FOUND              */
+/*                   'PRIVATE', 'LINKLIST' OR 'STEPLIB'             */
+/*      FMMSG    - ERROR MSG WHEN NON ZERO RC                       */
+/*      FMDIRENT - UNFORMATTED DIRECTORY ENTRY FROM BLDL            */
+/*      FMLKEDDT - LINK EDIT DATE                                   */
+/*                                                                  */
+/* If a DD name is present, display the allocated DSN list          */
+/* for the DD via CLIST CFLDSI which uses LISTDSJ to obtain         */
+/* dataset attributes.                                              */
+/*                                                                  */
+/* All listings are displays to the terminal screen.                */
+/*                                                                  */
+/* Command:                                                         */
+/* as issued from menu panel PFINDM -                               */
+/*  'CMD(%CMEMINDD MEM() &PRM2 NEWAPPL(FIND)'                       */
+/*                         !                                        */
+/*                         !                                        */
+/*                         +--&PRM2 is optional in CMEMINDD CLIST.  */
+/*                            In using the variable (&PRM2),        */
+/*                            set to NULL when no DD is specified   */
+/*                            or set to the value of 'DD(&ddvar)'   */
+/*                            before invoking the CMD.              */
+/*                                                                  */
+/* Parameters:                                                      */
+/* DEBUG    optional, used to display debug information during      */
+/*          CLIST execution.  The value for this positional         */
+/*          parameter is DEBUG.                                     */
+/*                                                                  */
+/*          i.e. CMEMINDD DEBUG                                     */
+/*                                                                  */
+/*                                                                  */
+/* Disclaimer:                                                      */
+/* ================================================================ */
+/*                                                                  */
+/*    No guarantee; No warranty; Install / Use at your own risk.    */
+/*                                                                  */
+/*    This software is provided "AS IS" and without any expressed   */
+/* or implied warranties, including, without limitation, the        */
+/* implied warranties of merchantability and fitness for a          */
+/* particular purpose.                                              */
+/*                                                                  */
+/*    The author requests keeping authors name intact in any        */
+/* modified versions.                                               */
+/*                                                                  */
+/*    In addition, the author requests readers to submit any        */
+/* code modifications / enhancements and associated comments        */
+/* for consideration into a subsequent release (giving credit       */
+/* to contributor(s)) thus, improving overall functionality         */
+/* and further benefiting the MVS 3.8J hobbyist public domain       */
+/* community.                                                       */
+/*                                                                  */
+/*                                                                  */
+/*                                                                  */
+/* Change History:                                                  */
+/* ================================================================ */
+/* MM/DD/CCYY Version  Name / Description                           */
+/* ---------- -------  -------------------------------------------- */
+/* 10/23/2021 0.9.10   Larry Belmontes Jr.                          */
+/*                     - Initial version released to MVS 3.8J       */
+/*                       hobbyist public domain                     */
+/*                                                                  */
+/********************************************************************/
+
+IF &DEBUG = DEBUG THEN -
+  CONTROL MSG NOSYMLIST NOCONLIST NOLIST NOFLUSH
+ELSE -
+  CONTROL NOMSG NOSYMLIST NOCONLIST NOLIST NOFLUSH
+
+/*********************************************************************/
+/* ISPF must be available                                            */
+/*********************************************************************/
+ISPQRY
+SET RC = &LASTCC
+
+IF &DEBUG = DEBUG THEN -
+  WRITE ISPQRY, RC=&RC
+
+IF &RC NE 0 THEN -
+ DO
+   WRITE THIS CLIST REQUIRES ISPF TO BE ACTIVE
+   EXIT CODE(12)
+ END
+
+/*********************************************************************/
+/* Display request header and invoke FINDMEM CP to create ISPF       */
+/* variables                                                         */
+/*********************************************************************/
+IF &STR(&DD) = &STR( ) THEN -
+ DO
+  WRITE REQUEST: FIND MEMBER-&MEM
+  FINDMEM &MEM
+  SET RC = &LASTCC
+ END
+ELSE -
+ DO
+  WRITE REQUEST: FIND MEMBER-&MEM   IN DD-&DD
+  FINDMEM &MEM &DD
+  SET RC = &LASTCC
+ END
+
+IF &DEBUG = DEBUG THEN -
+  WRITE FINDMEM, RC=&RC
+
+WRITE ============================================
+
+/*********************************************************************/
+/* Display results from FINDMEM CP                                   */
+/*********************************************************************/
+IF &RC = 0 THEN -
+  DO
+    SET MEM      = &MEM
+    SET FMLIB    = &FMLIB
+    IF &FMLIB = &STR(STEPLIB) OR &FMLIB = &STR(LINKLIST) THEN -
+      DO
+        WRITE MEMBER &MEM FOUND IN &FMLIB+&FMCONCAT
+      END
+    ELSE -
+      DO
+        SET FMDSNAME = &FMDSNAME
+   WRITE MEMBER &MEM FOUND IN &FMLIB LIB AT &DD+&FMCONCAT (&FMDSNAME)
+      END
+    IF &SUBSTR(1:1,&FMLKEDDT) = &STR(*) THEN
+    ELSE -
+       WRITE LINKEDIT DATE (YYJJJ) =&FMLKEDDT
+  END
+ELSE -
+  DO
+    SET FMMSG    = &FMMSG
+    WRITE RC=&RC (&FMMSG)
+  END
+
+/*********************************************************************/
+/* If DD specified, display allocated DD/DSN list via CFLDSI CLIST   */
+/*********************************************************************/
+WRITE .
+IF &DEBUG = DEBUG THEN -
+  IF &RC = 20 THEN -
+    WRITE BYPASS CFLDSI...!
+
+IF (&STR(&DD) NE &STR( )) AND (&RC NE 20) THEN -
+  %CFLDSI DD(&DD)
+
+END

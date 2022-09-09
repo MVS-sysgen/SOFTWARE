@@ -1,0 +1,528 @@
+PROC 0 DEBUG
+
+/********************************************************************/
+/*                                                                  */
+/* CLIST: CMEMFIND                                                  */
+/*                                                                  */
+/* Author: Larry Belmontes Jr.                                      */
+/*         https://ShareABitofIT.net/FINDSRCH-in-MVS38J             */
+/*         Copyright (C) 2020-2021 Larry Belmontes, Jr.             */
+/*                                                                  */
+/*                                                                  */
+/* Description:                                                     */
+/* ---------------------------------------------------------------  */
+/*                                                                  */
+/* This CLIST uses ISPF services under ISPF product from Wally      */
+/* Mclaughlin, version 2.1 or greater.                              */
+/*                                                                  */
+/* Starting variables are fetched via an ISPF VGET,                 */
+/*                                                                  */
+/*      VGET (F1MEMBER F1DSN F1SRCH F1QK F1ALLDSN) PROFILE          */
+/*                                                                  */
+/* A list of datasets (PO) is assembled for DSN Containing using    */
+/* the VTOC CP.                                                     */
+/*                                                                  */
+/* For each dataset in the list, determine if member exists or      */
+/* does not exist using the CHKDSN CP.  Results are written to an   */
+/* ISPF table for display and processing.                           */
+/*                                                                  */
+/* Panel PMEMFIND is used to display table results.                 */
+/*                                                                  */
+/* Result dataset can be browsed or edited for convenience.         */
+/*                                                                  */
+/* Command:                                                         */
+/* as issued from menu panel PFINDM -                               */
+/*  'CMD(%CMEMFIND) NEWAPPL(FIND)'                                  */
+/*                                                                  */
+/* Parameters:                                                      */
+/* DEBUG    optional, used to display debug information during      */
+/*          CLIST execution.  The value for this positional         */
+/*          parameter is DEBUG.                                     */
+/*                                                                  */
+/*          i.e. CMEMFIND DEBUG                                     */
+/*                                                                  */
+/* PANELS:   PMEMFIND                                               */
+/*                                                                  */
+/* CPs:      CHKDSN                                                 */
+/*           CUTIL00                                                */
+/*                                                                  */
+/*                                                                  */
+/* Disclaimer:                                                      */
+/* ================================================================ */
+/*                                                                  */
+/*    No guarantee; No warranty; Install / Use at your own risk.    */
+/*                                                                  */
+/*    This software is provided "AS IS" and without any expressed   */
+/* or implied warranties, including, without limitation, the        */
+/* implied warranties of merchantability and fitness for a          */
+/* particular purpose.                                              */
+/*                                                                  */
+/*    The author requests keeping authors name intact in any        */
+/* modified versions.                                               */
+/*                                                                  */
+/*    In addition, the author requests readers to submit any        */
+/* code modifications / enhancements and associated comments        */
+/* for consideration into a subsequent release (giving credit       */
+/* to contributor(s)) thus, improving overall functionality         */
+/* and further benefiting the MVS 3.8J hobbyist public domain       */
+/* community.                                                       */
+/*                                                                  */
+/*                                                                  */
+/*                                                                  */
+/* Change History:                                                  */
+/* ================================================================ */
+/* MM/DD/CCYY Version  Name / Description                           */
+/* ---------- -------  -------------------------------------------- */
+/* 09/26/2020 0.9.00   Larry Belmontes Jr.                          */
+/*                     - Initial version released to MVS 3.8J       */
+/*                       hobbyist public domain                     */
+/*                                                                  */
+/********************************************************************/
+
+/*********************************************************************/
+/* my Initialization                                                 */
+/*********************************************************************/
+SET MYNAME = &STR(CMEMFIND)          /* my Proc Name                 */
+SET VTOCDSNLIMIT = 200               /* EXCEED DSN LIMIT for CMEMFIND*/
+SET PDSONLY =                        /* VTOC LIMIT Parameter         */
+SET PDSONLY = &STR(LIMIT (DSO EQ PO))
+SET NULC = 0                         /* Members NOT Found counter    */
+SET THIT = 0                         /* Members Other Found counter  */
+SET TMBS = 0                         /* Members Found counter        */
+SET BYPRC=                           /* Bypass RC ERROR routine      */
+
+/*---BEGIN------------------- $$start_up ----------------------------*/
+IF &DEBUG = DEBUG THEN -
+  CONTROL MSG NOSYMLIST NOCONLIST NOLIST NOFLUSH
+ELSE -
+  CONTROL NOMSG NOSYMLIST NOCONLIST NOLIST NOFLUSH
+
+/*********************************************************************/
+/* ISPF must be available                                            */
+/*********************************************************************/
+ISPQRY
+SET RC = &LASTCC
+IF &RC NE 0 THEN -
+ DO
+   WRITE THIS CLIST REQUIRES ISPF TO BE ACTIVE
+   EXIT CODE(12)
+ END
+
+/*********************************************************************/
+/* ISPF Control Handler   (we handle errors!)                        */
+/*********************************************************************/
+ISPEXEC CONTROL ERRORS RETURN
+
+/*********************************************************************/
+/* Get ISPF Profile Variables                                        */
+/*********************************************************************/
+ISPEXEC VGET (F1MEMBER F1DSN F1SRCH F1QK F1ALLDSN) PROFILE
+ISPEXEC VGET (F1LVL F1DDN) PROFILE
+
+CUTIL00 TRIM F1MEMBER PMEM
+CUTIL00 TRIM F1DSN PDSN
+CUTIL00 TRIM F1SRCH PSRCH
+CUTIL00 TRIM F1QK PQK
+CUTIL00 TRIM F1ALLDSN ALLQDSNS
+CUTIL00 TRIM F1LVL PLVL
+CUTIL00 TRIM F1DDN PDDN
+
+SET ROWID = 0                        /* Row sequence number for TBL  */
+SET RCDID = 0                        /* OUTFIL record counter        */
+SET DONE = NO                        /* EOF Ind for GETFILE ERROR    */
+SET OUTID =                          /*    Time Stamp                */
+CUTIL00 TDSN OUTID
+SET VRCDS = 0                        /* VTOC Records counter         */
+SET VTOCDSNEXCEEDED =                /* EXCEED DSN LIMIT Ind         */
+SET TSRCH = 0                        /* Total DSN Searched           */
+
+ISPEXEC VGET (LSCREEN) SHARED        /* Screen No from ISPF panel    */
+                                     /* VTOC Temp DSN                */
+SET VTCTMP = &STR(&SYSUID..&MYNAME..S&LSCREEN..VTOCOUT.&OUTID)
+                                     /* Other Temp DSNs should       */
+                                     /* follow same naming           */
+                                     /* convention                   */
+/*---END--------------------- $$start_up ----------------------------*/
+
+/*********************************************************************/
+/* VTOC File Allocation and Extract Qualifying DSNs                  */
+/*********************************************************************/
+/*---START------------------- $$vtoc_2_dsns -------------------------*/
+/*********************************************************************/
+/* VTOCOUT DD   Used by VTOC                                         */
+/*  Free and Allocation                                              */
+/*********************************************************************/
+FREE ATTR(OUTATTR)
+FREE FI(VTOCOUT)
+ATTR OUTATTR RECFM(F B) LRECL(80) BLKSIZE(8000) DSORG(PS)
+SET RC = &LASTCC
+IF &RC > 0 THEN -
+  DO
+    WRITE ATTR error for OUTATTR, RC=&RC  **PROCESS TERMINATED**
+    GOTO DONEHERE
+  END
+ALLOC F(VTOCOUT) DA('&VTCTMP') NEW CATALOG TR +
+  SP(10,5) USING(OUTATTR) UNIT(SYSDA)
+SET RC = &LASTCC
+IF &RC > 0 THEN -
+  DO
+    WRITE ALLOC error for VTOCOUT, RC=&RC  **PROCESS TERMINATED**
+    GOTO DONEHERE
+  END
+
+/*********************************************************************/
+/* VTOC Command                                                      */
+/*   List of DSNs                                                    */
+/*********************************************************************/
+SET DSNT = &STR(CONTAINING)          /* CONTAINING, default          */
+SET DSNBY = &STR(CONTAINS)
+IF &PLVL = S THEN -
+  DO                                 /* AT START                     */
+    SET DSNT = &STR(LEVEL)
+    SET DSNBY = &STR(STARTS W)
+  END
+IF &PLVL = E THEN -
+  DO                                 /* AT END                       */
+    SET DSNT = &STR(ENDING)
+    SET DSNBY = &STR(ENDS W)
+  END
+VTOC 'ALL'    +
+     &DSNT ('&PDSN') +
+     CAT             +
+     &PDSONLY        +
+     PRINT (NEW (DSO VOLUME DSNAME CAT RFM LRECL BLKSZ)) +
+     NOHEADING
+SET RC = &LASTCC
+IF &RC > 0 THEN -
+  DO
+    WRITE VTOC processing error, RC=&RC  **PROCESS TERMINATED**
+    GOTO DONEHERE
+  END
+
+IF &DEBUG = DEBUG THEN -
+  DO
+    WRITE VTOC process, RC=&RC, starting BROWSE session...
+    ISPEXEC BROWSE DATASET('&VTCTMP')
+  END
+/*---END--------------------- $$vtoc_2_dsns -------------------------*/
+
+/*********************************************************************/
+/* TBCREATE MEMFIND0                                                 */
+/*  Declare TBL columens and keys                                    */
+/*  Create table                                                     */
+/*********************************************************************/
+SET TDSN = &STR(12345678901234567890123456789012345678901234)
+SET TMEM = &STR(12345678)
+SET TFND = &STR(1)
+SET TVOL = &STR(123456)
+SET TDSO = &STR(12)
+SET TBKEYS  = &STR(ROWID)
+SET TBNAMES = &STR(TDSN TMEM TFND TVOL TDSO)
+
+/*---START------------------- $$tbcre8_00 ---------------------------*/
+ISPEXEC TBCREATE MEMFIND0 KEYS(&TBKEYS) +
+        NAMES(&TBNAMES)    +
+        NOWRITE REPLACE
+SET RC = &LASTCC
+IF &DEBUG = DEBUG THEN WRITE TBCREATE RC=&RC
+IF &RC NE 0 THEN -
+  DO
+    WRITE TBCREATE error, RC=&RC, **PROCESS TERMINATED**
+    GOTO DONEHERE
+  END
+/*---END--------------------- $$tbcre8_00 ---------------------------*/
+
+/*********************************************************************/
+/* Open and prime VTOCOUT                                            */
+/*********************************************************************/
+/*---START------------------- $$vtoc_opn_n_prm ----------------------*/
+/*********************************************************************/
+/* Open VTOCOUT                                                      */
+/*********************************************************************/
+OPENFILE VTOCOUT INPUT
+SET RC = &LASTCC
+IF &RC NE 0 THEN -
+  DO
+    WRITE VTOCOUT DD open error, RC=&RC, **PROCESS TERMINATED**
+    GOTO CLOSNGO
+  END
+
+/*---START------------------- $$error_eof ---------------------------*/
+/*********************************************************************/
+/* Error Handler for VTOCOUT                                         */
+/*  RC=400 (GETFILE EOF) set DONE to YES and return                  */
+/*  Other, write error message and return                            */
+/*                                                                   */
+/* Note: If any error is raised between this ERROR routine and the   */
+/*       resetting ERROR routine, a message will be displayed        */
+/*       with a return code, but no statement # or statement is      */
+/*       accompanied due to normal CONTROL settings (NOMSG).         */
+/*********************************************************************/
+ERROR +
+  DO
+    SET ERRXRC = &LASTCC             /* Save return code...          */
+    IF &BYPRC > &STR() THEN -
+      DO                             /* Bypass RC Error Routine      */
+        SET BYPRC=                   /* Reset BYPRC to nulls         */
+        RETURN                       /* Return                       */
+      END
+    ELSE -
+      DO
+        IF &ERRXRC = 400 THEN -
+          DO                         /* GETFILE EOF                  */
+            IF &DEBUG = DEBUG THEN WRITE EOF detected on GETFILE
+            SET DONE=YES             /* Set FLAG and                 */
+            RETURN                   /* ...Return                    */
+          END
+        ELSE -
+          DO                         /* NON-EOF Error                */
+            WRITE ** NON-EOF ERROR in &MYNAME, RC=&ERRXRC
+            RETURN
+          END
+      END
+  END
+/*---END--------------------- $$error_eof ---------------------------*/
+
+/*********************************************************************/
+/* Prime VTOCOUT                                                     */
+/*********************************************************************/
+GETFILE VTOCOUT
+SET RC = &LASTCC
+IF &RC NE 0 THEN -
+  DO
+    WRITE VTOCOUT DD getfile-PR error, RC=&RC, **PROCESS TERMINATED**
+    GOTO CLOSNGO
+  END
+
+SET TOTDSN = 0
+/*---END--------------------- $$vtoc_opn_n_prm ----------------------*/
+
+/*********************************************************************/
+/* Add table entries for each DSN                                    */
+/*********************************************************************/
+DO WHILE &DONE = NO
+  IF &SUBSTR(3:10,&VTOCOUT) EQ &STR(TOTALS -) THEN -
+    DO
+      SET TOTDSN = &SUBSTR(11:16,&VTOCOUT)
+      SET TOTDSN = &TOTDSN
+      GOTO GETER
+    END
+  SET VRCDS = &VRCDS + 1
+  IF &VRCDS > &VTOCDSNLIMIT THEN -
+    DO
+      IF &VTOCDSNEXCEEDED > &STR() THEN
+      ELSE -
+        DO
+          SET TSRCH = &VTOCDSNLIMIT
+          SET VTOCDSNEXCEEDED = X
+          ISPEXEC SETMSG MSG(FIND004 ) /* Exceeded DSN Limit &TSRCH  */
+        END
+      GOTO GETER
+    END
+  /***************************/
+  /* Process only PDS files  */
+  /***************************/
+  SET TDSO = &SUBSTR(2:3,&VTOCOUT)
+  CUTIL00 TRIM TDSO
+  IF &TDSO NE PO THEN GOTO GETER
+  SET TVOL = &SUBSTR(6:11,&VTOCOUT)
+  SET TDSN = &SUBSTR(13:57,&VTOCOUT)
+  CUTIL00 TRIM TVOL
+  CUTIL00 TRIM TDSN
+  CUTIL00 TRIM PMEM TMEM
+  /***************************/
+  /* Checck for member in PDS*/
+  /***************************/
+  SET BYPRC=CHKDSN                   /* Bypass RC ERROR routine      */
+  CHKDSN '&TDSN(&PMEM)' VOL(&TVOL) QUIET
+  /*CHKDSN DSN VOL(volser) MBR(member) QUIET CATLG
+  SET RC = &LASTCC
+  IF &BYPRC =  THEN -
+    SET RC = &ERRXRC                 /* Use RC captured in ERROR rtn */
+  SET BYPRC =                        /* Reset for RC=0 condition     */
+  /* Set FOUND indicator     */
+  /* Y-Found, N-Not Found    */
+  /* ?-Undefined status      */
+  SET TFND = ?
+  IF &RC = 0 THEN -
+    SET TFND = Y
+  IF &RC = 16 THEN -
+    DO
+      SET TFND = N
+      SET TMEM = &STR( )
+    END
+  /***************************/
+  /* Accum    FOUND items    */
+  /***************************/
+  IF &TFND = Y THEN -
+    SET TMBS = &TMBS + 1
+  ELSE -
+  IF &TFND = N THEN -
+    SET NULC = &NULC + 1
+  ELSE -
+    SET THIT = &THIS + 1
+  /***************************/
+  /* Show ALL or FOUND rcds  */
+  /***************************/
+  IF &ALLQDSNS = N THEN -
+    IF &TFND = Y THEN
+    ELSE -
+      GOTO GETER
+  SET ROWID = &ROWID + 1
+  ISPEXEC TBADD MEMFIND0
+  SET RC = &LASTCC
+  IF &DEBUG = DEBUG THEN WRITE TBADD RC=&RC
+  GETER: GETFILE VTOCOUT
+  SET RC = &LASTCC
+END
+
+/*********************************************************************/
+/* Close VTOCOUT and check for no DSNs found                         */
+/*********************************************************************/
+/*---START------------------- $$vtoc_clos_n_chk4no ------------------*/
+/*---START------------------- $$error_off ---------------------------*/
+/*********************************************************************/
+/* Reset Error Handler to                                            */
+/*  Display statement that causes error w/ error message(s)          */
+/*********************************************************************/
+ERROR OFF
+/*---END--------------------- $$error_off ---------------------------*/
+
+/*********************************************************************/
+/* Close VTOCOUT                                                     */
+/*********************************************************************/
+CLOSFILE VTOCOUT
+SET RC = &LASTCC
+IF &TSRCH = 0 THEN -
+  SET TSRCH = &TOTDSN
+
+IF &RC NE 0 THEN -
+  DO
+    WRITE VTOCOUT close error, RC=&RC, **PROCESS TERMINATED**
+    GOTO CLOSNGO
+  END
+
+IF &DEBUG = DEBUG THEN -
+  WRITE ROWID=&ROWID RCDID=&RCDID TOTDSN=&TOTDSN
+
+/*********************************************************************/
+/* Check for NO DSNs FOUND                                           */
+/*********************************************************************/
+IF &TOTDSN = 0 THEN -
+  DO
+    SET MSGGG = &STR(FIND005 )    /* No datasets found containing    */
+    IF &PLVL = L THEN -
+      SET MSGGG = &STR(FIND010 )  /* No datasets found starting w/   */
+    IF &PLVL = E THEN -
+      SET MSGGG = &STR(FIND011 )  /* No datasets found ending w/     */
+    ISPEXEC SETMSG MSG(&MSGGG)    /* No dataset found ...            */
+    GOTO CLOSNGO
+  END
+/*---END--------------------- $$vtoc_clos_n_chk4no ------------------*/
+
+/*********************************************************************/
+/* Check for NO MEMBERS FOUND                                        */
+/*********************************************************************/
+IF &ROWID = 0 THEN -
+  DO
+    SET TDSN = &STR(*** NO MEMBER FOUND IN QUERY ***)
+    SET TMEM = &STR( )
+    SET TFND = &STR( )
+    SET TVOL = &STR( )
+    SET TDSO = &STR( )
+    SET ROWID = &ROWID + 1
+    ISPEXEC TBADD MEMFIND0
+    SET RC = &LASTCC
+    IF &DEBUG = DEBUG THEN WRITE TBADD RC=&RC
+  END
+
+IF &TMBS = 0 THEN -
+    ISPEXEC SETMSG MSG(FIND006 )     /* No Search Results found      */
+
+/*********************************************************************/
+/* SORT table by FOUND DSC, DSN ASC                                  */
+/*********************************************************************/
+/*      NAMES(TDSN TFND TVOL TDSO)
+IF &ROWID > 1 THEN -
+  DO
+    ISPEXEC TBSORT MEMFIND0 FIELDS(TFND,C,D,TDSN,C,A)
+    SET RC = &LASTCC
+    IF &DEBUG = DEBUG THEN WRITE TBSORT RC=&RC
+  END
+
+/*********************************************************************/
+/* Position to TOP of table                                          */
+/*********************************************************************/
+ISPEXEC TBTOP MEMFIND0
+SET RC = &LASTCC
+IF &DEBUG = DEBUG THEN WRITE TBTOP RC=&RC
+
+SET CSSR = 1
+SET RC = 0
+
+DO WHILE &RC < 8
+  ISPEXEC TBDISPL MEMFIND0  PANEL(PMEMFIND)  +
+          CURSOR(ZCMD) CSRROW(&CSSR)
+  SET RC=&LASTCC
+  IF &DEBUG = DEBUG THEN WRITE TBDISPL RC=&RC
+  /***************************/
+  /* Close up shop!! PF3/PF4 */
+  /***************************/
+  IF &RC = 8 THEN GOTO CLOSNGO
+  SET ZCMD   =&LCMD
+  SET ZTDROWS=&LTDROWS
+  SET ZTDTOP =&LTDTOP
+  SET ZTDSELS=&LTDSELS
+  /***************************/
+  /* Check for selections    */
+  /***************************/
+  IF &ZTDSELS > 0 THEN -
+    DO
+      CUTIL00 TRIM TDSN
+      CUTIL00 TRIM TVOL
+      CUTIL00 TRIM TMEM
+      IF &DEBUG = DEBUG THEN WRITE SEL=&SEL TDSN='&TDSN'
+      IF &SUBSTR(1:1,&STR(&TDSN)) = &STR(*) THEN
+      ELSE
+        DO
+          IF &TFND = Y THEN -
+            SET BDSN = &STR(&TDSN)(&TMEM)
+          ELSE -
+            SET BDSN = &STR(&TDSN)
+/*---BEGIN------------------- $$sel_proc ----------------------------*/
+          /***************************/
+          /* Save Display            */
+          /***************************/
+          ISPEXEC CONTROL DISPLAY SAVE
+          /***************************/
+          /* Process SELECTION       */
+          /***************************/
+          IF &SEL = B THEN -
+            ISPEXEC BROWSE DATASET('&BDSN') VOLUME(&TVOL)
+          ELSE -
+            IF &SEL = E THEN -
+              ISPEXEC EDIT   DATASET('&BDSN') VOLUME(&TVOL)
+            ELSE -
+              ISPEXEC SETMSG MSG(FIND019 )    /* Invalid selection   */
+          SET &SEL = &STR( )
+          /***************************/
+          /* Restore Display         */
+          /***************************/
+          ISPEXEC CONTROL DISPLAY RESTORE
+/*---END--------------------- $$sel_proc ----------------------------*/
+        END
+    END
+END
+
+CLOSNGO: +
+ISPEXEC TBEND   MEMFIND0
+SET RC=&LASTCC
+IF &DEBUG = DEBUG THEN WRITE TBEND RC=&RC
+
+DONEHERE: +
+IF &DEBUG = DEBUG THEN WRITE ENDING... DONEHERE!
+FREE ATTR(OUTATTR)
+FREE FI(VTOCOUT) DELETE
+
+
+END

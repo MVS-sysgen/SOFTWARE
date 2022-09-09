@@ -1,0 +1,83 @@
+       01  RDTECOM.
+      * /************************************************************/
+      * /*Copybook: RDTECOMC  (COBOL)     V1R0M00    07/30/2020     */
+      * /*  Author: Larry Belmontes, Jr.                            */
+      * /*  https://ShareABitofIT.net/SHRABIT-MACLIB-in-mvs-3-8j    */
+      * /*  Copyright (C) 2020-2021  Larry Belmontes, Jr.           */
+      * /************************************************************/
+      * /************************************************************/
+      * /* Date-Time-Environment Communications Area                */
+      * /************************************************************/
+      * /* Representation of date-time-environment result data:     */
+      * /*                                                          */
+      * /* 0        1         2         3         4                 */
+      * /* 123456789012345678901234567890123456789012345            */
+      * /* +---+----+----+----+----+----+----+----+----+            */
+      * /* 12/31/2001.365 10:11:12:45December 1Monday               */
+      * /* MM/DD/CCYY.JJJ HH:MM:SS:THLLLLLLLLLNWWWWWWWWW            */
+      * /*                                                          */
+      * /* 4   5         6         7         8                      */
+      * /* 67890123456789012345678901234567890                      */
+      * /* +---+----+----+----+----+----+----+                      */
+      * /* LARRY01 ILKJACCTTSOLOGONTSOFGISPARM                      */
+      * /* Jobname StepnameProcstepEnvirParmty                      */
+      * /*                                                          */
+      * /*                                                          */
+      * /* NOTE:  This copybook should be in sync with              */
+      * /* -----  assembler version, RDTECOMA.                      */
+      * /*                                                          */
+      * /************************************************************/
+      * /* Disclaimer:                                              */
+      * /* ======================================================== */
+      * /*                                                          */
+      * /*    No guarantee; No warranty; Install / Use at your own  */
+      * /* risk.                                                    */
+      * /*                                                          */
+      * /*    This software is provided "AS IS" and without any     */
+      * /* expressed  or implied warranties, including, without     */
+      * /* limitation, the implied warranties of merchantability    */
+      * /* and fitness for a particular purpose.                    */
+      * /*                                                          */
+      * /*    The author requests keeping authors name intact in    */
+      * /* any modified versions.                                   */
+      * /*                                                          */
+      * /*    In addition, the author requests readers to submit    */
+      * /* any code modifications / enhancements and associated     */
+      * /* comments for consideration into a subsequent release     */
+      * /* (giving credit to contributor(s)) thus, improving        */
+      * /* overall functionality and further benefiting the         */
+      * /* MVS 3.8J hobbyist public domain community.               */
+      * /*                                                          */
+      * /*                                                          */
+           05  RDATE.
+               10  RDATEMM       PIC X(02).
+               10  RDATES1       PIC X(01).
+               10  RDATEDD       PIC X(02).
+               10  RDATES2       PIC X(01).
+               10  RDATECC       PIC X(02).
+               10  RDATEYY       PIC X(02).
+               10  RDATES3       PIC X(01).
+               10  RDATEJJJ      PIC X(03).
+           05  RDATES4           PIC X(01).
+           05  RTIME.
+               10  RTIMEHH       PIC X(02).
+               10  RTIMES1       PIC X(01).
+               10  RTIMEMM       PIC X(02).
+               10  RTIMES2       PIC X(01).
+               10  RTIMESS       PIC X(02).
+               10  RTIMES3       PIC X(01).
+               10  RTIMETT       PIC X(02).
+           05  RMONTHN           PIC X(09).
+           05  RDAYNUM           PIC X(01).
+           05  RDAYN             PIC X(09).
+           05  RJOBNAM           PIC X(08).
+           05  RSTEPNAM          PIC X(08).
+           05  RPROCSTP          PIC X(08).
+           05  RENV              PIC X(05).
+      *                        TSOFG - TSO Foreground
+      *                        TSOBG - TSO Background (run in batch)
+      *                        BATCH - Not TSO, must be Batch
+           05  RPARMTY           PIC X(06).
+      *                        ISPARM - Parm
+      *                        ISCPPL - Parm
+      *                        ISPARM  Parm

@@ -1,0 +1,18 @@
+         MACRO                                                          LB2000a
+&NAME    #ISTATS                                                        LB2000a
+*     * /********************************************************/      LB1010h
+*     * /* ISPF Table column fields   DIRLSTn        LISTDSJ    */      LB1010h
+*     * /********************************************************/      LB1010h
+ISTATS   EQU   *                                                        LB1010h
+IMEMBR   DS    CL8                 PDS Member Name                      LB1010h
+ITTRP    DS    CL6                 PDS TTR                              LB1010h
+IVVMM    DS    CL5                 VV.MM format                         LB1010h
+ICDTE    DS    CL8                 Create Date mm-dd-yy                 LB1010h
+IMDTE    DS    CL8                 Modify Date mm-dd-yy                 LB1010h
+IMTIM    DS    CL8                 Modify Time hh:mm:ss                 LB1010h
+IRCUR    DS    CL5                 ISPF Currrent Rcd Count              LB1010h
+IRINT    DS    CL5                 ISPF Initial  Rcd Count              LB1010h
+IRMOD    DS    CL5                 ISPF Records Modified                LB1010h
+IUSRID   DS    CL7                 ISPF USERID                          LB1010h
+ISTATSL  EQU   *-ISTATS            Length of STATS                      LB1010h
+         MEND                                                           LB2000a

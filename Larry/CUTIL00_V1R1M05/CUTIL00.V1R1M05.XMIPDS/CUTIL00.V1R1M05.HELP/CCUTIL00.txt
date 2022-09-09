@@ -1,0 +1,50 @@
+)F FUNCTION -
+  The CCUTIL00 CLIST invokes the TPM CUTIL00 from TSO.
+
+)X Statement SYNTAX  -
+
+   CCUTIL00 FUNCT VAR01('xx.') VAR02('yyy yy') CLS(Y) VERBOSE(N)
+
+  ALIAS    - NONE
+)O OPERANDS -
+  Parameters must appear in order as listed
+
+))FUNCT    - required, CUTIL00 function to be performed
+
+))VAR01    - required, content for VAR01 in quotes
+             o  use quotes to include leading, trailing or
+                embedded spaces (blanks) in content
+
+))VAR02    - optional, content for VAR02 in quotes
+             o  use quotes to include leading, trailing or
+                embedded spaces (blanks) in content
+
+))CLS      - optional, clear display screen
+             o  Y - clear screen   Other - no clear screen
+             o  default=Y
+
+))VERBOSE  - optional, display header and command line
+             o  Y - display header and command line
+             o  Other - no display of header and command line
+             o  default=Y
+
+
+     Sample Command:
+
+     ==> CCUTIL00 TRIM VAR01(' TRIM  MY SPACE   ') VAR02(X)
+
+     Sample Response:
+
+     --- CCUTIL00: CUTIL00 TEST TOOL
+
+     CUTIL00 TRIM  VAR01
+
+     --- CUTIL00 RESPONSE ..........................................
+      RC    =0 SUCCESSFUL REQUEST
+      VAR01 =' TRIM  MY SPACE   '
+      VAR01L=00018
+      VAR02 ='TRIM  MY SPACE'
+      VAR02L=00014
+
+     --- CCUTIL00: CUTIL00 TEST TOOL   ...DONE!  TRIM
+

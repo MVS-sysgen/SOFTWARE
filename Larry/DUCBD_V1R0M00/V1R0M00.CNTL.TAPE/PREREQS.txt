@@ -1,0 +1,37 @@
+* DUCBD for MVS3.8J / Hercules
+* =============================
+*
+*
+*  Author:  Larry Belmontes Jr.
+*           https://ShareABitofIT.net/DUCBD-in-MVS38J
+*           Copyright (C) 2020  Larry Belmontes, Jr.
+*
+*  MM/DD/CCYY Version  Name / Description
+*  ---------- -------  -----------------------------------------------
+*  08/10/2020 1.0.00   Larry Belmontes Jr.
+*                      - Initial version released to MVS 3.8J
+*                        hobbyist public domain
+*
+*
+*  Prerequisite: User Modifications and Others
+*  ===================================================================
+*
+*     SHRABIT.MACLIB is NECESSARY to assemble this software.  This PDS
+*  contains macros and copybooks.  Download from this website:
+*       https://ShareABitofIT.net/SHRABIT-MACLIB-in-MVS38J
+*
+*     **** NOTE: SHRABIT.MACLIB is part of the installation process.
+*                You can visit the SHRABIT.MACLIB page and download
+*                at a later time!
+*
+*     ISPF generic message ISRZ002, part of message member ISRZ00, is
+*  used for error message processing and posting by this software.
+*  If ISRZ00 is NOT INSTALLED on your system, error posting results in
+*  a message not found condition with no error context posted.
+*  ISRZ00 can be downloaded from this website:
+*       https://ShareABitofIT.net/ISRZ00-in-MVS38J
+*
+*     **** NOTE: ISRZ00 is part of the installation process.  You can
+*                visit the ISRZ00 page and download at a later time!
+*
+*

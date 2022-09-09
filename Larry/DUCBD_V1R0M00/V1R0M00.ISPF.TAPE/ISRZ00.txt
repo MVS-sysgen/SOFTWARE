@@ -1,0 +1,69 @@
+/********************************************************************/
+/*                                                                  */
+/*  MESSAGE: ISRZ00                                                 */
+/*   AUTHOR: Larry Belmontes, Jr.                                   */
+/*           https://ShareABitOfIT/ISRZ00-in-MVS38J                 */
+/*                                                                  */
+/*                                                                  */
+/*                                                                  */
+/* Description:                                                     */
+/* ---------------------------------------------------------------  */
+/*                                                                  */
+/* This is message member ISRZ00 modified for ISPF 2.x for message  */
+/* use flexiblity using symbolic values for short and long message  */
+/* content.  Messages include ISRZ000, ISRZ001, ISRZ002, ISRZ003,   */
+/* and ISRZ005.                                                     */
+/*                                                                  */
+/*                                                                  */
+/* Disclaimer:                                                      */
+/* ---------------------------------------------------------------  */
+/*    No guarantee; No warranty; Install / Use at your own risk.    */
+/*                                                                  */
+/*    This software is provided "AS IS" and without any expressed   */
+/* or implied Warranties, including, without limitation, the        */
+/* implied warranties of merchantibility and fitness for a          */
+/* particular purpose.                                              */
+/*                                                                  */
+/*    The author requests keeping authors name intact in any        */
+/* modified versions.                                               */
+/*                                                                  */
+/*    In addition, the author requests submissions regarding any    */
+/* code modifications / enhancements and/or associated comments     */
+/* for consideration into a subsequent release (giving credit       */
+/* to contributor(s)) thus, improving overall functionality         */
+/* benefiting the MVS 3.8J hobbyist public domain community.        */
+/*                                                                  */
+/*                                                                  */
+/* Change History:                                                  */
+/* ---------------------------------------------------------------  */
+/* MM/DD/CCYY VERSION  NAME / DESCRIPTION                           */
+/* 06/22/2021 1.1.00   Larry Belmontes Jr.                          */
+/*                     Add message ISRZ005 to provide similar       */
+/*                     compatibility with IBM ISPF ISR002.          */
+/*                                                                  */
+/* 06/21/2019 1.0.00   Larry Belmontes Jr.                          */
+/*                     Initial version released to MVS 3.8J         */
+/*                     Hobbyist Public Domain                       */
+/*                                                                  */
+/********************************************************************/
+/* Generic message, ISRZ000, formatted as IBM ISPF ISRZ001          */
+/*                           with NO alarm and ISR2MACR help        */
+ISRZ000  '&ZEDSMSG                ' .ALARM = NO   .HELP = ISR2MACR
+'&ZEDLMSG                                                                      '
+/* Generic message, ISRZ001, formatted as IBM ISPF ISRZ001          */
+/*                           with YES alarm and ISR2MACR help       */
+ISRZ001  '&ZEDSMSG                ' .ALARM = YES  .HELP = ISR2MACR
+'&ZEDLMSG                                                                      '
+/* Generic message, ISRZ002, formatted for ISPF 2.x                 */
+/*                           with NO alarm and short/long msg vars */
+ISRZ002  '&ZERRSM                 ' .ALARM = NO
+'&ZERRLM                                                                       '
+/* Generic message, ISRZ003, formatted for ISPF 2.x                 */
+/*                           with YES alarm and short/long msg vars*/
+ISRZ003  '&ZERRSM                 ' .ALARM = YES
+'&ZERRLM                                                                       '
+/* Generic message, ISRZ005, formatted as IBM ISPF ISRZ002          */
+/*                           with short/long msg, alarm, help vars  */
+/* Note: ISRZ005 is for Wally Mclaughlin's ISPF 2.2 or higher       */
+ISRZ005  '&ZERRSM                 ' .ALARM = &ZERRALRM  .HELP = &ZERRHM
+'&ZERRLM                                                                       '

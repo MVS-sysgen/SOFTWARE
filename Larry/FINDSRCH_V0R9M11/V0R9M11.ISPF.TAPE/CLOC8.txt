@@ -1,0 +1,224 @@
+PROC 0 DEBUG
+
+/********************************************************************/
+/*                                                                  */
+/* CLIST: CLOC8                                                     */
+/*                                                                  */
+/* Author: Larry Belmontes Jr.                                      */
+/*         https://ShareABitofIT.net/FINDSRCH-in-MVS38J             */
+/*         Copyright (C) 2020-2021 Larry Belmontes, Jr.             */
+/*                                                                  */
+/*                                                                  */
+/* Description:                                                     */
+/* ---------------------------------------------------------------  */
+/*                                                                  */
+/* This CLIST uses ISPF services under ISPF product from Wally      */
+/* Mclaughlin, version 2.1 or greater.                              */
+/*                                                                  */
+/* Starting variables are fetched via an ISPF VGET,                 */
+/*                                                                  */
+/*      VGET (F1MEMBER F1DSN F1SRCH F1QK F1ALLDSN) PROFILE          */
+/*                                                                  */
+/* A list of results are captured (via SYSOUTTRAP) using            */
+/* the LOCATE CP.                                                   */
+/*                                                                  */
+/* Each result line is written to a TEMP DSN presented in           */
+/* a BROWSE session for review.                                     */
+/*                                                                  */
+/* Command:                                                         */
+/* as issued from menu panel PFINDM -                               */
+/*  'CMD(%CLOC8 NEWAPPL(FIND)'                                      */
+/*                                                                  */
+/* Parameters:                                                      */
+/* DEBUG    optional, used to display debug information during      */
+/*          CLIST execution.  The value for this positional         */
+/*          parameter is DEBUG.                                     */
+/*                                                                  */
+/*          i.e. CLOC8 DEBUG                                        */
+/*                                                                  */
+/*                                                                  */
+/* Disclaimer:                                                      */
+/* ================================================================ */
+/*                                                                  */
+/*    No guarantee; No warranty; Install / Use at your own risk.    */
+/*                                                                  */
+/*    This software is provided "AS IS" and without any expressed   */
+/* or implied warranties, including, without limitation, the        */
+/* implied warranties of merchantability and fitness for a          */
+/* particular purpose.                                              */
+/*                                                                  */
+/*    The author requests keeping authors name intact in any        */
+/* modified versions.                                               */
+/*                                                                  */
+/*    In addition, the author requests readers to submit any        */
+/* code modifications / enhancements and associated comments        */
+/* for consideration into a subsequent release (giving credit       */
+/* to contributor(s)) thus, improving overall functionality         */
+/* and further benefiting the MVS 3.8J hobbyist public domain       */
+/* community.                                                       */
+/*                                                                  */
+/*                                                                  */
+/*                                                                  */
+/* Change History:                                                  */
+/* ================================================================ */
+/* MM/DD/CCYY Version  Name / Description                           */
+/* ---------- -------  -------------------------------------------- */
+/* 10/23/2021 0.9.10   Larry Belmontes Jr.                          */
+/*                     - Initial version released to MVS 3.8J       */
+/*                       hobbyist public domain                     */
+/*                                                                  */
+/********************************************************************/
+
+/*********************************************************************/
+/* my Initialization                                                 */
+/*********************************************************************/
+SET MYNAME = &STR(CLOC8)             /* my Proc Name                 */
+
+IF &DEBUG = DEBUG THEN -
+  CONTROL MSG NOSYMLIST NOCONLIST NOLIST NOFLUSH
+ELSE -
+  CONTROL NOMSG NOSYMLIST NOCONLIST NOLIST NOFLUSH
+
+/*********************************************************************/
+/* ISPF must be available                                            */
+/*********************************************************************/
+ISPQRY
+SET RC = &LASTCC
+IF &RC NE 0 THEN -
+ DO
+   WRITE THIS CLIST REQUIRES ISPF TO BE ACTIVE
+   EXIT CODE(12)
+ END
+
+/*********************************************************************/
+/* ISPF Control Handler   (we handle errors!)                        */
+/*********************************************************************/
+ISPEXEC CONTROL ERRORS RETURN
+
+/*********************************************************************/
+/* Get ISPF Profile Variables                                        */
+/*********************************************************************/
+ISPEXEC VGET (F1MEMBER F1DSN F1SRCH F1QK F1ALLDSN) PROFILE
+ISPEXEC VGET (F1LVL F1DDN) PROFILE
+
+CUTIL00 TRIM F1MEMBER PMEM
+CUTIL00 TRIM F1DSN PDSN
+CUTIL00 TRIM F1SRCH PSRCH
+CUTIL00 TRIM F1QK PQK
+CUTIL00 TRIM F1ALLDSN ALLQDSNS
+CUTIL00 TRIM F1LVL PLVL
+CUTIL00 TRIM F1DDN PDDN
+
+SET OUTID =                          /*    Time Stamp                */
+CUTIL00 TDSN OUTID
+
+ISPEXEC VGET (LSCREEN) SHARED        /* Screen No from ISPF panel    */
+                                     /* LOC8 Temp DSN                */
+SET TMPDSN = &STR(&SYSUID..&MYNAME..S&LSCREEN..LOC8OUT.&OUTID)
+                                     /* Other Temp DSNs should       */
+                                     /* follow same naming           */
+                                     /* convention                   */
+
+IF &DEBUG = DEBUG THEN -
+  WRITE TMPDSN='&TMPDSN'
+
+/*********************************************************************/
+/* LOC8OUT DD   Used by LOCATE trapped output                        */
+/*  Free and Allocation                                              */
+/*********************************************************************/
+FREE ATTR(OUTATTR)
+FREE FI(LOC8OUT)
+ATTR OUTATTR RECFM(F B) LRECL(80) BLKSIZE(8000) DSORG(PS)
+SET RC = &LASTCC
+IF &RC NE 0 THEN -
+  DO
+    WRITE *** ATTR ERROR w/ OUTATTR, RC=&RC
+    GOTO DONE
+  END
+ALLOC F(LOC8OUT) DA('&TMPDSN') MOD CATALOG TR +
+  SP(10,5) USING(OUTATTR) UNIT(SYSDA)
+SET RC = &LASTCC
+IF &RC NE 0 THEN -
+  DO
+    WRITE *** ALLOCATION ERROR w/ LOC8OUT, RC=&RC
+    GOTO DONE
+  END
+
+/*********************************************************************/
+/* LOCATE Command                                                    */
+/*   List DSN's where member is found                                */
+/*********************************************************************/
+SET LOC8CMD = &STR(LOCATE (
+SET LOC8CMD = &LOC8CMD&PMEM
+SET LOC8CMD = &LOC8CMD)&STR( ALL)
+
+SET SYSOUTTRAP = 100               /* Turn ON TRAP, set LIMIT        */
+&LOC8CMD
+SET RC = &LASTCC
+SET UPPER = &SYSOUTLINE            /* # LINES USED in TRAP           */
+SET SYSOUTTRAP = 0                 /* TURN OFF TRAP                  */
+
+IF &UPPER = 0 THEN -
+ GOTO CONT01
+SET CTR = 1
+OPENFILE LOC8OUT OUTPUT
+DO WHILE &CTR LE &UPPER
+  SET EVALLINE = &&SYSOUTLINE&CTR
+  SET LOC8OUT = &STR(&CTR:  &EVALLINE)
+  PUTFILE LOC8OUT
+  SET CTR = &CTR + 1
+END
+CLOSFILE LOC8OUT
+
+IF &DEBUG = DEBUG THEN -
+  WRITE LOCATE   RC=&RC
+
+IF &RC NE 0 THEN -
+  GOTO DONE
+
+/******************************************************************/
+/* Append Results DSN and LOCATE  command to end of report
+/******************************************************************/
+CONT01: +
+OPENFILE LOC8OUT OUTPUT
+IF &UPPER = 0 THEN -
+  DO
+    SET LOC8OUT = &STR(*** No members found ***)
+    PUTFILE LOC8OUT
+  END
+SET LOC8OUT = &STR( )
+PUTFILE LOC8OUT
+SET LOC8OUT = &STR(Results: '&TMPDSN')
+PUTFILE LOC8OUT
+SET LOC8OUT = &STR(Command: &LOC8CMD)
+PUTFILE LOC8OUT
+CLOSFILE LOC8OUT
+
+/******************************************************************/
+/* BROWSE LOCATE  RESULTS
+/******************************************************************/
+ISPEXEC BROWSE DATASET('&TMPDSN')
+SET RC=&LASTCC
+IF &RC > 0 THEN -
+  DO
+    SET &MYRC = &RC
+    SET &MYMSG = &STR(BROWSE ERROR)
+    WRITE UNABLE TO BROWSE RESULTS
+    GOTO DONE
+   END
+
+/******************************************************************/
+/* FREE OUT DD and ATTR-NAME-LIST
+/******************************************************************/
+DONE: +
+FREE ATTR(OUTATTR)
+FREE FI(LOC8OUT) DELETE
+
+EXITME: +
+IF &DEBUG = DEBUG THEN -
+  DO
+    WRITE DBUG: EXITING LOCATE...
+  END
+
+
+END  /* PROC */

@@ -1,0 +1,124 @@
+PROC 0 DSN()
+
+/*********************************************************************/
+/* CLIST:  CLDSI2                                                    */
+/*                                                                   */
+/* Description                                                       */
+/* -----------                                                       */
+/* List dataset attributes using LISTDSI                             */
+/*                                                                   */
+/* More information at:                                              */
+/*  https://ShareABitOfIT.net/LISTDSJ-for-mvs-3-8j/                  */
+/*                                                                   */
+/* Syntax                                                            */
+/* -------                                                           */
+/* CLDSI DSN('''xxxxxxxx.xxxxxxxx.xxxxxxxx''')                       */
+/*    DSN - Dataset Name, fully qualified                            */
+/*         o use three single quotes in DSN                          */
+/*                                                                   */
+/* CLDSI DSN(TEST.CNTL)                                              */
+/*    DSN - Dataset Name, prepend prefix                             */
+/*         o prefix preceeds DSN if no quotes used in DSN            */
+/*                                                                   */
+/* Output:                                                           */
+/*                                                                   */
+/*-------------------------------------------------------------------*/
+/*  DATA SET NAME: LARRY01.TEST.CNTL                                 */
+/*      ON VOLUME: PUB000  (3350)                                    */
+/*      DSORG: PO     RECFM: FB                                      */
+/*      LRECL: 80    BLKSIZE: 19040    KEYL: 0                       */
+/*      3 CYLINDER(S) ALLOCATED, 2 CYLINDER(S) USED                  */
+/*      ALLOCATION, PRIMARY: 3    SECONDARY: 1                       */
+/*        IN 3 EXTENTS                                               */
+/*      CREATED: 2013-068    REFERENCED: 2020-110                    */
+/*      EXPIRATION DATE: ***NONE***                                  */
+/*      PASSWORD: NONE , RACF PROTECTION: NONE                       */
+/*      DATA SET CHANGED: Y                                          */
+/*      THIS UNIT HAS 30 TRACKS PER CYLNDER                          */
+/*               AND 1 BLOCKS PER TRACK                              */
+/*                                                                   */
+/*                                                                   */
+/*-------------------------------------------------------------------*/
+/*                                                                   */
+/*                                                                   */
+/*  Disclaimer: <DSCLAIMR>                                           */
+/*  ================================================================ */
+/*                                                                   */
+/*  No guarantee; No warranty; Install / Use at your own risk.       */
+/*                                                                   */
+/*  This software is provided "AS IS" and without any expressed      */
+/*  or implied warranties, including, without limitation, the        */
+/*  implied warranties of merchantability and fitness for a          */
+/*  particular purpose.                                              */
+/*                                                                   */
+/*                                                                   */
+/*********************************************************************/
+
+/*********************************************************************/
+/* CLIST CONTROL statement                                           */
+/*********************************************************************/
+CONTROL MSG
+
+
+/*********************************************************************/
+/* EXECUTE LISDSI                                                    */
+/*********************************************************************/
+LISTDSI &DSN
+SET RC = &LASTCC
+
+/*********************************************************************/
+/* Print results on terminal                                         */
+/*********************************************************************/
+IF &RC NE 0 THEN -
+  DO
+    SET WLINE = &STR(MSG: &SUBSTR(1:71,&SYSLISTDSJMSG)...)
+    WRITE &WLINE
+    SET WLINE = &STR(RETURN CD: &RC   &STR(&SYSMSGLVL1))
+    WRITE &WLINE
+    SET WLINE = &STR(SYSREASON: &SYSREASON   )
+    SET WLINE = &STR(&WLINE&STR(&SYSMSGLVL2))
+    WRITE &WLINE
+  END
+
+SET SYSUNIT  = &SYSUNIT
+SET SYSLRECL = &SYSLRECL
+SET &SYSBLKSIZE = &SYSBLKSIZE
+SET &SYSKEYLEN = &SYSKEYLEN
+SET &SYSALLOC = &SYSALLOC
+SET &SYSUSED = &SYSUSED
+SET &SYSPRIMARY = &SYSPRIMARY
+SET &SYSSECONDS = &SYSSECONDS
+SET &SYSEXTENTS = &SYSEXTENTS
+SET &SYSTRKSCYL = &SYSTRKSCYL
+SET &SYSBLKSTRK = &SYSBLKSTRK
+
+IF &STR(&SYSEXDATE) = &STR(0000-000) THEN -
+  SET &SYSEXDATE = &STR(***NONE***)
+
+ WRITE Data Set Name: &SYSDSNAME
+ WRITE     on Volume: &SYSVOLUME  (&SYSUNIT)
+ WRITE     DSORG: &SYSDSORG    RECFM: &SYSRECFM
+ WRITE     LRECL: &SYSLRECL    BLKSIZE: &SYSBLKSIZE    KEYL: &SYSKEYLEN
+ WRITE     &SYSALLOC &SYSUNITS(S) Allocated, &SYSUSED &SYSUNITS(S) Used
+ WRITE     Allocation, primary: &SYSPRIMARY    secondary: &SYSSECONDS
+ WRITE       In &SYSEXTENTS Extents
+ WRITE     Created: &SYSCREATE    Referenced: &SYSREFDATE
+ WRITE     Expiration Date: &SYSEXDATE
+ WRITE     Password: &SYSPASSWORD, RACF Protection: &SYSRACFA
+ WRITE     Data Set changed: &SYSUPDATED
+ WRITE     This Unit has &SYSTRKSCYL Tracks per Cylnder
+ WRITE              and &SYSBLKSTRK Blocks per Track
+
+ IF &SYSADIRBLK NE &STR(?????)  THEN -
+   DO
+     WRITE     &SYSADIRBLK Directory Blocks allocated
+     WRITE     &SYSUDIRBLK Directory Blocks used
+     WRITE     &SYSMEMBERS Members
+   END
+
+/*********************************************************************/
+/* Done!                                                             */
+/*********************************************************************/
+EXIT CODE(0)
+
+

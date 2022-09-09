@@ -1,0 +1,93 @@
+/********************************************************************/
+/*                                                                  */
+/*    PANEL: HFINDM                                                 */
+/*                                                                  */
+/* Author: Larry Belmontes Jr.                                      */
+/*         https://ShareABitofIT.net/FINDSRCH-in-MVS38J             */
+/*         Copyright (C) 2020-2021 Larry Belmontes, Jr.             */
+/*                                                                  */
+/*                                                                  */
+/* Description:                                                     */
+/* ---------------------------------------------------------------  */
+/*                                                                  */
+/* ISPF 2.x Help panel for PFINDM                                   */
+/*                                                                  */
+/*                                                                  */
+/* Disclaimer:                                                      */
+/* ================================================================ */
+/*                                                                  */
+/*    No guarantee; No warranty; Install / Use at your own risk.    */
+/*                                                                  */
+/*    This software is provided "AS IS" and without any expressed   */
+/* or implied warranties, including, without limitation, the        */
+/* implied warranties of merchantability and fitness for a          */
+/* particular purpose.                                              */
+/*                                                                  */
+/*    The author requests keeping authors name intact in any        */
+/* modified versions.                                               */
+/*                                                                  */
+/*    In addition, the author requests readers to submit any        */
+/* code modifications / enhancements and associated comments        */
+/* for consideration into a subsequent release (giving credit       */
+/* to contributor(s)) thus, improving overall functionality         */
+/* and further benefiting the MVS 3.8J hobbyist public domain       */
+/* community.                                                       */
+/*                                                                  */
+/*                                                                  */
+/*                                                                  */
+/* Change History:                                                  */
+/* ================================================================ */
+/* MM/DD/CCYY Version  Name / Description                           */
+/* ---------- -------  -------------------------------------------- */
+/* 10/23/2021 0.9.10   Larry Belmontes Jr.                          */
+/*                     - Update HELP content with new options       */
+/*                       (4, 5)                                     */
+/*                                                                  */
+/* 09/26/2020 0.9.00   Larry Belmontes Jr.                          */
+/*                     - Initial version released to MVS 3.8J       */
+/*                       hobbyist public domain                     */
+/*                                                                  */
+/********************************************************************/
+)ATTR
+ + TYPE(TEXT)   INTENS(LOW)  SKIP(ON)    COLOR(GREEN)
+ % TYPE(TEXT)   INTENS(HIGH) SKIP(ON)    COLOR(WHITE)
+ ~ TYPE(TEXT)   INTENS(LOW)  SKIP(ON)    COLOR(YELLOW)
+ [ TYPE(TEXT)   INTENS(LOW)  SKIP(ON)    COLOR(TURQ)
+ [ TYPE(TEXT)   INTENS(LOW)  HILITE(USCORE)
+ ? TYPE(TEXT)   INTENS(LOW)  HILITE(REVERSE) COLOR(BLUE)
+ _ TYPE(INPUT)  INTENS(LOW)  JUST(LEFT)  COLOR(TURQ)
+ # TYPE(INPUT)  INTENS(LOW)  JUST(ASIS)
+ ! TYPE(INPUT)  INTENS(HIGH) JUST(RIGHT)
+ { TYPE(OUTPUT) INTENS(LOW)  JUST(LEFT)
+ } TYPE(OUTPUT) INTENS(LOW)  JUST(RIGHT)
+)BODY EXPAND(//)
+%--Tutorial------------?        FINDSRCH Menu        %---------------+v0.9.10 %-
+%Command ===>_ZCMD                                                     {Z
+%
+% 1 [Find+MEMBER[in~DSL%searches a set of PO datasets for a specified member
+%  e.g. Display DSNs[containing~HERC01.TEST%with member name~MYNAME%
+% 2 [List Datasets[in~DSL%searches all online DASD volumes for a specified DSN
+%  e.g. Display DSNs[starting with~HERC01.TEST%
+% 3 [Find members[in~DSL[with+SEARCHstr%searches a set of PO datasets
+%    for a specified+SEARCHstr.%Optionally, grouping by+MEMBER.
+%  e.g. Search for~string%in PO DSNs that[contain~HERC01.TEST%and grouped by
+%      ~LB%   (members names starting with 'LB')
+% 4 [Find+MEMBER[in system libraries%
+%  e.g. Search for~MYLOAD%in system search order (STEPLIB,LPALIB,LINKLIB,
+%       LINKLIST,SVCLIB)
+% 5 [Find+Member[in allocated+DDName%
+%  e.g. Search for~MYLOAD%in session allocated DD dataset(s)
+%
+%Dataset List is created from DASD VTOCs (catalogued and not catalogued DSNs)
+%that include a specified+DSNstrPOS%and+DSNstr%value.
+%
+%Tabular results are scrollable containing dataset name and other information
+%based on requested option.  Each dataset may be conveniently Browsed or Edited.
+%
+%Options 4-5 present results in a browse session or terminal line displays.
+)INIT
+ .CURSOR = ZCMD
+ .ZVARS = (ZPANELID)
+)PROC
+
+)END

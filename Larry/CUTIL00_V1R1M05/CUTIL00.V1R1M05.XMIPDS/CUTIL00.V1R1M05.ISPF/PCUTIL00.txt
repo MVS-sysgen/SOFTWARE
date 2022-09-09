@@ -1,0 +1,119 @@
+/********************************************************************/
+/*                                                                  */
+/* PANEL: PCUTIL00                                                  */
+/*                                                                  */
+/* Author: Larry Belmontes Jr.                                      */
+/*         https://ShareABitOfIT.net/CUTIL00-for-mvs-3-8j/          */
+/*         Copyright (C) 2020-2021  Larry Belmontes, Jr.            */
+/*                                                                  */
+/*                                                                  */
+/* Description:                                                     */
+/* ---------------------------------------------------------------  */
+/*                                                                  */
+/* ISPF 2.0 panel to invoke CUTIL00 and display results             */
+/*                                                                  */
+/*                                                                  */
+/* Disclaimer:                                                      */
+/* ================================================================ */
+/*                                                                  */
+/*    No guarantee; No warranty; Install / Use at your own risk.    */
+/*                                                                  */
+/*    This software is provided "AS IS" and without any expressed   */
+/* or implied warranties, including, without limitation, the        */
+/* implied warranties of merchantability and fitness for a          */
+/* particular purpose.                                              */
+/*                                                                  */
+/*    The author requests keeping authors name intact in any        */
+/* modified versions.                                               */
+/*                                                                  */
+/*    In addition, the author requests submissions regarding any    */
+/* code modifications / enhancements and/or associated comments     */
+/* for consideration into a subsequent release (giving credit       */
+/* to contributor(s)) thus, improving overall functionality         */
+/* benefiting the MVS 3.8J hobbyist public domain community.        */
+/*                                                                  */
+/*                                                                  */
+/*                                                                  */
+/* Change History: <CHGHIST>                                        */
+/* ================================================================ */
+/* MM/DD/CCYY Version  Name / Description                           */
+/* ---------- -------  -------------------------------------------- */
+/* 10/05/2021 1.1.05   Larry Belmontes Jr.                          */  LB1105
+/*                     - Removed hard-coded version on panel        */  LB1105
+/*                     - Removed EXPAND characters on panel         */  LB1105
+/*                                                                  */  LB1105
+/* 04/10/2021 1.1.00   Larry Belmontes Jr.                          */  LB1100
+/*                     - Changed version                            */  LB1100
+/*                     - Added VAR01TR and VAR02TR variables        */  LB1100
+/*                                                                  */  LB1100
+/* 03/20/2020 1.0.00   Larry Belmontes Jr.                          */
+/*                     - Initial version released to MVS 3.8J       */
+/*                       hobbyist public domain                     */
+/*                                                                  */
+/********************************************************************/
+)ATTR
+% TYPE(TEXT) INTENS(HIGH)
++ TYPE(TEXT) INTENS(LOW)
+_ TYPE(INPUT) INTENS(HIGH) CAPS(ON)  JUST(LEFT)
+~ TYPE(INPUT) INTENS(HIGH) CAPS(OFF) JUST(ASIS)
+[   TYPE(TEXT)   INTENS(HIGH)                      COLOR(TURQ)
+[   TYPE(TEXT)   INTENS(LOW)                       COLOR(PINK)
+{   TYPE(TEXT)   INTENS(HIGH)                      COLOR(GREEN)
+}   TYPE(TEXT)   INTENS(HIGH)                      COLOR(YELLOW)
+!   TYPE(TEXT)   INTENS(LOW)       HILITE(REVERSE) COLOR(BLUE)
+?   TYPE(TEXT)   INTENS(LOW)       SKIP(ON)
+)BODY WIDTH(&ZSCREENW) EXPAND(//)
+%--------------------------}CCUTIL0 for MVS38J%---------------------------------
+%COMMAND ===>_ZCMD                                                             +
++                                                          %PANEL    - &ZPANELID
+%FUNCTION  %=>_FUNCT   +                             +     %USERID   - &ZUSER  +
+%VAR1 Quote%=>_Z?}Y,N+                               +     %TIME     - &ZTIME  +
+%VAR2 Use  %=>_Z?}Y,N,$NOVAR2+                             %DATE     - &ZDATE  +
+{&CMDLINE                                              +            %- &ZJDATE +
+%Return CD:+&CD                                       +    %SYSTEM   -}&ZSYSID +
+%          [&ERRMSG                                   +    %TERMINAL - &ZTERM  +
+%                                                     +    %TermSize[&SD  &SW  +
+{                                            +        +    %APPLID   -[&ZAPPLID+
+%VAR1 }Len=&VAR01L % [&VAR01TR                                                 +
++0        1         2         3         4         5         6         7        +
++1...5....0....5....0....5....0....5....0....5....0....5....0....5....0....5...+
+~VAR01                                                                         +
++                                                                              +
+%VAR2 }Len=&VAR02L % [&VAR02TR                                                 +
++0        1         2         3         4         5         6         7        +
++1...5....0....5....0....5....0....5....0....5....0....5....0....5....0....5...+
+~VAR02                                                                         +
++                                                                              +
++                                                                              +
++                                                                              +
+%  PF1[Help   %PF3[End   %ENTER[process %                                      +
+)INIT
+&SD = &ZSCREEND
+&SW = &ZSCREENW
+.CURSOR = FUNCT
+.HELP = HCUTIL00
+.ZVARS = '(UQ1,UV2)'
+IF (&UQ1 = ' ')
+  &UQ1 = Y
+IF (&UV2 = ' ')
+  &UV2 = Y
+&RESP0 = .RESP
+&KEYPRESS = .PFKEY
+
+)REINIT
+REFRESH(*)          /* refresh all fields */
+&RESP0 = .RESP
+&KEYPRESS = .PFKEY
+
+)PROC
+&RESP0 = .RESP
+&KEYPRESS = .PFKEY
+
+/*IF (&KEYPRESS NE PF03)
+    VER(&FUNCT,NB,MSG=CUTIL01)
+    VER(&UQ1,LIST,Y,N,MSG=CUTIL02)
+    VER(&UV2,LIST,Y,N,$,MSG=CUTIL03)
+
+
+)END
+

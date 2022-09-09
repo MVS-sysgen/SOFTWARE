@@ -1,0 +1,90 @@
+/********************************************************************/
+/*                                                                  */
+/*    PANEL: PDCPY0R                                                */
+/*                                                                  */
+/* Author: Larry Belmontes Jr.                                      */
+/*         https://ShareABitofIT.net/DSCOPY-in-MVS38J               */
+/*         Copyright (C) 2021 Larry Belmontes, Jr.                  */
+/*                                                                  */
+/*                                                                  */
+/* Description:                                                     */
+/* ---------------------------------------------------------------  */
+/*                                                                  */
+/* ISPF 2.x DSCOPY   DSN Request Panel                              */
+/*                                                                  */
+/*                                                                  */
+/* Disclaimer:                                                      */
+/* ================================================================ */
+/*                                                                  */
+/*    No guarantee; No warranty; Install / Use at your own risk.    */
+/*                                                                  */
+/*    This software is provided "AS IS" and without any expressed   */
+/* or implied warranties, including, without limitation, the        */
+/* implied warranties of merchantability and fitness for a          */
+/* particular purpose.                                              */
+/*                                                                  */
+/*    The author requests keeping authors name intact in any        */
+/* modified versions.                                               */
+/*                                                                  */
+/*    In addition, the author requests readers to submit any        */
+/* code modifications / enhancements and associated comments        */
+/* for consideration into a subsequent release (giving credit       */
+/* to contributor(s)) thus, improving overall functionality         */
+/* and further benefiting the MVS 3.8J hobbyist public domain       */
+/* community.                                                       */
+/*                                                                  */
+/*                                                                  */
+/*                                                                  */
+/*                                                                  */
+/* Change History:                                                  */
+/* ================================================================ */
+/* MM/DD/CCYY Version  Name / Description                           */
+/* ---------- -------  -------------------------------------------- */
+/* 04/20/2021 0.9.00   Larry Belmontes Jr.                          */
+/*                     - Initial version released to MVS 3.8J       */
+/*                       hobbyist public domain                     */
+/*                                                                  */
+/********************************************************************/
+)ATTR
+ + TYPE(TEXT)   INTENS(LOW)  SKIP(ON)    COLOR(GREEN)
+ % TYPE(TEXT)   INTENS(HIGH) SKIP(ON)    COLOR(WHITE)
+ ~ TYPE(TEXT)   INTENS(LOW)  SKIP(ON)    COLOR(YELLOW)
+ _ TYPE(INPUT)  INTENS(LOW)  JUST(LEFT)  COLOR(TURQ)
+ { TYPE(OUTPUT) INTENS(LOW)  JUST(LEFT)
+ } TYPE(OUTPUT) INTENS(LOW)  JUST(RIGHT)
+ [ TYPE(OUTPUT) INTENS(HIGH) JUST(LEFT)
+ [ TYPE(OUTPUT) INTENS(HIGH) JUST(RIGHT)
+)BODY EXPAND(\\)
+%----------------------- Data Set Copy Request ---------------------------------
+%Command ===>_ZCMD                                                            +
+%
++                                                                      {Z
++ Source  :_dsn                                         +              {Z
++ Volume  :_volume%    (If not catalogued)
++
++
+% Enter DASD source name of sequential or partitioned data set.
++
++
++
+)Init
+  .CURSOR = 'dsn'
+  .HELP = HDCPY0R
+  .ZVARS = '(ZUSER,ZPANELID)'
+  &ZPRIM = NO         /* NOT A PRIMARY OPTION MENU         */
+  &ZHTOP = HDCPY0R    /* TUTORIAL TABLE OF CONTENTS        */
+  &ZHINDEX = HDCPY0R  /* TUTORIAL INDEX - 1ST PAGE isptutor*/
+  &RESP0 = .RESP
+  &KEYPRESS = .PFKEY
+  VGET (DSN VOLUME) PROFILE
+)Proc
+  &RESP0 = .RESP
+  &KEYPRESS = .PFKEY
+  IF (&KEYPRESS NE PF03)
+    VER (&DSN,NONBLANK,DSNAME,MSG=DCPY020)
+    VPUT (DSN VOLUME) PROFILE
+    &DCPYPRM = 'DSN1(&DSN)'
+    IF (&VOLUME > ' ')
+      &DCPYPRM = '&DCPYPRM VOL1(&VOLUME)'
+    &ZSEL = 'CMD(%CDSCPY0 &ZCMD &DCPYPRM) NEWAPPL(DCPY)'
+)End

@@ -1,0 +1,83 @@
+/********************************************************************/
+/*                                                                  */
+/*    PANEL: HDFSPC0                                                */
+/* Author: Larry Belmontes Jr.                                      */
+/*         https://ShareABitofIT.net/DFSPC-in-MVS38J                */
+/*         Copyright (C) 2020  Larry Belmontes, Jr.                 */
+/*                                                                  */
+/*                                                                  */
+/* Description:                                                     */
+/* ---------------------------------------------------------------  */
+/*                                                                  */
+/* ISPF 2.x Help panel for PDFSPC0 panel                            */
+/*                                                                  */
+/*                                                                  */
+/* Disclaimer:                                                      */
+/* ================================================================ */
+/*                                                                  */
+/*    No guarantee; No warranty; Install / Use at your own risk.    */
+/*                                                                  */
+/*    This software is provided "AS IS" and without any expressed   */
+/* or implied warranties, including, without limitation, the        */
+/* implied warranties of merchantability and fitness for a          */
+/* particular purpose.                                              */
+/*                                                                  */
+/*    The author requests keeping authors name intact in any        */
+/* modified versions.                                               */
+/*                                                                  */
+/*    In addition, the author requests readers to submit any        */
+/* code modifications / enhancements and associated comments        */
+/* for consideration into a subsequent release (giving credit       */
+/* to contributor(s)) thus, improving overall functionality         */
+/* and further benefiting the MVS 3.8J hobbyist public domain       */
+/* community.                                                       */
+/*                                                                  */
+/*                                                                  */
+/*                                                                  */
+/*                                                                  */
+/* Change History:                                                  */
+/* ---------------------------------------------------------------  */
+/* MM/DD/CCYY VERSION  NAME / DESCRIPTION                           */
+/* 08/10/2019 1.0.00   Larry Belmontes Jr.                          */
+/*                     Initial version released to MVS 3.8J         */
+/*                     Hobbyist Public Domain                       */
+/*                                                                  */
+/********************************************************************/
+)ATTR
+ + TYPE(TEXT)   INTENS(LOW)  SKIP(ON)    COLOR(GREEN)
+ % TYPE(TEXT)   INTENS(HIGH) SKIP(ON)    COLOR(WHITE)
+ ~ TYPE(TEXT)   INTENS(LOW)  SKIP(ON)    COLOR(YELLOW)
+ [ TYPE(TEXT)   INTENS(LOW)  SKIP(ON)    COLOR(TURQ)
+ ? TYPE(TEXT)   INTENS(LOW)  HILITE(REVERSE) COLOR(BLUE)
+ _ TYPE(INPUT)  INTENS(LOW)  JUST(LEFT)  COLOR(TURQ)
+ # TYPE(INPUT)  INTENS(LOW)  JUST(ASIS)
+ ! TYPE(INPUT)  INTENS(HIGH) JUST(RIGHT)
+ { TYPE(OUTPUT) INTENS(LOW)  JUST(LEFT)
+ } TYPE(OUTPUT) INTENS(LOW)  JUST(RIGHT)
+)BODY EXPAND(//)
+%--HELP----------------------? DASD Freespace %-----------------------~v1.0.00%-
+%Command ===>_ZCMD                                                    +&ZUSER
+%                                                                     +&ZPANELID
++DFSPC displays volume freespace and attributes for each online DASD device.
++The initial display is in%Volume Serial+order.  Data can be sorted by typing
+%SORT ColName+into the%Command+line.  For descending order, preceed column name
++with%minus+sign.+ i.e.~SORT -FTR+
++
+?| ColName - Sort by...                 | ColName - Sort by...                 |
+?|%CUU     -[Unit Address              ?|%VOLser  -[Volume Serial Number      ?|
+?|%DEVtype -[Unit Type                 ?|%FCYls   -[Tot nbr of Free Cylinders ?|
+?|%FTRks   -[Tot nbr of                ?|%FEXts   -[Tot nbr of                ?|
+?|%         [  Additional Free Tracks  ?|%         [  Free Extents            ?|
+?|%LCYls   -[Nbr of Cylinders          ?|%LTRks   -[Nbr of Additional Tracks  ?|
+?|%         [  in largest free extent  ?|%         [  in largest free extent  ?|
+?|%VTOctrks-[VTOC size in Tracks       ?|%DSCbs   -[Available DSCBs on Volume ?|
+?|%VCYls   -[Cylinders on Volume       ?|%VTRks   -[Tracks on Volume          ?|
+?-------------------------------------------------------------------------------
++
++The display can scroll backward or forward using PF7 and PF8, respectively.
+)INIT
+ .CURSOR = ZCMD
+
+)PROC
+
+)END

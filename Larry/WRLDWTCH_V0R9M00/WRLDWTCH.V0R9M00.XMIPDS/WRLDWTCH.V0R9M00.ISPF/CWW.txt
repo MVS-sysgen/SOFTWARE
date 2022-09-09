@@ -1,0 +1,72 @@
+/********************************************************************/
+/*                                                                  */
+/* CLIST: CWW                                                       */
+/*                                                                  */
+/* Author: Larry Belmontes Jr.                                      */
+/*         https://ShareABitofIT.net/WRLDWTCH-in-MVS38J             */
+/*         Copyright (C) 2018 Larry Belmontes, Jr.                  */
+/*                                                                  */
+/*                                                                  */
+/* Description:                                                     */
+/* ---------------------------------------------------------------  */
+/*                                                                  */
+/* ISPF 2.0 CLIST to invoke WRLDWTCH and display panel PWW.         */
+/*          This CLIST simulates the REXX / ISPF World Clock        */
+/*          application from Marvin Shaw (CBT Tape file 366).       */
+/*                                                                  */
+/* PANELS:   PWW                                                    */
+/*                                                                  */
+/* CPs:      WRLDWTCH                                               */
+/*                                                                  */
+/*                                                                  */
+/* Disclaimer:                                                      */
+/* ================================================================ */
+/*                                                                  */
+/*    No guarantee; No warranty; Install / Use at your own risk.    */
+/*                                                                  */
+/*    This software is provided "AS IS" and without any expressed   */
+/* or implied warranties, including, without limitation, the        */
+/* implied warranties of merchantability and fitness for a          */
+/* particular purpose.                                              */
+/*                                                                  */
+/*    The author requests keeping authors name intact in any        */
+/* modified versions.                                               */
+/*                                                                  */
+/*    In addition, the author requests readers to submit any        */
+/* code modifications / enhancements and associated comments        */
+/* for consideration into a subsequent release (giving credit       */
+/* to contributor(s)) thus, improving overall functionality         */
+/* and further benefiting the MVS 3.8J hobbyist public domain       */
+/* community.                                                       */
+/*                                                                  */
+/*                                                                  */
+/*                                                                  */
+/* Change History:                                                  */
+/* ================================================================ */
+/* MM/DD/CCYY Version  Name / Description                           */
+/* ---------- -------  -------------------------------------------- */
+/* 09/22/2018 0.9.00   Larry Belmontes Jr.                          */
+/*                     - Initial version released to MVS 3.8J       */
+/*                       hobbyist public domain                     */
+/*                                                                  */
+/********************************************************************/
+
+PROC 0                                /* CWW                        */
+
+CONTROL MSG NOFLUSH
+
+/* ---------------------------------------------------------------- */
+/* ISPEXEC CONTROL, use Diagnose Panel on ERROR                     */
+/* ---------------------------------------------------------------- */
+ISPEXEC CONTROL ERRORS CANCEL
+
+/* ---------------------------------------------------------------- */
+/* Call WRLDWTCH                                                    */
+/* ---------------------------------------------------------------- */
+WRLDWTCH
+
+/* ---------------------------------------------------------------- */
+/* End of PROC                                                      */
+/* ---------------------------------------------------------------- */
+DONE: +
+END

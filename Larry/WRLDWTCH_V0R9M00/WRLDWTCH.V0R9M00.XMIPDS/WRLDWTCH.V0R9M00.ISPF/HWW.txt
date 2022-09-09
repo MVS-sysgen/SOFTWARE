@@ -1,0 +1,89 @@
+/********************************************************************/
+/*                                                                  */
+/*    PANEL: HWW                                                    */
+/*                                                                  */
+/* Author: Larry Belmontes Jr.                                      */
+/*         https://ShareABitofIT.net/WRLDWTCH-in-MVS38J             */
+/*         Copyright (C) 2018 Larry Belmontes, Jr.                  */
+/*                                                                  */
+/*                                                                  */
+/* Description:                                                     */
+/* ---------------------------------------------------------------  */
+/*                                                                  */
+/* ISPF 2.0 Help panel for PWW                                      */
+/*                                                                  */
+/*                                                                  */
+/* Disclaimer:                                                      */
+/* ================================================================ */
+/*                                                                  */
+/*    No guarantee; No warranty; Install / Use at your own risk.    */
+/*                                                                  */
+/*    This software is provided "AS IS" and without any expressed   */
+/* or implied warranties, including, without limitation, the        */
+/* implied warranties of merchantability and fitness for a          */
+/* particular purpose.                                              */
+/*                                                                  */
+/*    The author requests keeping authors name intact in any        */
+/* modified versions.                                               */
+/*                                                                  */
+/*    In addition, the author requests readers to submit any        */
+/* code modifications / enhancements and associated comments        */
+/* for consideration into a subsequent release (giving credit       */
+/* to contributor(s)) thus, improving overall functionality         */
+/* and further benefiting the MVS 3.8J hobbyist public domain       */
+/* community.                                                       */
+/*                                                                  */
+/*                                                                  */
+/*                                                                  */
+/* Change History:                                                  */
+/* ================================================================ */
+/* MM/DD/CCYY Version  Name / Description                           */
+/* ---------- -------  -------------------------------------------- */
+/* 09/22/2018 0.9.00   Larry Belmontes Jr.                          */
+/*                     - Initial version released to MVS 3.8J       */
+/*                       hobbyist public domain                     */
+/*                                                                  */
+/********************************************************************/
+)ATTR
+ + TYPE(TEXT)   INTENS(LOW)  SKIP(ON)    COLOR(GREEN)
+ % TYPE(TEXT)   INTENS(HIGH) SKIP(ON)    COLOR(WHITE)
+ ~ TYPE(TEXT)   INTENS(LOW)  SKIP(ON)    COLOR(YELLOW)
+ ? TYPE(TEXT)   INTENS(LOW)  SKIP(ON)    COLOR(BLUE)
+ _ TYPE(INPUT)  INTENS(LOW)  JUST(LEFT)  COLOR(TURQ)
+ # TYPE(INPUT)  INTENS(LOW)  JUST(ASIS)
+ ! TYPE(INPUT)  INTENS(HIGH) JUST(RIGHT)
+ { TYPE(OUTPUT) INTENS(LOW)  JUST(LEFT)
+ } TYPE(OUTPUT) INTENS(LOW)  JUST(RIGHT)
+ [ TYPE(OUTPUT) INTENS(HIGH) JUST(LEFT)
+ [ TYPE(OUTPUT) INTENS(HIGH) JUST(RIGHT)
+)BODY WIDTH(&ZSCREENW) EXPAND(//)
+%-Tutorial-                 ? World WATCH      &ZDATE    &ZTIME              %--
+%OPTION  ===>_ZCMD                                                             +
+%                                                                              +
+% The World WATCH panel displays a world map with an hourly time zone line at
+% the bottom of the map relative to current time zone.
+%                                                                              +
+% For example, if the local time is 17:14 in Dallas,TX, each time zone in the
+%              World Map is listed from GMT-11 to GMT+4 as shown below:
+%                                                                              +
+%?12+13?14+15?16+17?18+19?20+21?22+23?00+01?02+03?04+05?06+07?08+09?10+11
+%                 *
+%                /
+%   Dallas-------
+%                                                                              +
+% This application was converted to IFOX00 Assembler and ISPF 2.0 (ISPF-like
+% product from Wally Mclaughlin).  The original World Clock program was
+% contributed by Marvin Shaw as a REXX/ISPF application on CBT File 366.
+?
+%                                                                              +
+)INIT
+  &RESP0 = .RESP
+  &KEYPRESS = .PFKEY
+
+)REINIT
+
+)PROC
+  &RESP0 = .RESP
+  &KEYPRESS = .PFKEY
+
+)END

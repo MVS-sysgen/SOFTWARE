@@ -1,0 +1,67 @@
+/********************************************************************/
+/*                                                                  */
+/* MESSAGES: DCPY00                                                 */
+/*                                                                  */
+/* Author: Larry Belmontes Jr.                                      */
+/*         https://ShareABitofIT.net/DSCOPY-in-MVS38J               */
+/*         Copyright (C) 2021 Larry Belmontes, Jr.                  */
+/*                                                                  */
+/*                                                                  */
+/* Description:                                                     */
+/* ---------------------------------------------------------------  */
+/*                                                                  */
+/* ISPF 2.0 DCPY messages                                           */
+/*                                                                  */
+/*                                                                  */
+/* Disclaimer:                                                      */
+/* ================================================================ */
+/*                                                                  */
+/*    No guarantee; No warranty; Install / Use at your own risk.    */
+/*                                                                  */
+/*    This software is provided "AS IS" and without any expressed   */
+/* or implied warranties, including, without limitation, the        */
+/* implied warranties of merchantability and fitness for a          */
+/* particular purpose.                                              */
+/*                                                                  */
+/*    The author requests keeping authors name intact in any        */
+/* modified versions.                                               */
+/*                                                                  */
+/*    In addition, the author requests readers to submit any        */
+/* code modifications / enhancements and associated comments        */
+/* for consideration into a subsequent release (giving credit       */
+/* to contributor(s)) thus, improving overall functionality         */
+/* and further benefiting the MVS 3.8J hobbyist public domain       */
+/* community.                                                       */
+/*                                                                  */
+/*                                                                  */
+/*                                                                  */
+/*                                                                  */
+/* Change History:                                                  */
+/* ================================================================ */
+/* MM/DD/CCYY Version  Name / Description                           */
+/* ---------- -------  -------------------------------------------- */
+/* 04/20/2021 0.9.00   Larry Belmontes Jr.                          */
+/*                     - Initial version released to MVS 3.8J       */
+/*                       hobbyist public domain                     */
+/*                                                                  */
+/********************************************************************/
+DCPY000  'Invalid DSORG           ' .ALARM=NO
+'DCPY000  COPY &DSN, invalid DSORG=&SYSDSORG                                   '
+DCPY001  'Invalid Input Dataset   ' .ALARM=NO
+'DCPY001  &DSN1 failed. LISTDSJ RC=&RC Reason=&RSN &MLVL2                      '
+DCPY002  'Copy canceled per User  ' .ALARM=NO
+'DCPY002  COPY cancelled by user. RC=&RC                                       '
+DCPY003  'Copy canceled, not ENTER' .ALARM=NO
+'DCPY003  COPY cancelled, not ENTER key. PF=&KEYPRESS  RC=&RC                  '
+DCPY004  'Duplicate TO-dsn        ' .ALARM=NO
+'DCPY004  &DSN2 already exists! Cannot proceed!                                '
+DCPY005  'Alloc error TO-dsn ATTR ' .ALARM=NO
+'DCPY005  &DSN2 ATTR alloc failed! RC=&RC                                      '
+DCPY006  'Alloc error SYSUT2      ' .ALARM=NO
+'DCPY006  SYSUT2 ALLOC for &DSN2 failed. RC=&RC                                '
+DCPY007  'Alloc error SYSUT1      ' .ALARM=NO
+'DCPY007  SYSUT1 ALLOC for &DSN failed. RC=&RC                                 '
+DCPY008  'Alloc error SYSIN       ' .ALARM=NO
+'DCPY008  SYSIN ALLOC for DUMMY failed.  RC=&RC                                '
+DCPY009  'Alloc error SYSPRINT    ' .ALARM=NO
+'DCPY009  SYSPRINT ALLOC for DUMMY failed.  RC=&RC                             '

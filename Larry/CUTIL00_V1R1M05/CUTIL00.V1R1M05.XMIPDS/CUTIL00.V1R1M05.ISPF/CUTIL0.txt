@@ -1,0 +1,53 @@
+/********************************************************************/
+/*                                                                  */
+/* MESSAGES: CUTIL0                                                 */
+/*                                                                  */
+/* Author: Larry Belmontes Jr.                                      */
+/*         https://ShareABitOfIT.net/CUTIL00-for-mvs-3-8j/          */
+/*         Copyright (C) 2020-2021  Larry Belmontes, Jr.            */
+/*                                                                  */
+/*                                                                  */
+/* Description:                                                     */
+/* ---------------------------------------------------------------  */
+/*                                                                  */
+/* ISPF 2.0 Generic message entry for PANEL PCUTIL00.               */
+/*                                                                  */
+/*                                                                  */
+/* Disclaimer:                                                      */
+/* ================================================================ */
+/*                                                                  */
+/*    No guarantee; No warranty; Install / Use at your own risk.    */
+/*                                                                  */
+/*    This software is provided "AS IS" and without any expressed   */
+/* or implied warranties, including, without limitation, the        */
+/* implied warranties of merchantability and fitness for a          */
+/* particular purpose.                                              */
+/*                                                                  */
+/*    The author requests keeping authors name intact in any        */
+/* modified versions.                                               */
+/*                                                                  */
+/*    In addition, the author requests submissions regarding any    */
+/* code modifications / enhancements and/or associated comments     */
+/* for consideration into a subsequent release (giving credit       */
+/* to contributor(s)) thus, improving overall functionality         */
+/* benefiting the MVS 3.8J hobbyist public domain community.        */
+/*                                                                  */
+/*                                                                  */
+/*                                                                  */
+/* Change History: <CHGHIST>                                        */
+/* ================================================================ */
+/* MM/DD/CCYY Version  Name / Description                           */
+/* ---------- -------  -------------------------------------------- */
+/* 03/20/2020 1.0.00   Larry Belmontes Jr.                          */
+/*                     - Initial version released to MVS 3.8J       */
+/*                       hobbyist public domain                     */
+/*                                                                  */
+/********************************************************************/
+CUTIL00Z '&ZERRSM                 ' .ALARM=NO
+'&ZERRMSG &ZERRLM                                                              '
+CUTIL01  'FUNCTION is blank       ' .ALARM=NO
+'CUTIL01  FUNCTION cannot be blank                                             '
+CUTIL02  'Invalid VAR1 Quote      ' .ALARM=NO
+'CUTIL02  Invalid value in VAR1 Quote                                          '
+CUTIL03  'Invalid VAR2 Use        ' .ALARM=NO
+'CUTIL03  Invalid value in VAR2 Use                                            '

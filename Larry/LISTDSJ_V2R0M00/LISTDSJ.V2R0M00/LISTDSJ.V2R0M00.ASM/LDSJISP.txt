@@ -1,0 +1,744 @@
+         TITLE 'LDSJISP - ISPF    Processor for LISTDSJ               '
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+*
+*  ==================================================================
+*
+* LL       DDDDD     SSSS   JJJJJJJJ  IIIIIIII   SSSS   PPPPP
+* LL       DD  DD   SS  SS     JJ        II     SS  SS  PP   PP
+* LL       DD   DD  SS         JJ        II     SS      PP   PP
+* LL       DD   DD   SSSS      JJ        II      SSSS   PPPPP
+* LL       DD   DD      SS     JJ        II         SS  PP
+* LL       DD  DD   SS  SS  JJ JJ        II     SS  SS  PP
+* LLLLLLL  DDDDD     SSSS    JJJ      IIIIIIII   SSSS   PP
+*
+*  ==================================================================
+*
+*  Program: LDSJISP
+*
+*  Author:  Larry Belmontes Jr.
+*           https://ShareABitofIT.net/LISTDSJ-for-MVS-3-8J
+*           Copyright (C) 2019-2021  Larry Belmontes, Jr.
+*
+*  Disclaimer: <DSCLAIMR>
+*  ===================================================================
+*
+*     No guarantee; No warranty; Install / Use at your own risk.
+*
+*     This software is provided "AS IS" and without any expressed
+*  or implied warranties, including, without limitation, the
+*  implied warranties of merchantability and fitness for a
+*  particular purpose.
+*
+*     The author requests keeping authors name intact in any
+*  modified versions.
+*
+*     In addition, the author requests readers to submit any
+*  code modifications / enhancements and associated comments
+*  for consideration into a subsequent release (giving credit
+*  to contributor(s)) thus, improving overall functionality
+*  and further benefiting the MVS 3.8J hobbyist public domain
+*  community.
+*
+*
+         EJECT
+*  Overview:
+*  ================================================================
+*
+*     This program performs all ISPF requests for LISTDSJ using a
+*  parameter address list macro (#IPAL) which must be set before
+*  invoking LDSJISP.
+*
+*     #IPAL (portion of macro)
+*     --------------------------------------------------------
+*     PISPPALS DS    0F      PAL start address
+*     PISPREQ  DS    CL4     ISP Srv Request Type
+*     PISPEP   DS    F       ISPLINK Entry Point
+*     PISPDCOL DS    F       ISP Table Columns
+*     PISPTBN  DS    F       ISP Table Name
+*     PISPDMSG DS    F       ISP DJMSG
+*
+*
+*
+*     Sample priming code
+*     --------------------------------------------------------
+*     MVC   PISPREQ,=C'1   '    Set ISP request type
+*     LA    R1,PISPPALS         R1 = ISPF Parm List
+*     L     R15,LDSJISP         R15= LSDJISP entry address
+*     BALR  R14,R15             Call LSDJISP
+*     LTR   R15,R15             R15=0?
+*     BNZ   xxxxxxx             No, error process
+*     .                         Yes, continue processing
+*     .
+*     .
+*     .
+*
+*     Request Types (PISPREQ)
+*     --------------------------------------------------------
+*      '1   '  -  LISTDSJ ISPF VDEFINE
+*      '2   '  -  LISTDSJ ISPF TBERASE
+*      '3   '  -  LISTDSJ ISPF TBCREATE
+*      '4   '  -  LISTDSJ ISPF TBADD
+*      '5   '  -  LISTDSJ ISPF TBSAVE
+*      '6   '  -  LISTDSJ ISPF TBCLOSE
+*      '7   '  -  LISTDSJ ISPF VDELETE
+*
+*
+*
+         EJECT
+*  Programs Called:
+*  ==================================================================
+*
+*    o  GETMAIN/FREEMAIN       Working Storage
+*    o  ISPLINK                ISP Services
+*
+*
+         EJECT
+*  Table 1 - Program Register Usage
+*
+*  +------+----------------------------------------------------------+
+*  | REG  |                                                          |
+*  |USAGE |  DESCRIPTION                                             |
+*  +------+----------------------------------------------------------+
+*  |  R13 |  Calling program registers (R14-R12) upon entry          |
+*  |  R14 |  Calling program return address upon entry               |
+*  |  R15 |  Called  program entry address  upon entry               |
+*  |  R1  |  Called  program parms starting address                  |
+*  +------+----------------------------------------------------------+
+*  |  R0  |  Working Register                                        |
+*  |  R1  |  Working Register                                        |
+*  |  R2  |  Parm Pointer (save)                                     |
+*  |  R3  |  Table name pointer                                      |
+*  |  R4  |  ISPF Member stats pointer                               |
+*  |  R5  |  Working Register                                        |
+*  |  R6  |  Working Register                                        |
+*  |  R7  |  Working Register                                        |
+*  |  R8  |  DJMSG Pointer                                           |
+*  |  R9  |  Address of WORKAREA via GETMAIN/FREEMAIN                |
+*  |  R10 |  Base Register 1                                         |
+*  |  R11 |  Working Register                                        |
+*  |  R12 |  Working Register                                        |
+*  |  R13 |  Address of SAVEAREA                                     |
+*  +------+----------------------------------------------------------+
+*  |  R15 |  Return Code upon exit                                   |
+*  +------+----------------------------------------------------------+
+*
+         EJECT
+*  Table 2 - Return Codes
+*
+*  +------+----------------------------------------------------------+
+*  |RETURN|                                                          |
+*  | CODE |  DESCRIPTION                                             |
+*  +------+----------------------------------------------------------+
+*  |  00  |  Successful Request                                      |
+*  +------+----------------------------------------------------------+
+*  | 1012 |  No Parm Received                                        |
+*  +------+----------------------------------------------------------+
+*  | 1016 |  Invalid Request Type                                    |
+*  +------+----------------------------------------------------------+
+*  | Other|  ISPLINK return code value                               |
+*  +------+----------------------------------------------------------+
+*
+         EJECT
+*  Macros and SYSLIB Location:
+*  ==================================================================
+*
+*  Macro     Description                         Library
+*  --------  ----------------------------------  --------------------
+*  YREGS     Register Equates                    SYS2.MACLIB
+*  ISPFSRV   ISPF Services and Keywords          LISTDSJ maclib
+*  ISPFPL    ISPF Parm List for LBISPL           LISTDSJ maclib
+*  LBISPL    CALL equivalent for ISPLINK         LISTSDJ maclib
+*  #IPAL     ISP Srv Parameter Address List      LISTDSJ maclib
+*  #ISTATS   ISPF Stats Table Columns            LISTDSJ maclib
+*
+*
+*  References:
+*  ==================================================================
+*
+*  - None
+*
+*
+         EJECT
+*  Change History: <CHGHIST>
+*  ==================================================================
+*
+*  MM/DD/CCYY Version  Name / Description
+*  ---------- -------  --------------------------------------------
+*
+*  04/02/2021 2.0.00   Larry Belmontes Jr.
+*                      - Initial version released to MVS 3.8J
+*                        hobbyist public domain
+*
+*
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+         EJECT
+LDSJISP  CSECT
+         USING LDSJISP,R10         my BASE REGISTER(S)
+         PRINT NOGEN
+*
+*     * /********************************************************/
+*     * /* Save regs and declare base registers R10             */
+*     * /* including saving R1 (PARMS) in R2                    */
+*     * /* - R1  myPARMS address on entry                       */
+*     * /* - R15 myENTRY address on entry                       */
+*     * /********************************************************/
+         STM   R14,R12,12(R13)     Save calling program registers
+         LR    R10,R15             Load base1 w R15
+         LR    R15,R13             Save callers registers
+         LR    R2,R1               Save PARM addr
+*
+*     * /********************************************************/
+*     * /* Program Eyecatcher                                   */
+*     * /********************************************************/
+         B     OVRSTAMP            Branch past eye-catcher
+MYSTAMP  EQU   *
+PGMID    DC    CL8'LDSJISP'        My Program STAMP
+         DC    CL8'MVS3.8J '       OS
+         DC    CL8'V2.0.00 '       .Version
+         DC    CL8'04022021'       ..date  MMDDCCYY
+         DC    CL1' '
+PGMDS    DC    CL8'&SYSDATE'       Assemble Date
+         DC    CL3' - '            .and
+PGMTS    DC    CL8'&SYSTIME'       ..Time
+         DC    C'Copyright (C) 2021'
+         DC    C'Larry Belmontes, Jr. '
+         DC    C'https://ShareABitofIT.net/LISTDSJ-in-MVS38J'
+MYSTAMPL EQU   *-MYSTAMP
+OVRSTAMP DS    0H
+*
+         EJECT
+*     * /********************************************************/
+*     * /* GETMAIN, working storage, using R9                   */
+*     * /* - R0  Working register                               */
+*     * /* - R1  Working register (GETMAIN address)             */
+*     * /* - R9  Working Storage DSECT address                  */
+*     * /********************************************************/
+         LA    R0,WSAREAL          R0 = size of Workarea DSECT
+         GETMAIN   R,LV=(R0)       Get Storage, R1 = addr of storage
+         LTR   R15,R15             Did we get the storage?
+         BNZ   NOMAINS             NO, return with rc in R15
+         LR    R9,R1               YES. R9 = Workarea DSECT Register
+         USING WSDSECT,R9          Tell Assembler
+*
+*     * /********************************************************/
+*     * /* Update Save Areas for caller and calling programs    */
+*     * /* - R1  myPARMS address on entry  (restored)           */
+*     * /********************************************************/
+         LR    R15,R13             Save callers savearea addr
+         LA    R13,SAVEAREA        Load Addr of my savearea
+         ST    R15,4(,R13)         Chain callers to my savearea
+         ST    R13,8(,R15)         Chain my savearea to callers
+         LR    R1,R2               Restore R1 as PARM addr
+*
+         EJECT
+*     * /********************************************************/
+*     * /* Get PARAMETER information passed to program          */
+*     * /* - R1 myPARMS address on entry                        */
+*     * /* - R2 myPARMS address save                            */
+*     * /* - R4 ISPF Member stats pointer                       */
+*     * /* -                                                    */
+*     * /* - R5         Working Register                        */
+*     * /********************************************************/
+PARMS    EQU   *                   We have a parm...
+*        STM   R0,R1,DW            SAVE    R0,R1  to   DW before TPUT
+*        TPUT  PGMID,8
+*        LM    R0,R1,DW            RESTORE R0,R1  from DW after  TPUT
+         LTR   R1,R1               Do I have a PARM?
+         BNZ   PARMIN              YES, check parm length ????
+         MVC   RCEXIT,=F'1012'     NO, return with RC=1012 (no parm)
+         B     MYEXIT              Branch to MYEXIT
+*
+*     * /********************************************************/
+*     * /* Initial Registers from Parm Address List             */
+*     * /* - R2 Starting parms address                          */
+*     * /* - R3 Table name pointer                              */
+*     * /* - R4 ISPF Member stats pointer                       */
+*     * /* - R8 DJMSG pointer                                   */
+*     * /********************************************************/
+PARMIN   EQU   *                   NO,  must be PARM addr
+         MVC   RCEXIT,=F'0'        Initialize RCEXIT
+         USING PISPPALS,R2         Tell Assembler, R2=PARMS pointer
+         L     R3,PISPTBN          R3=Table name pointer
+         USING TBNAL,R3            Tell Assembler
+         L     R8,PISPDMSG         R8=DJMSG pointer
+         L     R4,PISPDCOL         R4=ISPF Member stats pointer
+         USING DIRAL,R4            Tell Assembler
+*
+         EJECT
+*     * /********************************************************/
+*     * /* Process ISPF Service Request Type from LISTDSJ       */
+*     * /* - R7 Working Register                                */
+*     * /********************************************************/
+REQCHK1  EQU   *
+         CLI   PISPREQ,C'1'        VARDEFS Request?
+         BNE   REQCHK2             No, check 2
+         BAL   R7,VARDEFS          Yes, VDEFINE variables
+         B     REQCHKXT
+REQCHK2  EQU   *
+         CLI   PISPREQ,C'2'        ERASETB Request?
+         BNE   REQCHK3             No, check 3
+         BAL   R7,ERASETB          Yes, Erase existing ISPF table
+         B     REQCHKXT
+REQCHK3  EQU   *
+         CLI   PISPREQ,C'3'        CREATETB Request?
+         BNE   REQCHK4             No, check 4
+         BAL   R7,CREATETB         Yes, Create ISPF table
+         B     REQCHKXT
+REQCHK4  EQU   *
+         CLI   PISPREQ,C'4'        ADDTB Request?
+         BNE   REQCHK5             No, check 5
+         BAL   R7,ADDTB            Yes, Add ISPF Table row
+         B     REQCHKXT
+REQCHK5  EQU   *
+         CLI   PISPREQ,C'5'        SAVETB Request?
+         BNE   REQCHK6             No, check 6
+         BAL   R7,SAVETB           Yes, Save ISPF table
+         B     REQCHKXT
+REQCHK6  EQU   *
+         CLI   PISPREQ,C'6'        CLOSETB Request?
+         BNE   REQCHK7             No, check 7
+         BAL   R7,CLOSETB          Yes, Close ISPF table
+         B     REQCHKXT
+REQCHK7  EQU   *
+         CLI   PISPREQ,C'7'        VARDELS Request?
+         BNE   REQCHKNF            No, invalid request
+         BAL   R7,VARDELS          Yes, Delete ISPF functional vars
+         B     REQCHKXT
+REQCHKNF EQU   *
+         MVC   RCEXIT,=F'1016'     Invalid Request Type
+         B     MYEXIT              Branch to MYEXIT
+REQCHKXT EQU   *
+*
+         EJECT
+*     * /********************************************************/
+*     * /* - Restore savearea, FREEMAIN, and                    */
+*     * /*   return to caller                                   */
+*     * /********************************************************/
+MYEXIT   EQU   *
+*     * /--------------------------------------------------------/
+*     * /* R1 = my Working Storage Address from GETMAIN         */
+*     * /********************************************************/
+         LR    R1,R13              Working Storage Addr
+*
+*     * /--------------------------------------------------------/
+*     * /* Get callers savearea into R13 and overlay my R15     */
+*     * /* to be returned to caller                             */
+*     * /--------------------------------------------------------/
+         L     R13,SAVEAREA+4      Restore R13
+         L     R5,RCEXIT           Set R15 to my exit value
+*
+*     * /--------------------------------------------------------/
+*     * /* Working Storage FREEMAIN                             */
+*     * /--------------------------------------------------------/
+         LA    R0,WSAREAL          Size of WSAREA DSECT
+         FREEMAIN  R,LV=(R0),A=(R1)    Free Storage
+*
+*     * /--------------------------------------------------------/
+*     * /* Restore caller registers and return to caller        */
+*     * /--------------------------------------------------------/
+         LR    R15,R5              R15 = RC for exit
+NOMAINS  EQU   *
+         L     R14,12(R13)         Restore R14
+         LM    R0,R12,20(R13)      Restore R0 thru R12
+         BR    R14                 Return to caller
+*
+         TITLE 'LDSJISP - Subroutines                                 '
+*     * /********************************************************/      LB1010h
+*     * /* Subroutine - ISPF VDEFINE                   (R7)     */      LB1010h
+*     * /* - R1, R14, R15 Working Registers                     */
+*     * /********************************************************/      LB1010h
+VARDEFS  EQU   *                                                        LB1010h
+*     /* CALL  ISPLINK,(VDEFINE,IMEMBRN,IMEMBR,CHAR,IMEMBRL),VL */      LB1010h
+*        STM   R0,R1,DW            SAVE    R0,R1  to   DW before TPUT
+*        TPUT  VDEFINE,8
+*        LM    R0,R1,DW            RESTORE R0,R1  from DW after  TPUT
+VDEF1    EQU   *                                                        LB1010h
+         MVC   7(L'VDEFINE,R8),VDEFINE
+         PRINT GEN
+         LBISPL PISPEP,(VDEFINE,IMEMBRN,IMEMBR,CHAR,IMEMBRL),VL
+         PRINT NOGEN
+         LTR   R15,R15                                                  LB1010h
+         BZ    VDEF2                                                    LB1010h
+         MVC   16(L'IMEMBRN,R8),IMEMBRN
+         B     VARDEFSZ
+VDEF2    EQU   *                                                        LB1010h
+* * * /* CALL  ISPLINK,(VDEFINE,ITTRPN,ITTRP,CHAR,ITTRPL),VL    */      LB1010h
+         LBISPL PISPEP,(VDEFINE,ITTRPN,ITTRP,CHAR,ITTRPL),VL
+         LTR   R15,R15                                                  LB1010h
+         BZ    VDEF3                                                    LB1010h
+         MVC   16(L'ITTRPN,R8),ITTRPN                                   LB1010h
+         B     VARDEFSZ
+VDEF3    EQU   *                                                        LB1010h
+* * * /* CALL  ISPLINK,(VDEFINE,IVVMMN,IVVMM,CHAR,IVVMML),VL    */      LB1010h
+         LBISPL PISPEP,(VDEFINE,IVVMMN,IVVMM,CHAR,IVVMML),VL
+         LTR   R15,R15                                                  LB1010h
+         BZ    VDEF4                                                    LB1010h
+         MVC   16(L'IVVMMN,R8),IVVMMN
+         B     VARDEFSZ
+VDEF4    EQU   *                                                        LB1010h
+* * * /* CALL  ISPLINK,(VDEFINE,ICDTEN,ICDTE,CHAR,ICDTEL),VL    */      LB1010h
+         LBISPL PISPEP,(VDEFINE,ICDTEN,ICDTE,CHAR,ICDTEL),VL
+         LTR   R15,R15                                                  LB1010h
+         BZ    VDEF5                                                    LB1010h
+         MVC   16(L'ICDTEN,R8),ICDTEN
+         B     VARDEFSZ
+VDEF5    EQU   *                                                        LB1010h
+* * * /* CALL  ISPLINK,(VDEFINE,IMDTEN,IMDTE,CHAR,IMDTEL),VL    */      LB1010h
+         LBISPL PISPEP,(VDEFINE,IMDTEN,IMDTE,CHAR,IMDTEL),VL
+         LTR   R15,R15                                                  LB1010h
+         BZ    VDEF6                                                    LB1010h
+         MVC   16(L'IMDTEN,R8),IMDTEN
+         B     VARDEFSZ
+VDEF6    EQU   *                                                        LB1010h
+* * * /* CALL  ISPLINK,(VDEFINE,IRINTN,IRINT,CHAR,IRINTL),VL    */      LB1010h
+         LBISPL PISPEP,(VDEFINE,IRINTN,IRINT,CHAR,IRINTL),VL
+         LTR   R15,R15                                                  LB1010h
+         BZ    VDEF7                                                    LB1010h
+         MVC   16(L'IRINTN,R8),IRINTN
+         B     VARDEFSZ
+VDEF7    EQU   *                                                        LB1010h
+* * * /* CALL  ISPLINK,(VDEFINE,IRCURN,IRCUR,CHAR,IRCURL),VL    */      LB1010h
+         LBISPL PISPEP,(VDEFINE,IRCURN,IRCUR,CHAR,IRCURL),VL
+         LTR   R15,R15                                                  LB1010h
+         BZ    VDEF8                                                    LB1010h
+         MVC   16(L'IRCURN,R8),IRCURN
+         B     VARDEFSZ
+VDEF8    EQU   *                                                        LB1010h
+* * * /* CALL  ISPLINK,(VDEFINE,IRMODN,IRMOD,CHAR,IRMODL),VL    */      LB1010h
+         LBISPL PISPEP,(VDEFINE,IRMODN,IRMOD,CHAR,IRMODL),VL
+         LTR   R15,R15                                                  LB1010h
+         BZ    VDEF9                                                    LB1010h
+         MVC   16(L'IRMODN,R8),IRMODN
+         B     VARDEFSZ
+VDEF9    EQU   *                                                        LB1010h
+* * * /* CALL  ISPLINK,(VDEFINE,IUSRIDN,IUSRID,CHAR,IUSRIDL),VL */      LB1010h
+         LBISPL PISPEP,(VDEFINE,IUSRIDN,IUSRID,CHAR,IUSRIDL),VL
+         LTR   R15,R15                                                  LB1010h
+         BZ    VDEF10                                                   LB1010h
+         MVC   16(L'IUSRIDN,R8),IUSRIDN
+         B     VARDEFSZ
+VDEF10   EQU   *                                                        LB1010h
+* * * /* CALL  ISPLINK,(VDEFINE,IMTIMN,IMTIM,CHAR,IMTIML),VL    */      LB1010h
+         LBISPL PISPEP,(VDEFINE,IMTIMN,IMTIM,CHAR,IMTIML),VL
+         LTR   R15,R15                                                  LB1010h
+         BZ    VDEF11                                                   LB1010h
+         MVC   16(L'IMTIMN,R8),IMTIMN
+         B     VARDEFSZ
+VDEF11   EQU   *                                                        LB1010h
+         B     VARDEFSX
+VARDEFSZ EQU   *
+         ST    R15,RCEXIT          R15 to caller
+VARDEFSX EQU   *                                                        LB1010h
+         BR    R7                  Return to caller                     LB1010h
+*                                                                       LB1010h
+         EJECT                                                          LB1010h
+*     * /********************************************************/      LB1010h
+*     * /* Subroutine - ISPF TBERASE                   (R7)     */      LB1010h
+*     * /* - R1, R14, R15 Working Registers                     */
+*     * /********************************************************/      LB1010h
+ERASETB  EQU   *                                                        LB1010h
+* * * /* CALL  ISPLINK,(TBERASE,TBN),VL                         */      LB1010h
+ERASE01  EQU   *                                                        LB1010h
+         MVC   7(L'TBERASE,R8),TBERASE
+*        CALL  ISPLINK,(TBERASE,TBN),VL                                 LB1010h
+         LBISPL PISPEP,(TBERASE,TBN),VL
+         LTR   R15,R15                                                  LB1010h
+         BZ    ERASETBX            Table erased...                      LB1010h
+         C     R15,=F'8'                                                LB1010h
+         BE    ERASETBX            Table not found...                   LB1010h
+         MVC   16(L'TBN,R8),TBN
+ERASETBZ EQU   *
+         ST    R15,RCEXIT          R15 to caller
+ERASETBX EQU   *                                                        LB1010h
+         BR    R7                  Return to caller                     LB1010h
+*                                                                       LB1010h
+         EJECT                                                          LB1010h
+*     * /********************************************************/      LB1010h
+*     * /* Subroutine - ISPF TBCREATE                  (R7)     */      LB1010h
+*     * /* - R1, R14, R15 Working Registers                     */
+*     * /********************************************************/      LB1010h
+CREATETB EQU   *                                                        LB1010h
+* * * /* CALL  ISPLINK,(TBCREATE,TBN,KLIST,NLIST),VL            */      LB1010h
+CRE8TB1  EQU   *                                                        LB1010h
+         MVC   7(L'TBCREATE,R8),TBCREATE
+*        CALL  ISPLINK,(TBCREATE,TBN,KLIST,NLIST,NOWRITE,SHARE),VL      LB1010h
+*        CALL  ISPLINK,(TBCREATE,TBN,KLIST,NLIST),VL                    LB1010h
+         LBISPL PISPEP,(TBCREATE,TBN,KLIST,NLIST),VL
+         LTR   R15,R15                                                  LB1010h
+         BZ    CREATETX                                                 LB1010h
+         MVC   16(L'TBN,R8),TBN
+CREATETZ EQU   *
+         ST    R15,RCEXIT          R15 to caller
+CREATETX EQU   *                                                        LB1010h
+         BR    R7                  Return to caller                     LB1010h
+*                                                                       LB1010h
+         EJECT                                                          LB1010h
+*     * /********************************************************/      LB1010h
+*     * /* Subroutine - ISPF TBADD                     (R7)     */      LB1010h
+*     * /* - R1, R14, R15 Working Registers                     */
+*     * /********************************************************/      LB1010h
+ADDTB    EQU   *                                                        LB1010h
+* * * /* CALL  ISPLINK,(TBADD,TBN),VL                           */      LB1010h
+ADDTB1   EQU   *                                                        LB1010h
+         MVC   7(L'TBADD,R8),TBADD
+*        CALL  ISPLINK,(TBADD,TBN),VL                                   LB1010h
+         LBISPL PISPEP,(TBADD,TBN),VL
+         LTR   R15,R15                                                  LB1010h
+         BZ    ADDTBX                                                   LB1010h
+         MVC   16(L'TBN,R8),TBN
+ADDTBZ   EQU   *
+         ST    R15,RCEXIT          R15 to caller
+ADDTBX   EQU   *                                                        LB1010h
+         BR    R7                  Return to caller                     LB1010h
+*                                                                       LB1010h
+         EJECT                                                          LB1010h
+*     * /********************************************************/      LB1010h
+*     * /* Subroutine - ISPF TBSAVE                    (R7)     */      LB1010h
+*     * /* - R1, R14, R15 Working Registers                     */
+*     * /********************************************************/      LB1010h
+SAVETB   EQU   *                                                        LB1010h
+* * * /* CALL  ISPLINK,(TBSAVE,TBN),VL                          */      LB1010h
+SAVETB1  EQU   *                                                        LB1010h
+         MVC   7(L'TBSAVE,R8),TBSAVE
+*        CALL  ISPLINK,(TBSAVE,TBN),VL                                  LB1010h
+         LBISPL PISPEP,(TBSAVE,TBN),VL
+         LTR   R15,R15                                                  LB1010h
+         BZ    SAVETBX                                                  LB1010h
+         MVC   16(L'TBN,R8),TBN
+SAVETBZ  EQU   *
+         ST    R15,RCEXIT          R15 to caller
+SAVETBX  EQU   *                                                        LB1010h
+         BR    R7                  Return to caller                     LB1010h
+*                                                                       LB1010h
+         EJECT                                                          LB1010h
+*     * /********************************************************/      LB1010h
+*     * /* Subroutine - ISPF TBCLOSE                   (R7)     */      LB1010h
+*     * /* - R1, R14, R15 Working Registers                     */
+*     * /********************************************************/      LB1010h
+CLOSETB  EQU   *                                                        LB1010h
+* * * /* CALL  ISPLINK,(TBCLOSE,TBN),VL                         */      LB1010h
+CLOSETB1 EQU   *                                                        LB1010h
+         MVC   7(L'TBCLOSE,R8),TBCLOSE
+*        CALL  ISPLINK,(TBCLOSE,TBN),VL                                 LB1010h
+         LBISPL PISPEP,(TBCLOSE,TBN),VL
+         LTR   R15,R15                                                  LB1010h
+         BZ    CLOSETBX                                                 LB1010h
+         MVC   16(L'TBN,R8),TBN
+CLOSETBZ EQU   *
+         ST    R15,RCEXIT          R15 to caller
+CLOSETBX EQU   *                                                        LB1010h
+         BR    R7                  Return to caller                     LB1010h
+*                                                                       LB1010h
+         EJECT                                                          LB1010h
+*     * /********************************************************/      LB1010h
+*     * /* Subroutine - ISPF VDELETE                   (R7)     */      LB1010h
+*     * /* - R1, R14, R15 Working Registers                     */
+*     * /********************************************************/      LB1010h
+VARDELS  EQU   *                                                        LB1010h
+VDEL1    EQU   *                                                        LB1010h
+* * * /* CALL  ISPLINK,(VDELETE,IMEMBRN),VL                     */      LB1010h
+         MVC   7(L'VDELETE,R8),VDELETE
+         LBISPL PISPEP,(VDELETE,IMEMBRN),VL
+         LTR   R15,R15                                                  LB1010h
+         BZ    VDEL2                                                    LB1010h
+         MVC   16(L'IMEMBRN,R8),IMEMBRN
+         B     VARSDELZ
+VDEL2    EQU   *                                                        LB1010h
+* * * /* CALL  ISPLINK,(VDELETE,ITTRPN),VL                      */      LB1010h
+         LBISPL PISPEP,(VDELETE,ITTRPN),VL
+         LTR   R15,R15                                                  LB1010h
+         BZ    VDEL3                                                    LB1010h
+         MVC   16(L'ITTRPN,R8),ITTRPN
+         B     VARSDELZ
+VDEL3    EQU   *                                                        LB1010h
+* * * /* CALL  ISPLINK,(VDELETE,IVVMMN),VL                      */      LB1010h
+         LBISPL PISPEP,(VDELETE,IVVMMN),VL
+         LTR   R15,R15                                                  LB1010h
+         BZ    VDEL4                                                    LB1010h
+         MVC   16(L'IVVMMN,R8),IVVMMN
+         B     VARSDELZ
+VDEL4    EQU   *                                                */      LB1010h
+* * * /* CALL  ISPLINK,(VDELETE,ICDTEN),VL                              LB1010h
+         LBISPL PISPEP,(VDELETE,ICDTEN),VL
+         LTR   R15,R15                                                  LB1010h
+         BZ    VDEL5                                                    LB1010h
+         MVC   16(L'ICDTEN,R8),ICDTEN
+         B     VARSDELZ
+VDEL5    EQU   *                                                        LB1010h
+* * * /* CALL  ISPLINK,(VDELETE,IMDTEN),VL                      */      LB1010h
+         LBISPL PISPEP,(VDELETE,IMDTEN),VL
+         LTR   R15,R15                                                  LB1010h
+         BZ    VDEL6                                                    LB1010h
+         MVC   16(L'IMDTEN,R8),IMDTEN
+         B     VARSDELZ
+VDEL6    EQU   *                                                        LB1010h
+* * * /* CALL  ISPLINK,(VDELETE,IRINTN),VL                      */      LB1010h
+         LBISPL PISPEP,(VDELETE,IRINTN),VL
+         LTR   R15,R15                                                  LB1010h
+         BZ    VDEL7                                                    LB1010h
+         MVC   16(L'IRINTN,R8),IRINTN
+         B     VARSDELZ
+VDEL7    EQU   *                                                        LB1010h
+* * * /* CALL  ISPLINK,(VDELETE,IRCURN),VL                      */      LB1010h
+         LBISPL PISPEP,(VDELETE,IRCURN),VL
+         LTR   R15,R15                                                  LB1010h
+         BZ    VDEL8                                                    LB1010h
+         MVC   16(L'IRCURN,R8),IRCURN
+         B     VARSDELZ
+VDEL8    EQU   *                                                        LB1010h
+* * * /* CALL  ISPLINK,(VDELETE,IRMODN),VL                      */      LB1010h
+         LBISPL PISPEP,(VDELETE,IRMODN),VL
+         LTR   R15,R15                                                  LB1010h
+         BZ    VDEL9                                                    LB1010h
+         MVC   16(L'IRMODN,R8),IRMODN
+         B     VARSDELZ
+VDEL9    EQU   *                                                        LB1010h
+* * * /* CALL  ISPLINK,(VDELETE,IUSRIDN),VL                     */      LB1010h
+         LBISPL PISPEP,(VDELETE,IUSRIDN),VL
+         LTR   R15,R15                                                  LB1010h
+         BZ    VDEL10                                                   LB1010h
+         MVC   16(L'IUSRIDN,R8),IUSRIDN
+         B     VARSDELZ
+VDEL10   EQU   *                                                        LB1010h
+* * * /* CALL  ISPLINK,(VDELETE,IMTIMN),VL                      */      LB1010h
+         LBISPL PISPEP,(VDELETE,IMTIMN),VL
+         LTR   R15,R15                                                  LB1010h
+         BZ    VDEL11                                                   LB1010h
+         MVC   16(L'IMTIMN,R8),IMTIMN
+         B     VARSDELZ
+VDEL11   EQU   *                                                        LB1010h
+         B     VARSDELX
+VARSDELZ EQU   *
+         ST    R15,RCEXIT          R15 to caller
+         BR    R7                  Return to caller
+VARSDELX EQU   *                                                        LB1010h
+         MVC   7(8,R8),=C'        '
+         BR    R7                  Return to caller                     LB1010h
+*
+         TITLE 'LDSJISP - Literal Pool                                '
+         LTORG
+*
+         TITLE 'LDSJISP - ISPF Constants and Variables                '
+         ISPFSRV                   ISPF Service Constants
+         EJECT
+*     * /********************************************************/      LB1010h
+*     * /* ISPF Table lists                                     */      LB1010h
+*     * /********************************************************/      LB1010h
+KLIST    DC    C'(IMEMBR)'                                              LB1010h
+NLIST DC C'(ITTRP IVVMM ICDTE IMDTE IMTIM IRCUR IRINT IRMOD IUSRID)'    LB1010h
+*
+         EJECT
+*     * /********************************************************/      LB1010h
+*     * /* ISPF Table column names    DIRLSTn    8-bytes        */      LB1010h
+*     * /********************************************************/      LB1010h
+IMEMBRN  DC    C'IMEMBR  '                                              LB1010h
+ITTRPN   DC    C'ITTRP   '                                              LB1010h
+IVVMMN   DC    C'IVVMM   '                                              LB1010h
+ICDTEN   DC    C'ICDTE   '                                              LB1010h
+IMDTEN   DC    C'IMDTE   '                                              LB1010h
+IMTIMN   DC    C'IMTIM   '                                              LB1010h
+IRCURN   DC    C'IRCUR   '                                              LB1010h
+IRINTN   DC    C'IRINT   '                                              LB1010h
+IRMODN   DC    C'IRMOD   '                                              LB1010h
+IUSRIDN  DC    C'IUSRID  '                                              LB1010h
+*
+*     * /********************************************************/      LB1010h
+*     * /* ISPF Table column lengths  DIRLSTn                   */      LB1010h
+*     * /********************************************************/      LB1010h
+IMEMBRL  DC    A(L'IMEMBR)                                              LB1010h
+ITTRPL   DC    A(L'ITTRP)                                               LB1010h
+IVVMML   DC    A(L'IVVMM)                                               LB1010h
+ICDTEL   DC    A(L'ICDTE)                                               LB1010h
+IMDTEL   DC    A(L'IMDTE)                                               LB1010h
+IMTIML   DC    A(L'IMTIM)                                               LB1010h
+IRCURL   DC    A(L'IRCUR)                                               LB1010h
+IRINTL   DC    A(L'IRINT)                                               LB1010h
+IRMODL   DC    A(L'IRMOD)                                               LB1010h
+IUSRIDL  DC    A(L'IUSRID)                                              LB1010h
+*
+         TITLE 'LDSJISP - Equates                                     '
+*     * /********************************************************/
+*     * /* Register Equates                                     */
+*     * /********************************************************/
+         YREGS                     Register EQU as Rn or Rnn
+*
+*R0       EQU   0
+*R1       EQU   0
+*R2       EQU   0
+*R3       EQU   0
+*R4       EQU   0
+*R5       EQU   0
+*R6       EQU   0
+*R7       EQU   0
+*R8       EQU   0
+*R9       EQU   0
+*R10      EQU   0
+*R11      EQU   0
+*R12      EQU   0
+*R13      EQU   0
+*R14      EQU   0
+*R15      EQU   0
+*
+         TITLE 'LDSJISP - DSECTS                                      '
+PARMAL   DSECT
+         #IPAL                     ISPF Services Parm Addr List
+         EJECT
+*     * /********************************************************/
+*     * /* ISPF Directory Table Name                            */
+*     * /********************************************************/
+TBNAL    DSECT
+TBN      DS    CL8                 ISPF Directory Table Name
+         EJECT
+*     * /********************************************************/
+*     * /* ISPF Statistics Column Data Areas                    */
+*     * /********************************************************/
+DIRAL    DSECT
+         #ISTATS                   ISPF Directory List Table
+*
+         TITLE 'LDSJISP - Working Storage Variables                   '
+*     * /********************************************************/
+*     * /* Working Storage  DSECT                               */
+*     * /********************************************************/
+WSDSECT  DSECT
+WSAREA   EQU   *
+*
+*     * /********************************************************/
+*     * /* mySAVEARA                                            */
+*     * /********************************************************/
+SAVEAREA DS    18F                 my Savearea
+*                      +00  A(savearea of current CSECT)
+*                      +04  A(savearea of calling CSECT)
+*                      +08  A(savearea of called  CSECT)
+*                      +12  R14
+*                      +16  R15
+*                      +20  R0
+*                      +24  R1
+*                      +28  R2
+*                      +32  R3
+*                      +36  R4
+*                      +40  R5
+*                      +44  R6
+*                      +48  R7
+*                      +52  R8
+*                      +56  R9
+*                      +60  R10
+*                      +64  R11
+*                      +68  R12
+*
+*     * /********************************************************/
+*     * /* Misc Variables                                       */
+*     * /********************************************************/
+SAVER15  DS    F                   R15 Hold
+DW       DS    D                   Double Word area
+FW       DS    F                   Full Word   area
+RCEXIT   DS    F                   Exit RC
+RC       DS    CL2                 Return Code
+*
+         EJECT
+         ISPFPL                    ISPF Parm List for LBISPL macro
+         EJECT
+*
+WSAREAE  EQU   *                   Working Storage END
+WSAREAL  EQU   WSAREAE-WSAREA      Working Storage Area Length
+*
+         END   LDSJISP

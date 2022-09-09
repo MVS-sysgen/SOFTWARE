@@ -1,0 +1,107 @@
+         MACRO
+&NAME    MOVER &P,&LL
+**********************************************************************
+*   Macro:  MOVER     V1R0M00    07/30/2020
+*  Author:  Larry Belmontes Jr.
+*           https://ShareABitofIT.net/SHRABIT-MACLIB-in-mvs-3-8j
+*           Copyright (C) 2020-2021  Larry Belmontes, Jr.
+**********************************************************************
+.*********************************************************************
+.*       Macro Description:                                          *
+.*       ------------------                                          *
+.*       o  Move data from &P starting at R6 to last non-blank byte  *
+.*          augmenting R6 and R8 by 1 for each byte moved.           *
+.*       o  &P length defaults to L'&P or value of &LL               *
+.*       o  &LL must be numeric, if specified.                       *
+.*       o  &P length must be >0 and <= 256 bytes.                   *
+.*       o  MOVEI must be executed to set R6 and R8 prior to using   *
+.*          this macro                                               *
+.*          - R6=Current Address of &P as pointer                    *
+.*          - R8=Current Length  of &P as bytes moved into &P        *
+.*                                                                   *
+.*       Examples:                                                   *
+.*       ---------                                                   *
+.*       MOVER PARM           Move PARM for length of PARM           *
+.*       MOVER PARM,20        Move PARM for length of 20             *
+.*                                                                   *
+.*       - Uses R6,R8                                                *
+.*       - Uses R3,R4,R7 for RTRIM subroutine                        *
+.*********************************************************************
+*  Disclaimer:
+*  ===================================================================
+*
+*     No guarantee; No warranty; Install / Use at your own risk.
+*
+*     This software is provided "AS IS" and without any expressed
+*  or implied warranties, including, without limitation, the
+*  implied warranties of merchantability and fitness for a
+*  particular purpose.
+*
+*     The author requests keeping authors name intact in any
+*  modified versions.
+*
+*     In addition, the author requests readers to submit any
+*  code modifications / enhancements and associated comments
+*  for consideration into a subsequent release (giving credit
+*  to contributor(s)) thus, improving overall functionality
+*  and further benefiting the MVS 3.8J hobbyist public domain
+*  community.
+*
+*
+         LCLA  &A
+         LCLC  &C
+&C       SETC  T'&P          Type of VAR
+         AIF   ('&C' EQ 'U').UNDEF
+         AGO    .DEF
+.UNDEF   ANOP
+         MNOTE 'MOVEI, Undefined reference &P'
+         MNOTE 'MOVEI, Using length of &P'
+         AIF   ('&LL' GT '').SETLLL
+         AGO    .STRT00
+.SETLLL  ANOP
+.*       AIF   (&LL GT &A).TO2LONG
+&A       SETA  &LL         Length of OVERRIDE LENGTH
+         AIF   (&A LE 0).TOOSHRT
+         AIF   (&A GT 256).TOOLONG
+         AGO    .STRT00
+.*
+.*
+.DEF     ANOP
+&A       SETA  L'&P          Length of VAR
+         AIF   ('&LL' GT '').SETLLL2
+         AGO    .SETLLL3
+.SETLLL2 ANOP
+.*       AIF   (&LL GT &A).TO2LONG
+&A       SETA  &LL         Length of OVERRIDE LENGTH
+.SETLLL3 ANOP
+         AIF   (&A LE 0).TOOSHRT
+         AIF   (&A GT 256).TOOLONG
+.*
+.*
+.STRT00  ANOP
+&NAME    LA    3,&P                  Addr of String
+         AIF   ('&C' EQ 'U').SETUND
+.SETDEF  ANOP
+         LA    4,&A                  Override Length of String
+         AGO    .SETCONT
+.SETUND  ANOP
+         LA    4,L'&P                Length of String
+.SETCONT ANOP
+         BAL   7,RTRIM               RTRIM PCNDSN
+         MNOTE 'RTRIM, move 1-&A bytes to ptr R6, R8=cur len'
+           MNOTE '       from &P type(&C)'
+         AGO    .ENDME
+.TOOSHRT ANOP
+         MNOTE 12,'&P content must be > 0 bytes'
+         AGO    .ENDME
+.TOOLONG ANOP
+         MNOTE 12,'&P content > 256 bytes'
+         AGO    .ENDME
+.TO2LONG ANOP
+         MNOTE 12,'OVR LEN of &LL > &A bytes'
+         AGO    .ENDME
+.NOTCHAR ANOP
+.*         MNOTE 12,'&P not character type (&C)'
+         AGO    .ENDME
+.ENDME   ANOP
+         MEND

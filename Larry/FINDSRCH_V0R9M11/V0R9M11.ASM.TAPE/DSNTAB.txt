@@ -1,0 +1,218 @@
+         MACRO
+&LAB1    ENTERR  &SA=SAVEAREA,&WA=WORKAREA,&WL=WORKLEN,&LEVEL=,&R=,   XX
+               &CLEAR=YES
+         MNOTE ' CLEAR=&CLEAR,SA=&SA,WA=&WA,WL=&WL,LEVEL=&LEVEL'
+&LAB1    CSECT
+         SAVE  (14,12),,&LAB1-&LEVEL
+         LR    R12,R15            HOPE HE KNOWS WHAT HE'S DOING
+         USING &LAB1,R12
+         LR    R10,R1             SAVE PARM PTR R10->PARM PTR
+         L     R0,=A(&WL)         R0=GET LENGTH
+         GETMAIN R,LV=(0)         R1->WORKAREA
+         LR    R11,R13            R11->CALLERS SAVEAREA
+         LR    R13,R1             R13->WORKAREA
+         USING &WA.,R13
+         AIF   ('&CLEAR' NE 'YES').NCLEAR
+         L     R15,=A(&WL)        R0=GET LENGTH
+         S     R15,=F'72'         SKIP REGS
+         MOVE  72(13),(15),0,0
+.NCLEAR  ANOP
+         ST    R11,&SA.+4         SAVE HIS SAVEAREA PTR
+         LA    R13,&SA            R13->SAVEAREA (MINE)
+         ST    R13,8(,R11)        MINE IN HIS
+         LR    R11,R1             R11->WORKAREA IN CASE NOT SAME AS R13
+*                       WORKAREA ADDR IS STILL R13 FOR
+*                       THE ASSEMBLER - IF DIFFERENT FROM R13
+*                       THEN USE: DROP R13 AND USING &WA.,R11
+         LR    R1,R10             RESTORE PARM PTR PTR
+         AIF   ('&R' EQ 'NO').NRE
+         REGEQU
+.NRE     ANOP
+         MEND
+         MACRO
+         REGEQU
+R0       EQU   0
+R1       EQU   1
+R2       EQU   2
+R3       EQU   3
+R4       EQU   4
+R5       EQU   5
+R6       EQU   6
+R7       EQU   7
+R8       EQU   8
+R9       EQU   9
+R10      EQU   10
+R11      EQU   11
+R12      EQU   12
+R13      EQU   13
+R14      EQU   14
+R15      EQU   15
+         MEND
+         MACRO                                                          TSO06270
+&L1      MOVE  &TO,&TL,&FROM,&FL,&PAD=                                  TSO06280
+         LCLA  &NL,&UL,&VL,&RP,&RP2,&RC                                 TSO06290
+         LCLC  &TO$,&TL$,&FROM$,&FL$                                    TSO06290
+         LCLC  &R1(2),&R2(2),&RN1,&RN2                                  TSO06290
+&RC      SETA  1
+&RP      SETA  2
+&RP2     SETA  &RP+1
+.RPLOOP  ANOP
+&RN1     SETC  '(R'.'&RP'.')'
+&RN2     SETC  '(R'.'&RP2'.')'
+         AIF   ('&TO' EQ '&RN1').CKP2
+         AIF   ('&TL' EQ '&RN1').CKP2
+         AIF   ('&FROM' EQ '&RN1').CKP2
+         AIF   ('&FL' EQ '&RN1').CKP2
+         AIF   ('&TO' EQ '&RN2').CKP2
+         AIF   ('&TL' EQ '&RN2').CKP2
+         AIF   ('&FROM' EQ '&RN2').CKP2
+         AIF   ('&FL' EQ '&RN2').CKP2
+&R1(&RC) SETC  'R'.'&RP'
+&R2(&RC) SETC  'R'.'&RP2'
+&RC      SETA  &RC+1
+         AIF   (&RC EQ 3).GP
+.CKP2    ANOP
+&RP      SETA  &RP+2
+&RP2     SETA  &RP+1
+         AIF   (&RP LT 10).RPLOOP
+         MNOTE 8,'NO REGISTER PAIRS FREE FOR MVCL INSTRUCTION'
+         MEXIT
+.GP      ANOP
+&TO$     SETC  '&TO'
+&TL$     SETC  '&TL'
+&FROM$   SETC  '&FROM'
+&FL$     SETC  '&FL'
+         AIF   ('&TO'(1,1) NE '(').TLC
+&TO$     SETC  '0&TO'
+.TLC     AIF   ('&TL'(1,1) NE '(').FC
+&TL$     SETC  '0&TL'
+.FC      AIF   ('&FROM'(1,1) NE '(').FLC
+&FROM$   SETC  '0&FROM'
+.FLC     AIF   (T'&FL EQ 'O').OO                                        TSO06340
+         AIF   ('&FL'(1,1) NE '(').OO
+&FL$     SETC  '0&FL'
+.OO      ANOP
+&L1      STM   14,12,12(13)                                             TSO06300
+         LA    &R1(1),&TO$                                              TSO06310
+         LA    &R2(1),&TL$                                              TSO06320
+         LA    &R1(2),&FROM$                                            TSO06330
+         AIF   (T'&FL EQ 'O').UTL                                       TSO06340
+         LA    &R2(2),&FL$                                              TSO06350
+         AGO   .PC                                                      TSO06360
+.UTL     LA    &R2(2),&TL$                                              TSO06370
+.PC      AIF   ('&PAD' EQ '').NPC                                       TSO06380
+         ICM   &R2(2),8,=&PAD                                           TSO06390
+.NPC     MVCL  &R1(1),&R1(2)                                            TSO06400
+         LM    14,12,12(13)                                             TSO06410
+         MEND                                                           TSO06420
+         MACRO
+&LAB     LEAVER &WR=R13,&WL=WORKLEN
+&LAB     LR    R1,&WR             WORKAREA ADDR FOR FREEMAIN
+         L     R0,=A(&WL)         WORKAREA LEN   "    "
+         L     R13,4(R13)         GET CALLERS SAVEAREA ADDR
+         LR    R11,R15            SAVE RETURN CODE
+         FREEMAIN R,LV=(0),A=(1)
+         LR    R15,R11            RESTORE RETURN CODE
+         RETURN (14,12),RC=(15)
+         MEND
+*          DATA SET 761KKDSNTB AT LEVEL 001 AS OF 08/30/82
+* WRITTEN BY KERMIT KISER - WASHINGTON STATE DP SERVICE CENTER (WDPSC)
+*
+DSNTAB   ENTERR LEVEL=V1M0
+         LR    R11,R1             R11->PARM LIST
+         SLR   R15,R15            R15=0
+         EJECT
+*
+*        MAINLINE ROUTINE:
+*
+         BAL   R14,FINDDD         R9->DD ENTRY
+         BXH   R15,R15,EXIT       STOP IF NOT FOUND
+*
+*
+         SLR   R5,R5              R5=0  DSN COUNT
+         L     R6,4(,R11)         R6->DSN TABLE
+         L     R7,8(,R11)         R7->SIZE OF TABLE
+         LH    R7,0(,R7)          R7=LENGTH OF TABLE
+*
+MOVELOOP BAL   R14,MOVEDSN        PUT THE DSN IN THE TABLE
+         BXH   R15,R15,EXIT       STOP IF TABLE ERROR
+         CLI   0(R9),X'00'        END OF TIOT?
+         BE    MOVEND             YES
+         CLC   4(8,R9),=CL8' '    BLANK DD NAME?
+         BE    MOVELOOP           YES->MUST BE CONCATENATED
+*
+MOVEND   L     R1,12(,R11)        R1->ENTRY COUNT PARM
+         STH   R5,0(R1)           PASS THE COUNT OF ENTRIES TO JEFF
+         EJECT
+*
+*        CODE  TO LEAVE DSNTAB:
+*
+EXIT     LEAVER
+         EJECT
+*                                 FIND THE DDNAME IN THE TIOT:
+*
+FINDDD   ST    R14,L1LS
+         L     R1,540             R1->TCB NOW RUNNING
+         L     R2,12(,R1)         R2->TIOT
+         LA    R9,24(,R2)         R9->FIRST DD ENTRY IN TIOT
+         L     R10,0(,R11)        R10->DDNAME PASSED BY JEFF
+*
+MTCHLOOP CLC   0(8,R10),4(R9)     DDNAMES MATCH?
+         BE    FINDX              YES
+         BAL   R14,NEXTDD         R9->NEXT DD ENTRY
+         CLI   0(R9),X'00'        END OF TIOT?
+         BNE   MTCHLOOP           NO->COMPARE DDNAME
+*
+         LA    R15,2              R15=2 RC=4
+*
+FINDX    L     R14,L1LS
+         BR    R14                EXIT
+         EJECT
+*
+*              SUBRTN TO MOVE A   DSN TO THE TABLE:
+*
+MOVEDSN  ST    R14,L1LS
+         ICM   R1,7,12(R9)        R1->JFCB
+         CH    R7,=H'50'          ROOM IN TABLE FOR THIS NAME?
+         BNL   MOVEIT             YES -> DO IT
+         LA    R15,4              NO->SAY TABLE SIZE ERROR
+         B     MX
+*
+MOVEIT   MVC   6(44,R6),16(R1)    MOVE THE DSN INTO THE TABLE
+         MVC   0(4,R6),=X'00020001'    INIT TEXT UNIT KEY
+*
+*                                 FIND THE LENGTH OF THE DSN:
+*
+         LA    R2,6(,R6)          R2->DSN
+         SLR   R3,R3              R3=0 INIT DSN LEN
+DSL      IC    R4,0(R2,R3)        R4=NEXT DSN CHAR TO BE CHECKED
+         CLM   R4,1,=C' '         IS IT BLANK?
+         BE    DSEND              YES
+         LA    R3,1(,R3)          R3+1->NEXT CHAR
+         B     DSL                CHECK NEXT IF NO BLANK YET
+*
+DSEND    STH   R3,4(,R6)          PUT THE DSN LENGTH IN THE TABLE
+         SH    R7,=H'50'          UPDATE LENGTH REMAINING IN TABLE
+         LA    R5,1(,R5)          R5+1=DSN COUNT IN TABLE
+         BAL   R14,NEXTDD         R9->NEXT DD ENTRY IN TIOT
+         LA    R6,50(,R6)         R6->NEXT SLOT IN NAME TABLE
+*
+MX       L     R14,L1LS
+         BR    R14                EXIT
+         EJECT
+*
+*              SUBRTN TO MOVE R9  TO THE NEXT DD ENTRY IN THE TIOT
+*
+NEXTDD   SLR   R8,R8
+         IC    R8,0(,R9)          R8=LENGTH OF CURRENT DD ENTRY
+         LA    R9,0(R8,R9)        R9->NEXT DD ENTRY IN TIOT
+         BR    R14                RETURN
+         SPACE 2
+         LTORG
+         SPACE 2
+WORKAREA DSECT
+SAVEAREA DS    18F
+L1LS     DS    F
+L2LS     DS    F
+WORKLEN  EQU   *-WORKAREA
+         END

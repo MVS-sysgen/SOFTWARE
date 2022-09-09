@@ -1,0 +1,69 @@
+/********************************************************************/
+/*                                                                  */
+/* MESSAGES: FIND00                                                 */
+/*                                                                  */
+/* Author: Larry Belmontes Jr.                                      */
+/*         https://ShareABitofIT.net/FINDSRCH-in-MVS38J             */
+/*         Copyright (C) 2020-2021 Larry Belmontes, Jr.             */
+/*                                                                  */
+/*                                                                  */
+/* Description:                                                     */
+/* ---------------------------------------------------------------  */
+/*                                                                  */
+/* ISPF 2.0 FINDSRCH messages                                       */
+/*                                                                  */
+/*                                                                  */
+/* Disclaimer:                                                      */
+/* ================================================================ */
+/*                                                                  */
+/*    No guarantee; No warranty; Install / Use at your own risk.    */
+/*                                                                  */
+/*    This software is provided "AS IS" and without any expressed   */
+/* or implied warranties, including, without limitation, the        */
+/* implied warranties of merchantability and fitness for a          */
+/* particular purpose.                                              */
+/*                                                                  */
+/*    The author requests keeping authors name intact in any        */
+/* modified versions.                                               */
+/*                                                                  */
+/*    In addition, the author requests readers to submit any        */
+/* code modifications / enhancements and associated comments        */
+/* for consideration into a subsequent release (giving credit       */
+/* to contributor(s)) thus, improving overall functionality         */
+/* and further benefiting the MVS 3.8J hobbyist public domain       */
+/* community.                                                       */
+/*                                                                  */
+/*                                                                  */
+/*                                                                  */
+/* Change History:                                                  */
+/* ================================================================ */
+/* MM/DD/CCYY Version  Name / Description                           */
+/* ---------- -------  -------------------------------------------- */
+/* 10/23/2021 0.9.10   Larry Belmontes Jr.                          */
+/*                     - Add new messages FIND008, FIND009          */
+/*                                                                  */
+/* 09/26/2020 0.9.00   Larry Belmontes Jr.                          */
+/*                     - Initial version released to MVS 3.8J       */
+/*                       hobbyist public domain                     */
+/*                                                                  */
+/********************************************************************/
+FIND000  '&ZERRSM                 ' .ALARM=NO
+'&ZERRMSG &ZERRLM                                                              '
+FIND001  '                        ' .ALARM=NO
+'FIND001  Cannot be blank                                                      '
+FIND002  '                        ' .ALARM=NO
+'FIND002  Must conform to DSN naming standards                                 '
+FIND003  '                        ' .ALARM=NO
+'FIND003  Invalid value                                                        '
+FIND004  '                        ' .ALARM=NO
+'FIND004  Exceeded DSN limit.  DSNs Searched reflects applied limit.           '
+FIND005  '                        ' .ALARM=NO
+'FIND005  No datasets found containing ''&PDSN''                               '
+FIND006  '                        ' .ALARM=NO
+'FIND006  No Members found for this query.                                     '
+FIND007  '                        ' .ALARM=NO
+'FIND007  No Search Results found for this query.                              '
+FIND008  '                        ' .ALARM=NO
+'FIND008  DDName (pos. 1) must contain A-Z, #, @ or $.                         '
+FIND009  '                        ' .ALARM=NO
+'FIND009  DDName (pos. 2-8) must contain A-Z, 0-9, #, @ or $.                  '

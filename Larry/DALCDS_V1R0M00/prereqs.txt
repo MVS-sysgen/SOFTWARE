@@ -1,0 +1,57 @@
+* DALCDS for MVS3.8J / Hercules
+* ============================= 
+*
+*
+*  Author:  Larry Belmontes Jr.
+*           https://ShareABitofIT.net/DALCDS-in-MVS38J
+*           Copyright (C) 2020  Larry Belmontes, Jr.
+*
+*  MM/DD/CCYY Version  Name / Description
+*  ---------- -------  -----------------------------------------------
+*  08/10/2020 1.0.00   Larry Belmontes Jr.  
+*                      - Initial version released to MVS 3.8J
+*                        hobbyist public domain
+*
+*
+*  Prerequisite: User Modifications and Others
+*  ===================================================================
+*
+*     SHRABIT.MACLIB is NECESSARY to assemble this software.  This PDS
+*  contains macros and copybooks.  Download from this website:
+*       https://ShareABitofIT.net/SHRABIT-MACLIB-in-MVS38J
+*
+*     **** NOTE: SHRABIT.MACLIB is part of the installation process.
+*                You can visit the SHRABIT.MACLIB page and download 
+*                at a later time!
+*
+*     ISPF generic message ISRZ002, part of message member ISRZ00, is  
+*  used for error message processing and posting by this software.
+*  If ISRZ00 is NOT INSTALLED on your system, error posting results in     
+*  a message not found condition with no error context posted.
+*  ISRZ00 can be downloaded from this website:
+*       https://ShareABitofIT.net/ISRZ00-in-MVS38J     
+*
+*     **** NOTE: ISRZ00 is part of the installation process.  You can
+*                visit the ISRZ00 page and download at a later time!
+*
+*     This software displays date and time on line 1 using ISPF
+*  Z-variables ZDATE, ZJDATE and ZTIME or subroutine GETDTE (if
+*  installed on your system).
+*
+*     GETDTE, is OPTIONAL, and can be downloaded from website: 
+*       https://ShareABitofIT.net/GETDTE-in-MVS38J
+*
+*     If GETDTE is installed, two user-mods, ZP60014 and ZP60038 are
+*  REQUIRED to process CLIST symbolic variables via the IKJCT441 API.
+*  Otherwise, GETDTE will function normally, but will NOT create 
+*  CLIST variable, RDTEANSR.
+*
+*     More information on the above user-mods can be obtained from
+*  the following website:
+*       http://www.prycroft6.com.au/vs2mods/
+*
+*     Check your system to determine if one or both user-mods are
+*  required.  ZP60038 requires ZP60014.
+*
+*
+*

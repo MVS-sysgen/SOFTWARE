@@ -1,0 +1,1306 @@
+         TITLE 'DFSPC - ISPF Display Freespace Information            '
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+*
+*  ==================================================================
+*
+* DDDDD    FFFFFFF   SSSSS   PPPPPP    CCCC
+* DD   D   FF       SS    S  PP   PP  CC  CC
+* DD   DD  FF       SS       PP   PP  CC
+* DD   DD  FFFFF     SSSSS   PPPPPP   CC
+* DD   DD  FF            SS  PP       CC
+* DD   D   FF       S    SS  PP       CC  CC
+* DDDDD    FF        SSSS    PP        CCCC
+*
+*  ==================================================================
+*
+*
+*  Program: DFSPC
+*
+*  Author:  Larry Belmontes Jr.
+*           https://ShareABitofIT.net/DFSPC-in-MVS38J
+*           Copyright (C) 2020  Larry Belmontes, Jr.
+*
+*  Disclaimer:
+*  ===================================================================
+*
+*     No guarantee; No warranty; Install / Use at your own risk.
+*
+*     This software is provided "AS IS" and without any expressed
+*  or implied warranties, including, without limitation, the
+*  implied warranties of merchantability and fitness for a
+*  particular purpose.
+*
+*     The author requests keeping authors name intact in any
+*  modified versions.
+*
+*     In addition, the author requests readers to submit any
+*  code modifications / enhancements and associated comments
+*  for consideration into a subsequent release (giving credit
+*  to contributor(s)) thus, improving overall functionality
+*  and further benefiting the MVS 3.8J hobbyist public domain
+*  community.
+*
+*
+         EJECT
+*  Overview:
+*  ================================================================
+*
+*     DFSPC displays volume freespace and attributes for each
+*  online DASD device via ISPF using table services.  DFSPC uses
+*  SVC 78 as offered in MVS 3.8J and volume attributes are gathered
+*  from DSCB-F4. The code base does not support indexed VTOCs as
+*  not offered in MVS 3.8J.
+*
+*     DFSPC display snippet follows:
+*
+*   ------------------------------------------------------------------
+*   | dd/mm/yy.jjj hh:mm      ------  DASD Freespace  ------------...|  Line 1
+*   | COMMAND ===>                                                ...|       2
+*   |                                                             ...|       3
+*   |                                                             ...|       4
+*   |                       -----FREE-----  -LARGEST-    VTOC  Ava...|       5
+*   | CUU  VOLSER  DEVTYPE  Cyls Trks Exts  Cyls Trks    Trks  DSC...|       6
+*   | 343  CBTCAT  3350     0193 0005 0002  0193 0000   00029  012...|       7
+*   | 340  CBT000  3350     0000 0007 0001  0000 0007   00029  012...|       8
+*   | 341  CBT001  3350     0013 0006 0002  0013 0000   00029  010...|       .
+*   | 342  CBT002  3350     0036 0011 0001  0036 0011   00029  010...|       .
+*   ------------------------------------------------------------------
+*
+*     Data can be sorted by typing 'SORT ColNn' into the COMMAND line.
+*  ColNm must be a minimum of 3 characters.  For descending order,
+*  preceed the ColNm with a minus sign. i.e. SORT -CUU
+*
+*     The method used to acquire DASD freespace is via a UCB scan for
+*  non-VIO Online DASD devices.
+*
+*     Date and time values are sourced from ISPF Z variables or
+*  subroutine GETDTE, if found in a link library.  If GETDTE is not
+*  installed on your system or elect not to do so, no problem!
+*  See Prerequisite section below for more information.
+*
+*     DFSPC uses ISPF generic message ISRZ002 for posting errors.
+*  Message set ISRZ00 must be installed to display message content.
+*  Otherwise, a 'not found' message is posted.  See Prerequisite
+*  section below for more information.
+*
+*     Some common macros are used in this program and other
+*  ShareABitofIT software before assembly-link-edit which requires
+*  installation of SHRABIT.MACLIB.  See Prerequisite section below
+*  for more information.
+*
+         EJECT
+*  Overview:  (continued)
+*  ================================================================
+*
+*     DFSPC can be invoked directly from an ISPF panel or menu
+*  using 'CMD(DFSPC) NEWAPPL(DFSP)' as follows:
+*
+*     For example -
+*
+*       Assume an existing ISPF panel has the following )PROC section,
+*       the 'NEW ENTRY' line can be added to invoke DSFPC when
+*       option F is entered on the panel (menu) command line.
+*
+*         )PROC
+*           &ZSEL = TRANS( TRUNC (&ZCMD,'.')
+*                         1,'CMD(xxxxx) NEWAPPL(ISR)'
+*                         6,'PGM(xxxxxx)'
+*                         F,'CMD(DFSPC) NEWAPPL(DFSP)'   <-- NEW ENTRY
+*                       ' ',' '
+*                         *,'?' )
+*         )END
+*
+*     Alternatively, a command entry can be defined in the ISPF
+*  command table (ISPCMDS) as follows:
+*
+*     For example -
+*
+*               VERB      T  ACTION
+*                               DESCRIPTION
+*
+*          ____ DFSPC     5  SELECT CMD(DFSPC) NEWAPPL(DFSP)
+*                               DISPLAY DASD FREESPACE
+*
+*     Then, you can access DFSPC from any screen by typing DFSPC
+*  on the command line.
+*
+*     DFSPC is based on Wally Mclaughlin's ISPF product Ver 2.1 and
+*  written in IFOX00 under MVS38J TK3 / Hercules.
+*
+*     Other ISPF resource required include:
+*            - PDFSPC0   DASD Freespace Display Panel
+*            - HDFSPC0   DASD Freespace Help    Panel
+*            - ISRZ00    Messages, use the generic ISRZ002 message
+*              This ISPF message set can be downloaded from
+*              https://www.shareabitofit.net/ISRZ00-in-mvs38j/
+*
+*
+         EJECT
+*  Prerequisite: User Modifications and Others
+*  ===================================================================
+*
+*     SHRABIT.MACLIB is NECESSARY to assemble this software.  This PDS
+*  contains macros and copybooks.  Download from this website:
+*       https://ShareABitofIT.net/SHRABIT-MACLIB-in-MVS38J
+*
+*     **** NOTE: SHRABIT.MACLIB is part of the installation process.
+*                You can visit the SHRABIT.MACLIB page and download
+*                at a later time!
+*
+*     ISPF generic message ISRZ002, part of message member ISRZ00, is
+*  used for error message processing and posting by this software.
+*  If ISRZ00 is NOT INSTALLED on your system, error posting results in
+*  a message not found condition with no error context posted.
+*  ISRZ00 can be downloaded from this website:
+*       https://ShareABitofIT.net/ISRZ00-in-MVS38J
+*
+*     **** NOTE: ISRZ00 is part of the installation process.  You can
+*                visit the ISRZ00 page and download at a later time!
+*
+*     This software displays date and time on line 1 using ISPF
+*  Z-variables ZDATE, ZJDATE and ZTIME or subroutine GETDTE (if
+*  installed on your system).
+*
+*     GETDTE, is OPTIONAL, and can be downloaded from website:
+*       https://ShareABitofIT.net/GETDTE-in-MVS38J
+*
+*     If GETDTE is installed, two user-mods, ZP60014 and ZP60038 are
+*  REQUIRED to process CLIST symbolic variables via the IKJCT441 API.
+*  Otherwise, GETDTE will function normally, but will NOT create
+*  CLIST variable, RDTEANSR.
+*
+*     More information on the above user-mods can be obtained from
+*  the following website:
+*       http://www.prycroft6.com.au/vs2mods/
+*
+*     Check your system to determine if one or both user-mods are
+*  required.  ZP60038 requires ZP60014.
+*
+*
+*
+         EJECT
+*  DFSPC Programs / Services:
+*  ==================================================================
+*
+*    1) GETMAIN/FREEMAIN          Working storage
+*    2) ISPLINK                   ISPLINK module for ISPF Services
+*    3) SHRABIT.MACLIB            Macros for ShareABitofIT Programs
+*    4) GETDTE                    Get Date-Time-Environment Utility
+*
+*
+         EJECT
+*  Table 1 - Program Register Usage
+*
+*  +------+----------------------------------------------------------+
+*  | REG  |                                                          |
+*  |USAGE |  DESCRIPTION                                             |
+*  +------+----------------------------------------------------------+
+*  |  R13 |  Calling program registers (R14-R12) upon entry          |
+*  |  R14 |  Calling program return address upon entry               |
+*  |  R15 |  Called  program entry address  upon entry               |
+*  |  R1  |  Called  program parms starting address                  |
+*  +------+----------------------------------------------------------+
+*  |  R0  |  Working Register                                        |
+*  |  R1  |  Working Register                                        |
+*  |  R2  |  Working Register                                        |
+*  |  R3  |  Working Register                                        |
+*  |  R4  |  Working Register                                        |
+*  |  R5  |  Working Register                                        |
+*  |  R6  |  Working Register                                        |
+*  |  R7  |  Working Register                                        |
+*  |  R8  |  Working Register                                        |
+*  |  R9  |  Address of WORKAREA via GETMAIN/FREEMAIN                |
+*  |  R10 |  Base Register 1                                         |
+*  |  R11 |  Base Register 2                                         |
+*  |  R12 |  Base Register 3                                         |
+*  |  R13 |  Address of SAVEAREA                                     |
+*  +------+----------------------------------------------------------+
+*  |  R15 |  Return Code upon exit                                   |
+*  +------+----------------------------------------------------------+
+*
+         EJECT
+*  Table 2 - Return Codes
+*
+*  +------+----------------------------------------------------------+
+*  |RETURN|                                                          |
+*  | CODE |  DESCRIPTION                                             |
+*  +------+----------------------------------------------------------+
+*  |  00  |  Successful                                              |
+*  +------+----------------------------------------------------------+
+*  | 4096 |  ISPLINK not found, link error                           |
+*  +------+----------------------------------------------------------+
+*  | 4099 |  Program requires TSO                                    |
+*  +------+----------------------------------------------------------+
+*
+         EJECT
+*  Macros and SYSLIB Location:
+*  ==================================================================
+*
+*  Macro     Description                         Library
+*  --------  ----------------------------------  ------------------
+*  YREGS     Register Equates                    SYS2.MACLIB
+*  IHAPSA    Prefixed Save Area                  SYS1.AMODGEN
+*  CVT       Communication Vector Table          SYS1.AMODGEN
+*  IHAASCB   Address Space Control Block         SYS1.AMODGEN
+*  IEFUCBOB  Unit Control Block                  SYS1.AMODGEN
+*
+*  DVCTBL    DASD Device Table                   SHRABIT.MACLIB
+*  ISPFPL    ISPF Parm List for LBISPL           SHRABIT.MACLIB
+*  ISPFSRV   ISPF Services and Keywords          SHRABIT.MACLIB
+*  LBISPL    CALL equivalent for ISPLINK         SHRABIT.MACLIB
+*  MOVEC     Move quoted string data             SHRABIT.MACLIB
+*  MOVEI     Initialize variable                 SHRABIT.MACLIB
+*  MOVER     Move string right-trim              SHRABIT.MACLIB
+*  MOVEV     Move variable                       SHRABIT.MACLIB
+*  RTRIM     Right-trim subroutine               SHRABIT.MACLIB
+*  SVC78A    Freespace (SVC 78) Commarea         SHRABIT.MACLIB
+*  RDTECOMA  GETDTE Commarea                     SHRABIT.MACLIB
+*
+*  References:
+*  ==================================================================
+*
+*  - GC28-0708-1 OS/VS2 Debugging Handbook Vol.1 Rel 3.7 Nov78
+*  - SY26-3919-1 MVS/370 DADSM Diagnosis Reference Oct1983
+*
+*
+         EJECT
+*  Change History:
+*  ==================================================================
+*
+*  MM/DD/CCYY Version  Name / Description
+*  ---------- -------  --------------------------------------------
+*
+*  08/10/2020 1.0.00   Larry Belmontes Jr.
+*                      - Initial version released to MVS 3.8J
+*                        hobbyist public domain
+*
+*
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+         TITLE 'DFSPC - ISPF Display Freespace Information            '
+DFSPC    CSECT
+*****************************************************************/
+*                          *    Software Option Flags           */
+         LCLB  &USEDTE     * Use GETDTE flag                    */
+&USEDTE  SETB  0           *   0=No,   1=Yes                    */
+*                          *                                    */
+*****************************************************************/
+         USING DFSPC,R10,R11,R12   my BASE REGISTER(S)
+         PRINT NOGEN
+*     *
+*     * /********************************************************/
+*     * /* Save regs and declare base registers R10,R11,R12     */
+*     * /* including saving R1 (PARMS) in R2                    */
+*     * /* - R1  myPARMS address on entry                       */
+*     * /* - R15 myENTRY address on entry                       */
+*     * /********************************************************/
+         STM   R14,R12,12(R13)     Save calling program registers
+         LR    R10,R15             Load base1 w R15
+         LA    R11,4095(R10)       Load base2 (R11) w/ offset
+         LA    R11,1(R11)          Adjust base2
+         LA    R12,4095(R11)       Load base3 (R12) w/ offset
+         LA    R12,1(R12)          Adjust base3
+         LR    R15,R13             Save callers registers
+         LR    R2,R1               Save PARM addr
+*
+*     * /********************************************************/
+*     * /* Program Eyecatcher                                   */
+*     * /********************************************************/
+         B     OVRSTAMP            Branch past eye-catcher
+MYSTAMP  EQU   *
+PGMID    DC    CL8'DFSPC   '       My Program STAMP
+         DC    CL8'MVS3.8J '       OS
+PGMVRM   DC    CL8'V1.0.00 '       .Version
+         DC    CL8'08102020'       ..date  MMDDCCYY
+         DC    CL1' '
+PGMDS    DC    CL8'&SYSDATE'       Assemble Date
+         DC    CL3' - '            .and
+PGMTS    DC    CL8'&SYSTIME'       ..Time
+         DC    C'Copyright (C) 2020'
+         DC    C'Larry Belmontes, Jr. '
+         DC    C'https://ShareABitofIT.net/DFSPC-in-MVS38J'
+MYSTAMPL EQU   *-MYSTAMP
+OVRSTAMP DS    0H
+*
+         EJECT
+*     * /********************************************************/
+*     * /* GETMAIN, working storage, using R9                   */
+*     * /* - R0  Working register                               */
+*     * /* - R1  Working register (GETMAIN address)             */
+*     * /* - R9  Working Storage DSECT address                  */
+*     * /********************************************************/
+         LA    R0,WSAREAL          R0 = size of Workarea DSECT
+         GETMAIN   R,LV=(R0)       Get Storage, R1 = addr of storage
+         LTR   R15,R15             Did we get the storage?
+         BNZ   NOMAINS             NO, return with rc in R15
+         LR    R9,R1               YES. R9 = Workarea DSECT Register
+         USING WSDSECT,R9          Tell Assembler
+*
+*     * /********************************************************/
+*     * /* Update Save Areas for caller and calling programs    */
+*     * /* - R1  myPARMS address on entry  (restored)           */
+*     * /********************************************************/
+         LR    R15,R13             Save callers savearea addr
+         LA    R13,SAVEAREA        Load Addr of my savearea
+         ST    R15,4(,R13)         Chain callers to my savearea
+         ST    R13,8(,R15)         Chain my savearea to callers
+         LR    R1,R2               Restore R1 as PARM addr
+*
+         ST    R2,MYCPPLP          Store CPPL Address
+*
+*     * /********************************************************/
+*     * /* ISPLINK Entry Point                                  */
+*     * /* - R0 Working Register                                */
+*     * /********************************************************/
+         XC    ISPLINK,ISPLINK     Clear ISPLINK Address
+         LOAD  EP=ISPLINK,ERRET=ERR4096
+         ST    R0,ISPLINK          Save ISPLINK Entry Point
+*
+*     * /********************************************************/
+*     * /* GETDTE  Entry Point                                  */
+*     * /* - R0 Working Register                                */
+*     * /********************************************************/
+         XC    GETDTE,GETDTE       Clear GETDTE  Address
+         AIF  (NOT &USEDTE).NODTE
+         LOAD  EP=GETDTE,ERRET=GETDTENO
+         ST    R0,GETDTE           Save GETDTE  Entry Point
+.NODTE   ANOP
+GETDTENO EQU   *
+*
+*     * /********************************************************/
+*     * /* Check if we are running under TSO FG                 */
+*     * /* - R3 Working Register                                */
+*     * /********************************************************/
+         MVI   AMITSO,C'Y'         Assume TSO FG
+         L     R3,PSAAOLD-PSA(0)   R3=ASCB Address
+         L     R3,ASCBTSB-ASCB(R3) R3=ASCBTSB Address
+         LTR   R3,R3               If 0, program under TSO BG
+         BZ    ERR4099             ..error, TSO BG!!
+*
+         EJECT
+*     * /********************************************************/
+*     * /* Initialize                                           */
+*     * /********************************************************/
+         MVC   RCEXIT,=F'0'        Zero Return Code R15
+*
+         BAL   R14,ISPCNTL         CONTROL ERRORS RETURN
+         BAL   R14,ISPVDEF         VDEFINE ISPF Variables
+        LBISPL ISPLINK,(VGET,VGETV1,SHARED),VL   Get ZENVIR var
+*
+         MOVEI DJMSG,ONLY          Blank DJMSG
+         MOVEI PMYMSG,ONLY         Blank PMYMSG
+         MVC   PMYRC,=C'00000'     Zero  PMYRC
+         MOVEI PMYCMD,ONLY         Blank PMYCMD
+*
+*     * /********************************************************/
+*     * /* Create TABLE                                         */
+*     * /* - ISPEXEC TBCREATE TBLNAME                           */
+*     * /*           NAMES                                      */
+*     * /*           NOWRITE REPLACE                            */
+*     * /********************************************************/
+TBLSTRT  EQU   *
+*        ISPLINK TBCREATE,tblname,keylist,namelist,nowrite,replace
+        LBISPL ISPLINK,(TBCREATE,TBLNAME,B,TBLNMS01,NOWRITE,REPLACE),VL
+         ST    R15,RCEXIT          Store R15
+         BAL   R14,ISPERR          Err Display, return here or MYEXIT
+*
+         EJECT
+*     * /********************************************************/
+*     * /* Find all non-VIO ONLINE DASD devices via UCB         */
+*     * /* - R2, R3, R4         Working Registers               */
+*     * /********************************************************/
+         L     R4,CVTPTR           Address of CVT
+         USING CVT,R4
+         L     R2,CVTILK2          Address of UCB Lookup table
+         USING UCB,R3
+         DROP  R4                  Drop CVT addressability...
+UCBSCAN  EQU   *
+         SR    R3,R3               Clear R3
+         LH    R3,0(R2)            Point to UCB
+         LA    R2,2(R2)            Bump to next UCB entry
+         ST    R2,FW               Use UCB addr as
+         MVC   PUCB,FW               original sort sequence field
+         CH    R3,=X'FFFF'         End of UCB Table?
+         BE    UCBEOD              YES. Done.
+         LTR   R3,R3               NULL?
+         BZ    UCBSCAN             YES, get another
+         TM    UCBJBNR,UCBVRDEV    VIO Device?
+         BO    UCBSCAN             NO, re-scan
+         TM    UCBSTAT,UCBONLI     Device ONLINE?
+         BNO   UCBSCAN             NO, re-scan
+         TM    UCBTBYT3,UCB3DACC   Direct Access?
+         BZ    UCBSCAN             NO
+*
+*     * /********************************************************/
+*     * /* Find device type (e.g. 3350) given unit type         */
+*     * /* using below table (DVCLST)                           */
+*     * /* - R4, R5             Working Registers               */
+*     * /********************************************************/
+GETDEVTY EQU   *                   YES, determine DASD type
+         LA    R5,DVCLST$E         Load # of DVCLST entries
+         LA    R4,DVCLST$          Address of DVCLST entries
+LOOK4DT  EQU   *
+         CLC   UCBUNTYP,0(R4)      UCB device type in table?
+         BE    DEVFND              YES, found device in table
+         LA    R4,DVCLST$L(R4)     NO, point to next device entry
+         BCT   R5,LOOK4DT          Look at next entry
+NODEVFND EQU   *
+         MVC   PDUNIT,DVCLST$+1    MOVE DEVTTYPE, not found
+         B     DEVTPXT
+DEVFND   EQU   *
+         MVC   PDUNIT,1(R4)        MOVE DEVTTYPE
+         B     DEVTPXT
+*
+DEVTPXT  EQU   *
+*
+         EJECT
+*     * /********************************************************/
+*     * /* Get Freespace for specific volume using SVC 78       */
+*     * /* - R0, R1, R3         Working Registers               */
+*     * /********************************************************/
+         MVC   TVOLSER,UCBVOLI     Volume
+         MVC   PDCUU,UCBNAME       CUU
+         LR    R0,R3               R0=UCB Address
+         LA    R1,FSPMSG           R1=SVC 78 Mesage return area
+         SVC   78                  Invoke SVC 78
+*
+*     * /********************************************************/
+*     * /* Get Format-4 DSCB for VOLUME device characterics     */
+*     * /* - R4 Working Register                                */
+*     * /* - R15 Working Register and RC exit code register     */
+*     * /********************************************************/
+DSCBF4   EQU   *
+         MVI   CAMDSN,X'04'        Set to F4 DSCB
+         MVC   CAMDSN+1(L'CAMDSN-1),CAMDSN
+*
+         LA    R4,0                ZERO R3
+         ST    R4,CAMLIST           ... FW1 of CAMLIST
+         MVI   CAMLIST,X'C1'       INDICATE NAME   OPTION
+         LA    R4,CAMDSN           Addr of DSN
+         ST    R4,CAMLIST+4         ... FW2 of CAMLIST
+         LA    R4,TVOLSER          Addr of VOL SER
+         ST    R4,CAMLIST+8         ... FW3 of CAMLIST
+         LA    R4,IECSDSF4         Addr of FORMAT 4 DSCB
+         ST    R4,CAMLIST+12        ... FW4 of CAMPLIST
+*
+         OBTAIN  CAMLIST           Get F4 DSCB (Volume Info)
+         LTR   R15,R15             Successful?
+         BZ    DSCBF4X             YES.
+*                                  NO.
+         MOVEI PCYL4VOL,ONLY
+         MOVEI PTRK4VOL,ONLY
+         MOVEI PTRKSCYL,ONLY
+         MOVEI PNADSCB,ONLY
+         MOVEI PVTOCSZ,ONLY
+*
+         B     ADDEM
+DSCBF4X  EQU   *
+*
+         EJECT
+*     * /********************************************************/
+*     * /* Cylinders for Volume              from format-4 DSCB */
+*     * /* - R4 Working Register                                */
+*     * /********************************************************/
+         LH    R4,DS4DEVSZ         Cylinders for volume
+         ST    R4,HCYL4VOL         Store DS4DEVSZ
+         CVD   R4,DW               Convert to decimal
+         UNPK  PCYL4VOL(5),DW+5(3) Unpack and
+         OI    PCYL4VOL+4,X'F0'     ... force and F zone
+*
+*     * /********************************************************/
+*     * /* Tracks per Cylinder for Volume    from format-4 DSCB */
+*     * /* - R4 Working Register                                */
+*     * /********************************************************/
+         LH    R4,DS4DEVSZ+2       Tracks/Cylinder
+         ST    R4,HTRKSCYL         Store DS4DEVSZ+2
+         CVD   R4,DW               Convert to decimal
+         UNPK  PTRKSCYL(5),DW+5(3) Unpack and
+         OI    PTRKSCYL+4,X'F0'     ... force and F zone
+*
+*     * /********************************************************/
+*     * /* Tracks for volume =                                  */
+*     * /*   Cylinders for Volume * Tracks per Cylinder         */
+*     * /* - R4, R5 Working Registers                           */
+*     * /********************************************************/
+         L     R5,HCYL4VOL         R3=CYLS for volume
+         M     R4,HTRKSCYL         (R2,R3)=CYL4VOL*TRKSCYL
+*              R5                  tracks for volume
+         CVD   R5,DW               Convert to decimal
+         UNPK  PTRK4VOL(5),DW+5(3) Unpack and
+         OI    PTRK4VOL+4,X'F0'     ... force and F zone
+*
+*     * /********************************************************/
+*     * /* # of available DSCBs              from format-4 DSCB */
+*     * /* - R4 Working Register                                */
+*     * /********************************************************/
+         LH    R4,DS4DSREC         # avail DSCBs
+         CVD   R4,DW               Convert to decimal
+         UNPK  PNADSCB(5),DW+5(3)  Unpack and
+         OI    PNADSCB+4,X'F0'      ... force and F zone
+*
+         EJECT
+*     * /********************************************************/
+*     * /* VTOC Descriptor (tracks)          from format-4 DSCB */
+*     * /*    xxCCRRCCRR  10 bytes                              */
+*     * /* - R1, R4, R5 Working Register                        */
+*     * /********************************************************/
+         LA    R1,DS4VTOCE
+         SLR   R5,R5               Clear R3
+         ICM   R5,B'0011',2(R1)    R3=BeginCC
+         M     R4,HTRKSCYL         R2/R3=Begin Relative Track at CC
+         AH    R5,4(,R1)           Add BeginHH
+         ST    R5,FW               Begin Relative Track
+*
+         SLR   R5,R5               Clear R3
+         ICM   R5,B'0011',6(R1)    R3=EndCC
+         M     R4,HTRKSCYL         R2/R3=End Relative Track at CC
+         AH    R5,8(,R1)           Add EndHH
+         LA    R5,1(R5)            Adj +1
+*
+         S     R5,FW               Number of VTOC tracks
+         ST    R5,FW               FW=Number of VTOC tracks
+*
+         CVD   R5,DW               Convert to decimal
+         UNPK  PVTOCSZ(5),DW+5(3)  Unpack and
+         OI    PVTOCSZ+4,X'F0'      ... force and F zone
+*
+ADDEM    EQU   *
+*     * /********************************************************/
+*     * /* Add TABLE row                                        */
+*     * /* - ISPEXEC TBADD    TBLNAME                           */
+*     * /* - R1, R14, R15 Working Register                      */
+*     * /********************************************************/
+         LBISPL ISPLINK,(TBADD,TBLNAME),VL
+         ST    R15,RCEXIT          Store R15
+         BAL   R14,ISPERR          Err Display, return here or MYEXIT
+         B     UCBSCAN             Get next UCB!
+*
+UCBEOD   EQU   *                   UCB EOD
+         DROP  R3                  Drop UCB Addressability...
+*
+         EJECT
+*     * /********************************************************/
+*     * /* Sort TABLE by VOLSER                                 */
+*     * /* - ISPEXEC TBSORT   TBLNAME                           */
+*     * /* -         FIELDS(COL01,C,A)                          */
+*     * /********************************************************/
+         MVC   PANTBL,PANDFSPC     Panel name
+         MVC   PANCSR,ZCMD         Panel Cursor
+         MOVEI PANMSG              Blank message number
+         MOVEI TBLSRT01            Default sort, by volume
+         MOVEC '(VOLSER,C,A)'
+SORTEM   EQU   *
+         LBISPL ISPLINK,(TBSORT,TBLNAME,TBLSRT01),VL
+         ST    R15,RCEXIT          Store R15
+         BAL   R14,ISPERR          Err Display, return here or MYEXIT
+*
+*     * /********************************************************/
+*     * /* Position to TOP of TABLE                             */
+*     * /* - ISPEXEC TBTOP    TBLNAME                           */
+*     * /********************************************************/
+SET@TOP  EQU   *
+         LBISPL ISPLINK,(TBTOP,TBLNAME),VL
+         ST    R15,RCEXIT          Store R15
+         BAL   R14,ISPERR          Err Display, return here or MYEXIT
+*
+         EJECT
+*     * /********************************************************/
+*     * /* Display TABLE                                        */
+*     * /* - ISPEXEC TBDISPL  TBLNAME  PANEL(PANTBL)            */
+*     * /* -         AUTOSEL(NO) CURSOR(ZCMD) CSRROW(CSSR)      */
+*     * /********************************************************/
+*     * /* - ISPLINK TBDISPL,tblname,panel,msgid,csrfldnm,tblrow#,
+*     * /* -         csrpos,YES/NO,crpname,rowidname,msgfldname)
+*     * /********************************************************/
+TBDSP    EQU   *
+*     * /********************************************************/
+*     * /* Get current date and time for SCRNCLK variable       */
+*     * /* and save RDTEANSR var to SHARED pool                 */
+*     * /********************************************************/
+         L     R15,GETDTE          R15=GETDTE Entry
+         LTR   R15,R15             Do we have an address?
+         BZ    DT@ZVARS            No, use Z-vars
+         LA    R1,$DTECOMS         R1 - Addr of Results
+         ST    R1,DTPARM1               ...as PARM1
+         OI    DTPARM1,X'80'       VL Mark
+         LA    R1,DTPARML          R1 - Addr of DT PARM LIST
+         BALR  R14,R15             Get date-time-env from GETDTE
+         MVC   PSCRNCLK,RDATE      dd/mm/ccyy.jjj hh:mm:ss
+        LBISPL ISPLINK,(VPUT,VPUTV1,SHARED),VL    Save RDTEANSR var
+         B     TBDSP1
+DT@ZVARS EQU   *
+         MVI   $DTECOMS,C' '       Blank RDTEANSR data area
+         MVC   $DTECOMS+1($DTECOML-1),$DTECOMS
+         MOVEI PSCRNCLK
+         MOVER PZDATE              dd/mm/yy
+         MOVEC '.'
+         MOVEV PZJDATE+3,3         20.jjj
+         MOVEC ' '
+         MOVER PZTIME              hh:mm
+         MVC   $DTECOMS(L'PSCRNCLK),PSCRNCLK
+        LBISPL ISPLINK,(VPUT,VPUTV1,SHARED),VL    Save RDTEANSR var
+TBDSP1   EQU   *
+        LBISPL ISPLINK,(TBDISPL,TBLNAME,PANTBL,PANMSG,PANCSR),VL
+**      LBISPL ISPLINK,(TBDISPL,TBLNAME,PANTBL,PANMSG,PANCSR,B,B,NO),VL
+***     LBISPL ISPLINK,(TBDISPL,TBLNAME,PANTBL,B,B,B,B,NO),VL
+         ST    R15,RCEXIT          Store R15
+         C     R15,=F'8'           RC=8 (PF3/PF4, END/RETURN)
+         BE    TBDSPX              Yes, Exit
+         BAL   R14,ISPERR          Err Display, return here or MYEXIT
+*
+         EJECT
+*     * /********************************************************/
+*     * /* Process COMMAND from TBDISPL                         */
+*     * /********************************************************/
+*     * /* ZCMD          Action                                 */
+*     * /* ------------  ---------------------------------      */
+*     * /* Blanks        Do nothing                             */
+*     * /* SORT -colnm   Sort display by column name            */
+*     * /* Other         Invalid Command                        */
+*     * /********************************************************/
+DO#CMD   EQU   *
+         CLI   PZCMD,C' '          Blank ZCMD?
+         BE    TBDSP               Yes, redisplay table
+         CLC   =C'SORT ',PZCMD     Sort Command?
+         BE    SORTIT              Yes, sort display
+         MVC   PANMSG,=C'ISRZ002 ' Use generic ISPF msg ISRZ002
+         MOVEI PZERRSM,ONLY        Blank ZERRSM
+         MOVEI PZERRLM             Blank ZERRLM
+         MOVEC 'Invalid Command: '
+         MOVER PZCMD
+         MVC   PANCSR,=C'ZCMD    ' Panel Cursor
+         B     TBDSP               Redisplay
+
+*     * /********************************************************/
+*     * /* Check for valid SORT column request                  */
+*     * /*   Sort column can be prefixed with - for DSC order   */
+*     * /*   if supported by current ISPF version               */
+*     * /*   (from Wally Mclaughlin)                            */
+*     * /********************************************************/
+SORTIT   EQU   *
+         LA    R14,PZCMD+5         R14=ZCMD Compare Start Addr
+*                                  Adjust for 'SORT -'
+         CLI   0(R14),C'-'         DSC sort request?
+         BNE   CHKZCMD             NO,  check ZCMD
+         LA    R14,1(R14)          YES, adj ZCMD compare start addr
+CHKZCMD  EQU   *
+         CLC   =C'CUU',0(R14)      Sort by CUU
+*        BE    SCUU                -- yields incorrect order due to HEX
+         BE    SUCB                -- use UCB Binary column
+         CLC   =C'VOL',0(R14)      Sort by VOLser
+         BE    SVOL
+         CLC   =C'DEV',0(R14)      Sort by DEVtype
+         BE    SDEV
+         CLC   =C'FCY',0(R14)      Sort by FCYls
+         BE    SFCYL
+         CLC   =C'FTR',0(R14)      Sort by FTRks
+         BE    SFTRK
+         CLC   =C'FEX',0(R14)      Sort by FEXts
+         BE    SFEXT
+         CLC   =C'LCY',0(R14)      Sort by LCYls
+         BE    SLCYL
+         CLC   =C'LTR',0(R14)      Sort by LTRks
+         BE    SLTRK
+         CLC   =C'VTO',0(R14)      Sort by VTOctrks
+         BE    SVTOCSZ
+         CLC   =C'DSC',0(R14)      Sort by DSCbs
+         BE    SDSCBS
+         CLC   =C'VCY',0(R14)      Sort by VCYls
+         BE    SVCYL
+         CLC   =C'VTR',0(R14)      Sort by VTRks
+         BE    SVTRK
+         MVC   PANMSG,=C'ISRZ002 ' Use generic ISPF msg ISRZ002
+         MOVEI PZERRSM,ONLY        Blank ZERRSM
+         MOVEI PZERRLM             Blank ZERRLM
+         MOVEC 'Invalid Sort Column: '
+         MOVER PZCMD
+         MVC   PANCSR,=C'ZCMD    ' Panel Cursor
+         B     TBDSP               Redisplay
+*
+         EJECT
+*     * /********************************************************/
+*     * /* Init workarea to ISPF variable name for SORT         */
+*     * /********************************************************/
+SUCB     EQU   *
+         MVC   WORKAREA,UCB##
+         B     CR8SCMD
+SCUU     EQU   *
+         MVC   WORKAREA,DCUU
+         B     CR8SCMD
+SVOL     EQU   *
+         MVC   WORKAREA,VOLSER
+         B     CR8SCMD
+SDEV     EQU   *
+         MVC   WORKAREA,DUNIT
+         B     CR8SCMD
+SFCYL    EQU   *
+         MVC   WORKAREA,DFSCYLS
+         B     CR8SCMD
+SFTRK    EQU   *
+         MVC   WORKAREA,DFSTRKS
+         B     CR8SCMD
+SFEXT    EQU   *
+         MVC   WORKAREA,DFSEXTS
+         B     CR8SCMD
+SLCYL    EQU   *
+         MVC   WORKAREA,DFSLCYLS
+         B     CR8SCMD
+SLTRK    EQU   *
+         MVC   WORKAREA,DFSLTRKS
+         B     CR8SCMD
+SVTOCSZ  EQU   *
+         MVC   WORKAREA,VTOCSZ
+         B     CR8SCMD
+SDSCBS   EQU   *
+         MVC   WORKAREA,NADSCB
+         B     CR8SCMD
+SVCYL    EQU   *
+         MVC   WORKAREA,CYL4VOL
+         B     CR8SCMD
+SVTRK    EQU   *
+         MVC   WORKAREA,TRK4VOL
+         B     CR8SCMD
+*
+         EJECT
+*     * /********************************************************/
+*     * /* Init ISPF SORT command                               */
+*     * /*   e.g.  (DFSLTRKS,C,A)                               */
+*     * /********************************************************/
+CR8SCMD  EQU   *
+         MOVEI TBLSRT01            Build TBSORT parm
+         MOVEC '('
+         MOVER WORKAREA
+         MOVEC ',C,'
+         CLC   =C'SORT -',PZCMD      DSC request?
+         BE    CR8SDSC               YES.
+CR8SASC  EQU   *                     NO.
+         MOVEC 'A)'
+         B     CR8SXIT
+CR8SDSC  EQU   *
+         CLC   PZENVIR+5(3),=C'2.1'  Above release 'ISPF 2.1'?
+         BNH   CR8SASC               No, Force ASC sort order
+         MOVEC 'D)'
+CR8SXIT  EQU   *
+*
+         CLC   PZENVIR+5(3),=C'2.1'  Above release 'ISPF 2.1'?
+         BNH   MSG1X                 No, set error 1X
+         B     MSG1S                 Yes, set error 1S
+         EJECT
+MSG1X    EQU   *
+         CLC   =C'SORT -',PZCMD      DSC request?
+         BNE   MSG1S
+         MVC   PANMSG,=C'ISRZ002 ' Use generic ISPF msg ISRZ002
+         MOVEI PZERRSM,ONLY        Blank ZERRSM
+         MOVEI PZERRLM             Blank ZERRLM
+         MOVEC 'Sorted table ASC for '
+         MOVER PZCMD+6,20
+         MOVEC ' (ISPF '
+         MOVEV PZENVIR+5,3
+         MOVEC ' does not support DSC)'
+         B     MSG1SET
+MSG1S    EQU   *
+         MVC   PANMSG,=C'ISRZ002 ' Use generic ISPF msg ISRZ002
+         MOVEI PZERRSM,ONLY        Blank ZERRSM
+         MOVEI PZERRLM             Blank ZERRLM
+         MOVEC 'Sorted table via '
+         MOVER PZCMD
+MSG1SET  EQU   *
+         MVC   PANCSR,=C'ZCMD    ' Panel Cursor
+*
+         B     SORTEM              Branch to SORT
+*
+TBDSPX   EQU   *
+*
+         EJECT
+*     * /********************************************************/
+*     * /* End TABLE Processing                                 */
+*     * /* - ISPEXEC TBEND    TBLNAME                           */
+*     * /********************************************************/
+*     * /* - ISPLINK TBEND,tblname
+*     * /* -         ?,crpname,rowidname,msgfldname)
+*     * /********************************************************/
+         LBISPL ISPLINK,(TBEND,TBLNAME),VL
+         ST    R15,RCEXIT          Store R15
+         BAL   R14,ISPERR          Err Display, return here or MYEXIT
+*
+*     * /********************************************************/
+*     * /* Delete Functional Variables                          */
+*     * /* - ISPEXEC VDELETE *                                  */
+*     * /********************************************************/
+*     * /* - ISPLINK VDELETE,namelist
+*     * /********************************************************/
+MYEXIT   EQU   *
+         LBISPL ISPLINK,(VDELETE,ALL),VL
+         DELETE EP=ISPLINK
+         DELETE EP=GETDTE
+*
+         EJECT
+*     * /********************************************************/
+*     * /* - Restore savearea, FREEMAIN, and                    */
+*     * /*   return to caller                                   */
+*     * /********************************************************/
+*
+*     * /--------------------------------------------------------/
+*     * /* R1 = my Working Storage Address from GETMAIN         */
+*     * /********************************************************/
+         LR    R1,R13              Working Storage Addr
+*
+*     * /--------------------------------------------------------/
+*     * /* Get callers savearea into R13 and overlay my R15     */
+*     * /* to be returned to caller                             */
+*     * /--------------------------------------------------------/
+         L     R13,SAVEAREA+4      Restore R13
+         L     R5,RCEXIT           Set R15 to my exit value
+*
+*     * /--------------------------------------------------------/
+*     * /* Working Storage FREEMAIN                             */
+*     * /--------------------------------------------------------/
+         LA    R0,WSAREAL          Size of WSAREA DSECT
+         FREEMAIN  R,LV=(R0),A=(R1)    Free Storage
+*
+*     * /--------------------------------------------------------/
+*     * /* Restore caller registers and return to caller        */
+*     * /--------------------------------------------------------/
+         LR    R15,R5              R15 = RC for exit
+NOMAINS  EQU   *
+         L     R14,12(R13)         Restore R14
+         LM    R0,R12,20(R13)      Restore R0 thru R12
+         BR    R14                 Return to caller
+*
+         TITLE 'DFSPC - Error Entry Points                            '
+*     * /********************************************************/
+*     * /* Error Setting                                        */
+*     * /* - R7  Working Register                               */
+*     * /* - R15 Working Register and RC exit code register     */
+*     * /********************************************************/
+ERR4096  EQU   *
+         MVC   RCEXIT,=F'4096'     ISPLINK  not found, link error
+         MVC   DJMSG+15(MSG4096L),MSG4096
+         B     ERR#GO
+ERR4099  EQU   *
+         MVC   RCEXIT,=F'4099'     Program requires TSO
+         MVC   DJMSG+15(MSG4099L),MSG4099
+         B     ERR#GO
+ERR#GO   EQU   *
+         BAL   R7,PREFXMSG         Prefix Message
+         TPUT  DJMSG,L'DJMSG
+         B     MYEXIT
+*
+         EJECT
+*     * /********************************************************/
+*     * /* Subroutine -                                  (R14)  */
+*     * /*  ISPEXEC CONTROL ERRORS RETURN                       */
+*     * /* - R15, R1    Working Register                        */
+*     * /********************************************************/
+ISPCNTL  EQU   *
+         ST    R14,SAVER14S
+*        CALL  ISPLINK,(CONTROL,ERRORS,RETURN),VL
+         LBISPL ISPLINK,(CONTROL,ERRORS,RETURN),VL
+*
+         L     R14,SAVER14S
+         BR    R14
+*
+         EJECT
+*     * /********************************************************/
+*     * /* Subroutine -                                  (R14)  */
+*     * /*  ISPEXEC VDEFINE function variables                  */
+*     * /* - R15, R1    Working Register                        */
+*     * /********************************************************/
+ISPVDEF  EQU   *
+         ST    R14,SAVER14S
+*        CALL  ISPLINK,(VDEFINE,KEYPRESS,PKYPRS,CHAR,L4),VL
+         LBISPL ISPLINK,(VDEFINE,DPGMVRM,PGMVRM,CHAR,LPGMVRM),VL
+         LBISPL ISPLINK,(VDEFINE,MYMSG,PMYMSG,CHAR,LMYMSG),VL
+         LBISPL ISPLINK,(VDEFINE,MYRC,PMYRC,CHAR,LMYRC),VL
+         LBISPL ISPLINK,(VDEFINE,MYCMD,PMYCMD,CHAR,LMYCMD),VL
+*
+         LBISPL ISPLINK,(VDEFINE,KEYPRESS,PKYPRS,CHAR,LKYPRS),VL
+         LBISPL ISPLINK,(VDEFINE,RESP0,PRESP0,CHAR,LRESP0),VL
+         LBISPL ISPLINK,(VDEFINE,ZCMD,PZCMD,CHAR,LZCMD),VL
+*
+         LBISPL ISPLINK,(VDEFINE,SCRNCLK,PSCRNCLK,CHAR,LSCRNCLK),VL
+         LBISPL ISPLINK,(VDEFINE,RDTEANSR,$DTECOMS,CHAR,LDTEANSR),VL
+         LBISPL ISPLINK,(VDEFINE,ZDATE,PZDATE,CHAR,LZDATE),VL
+         LBISPL ISPLINK,(VDEFINE,ZJDATE,PZJDATE,CHAR,LZJDATE),VL
+         LBISPL ISPLINK,(VDEFINE,ZTIME,PZTIME,CHAR,LZTIME),VL
+         LBISPL ISPLINK,(VDEFINE,ZENVIR,PZENVIR,CHAR,LZENVIR),VL
+*
+         LBISPL ISPLINK,(VDEFINE,SEL,TSEL,CHAR,LSEL),VL
+*
+         LBISPL ISPLINK,(VDEFINE,ZTDSELS,PZTDSELS,CHAR,LZTDSELS),VL
+         LBISPL ISPLINK,(VDEFINE,ZTDTOP,PZTDTOP,CHAR,LZTDTOP),VL
+         LBISPL ISPLINK,(VDEFINE,ZTDROWS,PZTDROWS,CHAR,LZTDROWS),VL
+*
+         LBISPL ISPLINK,(VDEFINE,ZERRSM,PZERRSM,CHAR,LZERRSM),VL
+         LBISPL ISPLINK,(VDEFINE,ZERRLM,PZERRLM,CHAR,LZERRLM),VL
+*
+         LBISPL ISPLINK,(VDEFINE,UCB##,PUCB,CHAR,LPUCB),VL
+         LBISPL ISPLINK,(VDEFINE,DCUU,PDCUU,CHAR,LDCUU),VL
+         LBISPL ISPLINK,(VDEFINE,VOLSER,TVOLSER,CHAR,LVOLSER),VL
+         LBISPL ISPLINK,(VDEFINE,DUNIT,PDUNIT,CHAR,LDUNIT),VL
+         LBISPL ISPLINK,(VDEFINE,DFSCYLS,FSCYLS,CHAR,LFSCYLS),VL
+         LBISPL ISPLINK,(VDEFINE,DFSTRKS,FSTRKS,CHAR,LFSTRKS),VL
+         LBISPL ISPLINK,(VDEFINE,DFSEXTS,FSEXTS,CHAR,LFSEXTS),VL
+         LBISPL ISPLINK,(VDEFINE,DFSLCYLS,FSLCYLS,CHAR,LFSLCYLS),VL
+         LBISPL ISPLINK,(VDEFINE,DFSLTRKS,FSLTRKS,CHAR,LFSLTRKS),VL
+         LBISPL ISPLINK,(VDEFINE,VTOCSZ,PVTOCSZ,CHAR,LVTOCSZ),VL
+         LBISPL ISPLINK,(VDEFINE,NADSCB,PNADSCB,CHAR,LNADSCB),VL
+         LBISPL ISPLINK,(VDEFINE,CYL4VOL,PCYL4VOL,CHAR,LCYL4VOL),VL
+         LBISPL ISPLINK,(VDEFINE,TRK4VOL,PTRK4VOL,CHAR,LTRK4VOL),VL
+         LBISPL ISPLINK,(VDEFINE,TRKSCYL,PTRKSCYL,CHAR,LTRKSCYL),VL
+*
+         L     R14,SAVER14S
+         BR    R14
+*
+         EJECT
+*     * /********************************************************/
+*     * /* Subroutine -                                  (R14)  */
+*     * /*  ISPF Error Display and return                       */
+*     * /*   to caller or MYEXIT                                */
+*     * /* - RCEXIT     on entry                                */
+*     * /* - R15, R1    Working Register                        */
+*     * /********************************************************/
+ISPERR   EQU   *
+         ST    R14,SAVER14S
+         L     R15,RCEXIT
+         LTR   R15,R15             RC=0 (Process)
+         BZ    ISPERRX1            Yes, return to caller
+*                                  No, display error and exit
+         MVC   DJMSG(L'DSPLERR0),DSPLERR0
+         L     R1,ISPFP1           ISPF Service Requested
+         MVC   DJMSG+03(08),0(R1)
+         MVC   DJMSG+11(06),=C'      '
+         CVD   R15,DW              Convert to decimal
+         UNPK  DJMSG+20(05),DW+5(03) Unpack and
+         OI    DJMSG+24,X'F0'      ... force and F zone
+         MVI   DJMSG+20,C'='       Restore equal sign
+         STM   R0,R1,DW            SAVE    R0,R1  to   DW before TPUT
+         TPUT  DJMSG,L'DSPLERR0
+         LM    R0,R1,DW            RESTORE R0,R1  from DW after  TPUT
+*
+         LA    R14,MYEXIT          R14=Addr MYEXIT
+         B     ISPERRX2            Return to MYEXIT
+*
+ISPERRX1 EQU   *
+         L     R14,SAVER14S
+ISPERRX2 EQU   *
+         BR    R14
+*
+         EJECT
+         RTRIM                     RTRIM Subroutine
+*
+         EJECT
+*     * /********************************************************/
+*     * /* Subroutine - Prefix message                   (R7)   */
+*     * /* w/ 15-byte header 'pgmid    nnnn -'                  */
+*     * /* - R3, R7 Working Register                            */
+*     * /********************************************************/
+PREFXMSG EQU   *
+         ST    R7,SAVER7S          Save R7 Subroutine
+         MVC   DJMSG+00(8),PGMID
+         L     R3,RCEXIT           Load RCEXIT code value
+         CVD   R3,DW               Convert to decimal
+         UNPK  DJMSG+08(5),DW+5(3) Unpack
+         OI    DJMSG+12,X'F0'      Force an F Zone
+         MVI   DJMSG+08,C' '       Blank out digit
+         MVI   DJMSG+14,C'-'       Blank out digit
+*
+         L     R7,SAVER7S          Restore R7 Subroutine
+         BR    R7                  Return to caller
+*
+         TITLE 'DFSPC - Literal Pool                                  '
+         LTORG
+*
+         TITLE 'DFSPC - Constants                                     '
+         ISPFSRV                   ISPF Service Constants
+         EJECT
+*     * /********************************************************/
+*     * /* ISPF Constants for services                          */
+*     * /********************************************************/
+PANDFSPC DC    CL8'PDFSPC0 '               Panel ID  Freespace
+VGETV1   DC    C'(ZENVIR)'                 VGET List 1
+VPUTV1   DC    C'(RDTEANSR)'               VPUT List 1
+*
+         EJECT
+*     * /********************************************************/
+*     * /* ISPF Variable Names                                  */
+*     * /********************************************************/
+DPGMVRM  DC    CL8'DPGMVRM '       VarName for PGMVRM
+MYMSG    DC    CL8'MYMSG '         VarName for PMYMSG
+MYRC     DC    CL8'MYRC    '       VarName for PMYRC
+MYCMD    DC    CL8'MYCMD '         VarName for PMYCMD
+*
+KEYPRESS DC    CL8'KEYPRESS'       Varname for PKYRS
+RESP0    DC    CL8'RESP0   '       Varname for PRESP0
+ZCMD     DC    CL8'ZCMD    '       VarName for PZCMD
+SCRNCLK  DC    CL8'SCRNCLK '       VarName for PSCRNCLK
+RDTEANSR DC    CL8'RDTEANSR'       VarName for $DTECOMS
+ZDATE    DC    CL8'ZDATE   '       VarName for PZDATE
+ZJDATE   DC    CL8'ZJDATE  '       VarName for PZJDATE
+ZTIME    DC    CL8'ZTIME   '       VarName for PZTIME
+ZENVIR   DC    CL8'ZENVIR  '       VarName for PZENVIR
+*
+SEL      DC    CL8'SEL     '       VarName for TSEL
+*
+ZTDSELS  DC    CL8'ZTDSELS '       VarName for PZTDSELS
+ZTDTOP   DC    CL8'ZTDTOP  '       VarName for PZTDTOP
+ZTDROWS  DC    CL8'ZTDROWS '       VarName for PTDROWS
+*
+ZERRSM   DC    CL8'ZERRSM  '       VarName for ZERRSM
+ZERRLM   DC    CL8'ZERRLM  '       VarName for ZERRLM
+*
+UCB##    DC    CL8'UCB     '       VarName for PUCB
+DCUU     DC    CL8'DCUU    '       VarName for PDCUU
+VOLSER   DC    CL8'VOLSER  '       VarName for TVOLSER
+DUNIT    DC    CL8'DUNIT   '       VarName for PDUNIT
+DFSCYLS  DC    CL8'DFSCYLS '       VarName for FSCYLS
+DFSTRKS  DC    CL8'DFSTRKS '       VarName for FSTRKS
+DFSEXTS  DC    CL8'DFSEXTS '       VarName for FSEXTS
+DFSLCYLS DC    CL8'DFSLCYLS'       VarName for FSLCYLS
+DFSLTRKS DC    CL8'DFSLTRKS'       VarName for FSLTRKS
+VTOCSZ   DC    CL8'VTOCSZ  '       VarName for PVTOCSZ
+NADSCB   DC    CL8'NADSCB  '       VarName for PNADSCB
+CYL4VOL  DC    CL8'CYL4VOL '       VarName for PCYL4VOL
+TRK4VOL  DC    CL8'TRK4VOL '       VarName for PTRK4VOL
+TRKSCYL  DC    CL8'TRKSCYL '       VarName for PTRKSCYL
+*
+         EJECT
+*     * /********************************************************/
+*     * /* ISPF Variable Names Lengths                          */
+*     * /********************************************************/
+         DS    0F
+LPGMVRM  DC    A(L'PGMVRM)         PGMVRM
+LMYMSG   DC    A(L'PMYMSG)         PMYMSG
+LMYRC    DC    A(L'PMYRC)          PMYRC
+LMYCMD   DC    A(L'PMYCMD)         PMYCMD
+*
+LKYPRS   DC    A(L'PKYPRS)         PKYRS
+LRESP0   DC    A(L'PRESP0)         PRESP0
+LZCMD    DC    A(L'PZCMD)          PZCMD
+LSCRNCLK DC    A(L'PSCRNCLK)       PSCRNCLK
+LDTEANSR DC    A($DTECOML)         $DTECOMS
+LZDATE   DC    A(L'PZDATE)         PZDATE
+LZJDATE  DC    A(L'PZJDATE)        PZJDATE
+LZTIME   DC    A(L'PZTIME)         PZTIME
+LZENVIR  DC    A(L'PZENVIR)        PZENVIR
+*
+LACTN    DC    A(L'PACTN)          ACTN   Delete Selection
+*
+LSEL     DC    A(L'TSEL)           SEL    Selection
+*
+LZTDSELS DC    A(L'PZTDSELS)       PZTDSELS
+LZTDTOP  DC    A(L'PZTDTOP)        PZTDTOP
+LZTDROWS DC    A(L'PZTDROWS)       PZTDROWS
+*
+LZERRSM  DC    A(L'PZERRSM)        PZERRSM
+LZERRLM  DC    A(L'PZERRLM)        PZERRLM
+*
+LPUCB    DC    A(L'PUCB)           PUCB
+LDCUU    DC    A(L'PDCUU)          PDCUU
+LVOLSER  DC    A(L'TVOLSER)        VOLSER VOLUME
+LDUNIT   DC    A(L'PDUNIT)         PDUNIT
+LFSCYLS  DC    A(L'FSCYLS)         FSCYLS
+LFSTRKS  DC    A(L'FSTRKS)         FSTRKS
+LFSEXTS  DC    A(L'FSEXTS)         FSEXTS
+LFSLCYLS DC    A(L'FSLCYLS)        FSLCYLS
+LFSLTRKS DC    A(L'FSLTRKS)        FSLTRKS
+LVTOCSZ  DC    A(L'PVTOCSZ)        PVTOCSZ
+LNADSCB  DC    A(L'PNADSCB)        PNADSCB
+LCYL4VOL DC    A(L'PCYL4VOL)       PCYL4VOL
+LTRK4VOL DC    A(L'PTRK4VOL)       PTRK4VOL
+LTRKSCYL DC    A(L'PTRKSCYL)       PTRKSCYL
+*
+         EJECT
+*     * /********************************************************/
+*     * /* ISPF Tables Constants                                */
+*     * /********************************************************/
+TBLNAME  DC    CL8'TFSPC0'         Table name
+*                                  Table column names
+TBLNMS01 DC    C'(UCB DCUU VOLSER DUNIT DFSCYLS DFSTRKS DFSEXTS'
+         DC    C' DFSLCYLS DFSLTRKS VTOCSZ NADSCB CYL4VOL'
+         DC    C' TRK4VOL)'
+*
+         EJECT
+*     * /********************************************************/
+*     * /* Local Messages                                       */
+*     * /********************************************************/
+MSG4096  DC    C'ISPLINK  not found, link error'
+MSG4096L EQU   *-MSG4096
+MSG4099  DC    C'Program requires TSO'
+MSG4099L EQU   *-MSG4099
+*
+DSPLERR0 DC    C'** xxxxxxxxxxxxxx RC=xxxx, Process Ended!'
+*
+*     * /********************************************************/
+*     * /* Misc Constants                                       */
+*     * /********************************************************/
+         DVCTBL                    DVCLST Table
+*
+         TITLE 'DFSPC - Equates                                       '
+*     * /********************************************************/
+*     * /* E Q U A T E S                                        */
+*     * /********************************************************/
+*     *
+*     *
+*     * /********************************************************/
+*     * /* Register Equates                                     */
+*     * /********************************************************/
+         YREGS                     Register EQU as Rn or Rnn
+*
+*R0       EQU   0
+*R1       EQU   0
+*R2       EQU   0
+*R3       EQU   0
+*R4       EQU   0
+*R5       EQU   0
+*R6       EQU   0
+*R7       EQU   0
+*R8       EQU   0
+*R9       EQU   0
+*R10      EQU   0
+*R11      EQU   0
+*R12      EQU   0
+*R13      EQU   0
+*R14      EQU   0
+*R15      EQU   0
+*
+         TITLE 'DFSPC - System DSECTs                                 '
+*     *
+*     * /********************************************************/
+*     * /* System DSECTs                                        */
+*     * /********************************************************/
+         IHAPSA                    Prefixed Save Area
+PSALEN   EQU   *-PSA               Length of PSA
+         EJECT
+         CVT   DSECT=YES,LIST=YES  Communication Vector Table
+         EJECT
+         IHAASCB                   Address Space Control Block
+ASCBLEN  EQU   *-ASCB              Length of ASCB
+         EJECT
+         PRINT GEN
+UCB      DSECT
+         IEFUCBOB  LIST=YES,PREFIX=NO   Unit Control Block
+         PRINT NOGEN
+*
+         TITLE 'DFSPC - Working Storage Variables                     '
+*     * /********************************************************/
+*     * /* Working Storage  DSECT                               */
+*     * /********************************************************/
+WSDSECT  DSECT
+WSAREA   EQU   *
+*     *
+*     * /********************************************************/
+*     * /* mySAVEARA                                            */
+*     * /********************************************************/
+SAVEAREA DS    18F                 my Savearea
+*                      +00  A(savearea of current CSECT)
+*                      +04  A(savearea of calling CSECT)
+*                      +08  A(savearea of called  CSECT)
+*                      +12  R14
+*                      +16  R15
+*                      +20  R0
+*                      +24  R1
+*                      +28  R2
+*                      +32  R3
+*                      +36  R4
+*                      +40  R5
+*                      +44  R6
+*                      +48  R7
+*                      +52  R8
+*                      +56  R9
+*                      +60  R10
+*                      +64  R11
+*                      +68  R12
+*
+         EJECT
+         ISPFPL                    ISPF Parm List for LBISPL macro
+         EJECT
+*     * /********************************************************/
+*     * /* ISPF Variables                                       */
+*     * /********************************************************/
+PMYMSG   DS    CL50                MYMSG
+PMYRC    DS    CL5                 MYRC
+PMYCMD   DS    CL100               MYCMD
+*
+PKYPRS   DS    CL4                 KEYPRESS
+PRESP0   DS    CL8                 RESP0
+PZCMD    DS    CL50                ZCMD
+PSCRNCLK DS    CL23                PSCRNCLK
+PZDATE   DS    CL8                 ZDATE   DD/MM/YY
+PZJDATE  DS    CL6                 ZJDATE  YY.JJJ
+PZTIME   DS    CL5                 ZTIME   HH:MM
+PZENVIR  DS    CL20                ZENVIR  ISPF 2.1.MVS 3.8TSO
+*
+PACTN    DS    CL1                 Action Delete Selection
+*
+TSEL     DS    CL3                 SEL    Selection
+*
+PZTDSELS DS    CL4                 ZTDSELS
+PZTDTOP  DS    CL6                 ZTDTOP
+PZTDROWS DS    CL6                 ZTDROWS
+*
+PZERRSM  DS    CL24                ZERRSM
+PZERRLM  DS    CL78                ZERRLM
+*
+PUCB     DS    CL4                 UCB   **do not display BINARY**
+PDCUU    DS    CL3                 DCUU
+TVOLSER  DS    CL6                 VOLSER VOLUME
+PDUNIT   DS    CL7                 DUNIT
+PVTOCSZ  DS    CL5                 VTOCSZ
+PNADSCB  DS    CL5                 NADSCB
+PCYL4VOL DS    CL5                 CYL4VOL
+PTRK4VOL DS    CL5                 TRK4VOL
+PTRKSCYL DS    CL5                 TRKSCYL
+*
+         EJECT
+*     * /********************************************************/
+*     * /* Command buffer area                                  */
+*     * /********************************************************/
+COMMAND  DS    CL8
+*
+*     * /********************************************************/
+*     * /* Program Variables                                    */
+*     * /********************************************************/
+SAVER3S  DS    F                   R3  Save in Subroutines
+SAVER7S  DS    F                   R7  Save in Subroutines
+SAVER14S DS    F                   R14 Save in Subroutines
+DW       DS    D                   Double Word area
+FW       DS    F                   Full Word   area
+RCEXIT   DS    F                   Exit RC
+AMITSO   DS    C                   TSO Flag
+MYCPPLP  DS    F                   CPPL Address
+DJMSG    DS    CL100               MY MESSAGE VARIABLE
+PANTBL   DS    CL8                 Table Panel Name
+PANMSG   DS    CL8                 Panel Message Number
+PANCSR   DS    CL8                 Panel Cursor Field
+WORKAREA DS    CL8                 Workarea
+UNPKAREA DS    CL16                Workarea for unpacking data
+HCYL4VOL DS    F                   Cylinders for Volume
+HTRKSCYL DS    F                   Tracks/Cylinder
+ERRTXT   DS    CL17                Error Text msg
+ERRX     DS    CL1                 Error Text type 1-     2-
+TBLSRT01 DS    CL20                Sort Text C'(COL01,C,A)'
+GETDTE   DS    F                   Entry point for GETDTE
+DTPARML  DS    0F                  GETDTE Parameter List
+DTPARM1  DS    A                   Address of Results Area
+*
+         EJECT
+*     * /********************************************************/
+*     * /* CAM and DSCB area                                    */
+*     * /********************************************************/
+CAMDSN   DS    CL44                CAM DSN
+CAMLIST  DS    4F                  CAM Parm Address List
+CAMWORK  DS    140C
+         ORG   CAMWORK
+         IECSDSL1 4                DSCB F4
+*
+         EJECT
+         SVC78A                    Freespace (SVC 78) Commarea
+         EJECT
+         RDTECOMA                  GETDTE Commarea
+         EJECT
+*
+         DS    0F,(40)X
+WSAREAE  EQU   *                   Working Storage END
+WSAREAL  EQU   WSAREAE-WSAREA      Working Storage Area Length
+         EJECT
+         END   DFSPC

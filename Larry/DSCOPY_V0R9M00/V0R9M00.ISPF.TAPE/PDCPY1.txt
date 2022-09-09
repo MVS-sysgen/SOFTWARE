@@ -1,0 +1,106 @@
+/********************************************************************/
+/*                                                                  */
+/*    PANEL: PDCPY1                                                 */
+/*                                                                  */
+/* Author: Larry Belmontes Jr.                                      */
+/*         https://ShareABitofIT.net/DSCOPY-in-MVS38J               */
+/*         Copyright (C) 2021 Larry Belmontes, Jr.                  */
+/*                                                                  */
+/*                                                                  */
+/* Description:                                                     */
+/* ---------------------------------------------------------------  */
+/*                                                                  */
+/* ISPF 2.x DSCOPY     DSN Request Panel (SEQ)                      */
+/*                                                                  */
+/*                                                                  */
+/* Disclaimer:                                                      */
+/* ================================================================ */
+/*                                                                  */
+/*    No guarantee; No warranty; Install / Use at your own risk.    */
+/*                                                                  */
+/*    This software is provided "AS IS" and without any expressed   */
+/* or implied warranties, including, without limitation, the        */
+/* implied warranties of merchantability and fitness for a          */
+/* particular purpose.                                              */
+/*                                                                  */
+/*    The author requests keeping authors name intact in any        */
+/* modified versions.                                               */
+/*                                                                  */
+/*    In addition, the author requests readers to submit any        */
+/* code modifications / enhancements and associated comments        */
+/* for consideration into a subsequent release (giving credit       */
+/* to contributor(s)) thus, improving overall functionality         */
+/* and further benefiting the MVS 3.8J hobbyist public domain       */
+/* community.                                                       */
+/*                                                                  */
+/*                                                                  */
+/*                                                                  */
+/*                                                                  */
+/* Change History:                                                  */
+/* ================================================================ */
+/* MM/DD/CCYY Version  Name / Description                           */
+/* ---------- -------  -------------------------------------------- */
+/* 04/20/2021 0.9.00   Larry Belmontes Jr.                          */
+/*                     - Initial version released to MVS 3.8J       */
+/*                       hobbyist public domain                     */
+/*                                                                  */
+/********************************************************************/
+)ATTR
+ + TYPE(TEXT)   INTENS(LOW)  SKIP(ON)    COLOR(GREEN)
+ % TYPE(TEXT)   INTENS(HIGH) SKIP(ON)    COLOR(WHITE)
+ @ TYPE(TEXT)   INTENS(HIGH) SKIP(ON)    COLOR(WHITE)  HILITE(USCORE)
+ ~ TYPE(TEXT)   INTENS(LOW)  SKIP(ON)    COLOR(YELLOW)
+ _ TYPE(INPUT)  INTENS(LOW)  JUST(LEFT)  COLOR(RED)
+ { TYPE(OUTPUT) INTENS(LOW)  JUST(LEFT)
+ } TYPE(OUTPUT) INTENS(LOW)  JUST(RIGHT)
+ [ TYPE(OUTPUT) INTENS(HIGH) JUST(LEFT)  COLOR(TURQ)
+ [ TYPE(OUTPUT) INTENS(HIGH) JUST(RIGHT)
+)BODY EXPAND(\\)
+%----------------------- Data Set Copy Action ----------------------------------
+%Command ===>_ZCMD                                                            +
+%
++                                                                      [Z
+% From DSN  . :[dsn                                         +          [Z
++  Volume . . :[ovolume%
++  DSORG  . . :[dsorg+
++  RACF . . . :[racfprot+
++  CurAlloc . :[ounits  [alloc+
++
++
+~ Copy%From DSN~-->%To DSN~using below attributes.+
+~ Overtype details and press ENTER to perform copy operation.+
++
+% To DSN  :_dsn2                                        +
++  Volume :_volume+  Unit     :_unit+
++  RECFM  :[recfm+   BLKSIZE  :_blksize+  LRECL    :[lrecl+
++  Alloc  :_units   +Primary  :_primary+  Secondary:_second+
++
+% List:_Z+ (Y/N) List copy operation log on screen
+)Init
+  &ounits = &units
+  .CURSOR = 'dsn2'
+  .HELP = HDCPY0
+  .ZVARS = '(ZUSER,ZPANELID,LISTCPY)'
+  &ZPRIM = NO         /* NOT A PRIMARY OPTION MENU         */
+  &ZHTOP = HDCPY0     /* TUTORIAL TABLE OF CONTENTS        */
+  &ZHINDEX = HDCPY0   /* TUTORIAL INDEX - 1ST PAGE isptutor*/
+  &RESP0 = .RESP
+  &KEYPRESS = .PFKEY
+  VGET (LISTCPY) PROFILE
+)Proc
+  &RESP0 = .RESP
+  &KEYPRESS = .PFKEY
+  IF (&KEYPRESS NE PF03)
+    VER (&DSN2,NONBLANK,DSNAME,MSG=DCPY020)
+    VER (&VOLUME,NONBLANK,MSG=DCPY021)
+    VER (&UNIT,NONBLANK,MSG=DCPY021)
+    VER (&UNITS,NB,LIST,BLOCK,TRACK,CYLINDER,MSG=DCPY023)
+    VER (&BLKSIZE,NUM,MSG=DCPY022)
+    VER (&LRECL,NUM,MSG=DCPY022)
+    VER (&PRIMARY,NUM,MSG=DCPY022)
+    VER (&SECOND,NUM,MSG=DCPY022)
+    IF (&DSORG = PO)
+      VER (&ADIRBLK,NUM,MSG=DCPY022)
+    VER (&LISTCPY,NB,LIST,Y,N,MSG=DCPY024)
+    VPUT (LISTCPY) PROFILE
+)End

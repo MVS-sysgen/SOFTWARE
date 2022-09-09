@@ -1,0 +1,89 @@
+         MACRO
+&NAME    MOVEC &P
+**********************************************************************
+*   Macro:  MOVEC     V1R0M00    07/30/2020
+*  Author:  Larry Belmontes Jr.
+*           https://ShareABitofIT.net/SHRABIT-MACLIB-in-mvs-3-8j
+*           Copyright (C) 2020-2021  Larry Belmontes, Jr.
+**********************************************************************
+.*********************************************************************
+.*       Macro Description:                                          *
+.*       ------------------                                          *
+.*       o  Move data string starting at R6 and augmenting R6 and R8 *
+.*          by length of string moved.                               *
+.*          by 1 for each byte moved.                                *
+.*       o  &P must start and end with apostrophes.                  *
+.*       o  &P length must be >0 and <= 42 bytes with single quotes. *
+.*       o  MOVEI must be executed to set R6 and R8 prior to using   *
+.*          this macro                                               *
+.*          - R6=Current Address of &P as pointer                    *
+.*          - R8=Current Length  of &P as bytes moved into &P        *
+.*                                                                   *
+.*       Examples:                                                   *
+.*       ---------                                                   *
+.*       MOVEC 'string data in quotes'                               *
+.*                                                                   *
+.*       - Uses R6,R8                                                *
+.*********************************************************************
+*  Disclaimer:
+*  ===================================================================
+*
+*     No guarantee; No warranty; Install / Use at your own risk.
+*
+*     This software is provided "AS IS" and without any expressed
+*  or implied warranties, including, without limitation, the
+*  implied warranties of merchantability and fitness for a
+*  particular purpose.
+*
+*     The author requests keeping authors name intact in any
+*  modified versions.
+*
+*     In addition, the author requests readers to submit any
+*  code modifications / enhancements and associated comments
+*  for consideration into a subsequent release (giving credit
+*  to contributor(s)) thus, improving overall functionality
+*  and further benefiting the MVS 3.8J hobbyist public domain
+*  community.
+*
+*
+         LCLA  &A,&B,&X
+         LCLC  &C,&D,&PD
+&A       SETA  K'&P          Length of VAR
+&B       SETA  &A-2          Minus quotes
+&C       SETC  '&P'(1,1)     1st  position value
+&D       SETC  '&P'(&A,1)    Last position value
+&PD      SETC  '&P'(2,&A-2)    &P Content
+&X       SETA  2
+.CHK2QT  ANOP
+         AIF   (&X GT &A-2).CONT0
+         AIF   ('&P'(&X,2) EQ '''''').FND2QT
+&X       SETA  &X+1
+         AGO    .CHK2QT
+.FND2QT  ANOP
+&B       SETA  &B-1
+&X       SETA  &X+2
+         AGO    .CHK2QT
+.CONT0   ANOP
+         AIF   (&A LT 3).TOOSHRT
+         AIF   (&A GT 42).TOOLONG
+         AIF   ('&C' NE '''').NOQINB
+         AIF   ('&D' NE '''').NOQINE
+&NAME    MVC   0(&B,R6),=C&P
+         LA    6,&B.(6)               adj addr
+         LA    8,&B.(8)               adj len
+         MNOTE 'Moving &B bytes from string to R6 pointer'
+         AGO    .ENDME
+.TOOSHRT ANOP
+         MNOTE 12,'String content must be > 0 bytes'
+         AGO    .ENDME
+.TOOLONG ANOP
+         MNOTE 12,'String content > 40 bytes'
+         AGO    .ENDME
+.NOQINB  ANOP
+         MNOTE 12,'String must start with apostrophe'
+         AGO    .ENDME
+.NOQINE  ANOP
+         MNOTE 12,'String must end with apostrophe'
+         AGO    .ENDME
+.ENDME   ANOP
+         MEND

@@ -1,0 +1,49 @@
+         MACRO
+         SVC78A
+         PUSH  PRINT
+         PRINT GEN
+**********************************************************************
+*   Macro:  SVC78A    V1R0M00    07/30/2020
+*  Author:  Larry Belmontes Jr.
+*           https://ShareABitofIT.net/SHRABIT-MACLIB-in-mvs-3-8j
+*           Copyright (C) 2020-2021  Larry Belmontes, Jr.
+**********************************************************************
+**********************************************************************
+*        SVC 78 Message area                                         *
+**********************************************************************
+*  Disclaimer:
+*  ===================================================================
+*
+*     No guarantee; No warranty; Install / Use at your own risk.
+*
+*     This software is provided "AS IS" and without any expressed
+*  or implied warranties, including, without limitation, the
+*  implied warranties of merchantability and fitness for a
+*  particular purpose.
+*
+*     The author requests keeping authors name intact in any
+*  modified versions.
+*
+*     In addition, the author requests readers to submit any
+*  code modifications / enhancements and associated comments
+*  for consideration into a subsequent release (giving credit
+*  to contributor(s)) thus, improving overall functionality
+*  and further benefiting the MVS 3.8J hobbyist public domain
+*  community.
+*
+*
+FSPMSG   EQU   *                   30 byte message text for SVC 78
+         DS    CL6
+FSCYLS   DS    CL4                 Total free cylinders
+         DS    CL1
+FSTRKS   DS    CL4                 Total additional free tracks
+         DS    CL1
+FSEXTS   DS    CL4                 Total free extents
+         DS    CL1
+FSLCYLS  DS    CL4                 Cylinders in largest free extent
+         DS    CL1
+FSLTRKS  DS    CL4                 Additional trks in largest free ext
+*
+*              END OF SVC78A
+         POP   PRINT
+         MEND

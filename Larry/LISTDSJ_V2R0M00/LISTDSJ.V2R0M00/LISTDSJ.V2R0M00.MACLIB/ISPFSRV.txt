@@ -1,0 +1,86 @@
+         MACRO
+         ISPFSRV
+         PUSH  PRINT
+         PRINT GEN
+**********************************************************************
+*   Macro:  ISPFSRV   V1R0M00    07/30/2020
+*   Add TBSAVE,ASIS   V1R0M01    11/30/2021   Larry Belmontes           LB1001
+*  Author:  Larry Belmontes Jr.
+*           https://ShareABitofIT.net/SHRABIT-MACLIB-in-mvs-3-8j
+*           Copyright (C) 2020-2021  Larry Belmontes, Jr.
+**********************************************************************
+**********************************************************************
+*        ISPF Services and keywords (kw)                             *
+**********************************************************************
+*  Disclaimer:
+*  ===================================================================
+*
+*     No guarantee; No warranty; Install / Use at your own risk.
+*
+*     This software is provided "AS IS" and without any expressed
+*  or implied warranties, including, without limitation, the
+*  implied warranties of merchantability and fitness for a
+*  particular purpose.
+*
+*     The author requests keeping authors name intact in any
+*  modified versions.
+*
+*     In addition, the author requests readers to submit any
+*  code modifications / enhancements and associated comments
+*  for consideration into a subsequent release (giving credit
+*  to contributor(s)) thus, improving overall functionality
+*  and further benefiting the MVS 3.8J hobbyist public domain
+*  community.
+*
+*
+CONTROL  DC    CL8'CONTROL '               Service Control
+VDEFINE  DC    CL8'VDEFINE '               Service VDEFINE
+VDELETE  DC    CL8'VDELETE '               Service VDELETE
+DISPLAY  DC    CL8'DISPLAY '               Service Display
+SELECT   DC    CL8'SELECT  '               Service Select
+BROWSE   DC    CL8'BROWSE  '               Service BROWSE
+EDIT     DC    CL8'EDIT    '               Service EDIT
+TBDISPL  DC    CL8'TBDISPL '               Service TBDISPL
+TBCREATE DC    CL8'TBCREATE'               Service TBCREATE
+TBERASE  DC    CL8'TBERASE '               Service TBERASE
+TBADD    DC    CL8'TBADD   '               Service TBADD
+TBMOD    DC    CL8'TBMOD   '               Service TBMOD
+TBPUT    DC    CL8'TBPUT   '               Service TBPUT
+TBGET    DC    CL8'TBGET   '               Service TBGET
+TBSKIP   DC    CL8'TBSKIP  '               Service TBSKIP
+TBDELETE DC    CL8'TBDELETE'               Service TBDELETE
+TBTOP    DC    CL8'TBTOP   '               Service TBTOP
+TBBOTTOM DC    CL8'TBBOTTOM'               Service TBBOTTOM
+TBSORT   DC    CL8'TBSORT  '               Service TBSORT
+TBEND    DC    CL8'TBEND   '               Service TBEND
+TBCLOSE  DC    CL8'TBCLOSE '               Service TBCLOSE
+TBEXIST  DC    CL8'TBEXIST '               Service TBEXIST
+TBQUERY  DC    CL8'TBQUERY '               Service TBQUERY
+TBSTATS  DC    CL8'TBSTATS '               Service TBSTATS
+TBSCAN   DC    CL8'TBSCAN  '               Service TBSCAN
+TBSARG   DC    CL8'TBSARG  '               Service TBSARG
+TBSAVE   DC    CL8'TBSAVE  '               Service TBSAVE               LB1001
+VGET     DC    CL8'VGET    '               Service VGET
+VPUT     DC    CL8'VPUT    '               Service VPUT
+GETMSG   DC    CL8'GETMSG  '               Service GETMSG
+SETMSG   DC    CL8'SETMSG  '               Service SETMSG
+ERRORS   DC    CL8'ERRORS  '               kw ERRORS
+RETURN   DC    CL8'RETURN  '               kw RETURN
+LOCK     DC    CL8'LOCK    '               kw LOCK
+SAVE     DC    CL8'SAVE    '               kw SAVE
+RESTORE  DC    CL8'RESTORE '               kw RESTORE
+LINE     DC    CL8'LINE    '               kw LINE
+PROFILE  DC    CL8'PROFILE '               kw PROFILE
+SHARED   DC    CL8'SHARED  '               kw SHARED
+ASIS     DC    CL8'ASIS    '               kw ASIS                      LB1001
+CHAR     DC    CL8'CHAR    '               kw CHAR
+ALL      DC    CL8'*       '               kw ALL (*)
+NOWRITE  DC    CL8'NOWRITE '               kw NOWRITE
+REPLACE  DC    CL8'REPLACE '               kw REPLACE
+YES      DC    CL8'YES     '               kw YES
+NO       DC    CL8'NO      '               kw NO
+B        DC    CL8'        '               kw B as blanks
+*
+*              END OF ISPFSRV
+         POP   PRINT
+         MEND

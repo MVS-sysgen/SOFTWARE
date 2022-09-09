@@ -1,0 +1,66 @@
+/********************************************************************/
+/*                                                                  */
+/* MESSAGES: CMPR00                                                 */
+/*                                                                  */
+/* Author: Larry Belmontes Jr.                                      */
+/*         https://ShareABitofIT.net/CCompare-in-MVS38J             */
+/*         Copyright (C) 2020  Larry Belmontes, Jr.                 */
+/*                                                                  */
+/*                                                                  */
+/* Description:                                                     */
+/* ---------------------------------------------------------------  */
+/*                                                                  */
+/* ISPF 2.x Compare Messages used by Panel PCOMPR                   */
+/*                                                                  */
+/*                                                                  */
+/* Disclaimer:                                                      */
+/* ================================================================ */
+/*                                                                  */
+/*    No guarantee; No warranty; Install / Use at your own risk.    */
+/*                                                                  */
+/*    This software is provided "AS IS" and without any expressed   */
+/* or implied warranties, including, without limitation, the        */
+/* implied warranties of merchantability and fitness for a          */
+/* particular purpose.                                              */
+/*                                                                  */
+/*    The author requests keeping authors name intact in any        */
+/* modified versions.                                               */
+/*                                                                  */
+/*    In addition, the author requests readers to submit any        */
+/* code modifications / enhancements and associated comments        */
+/* for consideration into a subsequent release (giving credit       */
+/* to contributor(s)) thus, improving overall functionality         */
+/* and further benefiting the MVS 3.8J hobbyist public domain       */
+/* community.                                                       */
+/*                                                                  */
+/*                                                                  */
+/*                                                                  */
+/* Change History:                                                  */
+/* ================================================================ */
+/* MM/DD/CCYY Version  Name / Description                           */
+/* ---------- -------  -------------------------------------------- */
+/* 08/10/2020 0.9.00   Larry Belmontes Jr.                          */
+/*                     - Initial version released to MVS 3.8J       */
+/*                       hobbyist public domain                     */
+/*                                                                  */
+/********************************************************************/
+CMPR000  '                        ' .ALARM=NO
+'CMPR000  Welcome...                                                           '
+CMPR001  '                        ' .ALARM=NO
+'CMPR001  OLD DSN - &MYMSG                                                     '
+CMPR002  '                        ' .ALARM=NO
+'CMPR002  NEW DSN - &MYMSG                                                     '
+CMPR003  '                        ' .ALARM=NO
+'CMPR003  Compare Type must be FULL, ASM or NOASM.                             '
+CMPR004  '                        ' .ALARM=NO
+'CMPR004  Compare Program Name must be COMPARB, IEBCMPR or ZEBCMPR.            '
+CMPR005  '                        ' .ALARM=NO
+'CMPR005  Print Results must be Y or N.                                        '
+CMPR006  '                        ' .ALARM=NO
+'CMPR006  Delete Results must be Y or N.                                       '
+CMPR007  '                        ' .ALARM=NO
+'CMPR007  Member name required for OLD and NEW DSN.  Or, NO member name.       '
+CMPR008  '                        ' .ALARM=NO
+'CMPR008  Use ''x'' to mark option.                                            '
+CMPR009  '                        ' .ALARM=NO
+'CMPR009  Invalid Selection &KEYPRESS  &LCMD                                   '

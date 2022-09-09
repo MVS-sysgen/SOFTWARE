@@ -1,0 +1,58 @@
+/********************************************************************/
+/*                                                                  */
+/* MESSAGES: CMPR01                                                 */
+/*                                                                  */
+/* Author: Larry Belmontes Jr.                                      */
+/*         https://ShareABitofIT.net/CCompare-in-MVS38J             */
+/*         Copyright (C) 2020  Larry Belmontes, Jr.                 */
+/*                                                                  */
+/*                                                                  */
+/* Description:                                                     */
+/* ---------------------------------------------------------------  */
+/*                                                                  */
+/* ISPF 2.x Compare Messages used by Panel PCOMPR                   */
+/*                                                                  */
+/*                                                                  */
+/* Disclaimer:                                                      */
+/* ================================================================ */
+/*                                                                  */
+/*    No guarantee; No warranty; Install / Use at your own risk.    */
+/*                                                                  */
+/*    This software is provided "AS IS" and without any expressed   */
+/* or implied warranties, including, without limitation, the        */
+/* implied warranties of merchantability and fitness for a          */
+/* particular purpose.                                              */
+/*                                                                  */
+/*    The author requests keeping authors name intact in any        */
+/* modified versions.                                               */
+/*                                                                  */
+/*    In addition, the author requests readers to submit any        */
+/* code modifications / enhancements and associated comments        */
+/* for consideration into a subsequent release (giving credit       */
+/* to contributor(s)) thus, improving overall functionality         */
+/* and further benefiting the MVS 3.8J hobbyist public domain       */
+/* community.                                                       */
+/*                                                                  */
+/*                                                                  */
+/*                                                                  */
+/* Change History:                                                  */
+/* ================================================================ */
+/* MM/DD/CCYY Version  Name / Description                           */
+/* ---------- -------  -------------------------------------------- */
+/* 08/10/2020 0.9.00   Larry Belmontes Jr.                          */
+/*                     - Initial version released to MVS 3.8J       */
+/*                       hobbyist public domain                     */
+/*                                                                  */
+/********************************************************************/
+CMPR010  '                        ' .ALARM=NO
+'CMPR010  Dataset Name is invalid, cannot contain blanks                       '
+CMPR011  '                        ' .ALARM=NO
+'CMPR011  Unit must be blank                                                   '
+CMPR012  '                        ' .ALARM=NO
+'CMPR012  Browse Results must be Y or N.                                       '
+CMPR013  '                        ' .ALARM=NO
+'CMPR013  Press ENTER to process request.                                      '
+CMPR018  '                        ' .ALARM=NO
+'CMPR018  RC=&MYRC &MYMSG                                                      '
+CMPR019  '                        ' .ALARM=NO
+'CMPR019  Compare Complete. RC=&MYRC                                           '

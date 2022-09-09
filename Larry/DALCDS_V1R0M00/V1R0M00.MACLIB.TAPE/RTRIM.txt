@@ -1,0 +1,68 @@
+         MACRO
+         RTRIM
+         PUSH  PRINT
+         PRINT GEN
+**********************************************************************
+*   Macro:  RTRIM     V1R0M00    07/30/2020
+*  Author:  Larry Belmontes Jr.
+*           https://ShareABitofIT.net/SHRABIT-MACLIB-in-mvs-3-8j
+*           Copyright (C) 2020-2021  Larry Belmontes, Jr.
+**********************************************************************
+*     * /************************************************************/
+*     * /* Subroutine - RTRIM Remove trailing spaces         (R7)   */
+*     * /* - R3 Address of string (on entry)                        */
+*     * /* - R4 Original length of string (on entry)                */
+*     * /* - R3 Address of string (restored on exit)                */
+*     * /* - R4 Revised  length of string (on exit)                 */
+*     * /* - R6 Receiving string address (on entry)                 */
+*     * /* - R8 Receiving string length  (on entry)                 */
+*     * /************************************************************/
+*  Disclaimer:
+*  ===================================================================
+*
+*     No guarantee; No warranty; Install / Use at your own risk.
+*
+*     This software is provided "AS IS" and without any expressed
+*  or implied warranties, including, without limitation, the
+*  implied warranties of merchantability and fitness for a
+*  particular purpose.
+*
+*     The author requests keeping authors name intact in any
+*  modified versions.
+*
+*     In addition, the author requests readers to submit any
+*  code modifications / enhancements and associated comments
+*  for consideration into a subsequent release (giving credit
+*  to contributor(s)) thus, improving overall functionality
+*  and further benefiting the MVS 3.8J hobbyist public domain
+*  community.
+*
+*
+RTRIM    EQU   *
+         ST    R3,SAVER3S          Save R3
+         AR    R3,R4               Point past end Addr of String
+         BCTR  R3,0                Adjust to end addr of String
+RTRIML   EQU   *
+         CLI   0(R3),C' '          Blank delimiter?
+         BNE   RTRIMM              No, found revised length
+*                                  Yes, keep looking backwards
+         BCTR  R3,0                Look back 1 position
+         BCT   R4,RTRIML           Try again...
+*                                  String all BLANKS!  Zero Length
+         B     RTRIMX
+RTRIMM   EQU   *
+         L     R3,SAVER3S          Restore R3
+         BCTR  R4,0                  Adjust for EX
+         EX    R4,MVCTEXT            EX Move
+         LA    R4,1(R4)              Restore from EX
+         AR    R6,R4                 R6=Adj addr TEXT
+         AR    R8,R4                 R8=Adj len  TEXT
+RTRIMX   EQU   *
+         L     R3,SAVER3S          Restore R3
+         BR    R7                  Return to caller, R4=Revised Len
+*
+MVCTEXT  MVC   0(0,R6),0(R3)
+*
+*              END OF RTRIM
+         POP   PRINT
+         MEND

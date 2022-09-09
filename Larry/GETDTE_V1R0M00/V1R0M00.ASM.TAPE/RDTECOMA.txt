@@ -1,0 +1,92 @@
+         MACRO
+&NAME    RDTECOMA
+         PUSH  PRINT
+         PRINT GEN
+**********************************************************************
+*   Macro:  RDETCOMA  V1R0M00    07/30/2020
+*  Author:  Larry Belmontes Jr.
+*           https://ShareABitofIT.net/SHRABIT-MACLIB-in-mvs-3-8j
+*           Copyright (C) 2020-2021  Larry Belmontes, Jr.
+**********************************************************************
+**********************************************************************
+*     Date-Time-Environment Communications Area                      *
+**********************************************************************
+*                                                                    *
+*     Representation of date-time-environment result data:           *
+*                                                                    *
+*     0        1         2         3         4                       *
+*     123456789012345678901234567890123456789012345                  *
+*     +---+----+----+----+----+----+----+----+----+                  *
+*     12/31/2001.365 10:11:12:45December 1Monday                     *
+*     MM/DD/CCYY.JJJ HH:MM:SS:THLLLLLLLLLNWWWWWWWWW                  *
+*                                                                    *
+*     4   5         6         7         8                            *
+*     67890123456789012345678901234567890                            *
+*     +---+----+----+----+----+----+----+                            *
+*     LARRY01 ILKJACCTTSOLOGONTSOFGISPARM                            *
+*     Jobname StepnameProcstepEnvirParmty                            *
+*                                                                    *
+*     NOTE:  This macro should be in sync with                       *
+*     -----  COBOL copybook, RDTECOMC.                               *
+*                                                                    *
+**********************************************************************
+*  Disclaimer:
+*  ===================================================================
+*
+*     No guarantee; No warranty; Install / Use at your own risk.
+*
+*     This software is provided "AS IS" and without any expressed
+*  or implied warranties, including, without limitation, the
+*  implied warranties of merchantability and fitness for a
+*  particular purpose.
+*
+*     The author requests keeping authors name intact in any
+*  modified versions.
+*
+*     In addition, the author requests readers to submit any
+*  code modifications / enhancements and associated comments
+*  for consideration into a subsequent release (giving credit
+*  to contributor(s)) thus, improving overall functionality
+*  and further benefiting the MVS 3.8J hobbyist public domain
+*  community.
+*
+*
+$DTECOMS EQU   *
+RDATE    DS    0CL14           'MM/DD/CCYY.JJJ'
+RDATEMM  DS    CL2             MM
+RDATES1  DS    CL1             Separator
+RDATEDD  DS    CL2             DD
+RDATES2  DS    CL1             Separator
+RDATECC  DS    CL2             CC
+RDATEYY  DS    CL2             YY
+RDATES3  DS    CL1             Separator
+RDATEJJJ DS    CL3             JJJ
+RDATES4  DS    CL1             Blank
+RTIME    DS    0CL11           'HH:MM:SS:TT'
+RTIMEHH  DS    CL2             HH
+RTIMES1  DS    CL1             Separator
+RTIMEMM  DS    CL2             MM
+RTIMES2  DS    CL1             Separator
+RTIMESS  DS    CL2             SS
+RTIMES3  DS    CL1             Separator
+RTIMETT  DS    CL2             TT
+RMONTHN  DS    CL9             Month Name     i.e. January
+RDAY#    DS    CL1             Weekday Number 0-Sunday to 6-Saturday
+RDAYN    DS    CL9             Weekday        i.e  Tuesday
+RJOBNAM  DS    CL8             JOB Name / UserID
+RSTEPNAM DS    CL8             Step Name / Logon PROC
+RPROCSTP DS    CL8             Proc Step Name / TSO Logon PROC
+RENV     DS    CL5             Environment Type
+*                              TSOFG - TSO Foreground
+*                              TSOBG - TSO Background (run in batch)
+*                              BATCH - Not TSO, must be Batch
+RPARMTY  DS    CL6             PARM Type
+*                              ISPARM - Parm
+*                              ISCPPL - Parm
+*                              ISPARM  Parm
+$DTECOME EQU   *
+$DTECOML EQU   $DTECOME-$DTECOMS     Length of Result Area
+*
+*              END OF RDTECOMA
+         POP   PRINT
+         MEND

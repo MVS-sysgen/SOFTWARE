@@ -1,0 +1,86 @@
+/********************************************************************/
+/*                                                                  */
+/*    PANEL: HDALCDS0                                               */
+/* Author: Larry Belmontes Jr.                                      */
+/*         https://ShareABitofIT.net/DALCDS-in-MVS38J               */
+/*         Copyright (C) 2020  Larry Belmontes, Jr.                 */
+/*                                                                  */
+/*                                                                  */
+/* Description:                                                     */
+/* ---------------------------------------------------------------  */
+/*                                                                  */
+/* ISPF 2.x HDALCDS0 panel for DALCDS Dialogue Manager              */
+/*                                                                  */
+/*                                                                  */
+/* Disclaimer:                                                      */
+/* ================================================================ */
+/*                                                                  */
+/*    No guarantee; No warranty; Install / Use at your own risk.    */
+/*                                                                  */
+/*    This software is provided "AS IS" and without any expressed   */
+/* or implied warranties, including, without limitation, the        */
+/* implied warranties of merchantability and fitness for a          */
+/* particular purpose.                                              */
+/*                                                                  */
+/*    The author requests keeping authors name intact in any        */
+/* modified versions.                                               */
+/*                                                                  */
+/*    In addition, the author requests readers to submit any        */
+/* code modifications / enhancements and associated comments        */
+/* for consideration into a subsequent release (giving credit       */
+/* to contributor(s)) thus, improving overall functionality         */
+/* and further benefiting the MVS 3.8J hobbyist public domain       */
+/* community.                                                       */
+/*                                                                  */
+/*                                                                  */
+/*                                                                  */
+/*                                                                  */
+/* Change History:                                                  */
+/* ---------------------------------------------------------------  */
+/* MM/DD/CCYY VERSION  NAME / DESCRIPTION                           */
+/* 08/10/2020 1.0.00   Larry Belmontes Jr.                          */
+/*                     Initial version released to MVS 3.8J         */
+/*                     Hobbyist Public Domain                       */
+/*                                                                  */
+/********************************************************************/
+)ATTR
+ + TYPE(TEXT)   INTENS(LOW)  SKIP(ON)    COLOR(GREEN)
+ % TYPE(TEXT)   INTENS(HIGH) SKIP(ON)    COLOR(WHITE)
+ ~ TYPE(TEXT)   INTENS(LOW)  SKIP(ON)    COLOR(YELLOW)
+ [ TYPE(TEXT)   INTENS(LOW)  SKIP(ON)    COLOR(TURQ)
+ ? TYPE(TEXT)   INTENS(LOW)  HILITE(REVERSE) COLOR(BLUE)
+ _ TYPE(INPUT)  INTENS(LOW)  JUST(LEFT)  COLOR(TURQ)
+ ! TYPE(INPUT)  INTENS(HIGH) JUST(RIGHT)
+ { TYPE(OUTPUT) INTENS(LOW)  JUST(LEFT)
+ } TYPE(OUTPUT) INTENS(LOW)  JUST(RIGHT)
+)BODY EXPAND(//)
+%--HELP-----------------------? TSO Allocations  %-/-/-~v1.0.00%-
+%Command ===>_ZCMD                                    / /   +&ZPANELID
+%
++DALCDS displays current TSO DD allocation information in a table format as
++follows:
++
++?| Column   |  Description                                                 |+
++?|%DD#     ?|[ DD Sequence Number for display purposes                    ?|+
++?|%DDNAME  ?|[ DD Name, may include multiple dataset names                ?|+
++?|%ORG     ?|[ File Organization (shown once per concatenation)           ?|+
++?|%DISP    ?|[ Dataset disposition                                        ?|+
++?|%VOLSER  ?|[ Dataset Volser Number                                      ?|+
++?|%DSNAME  ?|[ Dataset Name, can include member name for PDS              ?|+
++?---------------------------------------------------------------------------+
++
++The display can scroll backward or forward using PF7 and PF8, respectively.
++
++Use the command, %/ddname+to search and display a specific DD allocation.
++Use the command, %/      +to display all DD allocations.
++
+~Note:+ORG and/or DISP may not exhibit a valid value if the dataset has not
++       been used at time of display.
++
++
+)INIT
+ .CURSOR = ZCMD
+
+)PROC
+
+)END

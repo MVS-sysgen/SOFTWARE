@@ -1,0 +1,118 @@
+/********************************************************************/
+/*                                                                  */
+/*    PANEL: PWW                                                    */
+/*                                                                  */
+/* Author: Larry Belmontes Jr.                                      */
+/*         https://ShareABitofIT.net/WRLDWTCH-in-MVS38J             */
+/*         Copyright (C) 2018 Larry Belmontes, Jr.                  */
+/*                                                                  */
+/*                                                                  */
+/* Description:                                                     */
+/* ---------------------------------------------------------------  */
+/*                                                                  */
+/* ISPF 2.0 World WATCH panel for WRLDWTCH                          */
+/*                                                                  */
+/*                                                                  */
+/* Modifications in reference to original panel on CBT File #366    */
+/*                                                                  */
+/* - Removed DEFAULT(%+_) from )ATTR section header                 */
+/* - Removed CMD(ZCMD) SMSG(MSG) LMSG(MSG) from )BODY section header*/
+/* - Modified panel TITLE line                                      */
+/* - Removed "MSG from panel line 3                                 */
+/* - Removed all @WWDATAnn,WWATTRnn   ...  @ area definitions and   */
+/*   replaced with a first line   @WWDATA,WWATTR   ... @            */
+/*   and remaining lines as       @                    @            */
+/*   for a total of 21 lines for AREA                               */
+/* - Replace HELP screen w/ HWW on .HELP statement in INIT section  */
+/* - Removed last line, before )INIT section to use World Map       */
+/*   line 21                                                        */
+/* - Removed extra blank lines in )INIT and )REINIT sections        */
+/* - Added 4 CHAR attributes using visible characters               */
+/*                                                                  */
+/*                                                                  */
+/* Disclaimer:                                                      */
+/* ================================================================ */
+/*                                                                  */
+/*    No guarantee; No warranty; Install / Use at your own risk.    */
+/*                                                                  */
+/*    This software is provided "AS IS" and without any expressed   */
+/* or implied warranties, including, without limitation, the        */
+/* implied warranties of merchantability and fitness for a          */
+/* particular purpose.                                              */
+/*                                                                  */
+/*    The author requests keeping authors name intact in any        */
+/* modified versions.                                               */
+/*                                                                  */
+/*    In addition, the author requests readers to submit any        */
+/* code modifications / enhancements and associated comments        */
+/* for consideration into a subsequent release (giving credit       */
+/* to contributor(s)) thus, improving overall functionality         */
+/* and further benefiting the MVS 3.8J hobbyist public domain       */
+/* community.                                                       */
+/*                                                                  */
+/*                                                                  */
+/*                                                                  */
+/* Change History:                                                  */
+/* ================================================================ */
+/* MM/DD/CCYY Version  Name / Description                           */
+/* ---------- -------  -------------------------------------------- */
+/* 09/22/2018 0.9.00   Larry Belmontes Jr.                          */
+/*                     - Initial version released to MVS 3.8J       */
+/*                       hobbyist public domain                     */
+/*                                                                  */
+/********************************************************************/
+)ATTR
+
+  ' TYPE(OUTPUT) COLOR(BLUE)  INTENS(LOW)  CAPS(OFF)
+  " TYPE(OUTPUT) COLOR(WHITE) INTENS(HIGH) CAPS(OFF)
+
+  @ AREA(DYNAMIC)
+ 01 TYPE(DATAIN)
+ 02 TYPE(DATAOUT)
+ 03 TYPE(CHAR)   COLOR(GREEN)
+ 04 TYPE(CHAR)   COLOR(GREEN) HILITE(REVERSE)
+ 05 TYPE(CHAR)   COLOR(BLUE)
+ 06 TYPE(CHAR)   COLOR(BLUE)  HILITE(REVERSE)
+
+ [  TYPE(CHAR)   COLOR(GREEN)
+ [  TYPE(CHAR)   COLOR(GREEN) HILITE(REVERSE)
+ {  TYPE(CHAR)   COLOR(BLUE)
+ }  TYPE(CHAR)   COLOR(BLUE)  HILITE(REVERSE)
+
+)BODY WIDTH(&ZSCREENW) EXPAND(;;)
+%                           + World WATCH     'DATE     'HHMMSS                +
+%===>_ZCMD               +                                                     +
++                                                                              +
++@WWDATA,WWATTR                                                         @
++@                                                                      @
++@                                                                      @
++@                                                                      @
++@                                                                      @
++@                                                                      @
++@                                                                      @
++@                                                                      @
++@                                                                      @
++@                                                                      @
++@                                                                      @
++@                                                                      @
++@                                                                      @
++@                                                                      @
++@                                                                      @
++@                                                                      @
++@                                                                      @
++@                                                                      @
++@                                                                      @
++@                                                                      @
++@                                                                      @
+)INIT
+
+  .CURSOR = ZCMD
+  .HELP   = HWW
+
+  &DATE   = '&ZDAY..&ZMONTH..&ZYEAR'
+
+)REINIT
+
+  REFRESH(*)
+
+)END

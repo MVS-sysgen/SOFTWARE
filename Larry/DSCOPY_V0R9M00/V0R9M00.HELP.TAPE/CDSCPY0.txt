@@ -1,0 +1,22 @@
+)F FUNCTION -
+  The CDSCPY0 CLIST copies a sequential or partitioned dats set
+  to another assigning a destination data set name comprised
+  of the source data set name appended with a date-time stamp.
+  Date-time stamp is in the format  Dyyjjj.Thhmmss
+
+)X SYNTAX  -
+         CDSCPY0 DSN1() VOL1() DSO1()
+
+  REQUIRED - DSN1
+  DEFAULTS - NONE
+  ALIAS    - NONE
+
+))DSN1     - Source data set name of sequential or partitioned file.
+             DSN1 must be fully qualifed, no quotes are necessary.
+
+))VOL1     - optional, volume of DSN1 if not catalogued
+
+))DSO1     - optional, data set organization of DSN1
+
+
+
