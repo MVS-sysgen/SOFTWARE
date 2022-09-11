@@ -1,0 +1,124 @@
+/********************************************************************/
+/*                                                                  */
+/*    PANEL: ISPOPT57                                               */
+/*                                                                  */
+/* Author: Larry Belmontes Jr.                                      */
+/*         https://ShareABitofIT.net/ISPOPT5-in-MVS38J              */
+/*         Copyright (C) 2021  Larry Belmontes, Jr.                 */
+/*                                                                  */
+/*                                                                  */
+/* Description:                                                     */
+/* ---------------------------------------------------------------  */
+/*                                                                  */
+/* ISPF 2.x Background ASSIST panel                                 */
+/*                                                                  */
+/*                                                                  */
+/* Disclaimer:                                                      */
+/* ================================================================ */
+/*                                                                  */
+/*    No guarantee; No warranty; Install / Use at your own risk.    */
+/*                                                                  */
+/*    This software is provided "AS IS" and without any expressed   */
+/* or implied warranties, including, without limitation, the        */
+/* implied warranties of merchantability and fitness for a          */
+/* particular purpose.                                              */
+/*                                                                  */
+/*    The author requests keeping authors name intact in any        */
+/* modified versions.                                               */
+/*                                                                  */
+/*    In addition, the author requests readers to submit any        */
+/* code modifications / enhancements and associated comments        */
+/* for consideration into a subsequent release (giving credit       */
+/* to contributor(s)) thus, improving overall functionality         */
+/* and further benefiting the MVS 3.8J hobbyist public domain       */
+/* community.                                                       */
+/*                                                                  */
+/*                                                                  */
+/*                                                                  */
+/* Change History:                                                  */
+/* ================================================================ */
+/* MM/DD/CCYY Version  Name / Description                           */
+/* ---------- -------  -------------------------------------------- */
+/* 10/31/2021 0.9.00   Larry Belmontes Jr.                          */
+/*                     - Initial version released to MVS 3.8J       */
+/*                       hobbyist public domain                     */
+/*                                                                  */
+/* 05/13/2018 0.1.00   Larry Belmontes Jr.                          */
+/*                     - Initial protyping with initial version     */
+/*                       of ISPF from Wally Mclaughlin              */
+/*                                                                  */
+/********************************************************************/
+)ATTR
+ + TYPE(TEXT)   INTENS(LOW)  SKIP(ON)    COLOR(GREEN)
+ % TYPE(TEXT)   INTENS(HIGH) SKIP(ON)    COLOR(WHITE)
+ ^ TYPE(TEXT)   INTENS(LOW)  SKIP(ON)    COLOR(YELLOW)
+ _ TYPE(INPUT)  INTENS(LOW)  JUST(LEFT)  COLOR(TURQ)
+ # TYPE(INPUT)  INTENS(LOW)  JUST(ASIS)
+ ~ TYPE(INPUT)  INTENS(HIGH) JUST(LEFT)
+ ! TYPE(INPUT)  INTENS(HIGH) JUST(RIGHT)
+ { TYPE(OUTPUT) INTENS(LOW)  JUST(LEFT)
+ } TYPE(OUTPUT) INTENS(LOW)  JUST(RIGHT)
+ [ TYPE(OUTPUT) INTENS(HIGH) JUST(LEFT)
+ ] TYPE(OUTPUT) INTENS(HIGH) JUST(RIGHT)
+)BODY WIDTH(&ZSCREENW) EXPAND(//)
+%---------------------  BACKGROUND ASSIST Interpreter  -------------------------
+%COMMAND ===>_ZCMD                                             +
+%
++ISPF Library:                                                         {Z
++   PROJECT ===>_LB7PROJ +                                             {Z
++   LIBRARY ===>_LB7LIB1 + ===>_LB7LIB2 + ===>_LB7LIB3 + ===>_LB7LIB4 +
++   TYPE    ===>_LB7TYPE +
++   MEMBER  ===>_LB7MBR  +
++
++Other Partitioned or Sequential Data Set:
++   Data Set Name  . ._LB7ODSN                                         +
++
++Processor options:      +Term ==>_LB7TST+ QuikGO ==>_Z+  +Process-------------
++ STEPLIB ==>_LB7STEP1                                    _Z+ 1. ASSIST
++ List ID ==>_LB7lSTID%or+SYSOUT class ==>_Z+                 2. n/a
++ Parms   ==>_LB7OPT1                                 +       3. n/a
++ SYSLIB1 ==>_LB7SL1                                          +
++ SYSLIB2 ==>_LB7SL2                                          +
++ SYSLIB3 ==>_LB7SL3                                          +
++ SYSLIB4 ==>_LB7SL4                                          +
++ MoreJCL ==>_LB7JCL1                                                          +
++         ==>_LB7JCL2                                                          +
++         ==>_LB7JCL3                                                          +
++         ==>_LB7JCL4                                                          +
+)INIT
+  .HELP = HSPOPT57
+  &ZPRIM = NO         /* NOT A PRIMARY OPTION MENU         */
+  &ZHTOP = HSPOPT57   /* TUTORIAL TABLE OF CONTENTS        */
+  &ZHINDEX = HSPOPT57 /* TUTORIAL INDEX - 1ST PAGE isptutor*/
+  .ZVARS = (ZUSER,ZPANELID,LB7GO,LB7CMPL,LB7SOUT)
+  &RESP0 = .RESP
+  &KEYPRESS = .PFKEY
+  VGET (LB7PROJ LB7LIB1 LB7LIB2 LB7LIB3 LB7LIB4 LB7TYPE LB7MBR) PROFILE
+  VGET (LB7ODSN) PROFILE
+  VGET (LB7LSTID LB7SOUT LB7GO LB7CMPL) PROFILE
+  VGET (LB7TST LB7OPT1) PROFILE
+  VGET (LB7SL1 LB7SL2 LB7SL3 LB7SL4) PROFILE
+  VGET (LB7JCL1 LB7JCL2 LB7JCL3 LB7JCL4) PROFILE
+  VGET (LB7STEP1) PROFILE
+)PROC
+  &RESP0 = .RESP
+  &KEYPRESS = .PFKEY
+  &ZSEL = TRUNC (&ZCMD,'.')
+  &ZTRAIL = .TRAIL
+  &BGPO = &ZCMD
+  IF (&KEYPRESS NE PF03)
+ /* VER (&LB7TST,NB,MSG=BGOPT01)
+    VER (&LB7TST,LIST,NOTERM,MSG=BGOPT02)
+ /* VER (&LB7GO,NB,MSG=BGOPT01)
+    VER (&LB7GO,LIST,Y,Y,MSG=BGOPT02)
+    VER (&LB7CMPL,NB,MSG=BGOPT01)
+    VER (&LB7CMPL,LIST,1,1,MSG=BGOPT02)
+    VPUT (LB7PROJ LB7LIB1 LB7LIB2 LB7LIB3 LB7LIB4 LB7TYPE LB7MBR) PROFILE
+    VPUT (LB7ODSN) PROFILE
+    VPUT (LB7LSTID LB7SOUT LB7GO LB7CMPL) PROFILE
+    VPUT (LB7TST LB7OPT1) PROFILE
+    VPUT (LB7SL1 LB7SL2 LB7SL3 LB7SL4) PROFILE
+    VPUT (LB7JCL1 LB7JCL2 LB7JCL3 LB7JCL4) PROFILE
+    VPUT (LB7STEP1) PROFILE
+
+)END

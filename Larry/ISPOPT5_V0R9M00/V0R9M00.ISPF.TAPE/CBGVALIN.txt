@@ -1,0 +1,605 @@
+PROC 0 PANID(NOPANIDX)
+
+/********************************************************************/
+/*                                                                  */
+/* CLIST: CBGVALIN                                                  */
+/*                                                                  */
+/* Author: Larry Belmontes Jr.                                      */
+/*         https://ShareABitofIT.net/ISPOPT5-in-MVS38J              */
+/*         Copyright (C) 2021  Larry Belmontes, Jr.                 */
+/*                                                                  */
+/*                                                                  */
+/* Description:                                                     */
+/* ---------------------------------------------------------------  */
+/*                                                                  */
+/* This CLIST checks if datasets exists for background processing   */
+/* option 5.  They include - source, object, steplib, syslib.       */
+/*                                                                  */
+/*                                                                  */
+/* Command:                                                         */
+/* CBGVALIN PANID(PANID)                                            */
+/*                                                                  */
+/* Parameters:                                                      */
+/* PANID    panel name for selected background process              */
+/*                                                                  */
+/*                                                                  */
+/* Disclaimer:                                                      */
+/* ================================================================ */
+/*                                                                  */
+/*    No guarantee; No warranty; Install / Use at your own risk.    */
+/*                                                                  */
+/*    This software is provided "AS IS" and without any expressed   */
+/* or implied warranties, including, without limitation, the        */
+/* implied warranties of merchantability and fitness for a          */
+/* particular purpose.                                              */
+/*                                                                  */
+/*    The author requests keeping authors name intact in any        */
+/* modified versions.                                               */
+/*                                                                  */
+/*    In addition, the author requests readers to submit any        */
+/* code modifications / enhancements and associated comments        */
+/* for consideration into a subsequent release (giving credit       */
+/* to contributor(s)) thus, improving overall functionality         */
+/* and further benefiting the MVS 3.8J hobbyist public domain       */
+/* community.                                                       */
+/*                                                                  */
+/*                                                                  */
+/*                                                                  */
+/* Change History:                                                  */
+/* ================================================================ */
+/* MM/DD/CCYY Version  Name / Description                           */
+/* ---------- -------  -------------------------------------------- */
+/* 10/31/2021 0.9.00   Larry Belmontes Jr.                          */
+/*                     - Initial version released to MVS 3.8J       */
+/*                       hobbyist public domain                     */
+/*                                                                  */
+/* 05/13/2018 0.1.00   Larry Belmontes Jr.                          */
+/*                     - Initial protyping with initial version     */
+/*                       of ISPF from Wally Mclaughlin              */
+/*                                                                  */
+/********************************************************************/
+
+/*---START------------------- $$cbg-globals -------------------------*/
+  /****************************************************************
+  /* Global Variables to SHARE with subordinate CLISTS
+  /****************************************************************
+  GLOBAL JCLGEN TDD TDSN TDSA LIBMEM LINMEM +
+         ODSNTMP ODSNMEM SRCFND CSRF CMNT P +
+         LMDMEM                             +
+         LBBGSO  LBBGPO                     +
+         LBXODSN LBXPROJ LBXTYPE LBXMBR     +
+         LBXLIB1 LBXLIB2 LBXLIB3 LBXLIB4    +
+         LBXSTEP1                           +
+         LBXTST  LBXOPT1                    +
+         LBXGO   LBXCMPL                    +
+         LBXSOUT LBXLSTID                   +
+         LBXSL1  LBXSL2  LBXSL3  LBXSL4     +
+         LBXJCL1 LBXJCL2 LBXJCL3 LBXJCL4
+/*---END--------------------- $$cbg-globals -------------------------*/
+
+  /****************************************************************
+  /* GET ISPF PANEL PROFILE VARIABLES
+  /* - USING LAST BYTE OF PANELID
+  /*   GET ASSOCIATED ISPF VARS
+  /*   SET X VARS FROM ASSOCIATED ISPF VARS
+  /****************************************************************
+
+  ISPEXEC VGET (BGSO BGPO)
+  ISPEXEC VGET (LB&P.ODSN)
+  ISPEXEC VGET (LB&P.PROJ LB&P.TYPE LB&P.LIB1 LB&P.MBR)
+  ISPEXEC VGET (LB&P.LIB2 LB&P.LIB3 LB&P.LIB4)
+  ISPEXEC VGET (LB&P.STEP1)
+  ISPEXEC VGET (LB&P.SL1 LB&P.SL2 LB&P.SL3 LB&P.SL4)
+  ISPEXEC VGET (LB&P.JCL1 LB&P.JCL2 LB&P.JCL3 LB&P.JCL4) PROFILE
+  ISPEXEC VGET (LB&P.TST LB&P.OPT1)
+  ISPEXEC VGET (LB&P.GO  LB&P.CMPL)
+  ISPEXEC VGET (LB&P.SOUT LB&P.LSTID)
+
+  /****************************************************************
+  /* TRIM all PANEL VARIABLES
+  /****************************************************************
+  CUTIL00 TRIM BGSO       LBBGSO
+  CUTIL00 TRIM BGPO       LBBGPO
+  CUTIL00 TRIM LB&P.ODSN  LBXODSN
+  CUTIL00 TRIM LB&P.PROJ  LBXPROJ
+  CUTIL00 TRIM LB&P.TYPE  LBXTYPE
+  CUTIL00 TRIM LB&P.MBR   LBXMBR
+  CUTIL00 TRIM LB&P.LIB1  LBXLIB1
+  CUTIL00 TRIM LB&P.LIB2  LBXLIB2
+  CUTIL00 TRIM LB&P.LIB3  LBXLIB3
+  CUTIL00 TRIM LB&P.LIB4  LBXLIB4
+  CUTIL00 TRIM LB&P.STEP1 LBXSTEP1
+  CUTIL00 TRIM LB&P.SL1   LBXSL1
+  CUTIL00 TRIM LB&P.SL2   LBXSL2
+  CUTIL00 TRIM LB&P.SL3   LBXSL3
+  CUTIL00 TRIM LB&P.SL4   LBXSL4
+  CUTIL00 TRIM LB&P.JCL1  LBXJCL1
+  CUTIL00 TRIM LB&P.JCL2  LBXJCL2
+  CUTIL00 TRIM LB&P.JCL3  LBXJCL3
+  CUTIL00 TRIM LB&P.JCL4  LBXJCL4
+  CUTIL00 TRIM LB&P.TST   LBXTST
+  CUTIL00 TRIM LB&P.OPT1  LBXOPT1
+  CUTIL00 TRIM LB&P.GO    LBXGO
+  CUTIL00 TRIM LB&P.CMPL  LBXCMPL
+  CUTIL00 TRIM LB&P.SOUT  LBXSOUT
+  CUTIL00 TRIM LB&P.LSTID LBXLSTID
+
+  SET &EXITCD = 12
+
+  SET CSRF =
+
+
+  /****************************************************************
+  /* Panel Edits
+  /****************************************************************
+
+  /*****************************/
+  /* ODSN or LIB1 required     */
+  /*****************************/
+  IF &STR(&LBXODSN) > &STR( ) THEN
+  ELSE -
+    DO
+      IF &STR(&LBXPROJ) = &STR( )   AND -
+      IF &STR(&LBXLIB1) = &STR( )   AND -
+      IF &STR(&LBXTYPE) = &STR( )   AND -
+      IF &STR(&LBXMBR)  = &STR( )   THEN -
+        DO
+          SET CSRF = LBXPROJ           /* No ISPF LIB1 or ODSN found*/
+          ISPEXEC SETMSG MSG(BGOPT12)
+          GOTO VALINXT
+        END
+      /*****************************/
+      /* Edit ISPF PROJ            */
+      /*****************************/
+      IF &CSRF = &STR() THEN -
+        IF &STR(&LBXPROJ) > &STR( ) THEN -
+          DO
+            CUTIL00 ISDSN LBXPROJ
+            IF &ERRMSG = FALSE THEN -
+              SET CSRF = LBXPROJ       /* PROJ not DSN              */
+          END
+        ELSE -
+          SET CSRF = LBXPROJ           /* PROJ is BLANK             */
+      /*****************************/
+      /* Edit ISPF LIB1            */
+      /*****************************/
+      IF &CSRF = &STR() THEN -
+        IF &STR(&LBXLIB1) > &STR( ) THEN -
+          DO
+            CUTIL00 ISDSN LBXLIB1
+            IF &ERRMSG = FALSE THEN -
+              SET CSRF = LBXLIB1       /* LIB1 not DSN              */
+          END
+        ELSE -
+          SET CSRF = LBXLIB1           /* LIB1 is BLANK             */
+      /*****************************/
+      /* Edit ISPF TYPE            */
+      /*****************************/
+      IF &CSRF = &STR() THEN -
+        IF &STR(&LBXTYPE) > &STR( ) THEN -
+          DO
+            CUTIL00 ISDSN LBXTYPE
+            IF &ERRMSG = FALSE THEN -
+              SET CSRF = LBXTYPE       /* TYPE not DSN              */
+          END
+        ELSE -
+          SET CSRF = LBXTYPE           /* TYPE is BLANK             */
+      /*****************************/
+      /* Edit ISPF MEMBER          */
+      /*****************************/
+      IF &CSRF = &STR() THEN -
+        IF &STR(&LBXMBR) > &STR( ) THEN -
+          DO
+            CUTIL00 ISDSN LBXMBR
+            IF &ERRMSG = FALSE THEN -
+              SET CSRF = LBXMBR        /* MBR  not DSN              */
+          END
+        ELSE -
+          SET CSRF = LBXMBR            /* MBR  is BLANK             */
+    END
+    /*****************************/
+    /* Edit STEPLIB              */
+    /*****************************/
+    IF &CSRF = &STR() THEN -
+      IF &STR(&LBXSTEP1) > &STR( ) THEN -
+        DO
+          CUTIL00 ISDSN LBXSTEP1
+          IF &ERRMSG = FALSE THEN -
+            SET CSRF = LBXSTEP1        /* STEPLIB not DSN           */
+        END
+    /*****************************/
+    /* Edit SYSLIB1              */
+    /*****************************/
+    IF &CSRF = &STR() THEN -
+      IF &STR(&LBXLIB1) > &STR( ) THEN -
+        DO
+          CUTIL00 ISDSN LBXLIB1
+          IF &ERRMSG = FALSE THEN -
+            SET CSRF = LBXLIB1         /* LIB1 not DSN              */
+        END
+    /*****************************/
+    /* Edit SYSLIB2              */
+    /*****************************/
+    IF &CSRF = &STR() THEN -
+      IF &STR(&LBXLIB2) > &STR( ) THEN -
+        DO
+          CUTIL00 ISDSN LBXLIB2
+          IF &ERRMSG = FALSE THEN -
+            SET CSRF = LBXLIB2         /* LIB2 not DSN              */
+        END
+    /*****************************/
+    /* Edit SYSLIB3              */
+    /*****************************/
+    IF &CSRF = &STR() THEN -
+      IF &STR(&LBXLIB3) > &STR( ) THEN -
+        DO
+          CUTIL00 ISDSN LBXLIB3
+          IF &ERRMSG = FALSE THEN -
+            SET CSRF = LBXLIB3         /* LIB2 not DSN              */
+        END
+    /*****************************/
+    /* Edit SYSLIB4              */
+    /*****************************/
+    IF &CSRF = &STR() THEN -
+      IF &STR(&LBXLIB4) > &STR( ) THEN -
+        DO
+          CUTIL00 ISDSN LBXLIB4
+          IF &ERRMSG = FALSE THEN -
+            SET CSRF = LBXLIB4         /* LIB2 not DSN              */
+        END
+  /*****************************/
+  /* LISTID or SYSOUT CLASS required
+  /*****************************/
+  IF &CSRF = &STR() THEN -
+    IF &STR(&LBXLSTID) > &STR( ) THEN -
+      DO
+        CUTIL00 ISDSN LBXLSTID
+        IF &ERRMSG = FALSE THEN -
+          SET CSRF = LBXLSTID        /* LISTID not DSN            */
+      END
+    ELSE -
+      IF &STR(&LBXSOUT) > &STR( ) THEN
+      ELSE -
+        SET CSRF = LBXSOUT           /* SYSOUT is BLANK           */
+  /*****************************/
+  /* Post error if cursor field set
+  /*****************************/
+  IF &CSRF > &STR() THEN -
+    DO
+      IF &CSRF = LBXSOUT THEN -
+        ISPEXEC SETMSG MSG(BGOPT01)
+      ELSE -
+        ISPEXEC SETMSG MSG(BGOPT11)
+      GOTO VALINXT
+    END
+
+
+  /****************************************************************
+  /* Validate ISPF Library Existence   (ISPF LIB 1-4)
+  /****************************************************************
+  IF &LBBGSO = Y THEN +
+    DO
+      SET I = 1
+      SET &VARNAM = &STR(&&LBXLIB)
+      /********************************/
+      /* CHECK LBXTYPE 1-4 FOR MEMBER EXISTANCE, IF NOT BLANK
+      /********************************/
+      DO WHILE &I <= 4
+        SET VARVAL = &STR(&VARNAM&I)
+        IF &STR(&VARVAL) > &STR( ) THEN +
+          DO
+            IF &SYSDSN('&LBXPROJ..&VARVAL..&LBXTYPE') = OK THEN
+            ELSE +
+              DO
+                SET CSRF = LBXLIB&I
+                ISPEXEC SETMSG MSG(BGOPT10)
+                GOTO VALINXT
+              END
+          END
+        SET I = &I + 1
+      END
+    END
+
+
+  /****************************************************************
+  /* SOURCE DATA SET AND LIBRARIES VALIDATION
+  /****************************************************************
+  /*  At this point, LIBRARIES are validated, if SOURCE ONLINE = Y
+  /*
+  SET ODSNTMP =
+  SET ODSNMEM =
+  IF &LBBGSO = Y THEN +
+    SET SRCFND =
+  ELSE +
+    SET SRCFND = &STR(//*   )NO SOURCE SEARCH PERFORMED
+  /************************************/
+  /* Check ODSN, if specified         */
+  /************************************/
+  IF &STR(&LBXODSN) > &STR() THEN +
+    DO
+      SET CSRF = LBXODSN
+      SET ODSNTMP = &STR(&LBXODSN)
+      SET L = &LENGTH(&ODSNTMP)
+      SET M = 1
+      /********************************/
+      /*ODSN FULLY QUALIFIED?         */
+      /********************************/
+      IF &SUBSTR(1:1,&ODSNTMP) = &STR(') THEN +
+        DO
+          IF &SUBSTR(&L:&L,&ODSNTMP) = &STR(') THEN +
+            SET &ODSNTMP = &SUBSTR(2:&L-1,&ODSNTMP)
+          ELSE +
+            SET &ODSNTMP = &SUBSTR(2:&L,&ODSNTMP)
+        END
+      /********************************/
+      /*ODSN NOT FULLY QUALIFIED,     */
+      /*  INSERT &SYSPREF             */
+      /********************************/
+      ELSE +
+        DO
+          IF &STR(&SYSPREF) > &STR( ) THEN -
+            SET &ODSNTMP = &SYSPREF..&STR(&ODSNTMP)
+          ELSE -
+            SET &ODSNTMP = &SYSUID..&STR(&ODSNTMP)
+        END
+      SET L = &LENGTH(&ODSNTMP)
+      SET LIBDSN =
+      SET LIBMEM =
+      /********************************/
+      /* FIND MEMBER NAME IN ODSN     */
+      /********************************/
+      DO WHILE &M <= &L
+        IF .&SUBSTR(&M:&M,&ODSNTMP) = .( THEN +
+          DO
+            SET LIBMEM = &LIBDSN&SUBSTR(&M:&L,&ODSNTMP)
+            SET ODSNMEM = &SUBSTR(&M+1:&L-1,&ODSNTMP)
+            SET M = &L
+          END
+        ELSE +
+          DO
+            SET LIBDSN = &LIBDSN&SUBSTR(&M:&M,&ODSNTMP)
+            SET ODSNMEM = &STR(TEMPNAME)
+          END
+        SET M = &M + 1
+      END
+      /********************************/
+      /* ASSIGN LIBDSN TO LIBMEM IF MEMBER NOT FOUND, MUST BE SEQ FILE
+      /********************************/
+      IF &LIBMEM = &STR() THEN +
+        SET LIBMEM = &LIBDSN
+      /********************************/
+      /* CHECK FOR SOURCE IF DATA ONLINE = Y
+      /********************************/
+      IF &LBBGSO = Y THEN +
+        DO
+          /****************************/
+          /* ODSN EXIST?              */
+          /****************************/
+          IF &SYSDSN('&LIBMEM') = OK THEN +
+            DO
+              /************************/
+              /* Check DSORG          */
+              /************************/
+              LISTDSJ '&LIBDSN'      /*MVS38J LISTDSI */
+              IF &SYSDSORG = PO THEN +
+                DO
+                  /********************/
+                  /* PDS, IF ')' AT END ASSUME MEMBER NAME CAPTURED
+                  /********************/
+                  IF &SUBSTR(&L:&L,&ODSNTMP) = &STR()) THEN
+                  ELSE +
+                    DO
+                      /*ERROR: MISSING PDS MEMBER NAME
+                      ISPEXEC SETMSG MSG(BGOPT16)
+                      GOTO VALINXT
+                    END
+                END
+              ELSE +
+              IF &SYSDSORG = PS THEN +
+                DO
+                  /* SEQ, ASSIGN TEMPNAME AS MEMBER NAME FOR OBJ
+                  SET ODSNMEM = &STR(TEMPNAME)
+                END
+              ELSE +
+                DO
+                  /*ERROR: INVALID DSORG FOR SOURCE
+                  ISPEXEC SETMSG MSG(BGOPT15)
+                  GOTO VALINXT
+                END
+              GOTO INDSNOK
+            END
+          ELSE +
+            DO
+              /*ERROR: ODSN SPECIFIED, BUT NOT FOUND
+              ISPEXEC SETMSG MSG(BGOPT13)
+              GOTO VALINXT
+            END
+        END
+      ELSE +
+        DO
+          SET SRCFND = &STR(&SRCFND), USE ODSN AS IS
+        END
+    END
+  /************************************/
+  /* OTHERWISE, CHECK EACH SOURCE DSN BY LIBRARY UNTIL SOURCE FOUND.
+  /************************************/
+  ELSE +
+    DO
+      SET CSRF = LBXLIB1
+      SET I = 1
+      SET &VARNAM = &STR(&&LBXLIB)
+      /********************************/
+      /* CHECK LBXTYPE 1-4 FOR MEMBER EXISTANCE, IF NOT BLANK
+      /********************************/
+      DO WHILE &I <= 4
+        SET VARVAL = &STR(&VARNAM&I)
+        IF &STR(&VARVAL) > &STR( ) THEN +
+          DO
+            SET LIBDSN = &LBXPROJ             /*  BUILD        */
+            SET LIBDSN = &LIBDSN..&VARVAL     /*  THE          */
+            SET LIBDSN = &LIBDSN..&LBXTYPE    /*  LIB DSN      */
+            SET LIBMEM = &LIBDSN(&LBXMBR      /*  WITH         */
+            SET LIBMEM = &LIBMEM)             /*  MEMBER NAME  */
+            /**************************/
+            /* CHECK FOR SOURCE IF DATA ONLINE = Y
+            /**************************/
+            IF &LBBGSO = Y THEN +
+              DO
+                IF &SYSDSN('&LIBMEM') = OK THEN +
+                  DO
+                    SET SRCFND = &STR(//*      )SOURCE FOUND
+                    SET SRCFND = &STR(&SRCFND) IN LIBRARY &I
+                    GOTO INDSNOK
+                  END
+              END
+            /**************************/
+            /* USE FIRST LIB IF DATA ONLINE = N
+            /**************************/
+            ELSE +
+              DO
+                SET SRCFND = &STR(&SRCFND), USE LIB 1 AS IS
+                GOTO INDSNOK
+              END
+          END
+        SET I = &I + 1
+      END
+    END
+
+  /*ERROR: DSN NOT FOUND IN LIBS CONCATENATION
+  IF &LBBGSO = Y THEN +
+    DO
+      ISPEXEC SETMSG MSG(BGOPT14)
+      GOTO VALINXT
+    END
+
+
+  /****************************************************************
+  /* OBJ DSN: ALWAYS FIRST LIBRARY IN CONCATENATION
+  /****************************************************************
+  /* if seq, DSN and sub last node with OBJ
+  /* if pds, DSN with last node as OBJ with SOURCE member name
+  /* if ispf lib, 1stLIB  w last node as OBJ with SOURCE member name
+  /*
+/*INDSNOK: -
+/*WRITE INDSNOK
+/*WRITE LBXODSN='&LBXODSN'
+/*WRITE LIBMEM ='&LIBMEM'
+/*WRITE LIBDSN ='&LIBDSN'
+/*WRITE ODSNMEM='&ODSNMEM'
+
+  INDSNOK: -
+  IF &STR(&ODSNMEM) = &STR(TEMPNAME) THEN -
+    DO
+      /********************************/
+      /* ODSN w/o MEMBER              */
+      /********************************/
+      /* ODSN dsn=replace last node w "OBJ"
+      /********************************/
+      SET DLMTR = &STR(".")
+      CUTIL00 INDEXB LIBDSN  DLMTR
+      SET INX = &LASTCC
+      IF &INX > 0 THEN -
+        DO
+          SET LINMEM = &SUBSTR(1:&INX,&STR(&LIBDSN))
+          SET LINMEM = &STR(&LINMEM)OBJ
+          SET LMDMEM = &STR(LOAD_IS_SEQ_INVALID)
+        END
+    END
+  ELSE -
+    DO
+      /********************************/
+      /* ODSN or LIB w/ MEMBER        */
+      /********************************/
+      IF &STR(&LBXLIB1) > &STR( ) THEN -
+        DO
+          SET LINDSN = &LBXPROJ..&LBXLIB1..OBJ
+          SET LINMEM = &STR(&LINDSN)(&LBXMBR)
+          SET LMDMEM = &LBXPROJ..&LBXLIB1..LOAD
+          SET LMDMEM = &STR(&LMDMEM)(&LBXMBR)
+        END
+      ELSE -
+        DO
+          /****************************/
+          /* ODSN dsn=replace last node w "OBJ"
+          /****************************/
+          SET DLMTR = &STR(".")
+          CUTIL00 INDEXB LIBDSN  DLMTR
+          SET INX = &LASTCC
+          IF &INX > 0 THEN -
+            DO
+              SET LINMEM = &SUBSTR(1:&INX,&STR(&LIBDSN))
+              SET LINMEM = &STR(&LINMEM)OBJ
+              SET LMDMEM = &STR(&LINMEM)LOAD
+            END
+          SET LINMEM = &STR(&LINMEM)(&ODSNMEM)
+          SET LMDMEM = &STR(&LMDMEM)(&ODSNMEM)
+        END
+    END
+/*WRITE LINMEM ='&LINMEM'
+/*WRITE LMDMEM ='&LMDMEM'
+
+
+  /****************************************************************
+  /* STEPLIB VALIDATION
+  /****************************************************************
+  IF &LENGTH(&LBXSTEP1) > 0 THEN -
+    DO
+      SET CSRF = LBXSTEP1
+      /********************************/
+      /* CHECK DSN EXISTANCE
+      /********************************/
+      IF &SYSDSN('&LBXSTEP1') = OK THEN
+      ELSE +
+        DO
+          /*ERROR: STEPLIB NOT FOUND
+          ISPEXEC SETMSG MSG(BGOPT17)
+          GOTO VALINXT
+        END
+    END
+
+
+  /****************************************************************
+  /* SYSLIB  VALIDATION  SYSLIBS 1-4
+  /****************************************************************
+  SET I = 1
+  SET &VARNAM = &STR(&&LBXSL)
+  DO WHILE &I <= 4
+    SET DSNSL  = &VARNAM&I
+    IF &LENGTH(&DSNSL) > 0 THEN +
+      DO
+        /******************************/
+        /* CHECK DSN EXISTANCE
+        /******************************/
+        IF &SYSDSN('&DSNSL') = OK THEN
+        ELSE +
+          DO
+            /*ERROR: SYSLIB  NOT FOUND
+            ISPEXEC SETMSG MSG(BGOPT18)
+            SET CSRF = LBXSL&I
+            GOTO VALINXT
+          END
+      END
+    SET I = &I + 1
+  END
+
+
+
+  SET &EXITCD = 0
+  GOTO DONE
+
+VALINXT: +
+  SET &EXITCD = 4
+  GOTO DONE
+
+
+
+DONE: +
+SET L = &LENGTH(&CSRF)
+/**************************************/
+/* Convert cursor field to actual      /
+/* panel variable name using &P        /
+/**************************************/
+IF &L > 0 THEN +
+  SET &CSRF = &SUBSTR(1:2,&CSRF)&P&SUBSTR(4:&L,&CSRF)
+
+EXIT CODE(&EXITCD)

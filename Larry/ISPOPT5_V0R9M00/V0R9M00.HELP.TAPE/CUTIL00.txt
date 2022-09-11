@@ -1,0 +1,172 @@
+)F FUNCTION -
+  The CUTIL00 command performs functions on CLIST variables
+  such as CENTER, TRIM, and RJUST string functions.  All
+  processing occurs internally on CLIST variables.  Return
+  code is returned via &LASTCC.  See program documentation
+  for more functional details.
+
+)X Statement SYNTAX  -
+         CUTIL00 FUNCT VAR1 VAR2 QUOTE
+  REQUIRED - FUNCT, VAR1
+  DEFAULTS - NONE
+  ALIAS    - NONE
+)O OPERANDS -
+  Parameters must appear in order as listed
+
+))FUNCT    - required, function to be performed
+
+))VAR1     - required, name of CLIST variable
+             o  is not prefixed with an '&'
+             o  variable must exist before invoking CUTIL00
+             o  1-8 bytes in length, must follow CLIST variable
+                naming conventions
+
+))VAR2     - optional, name of CLIST variable to store results
+             or contain function parameters
+             o  is not prefixed with an '&'
+             o  1-8 bytes in length, must follow CLIST variable
+                naming conventions
+             o  Storing results
+                -  If variable does not exist, it will be created
+                -  If variable does exist, it will be updated
+                -  If no variable is specifed, use VAR1 variable
+                -  If '$NOVAR2' is specifed, use VAR1 variable
+                   - '$NOVAR2' used as a placeholder if VAR2
+                     is not specified with QUOTE option
+             o  Function Parameters
+                -  variable must exist before invoking CUTIL00
+
+))QUOTE    - optional, quote delimited string values
+             o  Used by CUTIL00 3270 ISPF test tool
+             o  If 'QUOTE' is specified , string content between
+                first and last quotes comprise VAR1 value.
+             o  Use this option to include leading or trailing
+                spaces in a string.
+
+     The following variable names provide additional information
+     after successful execution of CUTIL00:
+
+      o  &LASTCC contains return code from CUTIL00 after execution
+      o  &ERRMSG contains error message text for function executed
+      o  &var1L  contains length of var1 after execution
+      o  &var2L  contains length of var2 after execution
+
+      NOTE:  The above variables may not be declared by CUTIL00 if
+             CUTIL00 abends or does not execute. Variables include
+             &ERRMSG, &var1L and &var2L.  Suggested to initialize
+             to NULLS before invoking CUTIL00. See LTRIM CLIST
+             example below.
+
+      NOTE:  - CLIST variable name length is 8 bytes max
+             - CLIST variable data length is 256 bytes max
+             - Result data length is 256 bytes max
+
+
+  Function Summary: (see program for more details on each function)
+
+     ABOUT    - Display mySTAMP information
+
+     LTRIM    - Remove leading spaces
+     RTRIM    - Remove trailing spaces
+     TRIM     - Remove leading and trailing spaces
+     TRIM$    - Remove leading, trailing, and duplicate spaces
+
+     INDEX    - Alias for FIND
+     INDEXB   - Alias for FINDL
+
+     ISNUM    - Test for all numeric (0-9)
+     ISALPHA  - Test for all alphabetic (A-Z,a-z)
+     ISLOWER  - Test for all alphabetic (a-z)
+     ISUPPER  - Test for all alphabetic (A-Z)
+     ISBLANK  - Test for all blank (whitespace)
+     ISDSN    - Test for valid MVS Dataset Name
+
+     ECHO     - Display string value
+     ECHOQ    - Display string value surrounded by single quotes
+                on terminal screen
+
+     REVRS    - Translate to reverse  A-Z > Z-A,  0-9 > 9-0
+
+     UPPERC   - Translate to uppercase
+     LOWERC   - Translate to lowercase
+
+     COUNT    - Count occurances of a search string
+     FINDALL  - Alias for COUNT
+     FIND     - Find starting position of FIRST search string
+     FINDL    - Find starting position of LAST search string
+
+     CENTER   - Center content
+     LJUST    - Left justify content
+     RJUST    - Right justify content
+
+     ZFILL    - Zero fill after content is right justified
+     WORDS    - Number of words (contiguous non-blank groups)
+     GEN#     - Generate a 3 digit number (000-999)
+
+     DD2DSN   - Dataset name associated with DD name
+     JOBINFO  - Job Information
+
+     DAYSMM   - Number of days in MM
+     DAYSYY   - Number of days in CCYY (365 or 366)
+     ISLEAP   - Test CCYY for leap year
+
+     CYJ-D8   - Date Conversion  CCYYJJJ to monthname DD, CCYY
+     CYJ-DAY  - Date Conversion  CCYYJJJ to day name
+     CYJ-DOW  - Date Conversion  CCYYJJJ to day of week number
+     CYJ-mdcy - Date Conversion  CCYYJJJ to MMDDCCYY
+                -mdcy can be in any order
+
+     JCY-D8   - Date Conversion  JJJCCYY to monthname DD, CCYY
+     JCY-DAY  - Date Conversion  JJJCCYY to day name
+     JCY-DOW  - Date Conversion  JJJCCYY to day of week number
+     JCY-mdcy - Date Conversion  JJJCCYY to MMDDCCYY
+                -mdcy can be in any order
+
+     MDCY-D8  - Date Conversion  MMDDCCYY to monthname DD, CCYY
+     MDCY-DAY - Date Conversion  MMDDCCYY to day name
+     MDCY-DOW - Date Conversion  MMDDCCYY to day of week number
+     MDCY-cyj - Date Conversion  MMDDCCYY to CCYYJJJ
+                -cyj  can be in any order
+
+     DMCY-D8  - Date Conversion  DDMMCCYY to monthname DD, CCYY
+     DMCY-DAY - Date Conversion  DDMMCCYY to day name
+     DMCY-DOW - Date Conversion  DDMMCCYY to day of week number
+     DMCY-cyj - Date Conversion  DDMMCCYY to CCYYJJJ
+                -cyj  can be in any order
+
+     CYMD-D8  - Date Conversion  CCYYMMDD to monthname DD, CCYY
+     CYMD-DAY - Date Conversion  CCYYMMDD to day name
+     CYMD-DOW - Date Conversion  CCYYMMDD to day of week number
+     CYMD-cyj - Date Conversion  CCYYMMDD to CCYYJJJ
+                -cyj  can be in any order
+
+     CYDM-D8  - Date Conversion  CCYYDDMM to monthname DD, CCYY
+     CYDM-DAY - Date Conversion  CCYYDDMM to day name
+     CYDM-DOW - Date Conversion  CCYYDDMM to day of week number
+     CYDM-cyj - Date Conversion  CCYYDDMM to CCYYJJJ
+                -cyj  can be in any order
+
+     FILL     - Fill VAR1 nnn times with delimiter
+
+     LSTRIP   - Remove leading delimiter
+     RSTRIP   - Remove trailing delimiter
+     STRIP    - Remove leading and trailing delimiter
+     STRIP$   - Remove all delimiter
+
+     CONCAT   - Concatenate two strings
+     UNSTR    - Unstring into separate variables
+
+     REPLACE  - Replace substring in string
+     VEXIST   - Test if CLIST Variable exists
+     TDSN     - Generate temporary DSN nodes
+     NOW      - Current system date and time
+     PAD      - PAD string with delimiter to given length
+
+     PUT1V    - Overlay 1-byte at position n in VAR1
+     GET1V    - Get     1-byte at position n from VAR1
+     MCAL     - Create monthly calendar string
+
+     LEN      - Length of data in string
+     SLEN     - String defined length
+     OVERLAY  - Overlay substring in string
+

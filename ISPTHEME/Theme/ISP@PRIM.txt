@@ -43,7 +43,7 @@
                 2,'PANEL(ISPREVE) NEWAPPL(ISR)'
                 3,'PANEL(ISPUTILS)'
                 4,'PANEL(ISRFPA)'
-                5,'PGM(ISRJB1) PARM(ISRJPA) NOCHECK'
+                5,'CMD(%CBGP5 ICMD(&ZCMD)) NEWAPPL(CBGP)'
                 6,'CMD(ISPOPT6)'
                 7,'PANEL(ISPOPT7)'
                 A,'CMD(ACETEST) NEWAPPL(ACE) NOCHECK'

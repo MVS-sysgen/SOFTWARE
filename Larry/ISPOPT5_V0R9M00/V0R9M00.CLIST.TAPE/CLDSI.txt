@@ -1,0 +1,174 @@
+PROC 0 DSN()
+
+/*********************************************************************/
+/* CLIST:  CLDSI                                                     */
+/*                                                                   */
+/* Description                                                       */
+/* -----------                                                       */
+/* List dataset attributes using LISTDSI                             */
+/*                                                                   */
+/* More information at:                                              */
+/*  https://ShareABitOfIT.net/LISTDSJ-for-mvs-3-8j/                  */
+/*                                                                   */
+/* Syntax                                                            */
+/* -------                                                           */
+/* CLDSI DSN('''xxxxxxxx.xxxxxxxx.xxxxxxxx''')                       */
+/*    DSN - Dataset Name, fully qualified                            */
+/*         o use three single quotes in DSN                          */
+/*                                                                   */
+/* CLDSI DSN(TEST.CNTL)                                              */
+/*    DSN - Dataset Name, prepend prefix                             */
+/*         o prefix preceeds DSN if no quotes used in DSN            */
+/*                                                                   */
+/* Output:                                                           */
+/*                                                                   */
+/*-------------------------------------------------------------------*/
+/*DSN:LARRY01.TEST.CNTL                                              */
+/*MSG:                                                               */
+/*RETURN CD: 0   SUCCESSFUL REQUEST                                  */
+/*SYSREASON: 00   NORMAL COMPLETION                                  */
+/*                                                                   */
+/*DSORG RECFM LRECL BLKSZ KEYL  RKP   PASSWORD RACF CHGD             */
+/*PO    FB    00080 19040 000   00000 NONE     NONE    Y             */
+/*CREDT 2013-03-09  EXPDT 0000-00-00  REFDT 2019-01-30     CATL: Y   */
+/*  13068 2013-068    00000 0000-000    19030 2019-030     CVOL: PUB000
+/*PUB000                                                   VOLS: 001 */
+/*ALLOCATION:     TYPE     PRI     USED     SEC        ALLOC         */
+/*        PUB000  CYLINDER 00003   00002    0000001    00003         */
+/*TRACKS: TOT     USED     UNUSED  EXTENTS                           */
+/*        00090   00087    00003   003                               */
+/*DEVICE: CYLS    TRKSCYL  TRKLEN  BLKSTRK  CAPACITY                 */
+/*3350    00555   00030    19254   00001    000000320579100          */
+/*PO DIR: BLKS    USED     UNUSED  MEMBERS  ALIAS                    */
+/*        ?????   ?????    ?????   ?????    ?????                    */
+/*-------------------------------------------------------------------*/
+/*                                                                   */
+/*                                                                   */
+/*  Disclaimer: <DSCLAIMR>                                           */
+/*  ================================================================ */
+/*                                                                   */
+/*  No guarantee; No warranty; Install / Use at your own risk.       */
+/*                                                                   */
+/*  This software is provided "AS IS" and without any expressed      */
+/*  or implied warranties, including, without limitation, the        */
+/*  implied warranties of merchantability and fitness for a          */
+/*  particular purpose.                                              */
+/*                                                                   */
+/*                                                                   */
+/*********************************************************************/
+
+/*********************************************************************/
+/* CLIST CONTROL statement                                           */
+/*********************************************************************/
+CONTROL MSG
+
+
+/*********************************************************************/
+/* EXECUTE LISDSI                                                    */
+/*********************************************************************/
+LISTDSI &DSN
+SET RC = &LASTCC
+
+/*********************************************************************/
+/* Print results on terminal                                         */
+/*********************************************************************/
+SET WLINE = &STR(DSN: &SYSDSNAME)
+WRITE &WLINE
+
+SET WLINE = &STR(MSG: &SUBSTR(1:71,&SYSLISTDSJMSG)...)
+WRITE &WLINE
+
+SET WLINE = &STR(RETURN CD: &RC   &STR(&SYSMSGLVL1))
+WRITE &WLINE
+
+SET WLINE = &STR(SYSREASON: &SYSREASON   )
+SET WLINE = &STR(&WLINE&STR(&SYSMSGLVL2))
+WRITE &WLINE
+
+WRITE
+
+SET WLINE = &STR(DSORG RECFM LRECL BLKSZ KEYL  RKP)
+SET WLINE = &STR(&WLINE   PASSWORD RACF CHGD)
+WRITE &WLINE
+
+SET WLINE = &STR(&SYSDSORG)
+SET WLINE = &STR(&WLINE   &SYSRECFM)
+SET WLINE = &STR(&WLINE &SYSLRECL)
+SET WLINE = &STR(&WLINE &SYSBLKSIZE)
+SET WLINE = &STR(&WLINE &SYSKEYLEN)
+SET WLINE = &STR(&WLINE   &SYSKEYPOS)
+SET WLINE = &STR(&WLINE &SYSPASSWORD)
+SET WLINE = &STR(&WLINE    &SYSRACFA)
+SET WLINE = &STR(&WLINE    &SYSUPDATED)
+WRITE &WLINE
+
+SET WLINE = &STR(CREDT &SYSCCREATE)
+SET WLINE = &STR(&WLINE  EXPDT &SYSCEXDATE)
+SET WLINE = &STR(&WLINE  REFDT &SYSCREFDATE)
+SET WLINE = &STR(&WLINE     CATL: &SYSDSCAT)
+WRITE &WLINE
+
+SET WLINE = &STR(  &SYSJCREATE &SYSCREATE)
+SET WLINE = &STR(&WLINE    &SYSJEXDATE &SYSEXDATE)
+SET WLINE = &STR(&WLINE    &SYSJREFDATE &SYSREFDATE)
+SET WLINE = &STR(&WLINE     CVOL: &SYSDSCATV)
+WRITE &WLINE
+
+SET WLINE = &STR(&SYSVOLUMES         )
+SET WLINE = &STR(&WLINE             VOLS: &SYSNUMVOLS)
+WRITE &WLINE
+
+SET WLINE = &STR(ALLOCATION:     TYPE     PRI     USED)
+SET WLINE = &STR(&WLINE     SEC        ALLOC)
+WRITE &WLINE
+
+SET WLINE = &STR(        &SYSVOLUME)
+SET WLINE = &STR(&WLINE  &SYSUNITS)
+SET WLINE = &STR(&WLINE &SYSPRIMARY)
+SET WLINE = &STR(&WLINE   &SYSUSED)
+SET WLINE = &STR(&WLINE    &SYSSECONDS)
+SET WLINE = &STR(&WLINE    &SYSALLOC)
+WRITE &WLINE
+
+SET WLINE = &STR(TRACKS: TOT     USED     UNUSED  EXTENTS)
+SET WLINE = &STR(&WLINE )
+WRITE &WLINE
+
+SET WLINE = &STR(        &SYSTRKSALLOC)
+SET WLINE = &STR(&WLINE   &SYSTRKSUSED)
+SET WLINE = &STR(&WLINE    &SYSTRKSUNUSED)
+SET WLINE = &STR(&WLINE   &SYSEXTENTS)
+WRITE &WLINE
+
+SET WLINE = &STR(DEVICE: CYLS    TRKSCYL  TRKLEN  BLKSTRK)
+SET WLINE = &STR(&WLINE  CAPACITY)
+WRITE &WLINE
+
+SET WLINE = &STR(&SYSUNIT)
+SET WLINE = &STR(&WLINE &SYSCYLVOL)
+SET WLINE = &STR(&WLINE   &SYSTRKSCYL)
+SET WLINE = &STR(&WLINE    &SYSTRKLEN)
+SET WLINE = &STR(&WLINE   &SYSBLKSTRK)
+SET WLINE = &STR(&WLINE    &SYSUNITCAP)
+WRITE &WLINE
+
+IF &SYSADIRBLK NE &STR(?????) THEN -
+  DO
+    SET WLINE = &STR(PO DIR: BLKS    USED     UNUSED  MEMBERS)
+    SET WLINE = &STR(&WLINE  ALIAS)
+    WRITE &WLINE
+
+    SET WLINE = &STR(        &SYSADIRBLK)
+    SET WLINE = &STR(&WLINE   &SYSUDIRBLK)
+    SET WLINE = &STR(&WLINE    &SYSNUDIRBLK)
+    SET WLINE = &STR(&WLINE   &SYSMEMBERS)
+    SET WLINE = &STR(&WLINE    &SYSMEMBERSALIAS)
+    WRITE &WLINE
+  END
+
+/*********************************************************************/
+/* Done!                                                             */
+/*********************************************************************/
+EXIT CODE(0)
+
+

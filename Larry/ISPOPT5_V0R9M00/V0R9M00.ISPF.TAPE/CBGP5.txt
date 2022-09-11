@@ -1,0 +1,287 @@
+PROC 0 DEBUG ICMD()                   /* BG PROCESSING MENU         */
+
+/********************************************************************/
+/*                                                                  */
+/* CLIST: CBGP5 ICMD()                                              */
+/*                                                                  */
+/* Author: Larry Belmontes Jr.                                      */
+/*         https://ShareABitofIT.net/ISPOPT5-in-MVS38J              */
+/*         Copyright (C) 2021  Larry Belmontes, Jr.                 */
+/*                                                                  */
+/*                                                                  */
+/* Description:                                                     */
+/* ---------------------------------------------------------------  */
+/*                                                                  */
+/* Background Processing Option 5                                   */
+/*                                                                  */
+/* This CLIST is the process driver for background selections for   */
+/* use with ISPF 2.1 or greater from Wally Mclaughlin.              */
+/*                                                                  */
+/* Assign temp DSN and allocate JCL file.                           */
+/*                                                                  */
+/* Create JOB and other initial JCL statements, first time.         */
+/* JCL is written to temp file using PUTCARD.                       */
+/*                                                                  */
+/* Process selection from menu panel until PF3/PF4                  */
+/*                                                                  */
+/*                                                                  */
+/* Command:                                                         */
+/* as issued from menu panel ISP@PRIM -                             */
+/*  'CMD(%CBGP5) ICMD(&ZMD) NEWAPPL(CBGP)'                          */
+/*                                                                  */
+/* Parameters:                                                      */
+/* DEBUG    optional, used to display debug information during      */
+/*          CLIST execution.  The value for this positional         */
+/*          parameter is DEBUG.                                     */
+/*                                                                  */
+/*          i.e. CBGP5 DEBUG ICMD(&ZCMD)                            */
+/*                                                                  */
+/* ICMD     ISPF Command, &ZCMD                                     */
+/*                                                                  */
+/*                                                                  */
+/* Disclaimer:                                                      */
+/* ================================================================ */
+/*                                                                  */
+/*    No guarantee; No warranty; Install / Use at your own risk.    */
+/*                                                                  */
+/*    This software is provided "AS IS" and without any expressed   */
+/* or implied warranties, including, without limitation, the        */
+/* implied warranties of merchantability and fitness for a          */
+/* particular purpose.                                              */
+/*                                                                  */
+/*    The author requests keeping authors name intact in any        */
+/* modified versions.                                               */
+/*                                                                  */
+/*    In addition, the author requests readers to submit any        */
+/* code modifications / enhancements and associated comments        */
+/* for consideration into a subsequent release (giving credit       */
+/* to contributor(s)) thus, improving overall functionality         */
+/* and further benefiting the MVS 3.8J hobbyist public domain       */
+/* community.                                                       */
+/*                                                                  */
+/*                                                                  */
+/*                                                                  */
+/* Change History:                                                  */
+/* ================================================================ */
+/* MM/DD/CCYY Version  Name / Description                           */
+/* ---------- -------  -------------------------------------------- */
+/* 10/31/2021 0.9.00   Larry Belmontes Jr.                          */
+/*                     - Initial version released to MVS 3.8J       */
+/*                       hobbyist public domain                     */
+/*                                                                  */
+/* 05/13/2018 0.1.00   Larry Belmontes Jr.                          */
+/*                     - Initial protyping with initial version     */
+/*                       of ISPF from Wally Mclaughlin              */
+/*                                                                  */
+/********************************************************************/
+
+  CONTROL MSG NOFLUSH
+
+  ISPEXEC CONTROL ERRORS RETURN
+
+/*---START------------------- $$cbg-globals -------------------------*/
+  /****************************************************************
+  /* Global Variables to SHARE with subordinate CLISTS
+  /****************************************************************
+  GLOBAL JCLGEN TDD TDSN TDSA LIBMEM LINMEM +
+         ODSNTMP ODSNMEM SRCFND CSRF CMNT P +
+         LMDMEM                             +
+         LBBGSO  LBBGPO                     +
+         LBXODSN LBXPROJ LBXTYPE LBXMBR     +
+         LBXLIB1 LBXLIB2 LBXLIB3 LBXLIB4    +
+         LBXSTEP1                           +
+         LBXTST  LBXOPT1                    +
+         LBXGO   LBXCMPL                    +
+         LBXSOUT LBXLSTID                   +
+         LBXSL1  LBXSL2  LBXSL3  LBXSL4     +
+         LBXJCL1 LBXJCL2 LBXJCL3 LBXJCL4
+/*---END--------------------- $$cbg-globals -------------------------*/
+
+  SET JCLGEN = N                       /* BG JCL GENERATED FLAG     */
+  SET TDD  = CARDS                     /* BG JCL DD NAME            */
+  SET TDSN =                           /* BG JCL TEMP DSN           */
+  SET TDSA = CARDSA                    /* BG JCL TEMP DS ATTIB NAME */
+  SET LIBMEM=                          /* LIB(MEM) OF SOURCE        */
+  SET LINMEM=                          /* LIB(MEM) OF OBJ           */
+  SET LMDMEM=                          /* LIB(MEM) OF LOAD          */
+  SET ODSNTMP=                         /* ODSN TMP                  */
+  SET ODSNMEM=                         /* LIB(MEM) OF ODSN          */
+  SET SRCFND=                          /* SOURCE FOUND TEXT         */
+  SET CSRF =                           /* CURSOR FIELD FOR REINIT   */
+  SET CMNT = &STR(//*)                 /* Comment JCL               */
+
+  /****************************************************************
+  /* SET VARIABLES
+  /****************************************************************
+  SET PANL0 = &STR(ISPOPT5)            /* BG SELECTION PANEL INITIAL*/
+  SET JOBC  = N                        /* INITIAL JCL CREATE FLAG   */
+  SET SELBGO = N                       /* INIT BATCH SELECTION FLAG */
+  SET TS =                             /* Time-Stamp for DSN        */
+  CUTIL00 TDSN TS
+
+  /****************************************************************
+  /* ALLOCATE TEMP DSN TO HOLD JCL
+  /****************************************************************
+  SET TDSN = &STR(&SYSUID..CARDS.&TS)
+  CONTROL NOMSG
+  FREE FI(&TDD)
+  FREE ATTR(&TDSA)
+  CONTROL MSG
+  ATTRIB &TDSA LRECL(80)
+  ALLOC FI(&TDD) DA('&TDSN') MOD   REUSE  USING(&TDSA)
+
+  /****************************************************************
+  /* DISPLAY PANEL - BACKGROUND SELECTION MENU
+  /****************************************************************
+  GETDATA:  +
+  ISPEXEC DISPLAY PANEL(&PANL0)
+  SET RC = &LASTCC
+  /* END/RETURN KEY PRESSED, CHECK FOR JUMP */
+  /* END/RETURN KEY PRESSED, SUBMIT ANY JCL */
+  IF &RC = 8 THEN +
+    DO
+      IF &KEYPRESS = PF03 THEN +
+        DO
+          IF (&JCLGEN = Y) THEN +
+            DO
+              ISPEXEC SETMSG MSG(BGOPT05)     /* JCL submitted    */
+              ISPEXEC CONTROL DISPLAY LINE START(22)
+              SUBMIT  '&TDSN'
+            END
+          ELSE +
+            DO
+              ISPEXEC SETMSG MSG(BGOPT06)     /* No JCL to submit */
+            END
+          GOTO CLOSME
+        END
+    END
+  ELSE +
+    DO
+      IF &RC = 0 THEN
+      /* ENTER KEY PRESSED, PROCESS SELECTION */
+      ELSE +
+        DO
+          WRITE ** SEVERE ERROR IN BG PROCESS
+          WRITE ** DISPLAY PANEL=&PANL0  RC=&RC
+          GOTO CLOSME
+        END
+    END
+
+  /****************************************************************
+  /* Check for JUMP (e.g. =3.4)
+  /****************************************************************
+  IF &STR(&BGPO) > &STR( ) THEN +
+    DO
+      IF (&SUBSTR(1:1,&STR(&BGPO)) = &STR(=) THEN +
+        DO
+          GOTO CLOSME
+        END
+    END
+  ELSE +
+    /**************************************************************
+    /* Check for CANCEL option       From ISPOPT5X only
+    /**************************************************************
+    IF (&ZCMD = CANCEL  AND  &PANL0 = ISPOPT5X) THEN +
+      DO
+        ISPEXEC SETMSG MSG(BGOPT07)    /* Process cancelled, no sub */
+        GOTO CLOSME
+      END
+    ELSE +
+      /************************************************************
+      /* Process BG Selection Option
+      /*   - Do not use option X, reserved for MENU confirmation!
+      /************************************************************
+      IF (&BGPO = 1) OR (&BGPO = 2) OR (&BGPO = 3) OR (&BGPO = 4) OR +
+         (&BGPO = 5) OR (&BGPO = 6) OR (&BGPO = 7) OR (&BGPO = 8) OR +
+         (&BGPO = 9) OR (&BGPO = A) OR (&BGPO = B) OR (&BGPO = C) OR +
+         (&BGPO = D) OR (&BGPO = E) OR (&BGPO = F) OR (&BGPO = G) OR +
+         (&BGPO = H) OR (&BGPO = I)                                  +
+         THEN +
+        DO
+          SET SELBGO = Y            /* Made a selection!!  */
+          /********************************************************
+          /* WRITE INITIAL JOB AND COMMENT CARDS TO JOB STREAM FILE
+          /********************************************************
+          IF (&JOBC = N) THEN +
+            DO
+              /****************************************************
+              /* Write JCL statments 1-4 if position 1 is not BLANK
+              /****************************************************
+              SET I = 1
+              SET &JCL = &STR(&&JCL)
+              DO WHILE &I <= 4
+                IF &STR(&SUBSTR(1:1,&JCL&I)) > &STR( ) THEN +
+                  DO
+                    PUTCARD '&STR(&JCL&I)'
+                  END
+                SET I = &I + 1
+              END
+              /****************************************************
+              /* Write Temp DSN and Panel Flags
+              /****************************************************
+              PUTCARD '&CMNT.**BEGIN TDD****************************'
+              PUTCARD '&CMNT'
+              PUTCARD '&CMNT JCL TEMPORARY DATASET INFORMATION:'
+              PUTCARD '&CMNT ----------------------------------'
+              PUTCARD '&CMNT      DD : &TDD'
+              PUTCARD '&CMNT      DSN: &TDSN'
+              PUTCARD '&CMNT      DSA: &TDSA'
+              PUTCARD '&CMNT   SOURCE DATA ONLINE : &BGSO'
+              PUTCARD '&CMNT   DELETE JCL TEMPFILE: &BGDJ'
+              PUTCARD '&CMNT'
+              PUTCARD '&CMNT    TSO USER INFORMATION:'
+              PUTCARD '&CMNT ----------------------------------'
+              PUTCARD '&CMNT   PREFIX: &SYSPREF'
+              PUTCARD '&CMNT   SYSUID: &SYSUID'
+              PUTCARD '&CMNT'
+              PUTCARD '&CMNT.**END  TDD****************************'
+              PUTCARD '&CMNT'
+              SET JOBC = Y
+            END
+          /********************************************************
+          /* INVOKE BG CLIST as CBGP5x where x is selection
+          /********************************************************
+          %CBGP5&BGPO
+          /********************************************************
+          /* Check for JUMP command
+          /********************************************************
+          IF &STR(&LBBGPO) > &STR( ) THEN +
+            IF (&SUBSTR(1:1,&STR(&LBBGPO)) = &STR(=) THEN +
+              GOTO CLOSME
+          /********************************************************
+          /* SET to BG MENU CONFIRMATION PANEL
+          /********************************************************
+          SET PANL0 = &STR(ISPOPT5X)
+        END
+      ELSE +
+        DO
+          ISPEXEC SETMSG MSG(BGOPT04)           /* Invalid selection*/
+        END
+
+  /****************************************************************
+  /* GET ANOTHER REQUEST FROM SELECTION PANEL
+  /****************************************************************
+  GOTO GETDATA
+
+
+/******************************************************************
+/* FREE DATASETS
+/******************************************************************
+CLOSME: +
+IF &SELBGO = Y THEN +
+  DO
+    IF &BGDJ = Y THEN +
+      FREE FI(&TDD) DELETE
+    ELSE +
+      FREE FI(&TDD)
+  END
+ELSE -
+  DO
+    FREE FI(&TDD) DELETE
+  END
+
+FREE ATTR(&TDSA)
+
+
+DONE: +
+END

@@ -1,0 +1,76 @@
+/********************************************************************/
+/*                                                                  */
+/*    PANEL: PDALCDS0                                               */
+/* Author: Larry Belmontes Jr.                                      */
+/*         https://ShareABitofIT.net/DALCDS-in-MVS38J               */
+/*         Copyright (C) 2020  Larry Belmontes, Jr.                 */
+/*                                                                  */
+/*                                                                  */
+/* Description:                                                     */
+/* ---------------------------------------------------------------  */
+/*                                                                  */
+/* ISPF 2.x PDALCDS0 panel for DALCDS Dialogue Manager              */
+/*                                                                  */
+/*                                                                  */
+/* Disclaimer:                                                      */
+/* ================================================================ */
+/*                                                                  */
+/*    No guarantee; No warranty; Install / Use at your own risk.    */
+/*                                                                  */
+/*    This software is provided "AS IS" and without any expressed   */
+/* or implied warranties, including, without limitation, the        */
+/* implied warranties of merchantability and fitness for a          */
+/* particular purpose.                                              */
+/*                                                                  */
+/*    The author requests keeping authors name intact in any        */
+/* modified versions.                                               */
+/*                                                                  */
+/*    In addition, the author requests readers to submit any        */
+/* code modifications / enhancements and associated comments        */
+/* for consideration into a subsequent release (giving credit       */
+/* to contributor(s)) thus, improving overall functionality         */
+/* and further benefiting the MVS 3.8J hobbyist public domain       */
+/* community.                                                       */
+/*                                                                  */
+/*                                                                  */
+/*                                                                  */
+/*                                                                  */
+/* Change History:                                                  */
+/* ---------------------------------------------------------------  */
+/* MM/DD/CCYY VERSION  NAME / DESCRIPTION                           */
+/* 08/10/2020 1.0.00   Larry Belmontes Jr.                          */
+/*                     Initial version released to MVS 3.8J         */
+/*                     Hobbyist Public Domain                       */
+/*                                                                  */
+/********************************************************************/
+)ATTR DEFAULT(%@_)
+%   TYPE(TEXT)   INTENS(HIGH)
+@   TYPE(TEXT)   INTENS(LOW)
+?   TYPE(TEXT)   INTENS(LOW)  COLOR(BLUE)
+_   TYPE(INPUT)  INTENS(HIGH) CAPS(ON)  JUST(LEFT)
+!   TYPE(OUTPUT) INTENS(LOW)  CAPS(OFF) JUST(ASIS)
+$   TYPE(OUTPUT) INTENS(HIGH) CAPS(OFF) JUST(ASIS) COLOR(RED)
+~   TYPE(OUTPUT) INTENS(HIGH) CAPS(OFF) JUST(ASIS) COLOR(BLUE)
+[   TYPE(OUTPUT) INTENS(HIGH) CAPS(OFF) JUST(ASIS) COLOR(TURQ)
+]   TYPE(OUTPUT) INTENS(HIGH) CAPS(OFF) JUST(ASIS) COLOR(YELLOW)
+{   TYPE(OUTPUT) INTENS(HIGH) CAPS(OFF) JUST(ASIS) COLOR(GREEN)
+}   TYPE(TEXT)   INTENS(HIGH)                      COLOR(YELLOW)
+)BODY WIDTH(&ZSCREENW) EXPAND(//)
+{Z                      %-----? TSO Allocations  %-/-/--------------------------
+%COMMAND ===>_Z                                                %SCROLL ===>_AMT
+%                                                                      
+%Step-[STEPNM  %Proc-[PROCNM  %                        
+%                                                      
+?DD# Volume   Disposition Org DDname Data Set Name     
+)MODEL                                                 
+[Z  [Z       [Z          $Z  [Z     {Z                                        %                 
+)INIT                                                  
+  .HELP = HDALCDS0                                     
+  .ZVARS = '(SCRNCLK ZCMD             
+              ROWNUM VOLSER DISP1 DSORG DDNAME DSNAME)'
+  &AMT = 'CSR'
+  &ZTDMARK = '******************************* BOTTOM OF DATA *+
+*******************+
+*************'
+)PROC
+)END

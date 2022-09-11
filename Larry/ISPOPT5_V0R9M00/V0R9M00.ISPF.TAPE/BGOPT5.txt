@@ -1,0 +1,70 @@
+/********************************************************************/
+/*                                                                  */
+/* MESSAGES: BGOPT5                                                 */
+/*                                                                  */
+/* Author: Larry Belmontes Jr.                                      */
+/*         https://ShareABitofIT.net/ISPOPT5-in-MVS38J              */
+/*         Copyright (C) 2021  Larry Belmontes, Jr.                 */
+/*                                                                  */
+/*                                                                  */
+/* Description:                                                     */
+/* ---------------------------------------------------------------  */
+/*                                                                  */
+/* ISPF 2.0 ISPOPT5 messages                                        */
+/*                                                                  */
+/*                                                                  */
+/* Disclaimer:                                                      */
+/* ================================================================ */
+/*                                                                  */
+/*    No guarantee; No warranty; Install / Use at your own risk.    */
+/*                                                                  */
+/*    This software is provided "AS IS" and without any expressed   */
+/* or implied warranties, including, without limitation, the        */
+/* implied warranties of merchantability and fitness for a          */
+/* particular purpose.                                              */
+/*                                                                  */
+/*    The author requests keeping authors name intact in any        */
+/* modified versions.                                               */
+/*                                                                  */
+/*    In addition, the author requests readers to submit any        */
+/* code modifications / enhancements and associated comments        */
+/* for consideration into a subsequent release (giving credit       */
+/* to contributor(s)) thus, improving overall functionality         */
+/* and further benefiting the MVS 3.8J hobbyist public domain       */
+/* community.                                                       */
+/*                                                                  */
+/*                                                                  */
+/*                                                                  */
+/* Change History:                                                  */
+/* ================================================================ */
+/* MM/DD/CCYY Version  Name / Description                           */
+/* ---------- -------  -------------------------------------------- */
+/* 10/31/2021 0.9.00   Larry Belmontes Jr.                          */
+/*                     - Initial version released to MVS 3.8J       */
+/*                       hobbyist public domain                     */
+/*                                                                  */
+/* 05/13/2018 0.1.00   Larry Belmontes Jr.                          */
+/*                     - Initial protyping with initial version     */
+/*                       of ISPF from Wally Mclaughlin              */
+/*                                                                  */
+/********************************************************************/
+BGOPT55A '                        ' .ALARM=NO
+'BGOPT55A RPG MVT JCL generated for &LIBMEM                                    '
+BGOPT55B '                        ' .ALARM=NO
+'BGOPT55B Simula JCL generated for &LIBMEM                                     '
+BGOPT55C '                        ' .ALARM=NO
+'BGOPT55C SNOBOL JCL generated for &LIBMEM                                     '
+BGOPT55D '                        ' .ALARM=NO
+'BGOPT55D Watfiv JCL generated for &LIBMEM                                     '
+BGOPT55E '                        ' .ALARM=NO
+'BGOPT55E XPL JCL generated for &LIBMEM                                        '
+BGOPT55F '                        ' .ALARM=NO
+'BGOPT55F SPITBOL JCL generated for &LIBMEM                                    '
+BGOPT55G '                        ' .ALARM=NO
+'BGOPT55G GCC JCL generated for &LIBMEM                                        '
+BGOPT55H '                        ' .ALARM=NO
+'BGOPT55H PL360 JCL generated for &LIBMEM                                      '
+BGOPT55I '                        ' .ALARM=NO
+'BGOPT55I BASIC 360 JCL generated for &LIBMEM                                  '
+BGOPT56A '                        ' .ALARM=NO
+'BGOPT56A OS/VS LINK-EDIT JCL GENERATED FOR &LIBMEM                            '

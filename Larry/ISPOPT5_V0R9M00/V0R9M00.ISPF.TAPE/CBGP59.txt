@@ -1,0 +1,417 @@
+PROC 0                                /* BG PASCAL                  */
+
+/********************************************************************/
+/*                                                                  */
+/* CLIST: CBGP59                                                    */
+/*                                                                  */
+/* Author: Larry Belmontes Jr.                                      */
+/*         https://ShareABitofIT.net/ISPOPT5-in-MVS38J              */
+/*         Copyright (C) 2021  Larry Belmontes, Jr.                 */
+/*                                                                  */
+/*                                                                  */
+/* Description:                                                     */
+/* ---------------------------------------------------------------  */
+/*                                                                  */
+/* Background Processing Option 5                                  '*/
+/*                                                                  */
+/* This CLIST creates BG PASCAL JCL.                                */
+/*                                                                  */
+/*                                                                  */
+/* Command:                                                         */
+/* CBGP59                                                           */
+/*                                                                  */
+/* Parameters:                                                      */
+/* None                                                             */
+/*                                                                  */
+/*                                                                  */
+/* Disclaimer:                                                      */
+/* ================================================================ */
+/*                                                                  */
+/*    No guarantee; No warranty; Install / Use at your own risk.    */
+/*                                                                  */
+/*    This software is provided "AS IS" and without any expressed   */
+/* or implied warranties, including, without limitation, the        */
+/* implied warranties of merchantability and fitness for a          */
+/* particular purpose.                                              */
+/*                                                                  */
+/*    The author requests keeping authors name intact in any        */
+/* modified versions.                                               */
+/*                                                                  */
+/*    In addition, the author requests readers to submit any        */
+/* code modifications / enhancements and associated comments        */
+/* for consideration into a subsequent release (giving credit       */
+/* to contributor(s)) thus, improving overall functionality         */
+/* and further benefiting the MVS 3.8J hobbyist public domain       */
+/* community.                                                       */
+/*                                                                  */
+/*                                                                  */
+/*                                                                  */
+/* Change History:                                                  */
+/* ================================================================ */
+/* MM/DD/CCYY Version  Name / Description                           */
+/* ---------- -------  -------------------------------------------- */
+/* 10/31/2021 0.9.00   Larry Belmontes Jr.                          */
+/*                     - Initial version released to MVS 3.8J       */
+/*                       hobbyist public domain                     */
+/*                                                                  */
+/* 05/13/2018 0.1.00   Larry Belmontes Jr.                          */
+/*                     - Initial protyping with initial version     */
+/*                       of ISPF from Wally Mclaughlin              */
+/*                                                                  */
+/********************************************************************/
+
+/*---START------------------- $$cbg-globals -------------------------*/
+  /****************************************************************
+  /* Global Variables to SHARE with subordinate CLISTS
+  /****************************************************************
+  GLOBAL JCLGEN TDD TDSN TDSA LIBMEM LINMEM +
+         ODSNTMP ODSNMEM SRCFND CSRF CMNT P +
+         LMDMEM                             +
+         LBBGSO  LBBGPO                     +
+         LBXODSN LBXPROJ LBXTYPE LBXMBR     +
+         LBXLIB1 LBXLIB2 LBXLIB3 LBXLIB4    +
+         LBXSTEP1                           +
+         LBXTST  LBXOPT1                    +
+         LBXGO   LBXCMPL                    +
+         LBXSOUT LBXLSTID                   +
+         LBXSL1  LBXSL2  LBXSL3  LBXSL4     +
+         LBXJCL1 LBXJCL2 LBXJCL3 LBXJCL4
+/*---END--------------------- $$cbg-globals -------------------------*/
+
+  SET PANL0 = &STR(ISPOPT59)           /* Process Panel             */
+
+/*---START------------------- $$cbg-pnl-val -------------------------*/
+  /****************************************************************
+  /* Set Panel Number, initial CURSOR field, and JCL Message
+  /****************************************************************
+  SET P = &SUBSTR(8:8,&PANL0)          /* Position 8 of panel name  */
+  SET CSRF  = LB&P.MBR                 /* Panel Cursor Field        */
+  SET EMSG  = BGOPT55&P                /* JCL Generated message     */
+
+  /****************************************************************
+  /* Display Panel and handle response
+  /****************************************************************
+  GETDATA:  +
+  IF &CSRF > &STR() THEN +
+    ISPEXEC DISPLAY PANEL(&PANL0) CURSOR(&CSRF)
+  ELSE +
+    ISPEXEC DISPLAY PANEL(&PANL0)
+  SET RC = &LASTCC
+  /* END/RETURN KEY DEPRESSED
+  IF &RC = 8 THEN +
+    DO
+      IF &KEYPRESS = PF03 THEN +
+        DO
+          /*ERROR: END KEY PRESSED, PROCESS TERMINATED! NO JCL GENED
+          ISPEXEC SETMSG MSG(BGOPT09)
+          GOTO DONE
+        END
+      /************************************************************
+      /* Check for JUMP (e.g. =3.4)
+      /************************************************************
+      IF &STR(&BGPO) > &STR( ) THEN +
+        IF (&SUBSTR(1:1,&STR(&BGPO)) = &STR(=) THEN +
+          DO
+          /*SET LBBGPO = &STR(=)   /* Indicate JUMP */
+            SET LBBGPO = &STR(&BGPO)
+          /*ISPEXEC SETMSG MSG(BGOPT08) */
+            GOTO DONE
+          END
+    END
+  ELSE +
+    DO
+      IF &RC = 0 THEN
+      /* ENTER KEY DEPRESSED, PROCESS.
+      ELSE +
+        DO
+          /*ERROR: SEVERE ERROR WITH DISPLAY SERVICE
+          WRITE SEVERE ERROR IN BG PROCESS
+          WRITE DISPLAY PANEL=&PANL0  RC=&RC CSRF=&CSRF
+          WRITE PROCESS TERMINATED...
+          GOTO DONE
+        END
+    END
+
+  /****************************************************************
+  /* Timing
+  /****************************************************************
+  SET CPU = &SYSCPU
+  SET SRV = &SYSSRV
+
+  /****************************************************************
+  /* Validate SOURCE INPUT, Set SYSIN DSN, OBJ DSN
+  /****************************************************************
+  %CBGVALIN PANID(&PANL0)
+
+  SET RC=&LASTCC
+  IF &RC = 0 THEN
+  ELSE +
+    IF &RC = 4 THEN +
+      GOTO GETDATA
+    ELSE +
+      DO
+        /*ERROR FROM CLIST
+        WRITE *** ERROR IN CBGVALIN RC=&RC ***
+        GOTO GETDATA
+      END
+
+  /****************************************************************
+  /* COMMENT:
+  /****************************************************************
+  SET VARNAM = &STR(&&LB&P.CMPL)
+  SET VARVAL = &STR(&VARNAM)
+  PUTCARD '&CMNT.----------------------------------------'
+  PUTCARD '&CMNT &P..&VARVAL'
+/*---END--------------------- $$cbg-pnl-val -------------------------*/
+
+  /****************************************************************
+  /* COMMENT: SELECTED LANGUAGE PROCESSOR
+  /****************************************************************
+  IF &LB9CMPL = 1 THEN +
+    PUTCARD '//* P A S C A L   8 0 0 0   COMPILE'
+  IF &LB9CMPL = 2 THEN +
+    PUTCARD '//* P A S C A L   STONYBROOK COMPILE'
+  IF &LB9CMPL = 3 THEN +
+    PUTCARD '//* P A S C A L   STANFORD COMPILE'
+  PUTCARD '&CMNT'
+
+/*---START------------------- $$cbg-lib-info ------------------------*/
+  /****************************************************************
+  /* COMMENT: LIBRARY INFORMATION
+  /****************************************************************
+  %CBGLLIBS PANID(&PANL0)
+  SET RC=&LASTCC
+  IF &RC = 0 THEN
+  ELSE +
+    DO
+      /*ERROR FROM CLIST
+      WRITE *** ERROR IN CBGLLIBS RC=&RC ***
+      WRITE *** Should not display this message !!
+    END
+/*---END--------------------- $$cbg-lib-info ------------------------*/
+
+  /****************************************************************
+  /* EXEC CARD
+  /****************************************************************
+  IF &LB9CMPL = 1 THEN +
+    DO
+      PUTCARD '//PASC     EXEC PGM=PASCALC,REGION=1024K,'
+    END
+  ELSE +
+  IF &LB9CMPL = 2 THEN +
+    DO
+      PUTCARD '//SBPASC   EXEC PGM=SBPASCAL,REGION=1024K,'
+    END
+  ELSE +
+  IF &LB9CMPL = 3 THEN +
+    DO
+      PUTCARD '//COMPILE  EXEC PGM=PASCAL,'
+    END
+
+  IF &LB9CMPL = 3 THEN +
+    PUTCARD '// COND=(12,LE)'
+  ELSE -
+    PUTCARD '// COND=(12,LE),'
+
+  IF &LB9CMPL = 1 THEN +
+    DO
+/*---START------------------- $$cbg-compileparm ---------------------*/
+  /****************************************************************
+  /* Construct PARM1 string for Compiler/Assembler Options
+  /****************************************************************
+  IF &STR(&LBXTST) > &STR( ) THEN -
+    IF &STR(&LBXOPT1) > &STR( ) THEN -
+      PUTCARD '//   PARM='&LBXTST,&LBXOPT1''
+    ELSE -
+      PUTCARD '//   PARM='&LBXTST''
+  ELSE -
+    IF &STR(&LBXOPT1) > &STR( ) THEN -
+      PUTCARD '//   PARM='&LBXOPT1''
+    ELSE -
+      PUTCARD '//   PARM='''
+/*---END--------------------- $$cbg-compileparm ---------------------*/
+    END
+  ELSE +
+  IF &LB9CMPL = 2 THEN +
+    DO
+      SET XX    = &STR(// PARM='TIME=10,LINES=1000,DEBUG=2)
+      SET L = &LENGTH(&LB9OPT1)
+      IF &L > 0 THEN +
+        SET XX    = &STR(&XX)&SUBSTR(1:&L,&LB9OPT1)'
+      ELSE +
+        SET XX    = &STR(&XX)&STR(')
+      PUTCARD '&XX'
+    END
+
+  /****************************************************************
+  /* STEPLIB
+  /****************************************************************
+  IF &STR(&SUBSTR(1:1,&LB9STEP1)) > &STR( ) THEN -
+    DO
+      IF &LB9CMPL = 1 THEN +
+        DO
+          PUTCARD '//STEPLIB  DD DISP=SHR,'
+          PUTCARD '//   DSN=SYSC.PASCAL.PASLIB'
+        END
+      ELSE +
+        DO
+          PUTCARD '//STEPLIB  DD DISP=SHR,'
+          PUTCARD '//   DSN=SYSC.LINKLIB'
+        END
+    END
+
+  /****************************************************************
+  /* Processor Specific JCL
+  /****************************************************************
+  IF &LB9CMPL = 1 THEN +
+    DO
+      PUTCARD '//$PASMSGS DD DISP=SHR,'
+      PUTCARD '//         DSN=SYSC.PASCAL.PASMSGS'
+    END
+  IF &LB9CMPL = 2 THEN +
+    DO
+      PUTCARD '//PASS1    DD DISP=SHR,'
+      PUTCARD '//   DSN=SYSC.STONYBRK.PASCAL.OBJECT(PASS1)'
+      PUTCARD '//PASS2    DD DISP=SHR,'
+      PUTCARD '//   DSN=SYSC.STONYBRK.PASCAL.OBJECT(PASS2)'
+      PUTCARD '//PASS3    DD DISP=SHR,'
+      PUTCARD '//   DSN=SYSC.STONYBRK.PASCAL.OBJECT(PASS3)'
+      PUTCARD '//PMD      DD DISP=SHR,'
+      PUTCARD '//   DSN=SYSC.STONYBRK.PASCAL.OBJECT(PMD)'
+      PUTCARD '//FILE3    DD UNIT=SYSDA,SPACE=(CYL,3)'
+    END
+  IF &LB9CMPL = 3 THEN +
+    DO
+      PUTCARD '//OUTPUT   DD SYSOUT=(&LB9SOUT)'
+      PUTCARD '//PRD      DD DISP=SHR,'
+      PUTCARD '//   DSN=SYSC.STANFORD.PASCAL.LIB(PASMSG)'
+      PUTCARD '//PRR      DD DISP=(,PASS),'
+      PUTCARD '//   DSN=&NRSTR(&&PCODE),UNIT=SYSDA,'
+      PUTCARD '//   DCB=RECFM=VB,SPACE=(CYL,(3,1),RLSE)'
+      PUTCARD '//QRR      DD DISP=(,PASS),'
+      PUTCARD '//   DSN=&NRSTR(&&TABLES),UNIT=SYSDA,'
+      PUTCARD '//   DCB=RECFM=VB,SPACE=(CYL,(3,1),RLSE)'
+    END
+
+  /****************************************************************
+  /* SYSPRINT, SYSPUNCH, SYSIN
+  /****************************************************************
+  IF &LB9CMPL = 3 THEN +
+    DO
+      PUTCARD '//INPUT    DD DISP=SHR,'
+      PUTCARD '//         DSN=&LIBMEM'
+    END
+  ELSE +
+    DO
+      PUTCARD '//SYSPRINT DD SYSOUT=(&LB9SOUT)'
+      PUTCARD '//SYSIN    DD DISP=SHR,'
+      PUTCARD '//         DSN=&LIBMEM'
+    END
+
+  /****************************************************************
+  /* SYSUT  WORK FILES
+  /****************************************************************
+  IF &LB9CMPL = 2 THEN +
+    DO
+      PUTCARD '//SYSUT1   DD UNIT=SYSDA,SPACE=(CYL,(2,2))'
+      PUTCARD '//SYSUT2   DD UNIT=SYSDA,SPACE=(CYL,(2,2))'
+      PUTCARD '//SYSUT3   DD UNIT=SYSDA,SPACE=(CYL,(2,2))'
+      PUTCARD '//SYSUT4   DD UNIT=SYSDA,SPACE=(CYL,(2,2))'
+      PUTCARD '//SYSUT5   DD UNIT=SYSDA,SPACE=(CYL,(2,2))'
+    END
+
+  /****************************************************************
+  /* GO JCL
+  /****************************************************************
+  IF &LB9CMPL = 1 THEN +
+    DO
+      PUTCARD '//SYSGO    DD DISP=OLD,DSN=&LINMEM'
+      PUTCARD '//*  GO ***'
+      PUTCARD '//LKED   EXEC  PGM=IEWL,PARM='LIST,MAP','
+      PUTCARD '//             COND=(0,NE,PASC)'
+      PUTCARD '//SYSLIB   DD  DISP=SHR,DSN=SYSC.PASCAL.PASLIB'
+      PUTCARD '//         DD  DISP=SHR,DSN=SYSC.FORTLIB'
+      PUTCARD '//SYSLMOD  DD  DISP=(,PASS),DSN=&&LOAD(USERSPGM),'
+      PUTCARD '//             SPACE=(TRK,(2,10,2)),UNIT=SYSDA'
+      PUTCARD '//SYSLIN   DD  DISP=SHR,DSN=SYSC.PROCLIB(P8PASINC),'
+      PUTCARD '//             DCB=BLKSIZE=400'
+      PUTCARD '//         DD  DISP=SHR,DSN=*.PASC.SYSGO'
+      PUTCARD '//SYSPRINT DD  SYSOUT=(&LB9SOUT)'
+      PUTCARD '//SYSUT1   DD  UNIT=SYSDA,SPACE=(TRK,(5,5))'
+      PUTCARD '//GO     EXEC  PGM=*.LKED.SYSLMOD,COND=(0,NE,LKED)'
+      PUTCARD '//$LOCAL   DD  UNIT=SYSDA,SPACE=(TRK,0)'
+      PUTCARD '//LOCAL    DD  VOL=REF=*.$LOCAL,DISP=SHR'
+      PUTCARD '//SYSPRINT DD  SYSOUT=(&LB9SOUT)'
+      PUTCARD '//*        FORTRAN ROUTINES WITH'
+      PUTCARD '//*        STANDARD OUTPUT ARE CALLED'
+      PUTCARD '//FT03F001 DD  SYSOUT=(&LB9SOUT)'
+    END
+  ELSE +
+  IF &LB9CMPL = 3 THEN +
+    DO
+      PUTCARD '&CMNT'
+      PUTCARD '//POSTPROC EXEC PGM=ASMPCODE,COND=(0,LT)'
+      PUTCARD '//STEPLIB  DD DSN=SYSC.LINKLIB,DISP=SHR'
+      PUTCARD '//INPUT    DD DSN=*.COMPILE.PRR,DISP=(OLD,DELETE)'
+      PUTCARD '//PRD      DD DSN=*.COMPILE.QRR,DISP=(OLD,PASS)'
+      PUTCARD '//OUTPUT   DD SYSOUT=(&LB9SOUT)'
+      PUTCARD '//PRR      DD DSN=&NRSTR(&&OBJECT),'
+      PUTCARD '//            UNIT=SYSDA,DCB=RECFM=FB,'
+      PUTCARD '//            SPACE=(TRK,(10,5),RLSE),DISP=(,PASS)'
+      PUTCARD '&CMNT'
+      PUTCARD '//GO       EXEC PGM=LOADER,COND=(0,LT),'
+      PUTCARD '//            PARM='//TIME=10''
+      PUTCARD '//SYSLIN   DD DSN=*.POSTPROC.PRR,DISP=(OLD,DELETE)'
+      PUTCARD '//SYSLOUT  DD SYSOUT=(&LB9SOUT)'
+      PUTCARD '//SYSLIB   DD DSN=SYSC.FORTLIB,DISP=SHR'
+      PUTCARD '//         DD DSN=SYSC.LINKLIB,DISP=SHR'
+      PUTCARD '//PRD      DD DUMMY'
+      PUTCARD '//QRD      DD DSN=*.COMPILE.QRR,DISP=(OLD,DELETE)'
+      PUTCARD '//QRR      DD UNIT=SYSDA,SPACE=(TRK,(2,2))'
+      PUTCARD '//FT06F001 DD SYSOUT=(&LB9SOUT)'
+      PUTCARD '//OUTPUT   DD SYSOUT=(&LB9SOUT)'
+    END
+
+/*---START------------------- $$cbg-morejcl -------------------------*/
+  /****************************************************************
+  /* Append JCL statement from panel to last step generated
+  /****************************************************************
+  SET I = 1
+  SET &VARNAM = &STR(&&LBXJCL)
+  DO WHILE &I <= 4
+    SET OTHJCL  = &STR(&VARNAM&I)
+    IF &STR(&OTHJCL) > &STR( ) THEN +
+      DO
+        PUTCARD '&OTHJCL'
+      END
+    SET I = &I + 1
+  END
+/*---END--------------------- $$cbg-morejcl -------------------------*/
+
+/*---START------------------- $$cbg-endstep -------------------------*/
+  /****************************************************************
+  /* End of Step
+  /****************************************************************
+  PUTCARD '//*--END----------------------------------'
+  PUTCARD '&CMNT'
+
+  SET JCLGEN = Y
+
+  /****************************************************************
+  /* JCL GENERATED Message from CBGP5x panel processor
+  /****************************************************************
+  ISPEXEC SETMSG MSG(&EMSG)
+
+  /****************************************************************
+  /* Performance Marks
+  /****************************************************************
+  SET CPU = &STR(&SYSCPU-&CPU)
+  SET SRV = &STR(&SYSSRV-&SRV)
+/*---END--------------------- $$cbg-endstep -------------------------*/
+
+  /****************************************************************
+  /* RETURN TO CALLING CLIST
+  /****************************************************************
+
+DONE: +
+EXIT CODE(0)

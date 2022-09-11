@@ -1,0 +1,262 @@
+PROC 0
+
+/********************************************************************/
+/*                                                                  */
+/* CLIST: CBGIQGO                                                   */
+/*                                                                  */
+/* Author: Larry Belmontes Jr.                                      */
+/*         https://ShareABitofIT.net/ISPOPT5-in-MVS38J              */
+/*         Copyright (C) 2021  Larry Belmontes, Jr.                 */
+/*                                                                  */
+/*                                                                  */
+/* Description:                                                     */
+/* ---------------------------------------------------------------  */
+/*                                                                  */
+/* This CLIST adds a LOADER-GO step after a background compiler     */
+/* step.  This is for quick testing purposes and limited in         */
+/* functionality.  For example, no SYSIN is available!              */
+/*                                                                  */
+/*                                                                  */
+/* Command:                                                         */
+/* CBGIQGO                                                          */
+/*                                                                  */
+/* Parameters:                                                      */
+/* None                                                             */
+/*                                                                  */
+/*                                                                  */
+/* Disclaimer:                                                      */
+/* ================================================================ */
+/*                                                                  */
+/*    No guarantee; No warranty; Install / Use at your own risk.    */
+/*                                                                  */
+/*    This software is provided "AS IS" and without any expressed   */
+/* or implied warranties, including, without limitation, the        */
+/* implied warranties of merchantability and fitness for a          */
+/* particular purpose.                                              */
+/*                                                                  */
+/*    The author requests keeping authors name intact in any        */
+/* modified versions.                                               */
+/*                                                                  */
+/*    In addition, the author requests readers to submit any        */
+/* code modifications / enhancements and associated comments        */
+/* for consideration into a subsequent release (giving credit       */
+/* to contributor(s)) thus, improving overall functionality         */
+/* and further benefiting the MVS 3.8J hobbyist public domain       */
+/* community.                                                       */
+/*                                                                  */
+/*                                                                  */
+/*                                                                  */
+/* Change History:                                                  */
+/* ================================================================ */
+/* MM/DD/CCYY Version  Name / Description                           */
+/* ---------- -------  -------------------------------------------- */
+/* 10/31/2021 0.9.00   Larry Belmontes Jr.                          */
+/*                     - Initial version released to MVS 3.8J       */
+/*                       hobbyist public domain                     */
+/*                                                                  */
+/* 05/13/2018 0.1.00   Larry Belmontes Jr.                          */
+/*                     - Initial protyping with initial version     */
+/*                       of ISPF from Wally Mclaughlin              */
+/*                                                                  */
+/********************************************************************/
+
+/*---START------------------- $$cbg-globals -------------------------*/
+  /****************************************************************
+  /* Global Variables to SHARE with subordinate CLISTS
+  /****************************************************************
+  GLOBAL JCLGEN TDD TDSN TDSA LIBMEM LINMEM +
+         ODSNTMP ODSNMEM SRCFND CSRF CMNT P +
+         LMDMEM                             +
+         LBBGSO  LBBGPO                     +
+         LBXODSN LBXPROJ LBXTYPE LBXMBR     +
+         LBXLIB1 LBXLIB2 LBXLIB3 LBXLIB4    +
+         LBXSTEP1                           +
+         LBXTST  LBXOPT1                    +
+         LBXGO   LBXCMPL                    +
+         LBXSOUT LBXLSTID                   +
+         LBXSL1  LBXSL2  LBXSL3  LBXSL4     +
+         LBXJCL1 LBXJCL2 LBXJCL3 LBXJCL4
+/*---END--------------------- $$cbg-globals -------------------------*/
+
+  SET EXITCD = 0
+
+  /****************************************************************
+  /* QGO STEP
+  /****************************************************************
+  IF &LBXGO = Y THEN
+  ELSE -
+    GOTO DONE
+
+  /****************************************************************
+  /* LOADER EXEC
+  /****************************************************************
+  PUTCARD '&CMNT Quick GO -----------------------------'
+  PUTCARD '//QGO      EXEC PGM=LOADER,'
+
+  /****************************************************************
+  /* LOADER PARM
+  /****************************************************************
+  IF &P = B THEN -
+    DO
+      /* B=SIMULA                       */
+PUTCARD '// PARM='EP=ZYQENT,MAP,PRINT/DUMP=5,SYMBDUMP=6,TERM,TRACE=1','
+    END
+  ELSE -
+    DO
+      /* Default PARM                   */
+      PUTCARD '//   PARM='MAP,PRINT,LET','
+    END
+
+  /****************************************************************
+  /* LOADER COND, SYSLIN, SYSLOUT, SYSPRINT, SYSUDUMP, SYSPUNCH
+  /****************************************************************
+  /*PUTCARD '//   COND=(8,LT,&LP)'
+  PUTCARD '//   COND=(8,LT)'
+  PUTCARD '//SYSLIN   DD  DISP=SHR,        <--OBJECT'
+  PUTCARD '//             DSN=&LINMEM'
+  PUTCARD '//SYSLOUT  DD  SYSOUT=*'
+  PUTCARD '//SYSPRINT DD  SYSOUT=*'
+  PUTCARD '//SYSUDUMP DD  SYSOUT=*'
+  PUTCARD '//SYSPUNCH DD  SYSOUT=*         <--PUNCH'
+
+  /****************************************************************
+  /* LOADER Specific DDs for Language Processor and Process Type
+  /*
+  /* Note: For MVS 3.8J Compilers, SYSC SYSLIBs will be used
+  /*       if exists, otherwise, SYS1 SYSLIB will be used.
+  /*       (COBOL, FORTRAN, PL/1, ALGOL)
+  /****************************************************************
+  IF &P = 1 THEN
+  ELSE -
+  IF &P = 2 THEN -
+    DO
+      /* 2=COBOL MVT                    */
+      CHKDSN 'SYSC.COBLIB' QUIET
+      IF &LASTCC > 0 THEN -
+        DO
+          PUTCARD '//SYSLIB   DD  DISP=SHR,DSN=SYS1.COBLIB'
+        END
+      ELSE -
+        DO
+          PUTCARD '//SYSLIB   DD  DISP=SHR,DSN=SYSC.COBLIB'
+        END
+      PUTCARD '//SYSOUT   DD  SYSOUT=*'
+    END
+  ELSE -
+  IF &P = 3 OR &P = 4 THEN -
+    DO
+      /* 3=FORTRAN                      */
+      /* 4=MORTRAN                      */
+      CHKDSN 'SYSC.FORTLIB' QUIET
+      IF &LASTCC > 0 THEN -
+        DO
+          PUTCARD '//SYSLIB   DD  DISP=SHR,DSN=SYS1.FORTLIB'
+        END
+      ELSE -
+        DO
+          PUTCARD '//SYSLIB   DD  DISP=SHR,DSN=SYSC.FORTLIB'
+        END
+      PUTCARD '//FT05F001 DD  DDNAME=SYSIN'
+      PUTCARD '//FT06F001 DD  SYSOUT=*'
+      PUTCARD '//FT07F001 DD  SYSOUT=B'
+      IF &P = 4 THEN -
+        DO
+          PUTCARD '//SYSTERM  DD  SYSOUT=*'
+        END
+    END
+  ELSE -
+  IF &P = 5 THEN -
+    DO
+      /* 5=PL/I                         */
+      CHKDSN 'SYSC.LINKLIB' QUIET
+      IF &LASTCC > 0 THEN -
+        DO
+          PUTCARD '//STEPLIB  DD  DISP=SHR,DSN=SYS1.LINKLIB'
+          PUTCARD '//         DD  DISP=SHR,DSN=SYS1.PL1LIB'
+          PUTCARD '//SYSLIB   DD  DISP=SHR,DSN=SYS1.PL1LIB'
+        END
+      ELSE -
+        DO
+          PUTCARD '//STEPLIB  DD  DISP=SHR,DSN=SYSC.LINKLIB'
+          PUTCARD '//         DD  DISP=SHR,DSN=SYSC.PL1LIB'
+          PUTCARD '//SYSLIB   DD  DISP=SHR,DSN=SYSC.PL1LIB'
+        END
+    END
+  ELSE -
+  IF &P = 6 THEN
+  ELSE -
+  IF &P = 7 THEN
+  ELSE -
+  IF &P = 8 THEN -
+    DO
+      /* 8=ALGOL                        */
+      IF &LBXCMPL = 1 THEN -
+        DO
+          /* 1=ALGOL F                  */
+          CHKDSN 'SYSC.ALGLIB' QUIET
+          IF &LASTCC > 0 THEN -
+            DO
+              PUTCARD '//SYSLIB   DD  DISP=SHR,DSN=SYSC.ALGLIB'
+            END
+          ELSE -
+            DO
+              PUTCARD '//SYSLIB   DD  DISP=SHR,DSN=SYSC.ALGLIB'
+            END
+          PUTCARD '//ALGLDD01 DD  SYSOUT=*'
+          PUTCARD '//SYSUT1   DD  UNIT=VIO,SPACE=(1024,(20,10))'
+        END
+      ELSE -
+      IF &LBXCMPL = 2 THEN -
+        DO
+          /* 2=ALGOL 68C                */
+          PUTCARD '//SYSLIB   DD  DISP=SHR,DSN=SYSC.A68CLIB'
+        END
+    END
+  ELSE -
+  IF &P = 9 THEN
+  ELSE -
+  IF &P = A THEN
+  ELSE -
+  IF &P = B THEN -
+    DO
+      /* B=Simula                       */
+      PUTCARD '//SYSLIB   DD  DISP=SHR,DSN=SYSC.LINKLIB'
+      PUTCARD '//SYSOUT   DD  SYSOUT=*'
+      PUTCARD '//SYSIN    DD  DUMMY'
+    END
+  ELSE -
+  IF &P = C THEN
+  ELSE -
+  IF &P = D THEN
+  ELSE -
+  IF &P = E THEN
+  ELSE -
+  IF &P = F THEN
+  ELSE -
+  IF &P = G THEN
+  ELSE -
+  IF &P = H THEN
+  ELSE -
+  IF &P = I THEN
+  ELSE -
+    DO
+      /* Default SYSLIB                 */
+      PUTCARD '//SYSLIB   DD  DISP=SHR,        <--Default SYSLIB'
+      CHKDSN 'SYSC.LINKLIB' QUIET
+      IF &LASTCC > 0 THEN -
+        DO
+          PUTCARD '//             DSN=SYS1.LINKLIB'
+        END
+      ELSE -
+        DO
+          PUTCARD '//             DSN=SYSC.LINKLIB'
+        END
+    END
+
+  PUTCARD '&CMNT'
+
+
+
+
+DONE: +
+EXIT CODE(&EXITCD)

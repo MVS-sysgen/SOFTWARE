@@ -1,0 +1,91 @@
+/********************************************************************/
+/*                                                                  */
+/*    PANEL: HSPOPT5                                                */
+/*                                                                  */
+/* Author: Larry Belmontes Jr.                                      */
+/*         https://ShareABitofIT.net/ISPOPT5-in-MVS38J              */
+/*         Copyright (C) 2021  Larry Belmontes, Jr.                 */
+/*                                                                  */
+/*                                                                  */
+/* Description:                                                     */
+/* ---------------------------------------------------------------  */
+/*                                                                  */
+/* ISPF 2.x Background Selection menu help panel                    */
+/*                                                                  */
+/*                                                                  */
+/* Disclaimer:                                                      */
+/* ================================================================ */
+/*                                                                  */
+/*    No guarantee; No warranty; Install / Use at your own risk.    */
+/*                                                                  */
+/*    This software is provided "AS IS" and without any expressed   */
+/* or implied warranties, including, without limitation, the        */
+/* implied warranties of merchantability and fitness for a          */
+/* particular purpose.                                              */
+/*                                                                  */
+/*    The author requests keeping authors name intact in any        */
+/* modified versions.                                               */
+/*                                                                  */
+/*    In addition, the author requests readers to submit any        */
+/* code modifications / enhancements and associated comments        */
+/* for consideration into a subsequent release (giving credit       */
+/* to contributor(s)) thus, improving overall functionality         */
+/* and further benefiting the MVS 3.8J hobbyist public domain       */
+/* community.                                                       */
+/*                                                                  */
+/*                                                                  */
+/*                                                                  */
+/* Change History:                                                  */
+/* ================================================================ */
+/* MM/DD/CCYY Version  Name / Description                           */
+/* ---------- -------  -------------------------------------------- */
+/* 10/31/2021 0.9.00   Larry Belmontes Jr.                          */
+/*                     - Initial version released to MVS 3.8J       */
+/*                       hobbyist public domain                     */
+/*                                                                  */
+/* 05/13/2018 0.1.00   Larry Belmontes Jr.                          */
+/*                     - Initial protyping with initial version     */
+/*                       of ISPF from Wally Mclaughlin              */
+/*                                                                  */
+/********************************************************************/
+)ATTR
+ + TYPE(TEXT)   INTENS(LOW)  SKIP(ON)    COLOR(GREEN)
+ % TYPE(TEXT)   INTENS(HIGH) SKIP(ON)    COLOR(WHITE)
+ ^ TYPE(TEXT)   INTENS(LOW)  SKIP(ON)    COLOR(YELLOW)
+ [ TYPE(TEXT)   INTENS(LOW)  SKIP(ON)    COLOR(TURQ)
+ _ TYPE(INPUT)  INTENS(LOW)  JUST(LEFT)  COLOR(TURQ)
+ $ TYPE(TEXT)   INTENS(HIGH) SKIP(ON)    COLOR(WHITE)  HILITE(USCORE)
+ # TYPE(TEXT)   INTENS(HIGH) SKIP(ON)    COLOR(BLUE)   HILITE(REVERSE)
+)BODY WIDTH(&ZSCREENW) EXPAND(//)
+%-Tutorial--------------  BACKGROUND SELECTION MENU  ------------------Tutorial-
+%SELECT OPTION ===>_ZCMD                                              +&ZPANELID
+%
+[ This menu facilitates selection of various language processor panels.  Each
+[ panel/CLIST creates JCL for submission via TSO.
+[
+[ While using the background panels, you can continue using ISPF interactively
+[ with no session waits.
+[
+[ When+Source DATA online[=%Y[source existence is verified real-time by
+[ searching%library1-4.[Otherwise,^ODSN[is validated. An error message is
+[ displayed if source is not found.
++
+[ When+Source DATA online[=%N[source is not validated.  Source location is from
+[^ODSN[if specified. Otherwise, source location is from%library1.[
++
++$Field Name        +$Description
++ Delete SUBMIT JCL :%N+delete temp file      %Y+keep temp file
++ Source DATA online:%N+use^ODSN+or^library1  %Y+confirm existence real-time
++ USING             :%Batch session JCL Data Set Name
++ JCL               :%Up to 4 lines for JOB statement
++
++^ ODSN[Other Partitioned or Sequential Data Set Name
++
+)INIT
+  .CURSOR = ZCMD
+  &RESP0 = .RESP
+  &KEYPRESS = .PFKEY
+)PROC
+  &RESP0 = .RESP
+  &KEYPRESS = .PFKEY
+)END

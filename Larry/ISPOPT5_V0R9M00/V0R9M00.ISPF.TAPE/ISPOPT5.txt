@@ -1,0 +1,116 @@
+/********************************************************************/
+/*                                                                  */
+/*    PANEL: ISPOPT5                                                */
+/*                                                                  */
+/* Author: Larry Belmontes Jr.                                      */
+/*         https://ShareABitofIT.net/ISPOPT5-in-MVS38J              */
+/*         Copyright (C) 2021  Larry Belmontes, Jr.                 */
+/*                                                                  */
+/*                                                                  */
+/* Description:                                                     */
+/* ---------------------------------------------------------------  */
+/*                                                                  */
+/* ISPF 2.x Background Selection panel (initial JCL entry)          */
+/*                                                                  */
+/*                                                                  */
+/* Disclaimer:                                                      */
+/* ================================================================ */
+/*                                                                  */
+/*    No guarantee; No warranty; Install / Use at your own risk.    */
+/*                                                                  */
+/*    This software is provided "AS IS" and without any expressed   */
+/* or implied warranties, including, without limitation, the        */
+/* implied warranties of merchantability and fitness for a          */
+/* particular purpose.                                              */
+/*                                                                  */
+/*    The author requests keeping authors name intact in any        */
+/* modified versions.                                               */
+/*                                                                  */
+/*    In addition, the author requests readers to submit any        */
+/* code modifications / enhancements and associated comments        */
+/* for consideration into a subsequent release (giving credit       */
+/* to contributor(s)) thus, improving overall functionality         */
+/* and further benefiting the MVS 3.8J hobbyist public domain       */
+/* community.                                                       */
+/*                                                                  */
+/*                                                                  */
+/*                                                                  */
+/* Change History:                                                  */
+/* ================================================================ */
+/* MM/DD/CCYY Version  Name / Description                           */
+/* ---------- -------  -------------------------------------------- */
+/* 10/31/2021 0.9.00   Larry Belmontes Jr.                          */
+/*                     - Initial version released to MVS 3.8J       */
+/*                       hobbyist public domain                     */
+/*                                                                  */
+/* 05/13/2018 0.1.00   Larry Belmontes Jr.                          */
+/*                     - Initial protyping with initial version     */
+/*                       of ISPF from Wally Mclaughlin              */
+/*                                                                  */
+/********************************************************************/
+)ATTR
+ + TYPE(TEXT)   INTENS(LOW)  SKIP(ON)    COLOR(GREEN)
+ % TYPE(TEXT)   INTENS(HIGH) SKIP(ON)    COLOR(WHITE)
+ ^ TYPE(TEXT)   INTENS(LOW)  SKIP(ON)    COLOR(YELLOW)
+ _ TYPE(INPUT)  INTENS(LOW)  JUST(LEFT)  COLOR(TURQ)
+ # TYPE(INPUT)  INTENS(LOW)  JUST(ASIS)
+ ~ TYPE(INPUT)  INTENS(HIGH) JUST(LEFT)
+ ! TYPE(INPUT)  INTENS(HIGH) JUST(RIGHT)
+ { TYPE(OUTPUT) INTENS(LOW)  JUST(LEFT)
+ } TYPE(OUTPUT) INTENS(LOW)  JUST(RIGHT)
+ [ TYPE(OUTPUT) INTENS(HIGH) JUST(LEFT)
+ ] TYPE(OUTPUT) INTENS(HIGH) JUST(RIGHT)
+)BODY WIDTH(&ZSCREENW) EXPAND(//)
+%-----------------------  Background Selection Menu  ---------------------------
+%SELECT OPTION ===>_ZCMD
++
++   1 -^Assembler         +A -^RPG               +J -^TBD              {Z
++   2 -^OS/VS Cobol       +B -^Simula            +K -^TBD              {Z
++   3 -^Fortran IV        +C -^SNOBOL            +L -^TBD
++   4 -^Mortran           +D -^WATFIV            +   ^
++   5 -^PL/I              +E -^XPL               +   ^
++   6 -^Linkage Editor    +F -^SPITBOL           +   ^
++   7 -^ASSIST            +G -^GCC               +   ^
++   8 -^ALGOL             +H -^PL360             +   ^
++   9 -^Pascal            +I -^BASIC 360         +   ^
++
++
++
++Source DATA online ===>_Z+  (Y/N)     Delete SUBMIT JCL ===>_Z+  (Y/N)
++USING ===>%&TDSN
++JOB STATEMENT INFORMATION:  (Verify before proceeding)
++  ===>_JCL1                                                                   +
++  ===>_JCL2                                                                   +
++  ===>_JCL3                                                                   +
++  ===>_JCL4                                                                   +
++
++
+)INIT
+  .CURSOR = ZCMD
+  &Z = ' '
+  .HELP = HSPOPT5
+  .ZVARS = (ZUSER,ZPANELID,BGSO,BGDJ)
+  &ZPRIM = NO         /* NOT A PRIMARY OPTION MENU         */
+  &ZHTOP = HSPOPT5    /* TUTORIAL TABLE OF CONTENTS        */
+  &ZHINDEX = HSPOPT5  /* TUTORIAL INDEX - 1ST PAGE isptutor*/
+  &RESP0 = .RESP
+  &KEYPRESS = .PFKEY
+  VGET (JCL1 JCL2 JCL3 JCL4) PROFILE
+  VGET (BGSO BGDJ) PROFILE
+)PROC
+  &RESP0 = .RESP
+  &KEYPRESS = .PFKEY
+  &ZSEL = TRUNC (&ZCMD,'.')
+  &ZTRAIL = .TRAIL
+  &BGPO = &ZCMD
+  IF (&KEYPRESS NE PF03)
+    VER (&BGPO,NB,MSG=BGOPT01)
+    VER (&BGSO,NB,MSG=BGOPT01)
+    VER (&BGSO,LIST,Y,N,MSG=BGOPT02)
+    VER (&BGDJ,NB,MSG=BGOPT01)
+    VER (&BGDJ,LIST,Y,N,MSG=BGOPT02)
+    VER (&JCL1,NB,MSG=BGOPT01)
+    VPUT (JCL1 JCL2 JCL3 JCL4) PROFILE
+    VPUT (BGSO BGDJ) PROFILE
+
+)END

@@ -1,0 +1,381 @@
+PROC 0 PANID(NOPANIDX) STEPL(Y) TERM(Y) UTX(4) SLIB(Y) SLIN(LIN) -
+       SPRT(Y) SPUN(Y) SIN(Y) SGOSUF() SDMP(N)
+
+/********************************************************************/
+/*                                                                  */
+/* CLIST: CBGIJCL0                                                  */
+/*                                                                  */
+/* Author: Larry Belmontes Jr.                                      */
+/*         https://ShareABitofIT.net/ISPOPT5-in-MVS38J              */
+/*         Copyright (C) 2021  Larry Belmontes, Jr.                 */
+/*                                                                  */
+/*                                                                  */
+/* Description:                                                     */
+/* ---------------------------------------------------------------  */
+/*                                                                  */
+/* This CLIST adds DD statements to compiler step for background    */
+/* processing option 5.                                             */
+/*                                                                  */
+/*                                                                  */
+/* Command:                                                         */
+/* CBGIJCL0 PANID(PANID) STEPL(Y) TERM(Y) UTX(4) SLIB(Y) SLIN(LIN)  */
+/*          SPRT(Y) SPUN(Y) SIN(Y) SGOSUF()                         */
+/*                                                                  */
+/* Parameters:                                                      */
+/* PANID    panel name for selected background process              */
+/* STEPL    yes/no indicator to include STEPLIB DD                  */
+/* TERM     yes/no indicator to include SYSTERM DD                  */
+/* UTX      number of SYSUTx DDs to include (1-6)                   */
+/* SLIB     yes/no indicator to include SYSLIB  DD                  */
+/* SLIN     LIN/GO value used to include SYSLIN or SYSGO DD         */
+/* SPRT     yes/no indicator to include SYSPRINT DD                 */
+/* SPUN     yes/no indicator to include SYSPUNCH DD                 */
+/* SIN      yes/no/instream indicator to include SYSIN DD           */
+/* SGOSUF   DSN suffix for listing files                            */
+/* SDMP     yes/no indicator to include SYSUDUMP DD                 */
+/*                                                                  */
+/*                                                                  */
+/* Disclaimer:                                                      */
+/* ================================================================ */
+/*                                                                  */
+/*    No guarantee; No warranty; Install / Use at your own risk.    */
+/*                                                                  */
+/*    This software is provided "AS IS" and without any expressed   */
+/* or implied warranties, including, without limitation, the        */
+/* implied warranties of merchantability and fitness for a          */
+/* particular purpose.                                              */
+/*                                                                  */
+/*    The author requests keeping authors name intact in any        */
+/* modified versions.                                               */
+/*                                                                  */
+/*    In addition, the author requests readers to submit any        */
+/* code modifications / enhancements and associated comments        */
+/* for consideration into a subsequent release (giving credit       */
+/* to contributor(s)) thus, improving overall functionality         */
+/* and further benefiting the MVS 3.8J hobbyist public domain       */
+/* community.                                                       */
+/*                                                                  */
+/*                                                                  */
+/*                                                                  */
+/* Change History:                                                  */
+/* ================================================================ */
+/* MM/DD/CCYY Version  Name / Description                           */
+/* ---------- -------  -------------------------------------------- */
+/* 10/31/2021 0.9.00   Larry Belmontes Jr.                          */
+/*                     - Initial version released to MVS 3.8J       */
+/*                       hobbyist public domain                     */
+/*                                                                  */
+/* 05/13/2018 0.1.00   Larry Belmontes Jr.                          */
+/*                     - Initial protyping with initial version     */
+/*                       of ISPF from Wally Mclaughlin              */
+/*                                                                  */
+/********************************************************************/
+
+/*---START------------------- $$cbg-globals -------------------------*/
+  /****************************************************************
+  /* Global Variables to SHARE with subordinate CLISTS
+  /****************************************************************
+  GLOBAL JCLGEN TDD TDSN TDSA LIBMEM LINMEM +
+         ODSNTMP ODSNMEM SRCFND CSRF CMNT P +
+         LMDMEM                             +
+         LBBGSO  LBBGPO                     +
+         LBXODSN LBXPROJ LBXTYPE LBXMBR     +
+         LBXLIB1 LBXLIB2 LBXLIB3 LBXLIB4    +
+         LBXSTEP1                           +
+         LBXTST  LBXOPT1                    +
+         LBXGO   LBXCMPL                    +
+         LBXSOUT LBXLSTID                   +
+         LBXSL1  LBXSL2  LBXSL3  LBXSL4     +
+         LBXJCL1 LBXJCL2 LBXJCL3 LBXJCL4
+/*---END--------------------- $$cbg-globals -------------------------*/
+
+  SET EXITCD = 0
+
+  /****************************************************************
+  /* STEPLIB
+  /****************************************************************
+  /* STEPLIB from panel
+  /*
+  /*  //STEPLIB  DD DISP=SHR,
+  /*  //         DSN=steplib.dsn.from.panel
+  /*
+  /****************************************************************
+  IF &STEPL = Y AND +
+     &LENGTH(&LBXSTEP1) > 0 THEN -
+    DO
+      PUTCARD '//STEPLIB  DD DISP=SHR,'
+      PUTCARD '//         DSN=&LBXSTEP1'
+    END
+
+
+  /****************************************************************
+  /* SYSTERM
+  /****************************************************************
+  /* TERM   = IF PARTITIONED, DSN=PREFIX.MEMBER.TERM
+  /*          IF SEQUENTIAL,  DSN=PREFIX.TEMPNAME.TERM
+  /* NOTERM = NO TERM DD
+  /*REQUIRED FIELD
+  /*     DISP=MOD
+  /*
+  /*  //SYSTERM  DD DISP=(MOD,CATLG)
+  /*  //         UNIT=SYSDA,
+  /*  //         SPACE=(CYL,(2,1),RLSE),
+  /*  //         DSN=PREFIX.xxxxxx.TERM
+  /*
+  /****************************************************************
+  IF &TERM = Y AND +
+     &LBXTST = TERM THEN +
+    DO
+      PUTCARD '//SYSTERM  DD DISP=(MOD,CATLG),'
+      PUTCARD '//         UNIT=SYSDA,'
+      PUTCARD '//         SPACE=(CYL,(2,1),RLSE),'
+      IF &STR(&SYSPREF) > &STR( ) THEN +
+        SET XX     = &STR(//         DSN=&SYSPREF)
+      ELSE -
+        SET XX     = &STR(//         DSN=&SYSUID)
+      IF &ODSNMEM > &STR() THEN +
+        SET XX     = &STR(&XX).&ODSNMEM
+      ELSE +
+        SET XX     = &STR(&XX).&LBXMBR
+      PUTCARD '&XX..TERM'
+    END
+  ELSE +
+    DO
+    END
+
+
+  /****************************************************************
+  /* SYSPRINT
+  /****************************************************************
+  /* SYSPRINT can be a SEQ DSN or SYSOUT Class
+  /*
+  /*  //SYSPRINT DD DISP=(MOD,CATLG)
+  /*  //         UNIT=SYSDA,
+  /*  //         SPACE=(CYL,(2,1),RLSE),
+  /*  //         DSN=PREFIX.LISTID.LIST .suffix
+  /*
+  /*  - or -
+  /*
+  /*  //SYSPRINT DD SYSOUT=(SYSOUT class)
+  /*
+  /****************************************************************
+  IF &SPRT = Y THEN -
+    DO
+      IF &STR(&LBXLSTID) > &STR( ) THEN +
+        DO
+          PUTCARD '//SYSPRINT DD DISP=(MOD,CATLG),'
+          PUTCARD '//         UNIT=SYSDA,'
+          PUTCARD '//         SPACE=(CYL,(2,1),RLSE),'
+          IF &STR(&SYSPREF) > &STR( ) THEN +
+            SET XX = &STR(//         DSN=&SYSPREF)
+          ELSE +
+            SET XX = &STR(//         DSN=&SYSUID)
+          SET XX     = &STR(&XX).&LBXLSTID..LIST
+          IF &STR(&SGOSUF) > &STR( ) THEN -
+            SET XX   = &STR(&XX).&LBXLSTID..LIST.&SGOSUF
+          PUTCARD '&XX'
+        END
+      ELSE +
+        DO
+          PUTCARD '//SYSPRINT DD SYSOUT=(&LBXSOUT)'
+        END
+    END
+
+
+  /****************************************************************
+  /* SYSUDUMP
+  /****************************************************************
+  /* SYSUDUMP
+  /*
+  /*  //SYSUDUMP DD SYSOUT=*
+  /*
+  /****************************************************************
+  IF &SDMP = Y THEN -
+    DO
+      PUTCARD '//SYSUDUMP DD SYSOUT=*'
+    END
+
+
+  /****************************************************************
+  /* SYSPUNCH
+  /****************************************************************
+  /* SYSPUNCH can be a SYSOUT=B or SEQ DSN
+  /*
+  /*  //SYSPUNCH DD SYSOUT=B,
+  /*  //         DCB=(RECFM=FB,LRECL=80,BLKSIZE=3120)'
+  /*
+  /*  - or -
+  /*
+  /* PUNCH  = IF PARTITIONED, DSN=PREFIX.MEMBER.PUNCH
+  /*          IF SEQUENTIAL,  DSN=PREFIX.TEMPNAME.PUNCH
+  /*
+  /*  //SYSPUNCH DD DISP=(MOD,CATLG)
+  /*  //         UNIT=SYSDA,
+  /*  //         SPACE=(CYL,(2,1),RLSE),
+  /*  //         DCB=(RECFM=FB,LRECL=80,BLKSIZE=3120),
+  /*  //         DSN=PREFIX.xxxxxx.PUNCH
+  /*
+  /****************************************************************
+  IF &SPUN = F THEN -
+    DO
+      PUTCARD '//SYSPUNCH DD DISP=(MOD,CATLG),'
+      PUTCARD '//         UNIT=SYSDA,'
+      PUTCARD '//         SPACE=(CYL,(2,1),RLSE),'
+      PUTCARD '//         DCB=(RECFM=FB,LRECL=80,BLKSIZE=3120),'
+      IF &STR(&SYSPREF) > &STR( ) THEN +
+        SET XX     = &STR(//         DSN=&SYSPREF)
+      ELSE -
+        SET XX     = &STR(//         DSN=&SYSUID)
+      IF &ODSNMEM > &STR() THEN +
+        SET XX     = &STR(&XX).&ODSNMEM
+      ELSE +
+        SET XX     = &STR(&XX).&LBXMBR
+      PUTCARD '&XX..PUNCH'
+    END
+  ELSE -
+  IF &SPUN = Y THEN -
+    DO
+      PUTCARD '//SYSPUNCH DD SYSOUT=B,'
+      PUTCARD '//         DCB=(RECFM=FB,LRECL=80,BLKSIZE=3120)'
+    END
+
+
+  /****************************************************************
+  /* SYSIN
+  /****************************************************************
+  /* SYSIN Language processor source statements
+  /*
+  /*  //SYSIN    DD *
+  /*
+  /*  - or -
+  /*
+  /*  //SYSIN    DD DISP=SHR,
+  /*  //         DSN=dataset name with member (if PDS)
+  /*
+  /****************************************************************
+  IF &SIN = Y THEN -
+    DO
+      PUTCARD '//SYSIN    DD DISP=SHR,'
+      PUTCARD '//         DSN=&LIBMEM'
+    END
+  ELSE -
+  IF &SIN = I THEN -
+    DO
+      PUTCARD '//SYSIN    DD *'
+    END
+
+
+  /****************************************************************
+  /* SYSUTx WORK FILES
+  /****************************************************************
+  /* SYSUTx work files 1-6
+  /*
+  /*  //SYSUTx   DD UNIT=SYSDA,SPACE(CYL,(2,2))
+  /*
+  /****************************************************************
+  IF &DATATYPE(&UTX) = NUM THEN +
+    IF &UTX GE 1  AND  &UTX LE 6 THEN -
+      DO
+        SET X = 1
+        DO WHILE &X LE &UTX
+          PUTCARD '//SYSUT&X   DD UNIT=SYSDA,SPACE=(CYL,(2,2))'
+          SET X = &X + 1
+        END
+      END
+
+
+  /****************************************************************
+  /* SYSLIB Language processor libraries to resolve macros,
+  /*        copybooks, etc.
+  /****************************************************************
+  /* //SYSLIB  CONCATENATE ISPF LIBS 1-4, IF NOT BLANK
+  /*           CONCATENATE SYSLIBS   1-4, IF NOT BLANK
+  /*
+  /****************************************************************
+  IF &SLIB = Y THEN +
+    DO
+      /*********************************
+      /* SYSLIB  CONCATENATE ISPF LIBS
+      /*********************************
+      SET &DDNM = &STR(SYSLIB)
+      IF &STR(&LBXPROJ) > &STR( ) THEN -
+        DO
+          SET I = 1
+          SET &VARNAM = &STR(&&LBXLIB)
+          DO WHILE &I <= 4
+            SET DSNSL = &STR(&VARNAM&I)
+            IF &STR(&DSNSL) > &STR( ) THEN +
+              DO
+        SET DSNSL = &STR(&LBXPROJ).&STR(&VARNAM&I).&STR(&LBXTYPE)
+            PUTCARD '//&STR(&DDNM)   DD DISP=SHR,        <--ISPF&I'
+                PUTCARD '//         DSN=&DSNSL'
+                IF &DDNM > &STR( ) THEN SET &DDNM = &STR(      )
+              END
+            SET I = &I + 1
+          END
+        END
+      /*********************************
+      /* SYSLIB  Other Partitioned
+      /*********************************
+      /*********************************
+      /* SYSLIB  CONCATENATE USER LIBS
+      /*********************************
+      SET I = 1
+      SET &VARNAM = &STR(&&LBXSL)
+   /* SET &DDNM   = &STR(SYSLIB)
+      DO WHILE &I <= 4
+        SET DSNSL  = &STR(&VARNAM&I)
+        IF &STR(&DSNSL) > &STR( ) THEN +
+          DO
+            PUTCARD '//&STR(&DDNM)   DD DISP=SHR,        <--USER&I'
+            PUTCARD '//         DSN=&DSNSL'
+            IF &DDNM > &STR( ) THEN SET &DDNM = &STR(      )
+          END
+        SET I = &I + 1
+      END
+    END
+
+
+  /****************************************************************
+  /* SYSLIN or SYSGO
+  /****************************************************************
+  /*
+  /*  //SYSLIN   DD DISP=SHR,               <-- for PDS object file
+  /*  //         DSN=&LINMEM
+  /*
+  /*  - or -
+  /*
+  /*  //SYSLIN   DD DISP=(MOD,CATLG),       <-- for SEQ object file
+  /*  //         UNIT=SYSDA,
+  /*  //         SPACE=((CYL,2,1),RLSE),
+  /*  //         DSN=&LINMEM
+  /*
+  /****************************************************************
+  IF &SLIN = NO  THEN
+  ELSE -
+    DO
+      IF &SLIN = LIN THEN +
+        SET &DDNM   = &STR(SYSLIN)
+      ELSE -
+        SET &DDNM   = &STR(SYSGO )
+      SET L = &LENGTH(&LINMEM)
+      /************************************/
+      /* LINMEM include member name?      */
+      /************************************/
+      IF &SUBSTR(&L:&L,&STR(&LINMEM)) = ) THEN -
+        DO
+          PUTCARD '//&DDNM   DD DISP=SHR,'
+          PUTCARD '//         DSN=&LINMEM'
+        END
+      ELSE -
+        DO
+          PUTCARD '//&DDNM   DD DISP=(MOD,CATLG),'
+          PUTCARD '//         UNIT=SYSDA,'
+          PUTCARD '//         SPACE=(CYL,(2,1),RLSE),'
+          PUTCARD '//         DSN=&LINMEM'
+        END
+    END
+
+
+DONE: +
+EXIT CODE(&EXITCD)

@@ -1,0 +1,330 @@
+PROC 0                                /* BG MORTRAN W FORTRAN       */
+
+/********************************************************************/
+/*                                                                  */
+/* CLIST: CBGP54                                                    */
+/*                                                                  */
+/* Author: Larry Belmontes Jr.                                      */
+/*         https://ShareABitofIT.net/ISPOPT5-in-MVS38J              */
+/*         Copyright (C) 2021  Larry Belmontes, Jr.                 */
+/*                                                                  */
+/*                                                                  */
+/* Description:                                                     */
+/* ---------------------------------------------------------------  */
+/*                                                                  */
+/* Background Processing Option 5                                  '*/
+/*                                                                  */
+/* This CLIST creates BG MORTRAN JCL.                               */
+/*                                                                  */
+/*                                                                  */
+/* Command:                                                         */
+/* CBGP54                                                           */
+/*                                                                  */
+/* Parameters:                                                      */
+/* None                                                             */
+/*                                                                  */
+/*                                                                  */
+/* Disclaimer:                                                      */
+/* ================================================================ */
+/*                                                                  */
+/*    No guarantee; No warranty; Install / Use at your own risk.    */
+/*                                                                  */
+/*    This software is provided "AS IS" and without any expressed   */
+/* or implied warranties, including, without limitation, the        */
+/* implied warranties of merchantability and fitness for a          */
+/* particular purpose.                                              */
+/*                                                                  */
+/*    The author requests keeping authors name intact in any        */
+/* modified versions.                                               */
+/*                                                                  */
+/*    In addition, the author requests readers to submit any        */
+/* code modifications / enhancements and associated comments        */
+/* for consideration into a subsequent release (giving credit       */
+/* to contributor(s)) thus, improving overall functionality         */
+/* and further benefiting the MVS 3.8J hobbyist public domain       */
+/* community.                                                       */
+/*                                                                  */
+/*                                                                  */
+/*                                                                  */
+/* Change History:                                                  */
+/* ================================================================ */
+/* MM/DD/CCYY Version  Name / Description                           */
+/* ---------- -------  -------------------------------------------- */
+/* 10/31/2021 0.9.00   Larry Belmontes Jr.                          */
+/*                     - Initial version released to MVS 3.8J       */
+/*                       hobbyist public domain                     */
+/*                                                                  */
+/* 05/13/2018 0.1.00   Larry Belmontes Jr.                          */
+/*                     - Initial protyping with initial version     */
+/*                       of ISPF from Wally Mclaughlin              */
+/*                                                                  */
+/********************************************************************/
+
+/*---START------------------- $$cbg-globals -------------------------*/
+  /****************************************************************
+  /* Global Variables to SHARE with subordinate CLISTS
+  /****************************************************************
+  GLOBAL JCLGEN TDD TDSN TDSA LIBMEM LINMEM +
+         ODSNTMP ODSNMEM SRCFND CSRF CMNT P +
+         LMDMEM                             +
+         LBBGSO  LBBGPO                     +
+         LBXODSN LBXPROJ LBXTYPE LBXMBR     +
+         LBXLIB1 LBXLIB2 LBXLIB3 LBXLIB4    +
+         LBXSTEP1                           +
+         LBXTST  LBXOPT1                    +
+         LBXGO   LBXCMPL                    +
+         LBXSOUT LBXLSTID                   +
+         LBXSL1  LBXSL2  LBXSL3  LBXSL4     +
+         LBXJCL1 LBXJCL2 LBXJCL3 LBXJCL4
+/*---END--------------------- $$cbg-globals -------------------------*/
+
+  SET PANL0 = &STR(ISPOPT54)           /* Process Panel             */
+
+/*---START------------------- $$cbg-pnl-val -------------------------*/
+  /****************************************************************
+  /* Set Panel Number, initial CURSOR field, and JCL Message
+  /****************************************************************
+  SET P = &SUBSTR(8:8,&PANL0)          /* Position 8 of panel name  */
+  SET CSRF  = LB&P.MBR                 /* Panel Cursor Field        */
+  SET EMSG  = BGOPT55&P                /* JCL Generated message     */
+
+  /****************************************************************
+  /* Display Panel and handle response
+  /****************************************************************
+  GETDATA:  +
+  IF &CSRF > &STR() THEN +
+    ISPEXEC DISPLAY PANEL(&PANL0) CURSOR(&CSRF)
+  ELSE +
+    ISPEXEC DISPLAY PANEL(&PANL0)
+  SET RC = &LASTCC
+  /* END/RETURN KEY DEPRESSED
+  IF &RC = 8 THEN +
+    DO
+      IF &KEYPRESS = PF03 THEN +
+        DO
+          /*ERROR: END KEY PRESSED, PROCESS TERMINATED! NO JCL GENED
+          ISPEXEC SETMSG MSG(BGOPT09)
+          GOTO DONE
+        END
+      /************************************************************
+      /* Check for JUMP (e.g. =3.4)
+      /************************************************************
+      IF &STR(&BGPO) > &STR( ) THEN +
+        IF (&SUBSTR(1:1,&STR(&BGPO)) = &STR(=) THEN +
+          DO
+          /*SET LBBGPO = &STR(=)   /* Indicate JUMP */
+            SET LBBGPO = &STR(&BGPO)
+          /*ISPEXEC SETMSG MSG(BGOPT08) */
+            GOTO DONE
+          END
+    END
+  ELSE +
+    DO
+      IF &RC = 0 THEN
+      /* ENTER KEY DEPRESSED, PROCESS.
+      ELSE +
+        DO
+          /*ERROR: SEVERE ERROR WITH DISPLAY SERVICE
+          WRITE SEVERE ERROR IN BG PROCESS
+          WRITE DISPLAY PANEL=&PANL0  RC=&RC CSRF=&CSRF
+          WRITE PROCESS TERMINATED...
+          GOTO DONE
+        END
+    END
+
+  /****************************************************************
+  /* Timing
+  /****************************************************************
+  SET CPU = &SYSCPU
+  SET SRV = &SYSSRV
+
+  /****************************************************************
+  /* Validate SOURCE INPUT, Set SYSIN DSN, OBJ DSN
+  /****************************************************************
+  %CBGVALIN PANID(&PANL0)
+
+  SET RC=&LASTCC
+  IF &RC = 0 THEN
+  ELSE +
+    IF &RC = 4 THEN +
+      GOTO GETDATA
+    ELSE +
+      DO
+        /*ERROR FROM CLIST
+        WRITE *** ERROR IN CBGVALIN RC=&RC ***
+        GOTO GETDATA
+      END
+
+  /****************************************************************
+  /* COMMENT:
+  /****************************************************************
+  SET VARNAM = &STR(&&LB&P.CMPL)
+  SET VARVAL = &STR(&VARNAM)
+  PUTCARD '&CMNT.----------------------------------------'
+  PUTCARD '&CMNT &P..&VARVAL'
+/*---END--------------------- $$cbg-pnl-val -------------------------*/
+
+  /****************************************************************
+  /* COMMENT: SELECTED LANGUAGE PROCESSOR
+  /****************************************************************
+  PUTCARD '//* M O R T R A N   PRE-PROCESSOR'
+  PUTCARD '&CMNT'
+
+/*---START------------------- $$cbg-lib-info ------------------------*/
+  /****************************************************************
+  /* COMMENT: LIBRARY INFORMATION
+  /****************************************************************
+  %CBGLLIBS PANID(&PANL0)
+  SET RC=&LASTCC
+  IF &RC = 0 THEN
+  ELSE +
+    DO
+      /*ERROR FROM CLIST
+      WRITE *** ERROR IN CBGLLIBS RC=&RC ***
+      WRITE *** Should not display this message !!
+    END
+/*---END--------------------- $$cbg-lib-info ------------------------*/
+
+  /****************************************************************
+  /* EXEC CARD
+  /****************************************************************
+  PUTCARD '//MORT     EXEC  PGM=MORTRAN,REGION=192K,'
+  PUTCARD '//         COND=(12,LE),'
+/*---START------------------- $$cbg-compileparm ---------------------*/
+  /****************************************************************
+  /* Construct PARM1 string for Compiler/Assembler Options
+  /****************************************************************
+  IF &STR(&LBXTST) > &STR( ) THEN -
+    IF &STR(&LBXOPT1) > &STR( ) THEN -
+      PUTCARD '//   PARM='&LBXTST,&LBXOPT1''
+    ELSE -
+      PUTCARD '//   PARM='&LBXTST''
+  ELSE -
+    IF &STR(&LBXOPT1) > &STR( ) THEN -
+      PUTCARD '//   PARM='&LBXOPT1''
+    ELSE -
+      PUTCARD '//   PARM='''
+/*---END--------------------- $$cbg-compileparm ---------------------*/
+
+  /****************************************************************
+  /* INSERT STEPLIB, SYSTERM
+  /*        SYSPRINT, SYSPUNCH, SYSIN
+  /*        SYSUT  WORK FILES
+  /*        SYSLIB
+  /*        SYSLIN, SYSGO
+  /****************************************************************
+  %CBGIJCL0 PANID(&PANL0) STEPL(Y) TERM(N) UTX(0) SLIB(N) SLIN(NO)   -
+      SPRT(N) SPUN(N) SIN(N)
+  SET RC=&LASTCC
+
+  /****************************************************************
+  /* MORTRAN DD STATEMENTS
+  /****************************************************************
+  PUTCARD '//FT01F001 DD DISP=SHR,'
+  PUTCARD '//         DSN=SYSC.MACLIB(MORTMAC1)'
+  PUTCARD '//FT05F001 DD DISP=SHR,'
+  PUTCARD '//         DSN=&LIBMEM'
+  IF &STR(&LB4SOUT) > &STR( ) THEN -
+    PUTCARD '//FT06F001 DD SYSOUT=(&LB4SOUT),'
+  ELSE -
+    PUTCARD '//FT06F001 DD SYSOUT=*,'
+  PUTCARD '// DCB=(RECFM=FBA,LRECL=133,BLKSIZE=1596,BUFNO=2)'
+  PUTCARD '//FT07F001 DD DSN=&&FORTIN,'
+  PUTCARD '// DISP=(,PASS),UNIT=SYSDA,SPACE=(CYL,(2,1)),'
+  PUTCARD '// DCB=(RECFM=FB,LRECL=080,BLKSIZE=1680)'
+
+  /****************************************************************
+  /* FORTRAN STEP
+  /****************************************************************
+  PUTCARD '//*----------------------------------------'
+  IF &LB4CMPL = 1 THEN +
+    PUTCARD '//* USING  F O R T R A N  IV  G'
+  ELSE +
+    PUTCARD '//* USING  F O R T R A N  IV  H'
+  PUTCARD '//*---------------------------------------'
+  IF &LB4CMPL = 1 THEN +
+    PUTCARD '//FORTG    EXEC PGM=IEYFORT,REGION=100K,'
+  ELSE +
+    PUTCARD '//FORTH    EXEC PGM=IEKAA00,REGION=228K,'
+  PUTCARD '// COND=(05,LE),'
+/*---START------------------- $$cbg-compileparm2 --------------------*/
+  /****************************************************************
+  /* Construct PARM2 string for Compiler/Assembler Options
+  /****************************************************************
+  CUTIL00 TRIM LB&P.OPT2
+  SET VAROPT = &STR(&&LB&P.OPT2)
+  IF &STR(&LBXTST) > &STR( ) THEN -
+    IF &STR(&VAROPT) > &STR( ) THEN -
+      PUTCARD '//   PARM='&LBXTST,&VAROPT''
+    ELSE -
+      PUTCARD '//   PARM='&LBXTST''
+  ELSE -
+    IF &STR(&VAROPT) > &STR( ) THEN -
+      PUTCARD '//   PARM='&VAROPT''
+    ELSE -
+      PUTCARD '//   PARM='''
+/*---END--------------------- $$cbg-compileparm2 --------------------*/
+
+  /****************************************************************
+  /* INSERT STEPLIB, SYSTERM
+  /*        SYSPRINT, SYSPUNCH, SYSIN
+  /*        SYSUT  WORK FILES
+  /*        SYSLIB
+  /*        SYSLIN, SYSGO
+  /****************************************************************
+  %CBGIJCL0 PANID(&PANL0) STEPL(Y) TERM(N) UTX(4) SLIB(N) SLIN(LIN)  -
+      SPRT(Y) SPUN(Y) SIN(N)
+  SET RC=&LASTCC
+  PUTCARD '//SYSIN     DD DSN=&&FORTIN,DISP=(OLD,DELETE,DELETE)'
+
+  /****************************************************************
+  /* Quick GO Step, if selected
+  /****************************************************************
+  IF &LB4GO = Y THEN +
+    DO
+      %CBGIQGO
+    END
+
+/*---START------------------- $$cbg-morejcl -------------------------*/
+  /****************************************************************
+  /* Append JCL statement from panel to last step generated
+  /****************************************************************
+  SET I = 1
+  SET &VARNAM = &STR(&&LBXJCL)
+  DO WHILE &I <= 4
+    SET OTHJCL  = &STR(&VARNAM&I)
+    IF &STR(&OTHJCL) > &STR( ) THEN +
+      DO
+        PUTCARD '&OTHJCL'
+      END
+    SET I = &I + 1
+  END
+/*---END--------------------- $$cbg-morejcl -------------------------*/
+
+/*---START------------------- $$cbg-endstep -------------------------*/
+  /****************************************************************
+  /* End of Step
+  /****************************************************************
+  PUTCARD '//*--END----------------------------------'
+  PUTCARD '&CMNT'
+
+  SET JCLGEN = Y
+
+  /****************************************************************
+  /* JCL GENERATED Message from CBGP5x panel processor
+  /****************************************************************
+  ISPEXEC SETMSG MSG(&EMSG)
+
+  /****************************************************************
+  /* Performance Marks
+  /****************************************************************
+  SET CPU = &STR(&SYSCPU-&CPU)
+  SET SRV = &STR(&SYSSRV-&SRV)
+/*---END--------------------- $$cbg-endstep -------------------------*/
+
+  /****************************************************************
+  /* RETURN TO CALLING CLIST
+  /****************************************************************
+
+DONE: +
+EXIT CODE(0)

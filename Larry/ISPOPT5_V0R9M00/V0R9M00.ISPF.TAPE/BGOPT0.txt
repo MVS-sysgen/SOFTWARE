@@ -1,0 +1,70 @@
+/********************************************************************/
+/*                                                                  */
+/* MESSAGES: BGOPT0                                                 */
+/*                                                                  */
+/* Author: Larry Belmontes Jr.                                      */
+/*         https://ShareABitofIT.net/ISPOPT5-in-MVS38J              */
+/*         Copyright (C) 2021  Larry Belmontes, Jr.                 */
+/*                                                                  */
+/*                                                                  */
+/* Description:                                                     */
+/* ---------------------------------------------------------------  */
+/*                                                                  */
+/* ISPF 2.0 ISPOPT5 messages                                        */
+/*                                                                  */
+/*                                                                  */
+/* Disclaimer:                                                      */
+/* ================================================================ */
+/*                                                                  */
+/*    No guarantee; No warranty; Install / Use at your own risk.    */
+/*                                                                  */
+/*    This software is provided "AS IS" and without any expressed   */
+/* or implied warranties, including, without limitation, the        */
+/* implied warranties of merchantability and fitness for a          */
+/* particular purpose.                                              */
+/*                                                                  */
+/*    The author requests keeping authors name intact in any        */
+/* modified versions.                                               */
+/*                                                                  */
+/*    In addition, the author requests readers to submit any        */
+/* code modifications / enhancements and associated comments        */
+/* for consideration into a subsequent release (giving credit       */
+/* to contributor(s)) thus, improving overall functionality         */
+/* and further benefiting the MVS 3.8J hobbyist public domain       */
+/* community.                                                       */
+/*                                                                  */
+/*                                                                  */
+/*                                                                  */
+/* Change History:                                                  */
+/* ================================================================ */
+/* MM/DD/CCYY Version  Name / Description                           */
+/* ---------- -------  -------------------------------------------- */
+/* 10/31/2021 0.9.00   Larry Belmontes Jr.                          */
+/*                     - Initial version released to MVS 3.8J       */
+/*                       hobbyist public domain                     */
+/*                                                                  */
+/* 05/13/2018 0.1.00   Larry Belmontes Jr.                          */
+/*                     - Initial protyping with initial version     */
+/*                       of ISPF from Wally Mclaughlin              */
+/*                                                                  */
+/********************************************************************/
+BGOPT00  '&ZERRSM                 ' .ALARM=NO
+'&ZERRMSG &ZERRLM                                                              '
+BGOPT01  '                        ' .ALARM=NO
+'BGOPT01  Cannot be blank                                                      '
+BGOPT02  '                        ' .ALARM=NO
+'BGOPT02  Invalid value                                                        '
+BGOPT03  '                        ' .ALARM=NO
+'BGOPT03  Invalid dataset name                                                 '
+BGOPT04  '                        ' .ALARM=NO
+'BGOPT04  Invalid Process Selection                                            '
+BGOPT05  '                        ' .ALARM=NO
+'BGOPT05  JCL submitted ... END key pressed                                    '
+BGOPT06  '                        ' .ALARM=NO
+'BGOPT06  No JCL to submit, END key pressed                                    '
+BGOPT07  '                        ' .ALARM=NO
+'BGOPT07  CANCEL requested, no JCL submitted                                   '
+BGOPT08  'BG process interrupted  ' .ALARM=NO
+'BGOPT08  Process interrupted, no JCL submitted                                '
+BGOPT09  '                        ' .ALARM=NO
+'BGOPT09  NO ACTION TAKEN on previous panel.  END key pressed.                 '
