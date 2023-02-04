@@ -1,0 +1,285 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+void Do_ASSIGN() {
+// obtain information from various system control areas
+// EXEC CICS ASSIGN option(data-area) END-EXEC.
+// *** only a few of the many options are supported
+
+ char op[100], op2[100], ops[30][100], *ip;
+ char err[100], saveblocks[4000];
+ int  i, ii, numops=0, nodump=0;
+ enum AssignOptions verb;
+
+ // break up string my way
+ // NOTICE this uses strtok instead of SPCLTOK because
+ //        it goes thru the args two at at time...
+ numops = 0;
+ strcpy(saveblocks, cicsblks);
+ ip = strtok(saveblocks, " ()");   // EXEC
+ while (ip=strtok(0, " ()")) {     // KICKS, verb, ... END-EXEC
+  parrensDown(ip);
+  strcpy(ops[numops], ip);
+  numops++;
+  }
+
+ // march thru the args
+ for (i=0; i<numops; i++) {
+  strcpy(op, ops[i]);
+  strcpy(op2, ops[i+1]);
+  if(strlen(op)==0) { continue; }
+  if(MYbegstr(op,".")) { continue; }
+  if(MYbegstr(op,"RESP")) { i++; continue; }
+  if(MYbegstr(op,"RESP2")) { i++; continue; }
+  if(MYbegstr(op,"NOHANDLE")) { continue; }
+  if(MYbegstr(op,"EXEC")) { continue; }
+  if(MYbegstr(op,"KICKS")) { continue; }
+  if(MYbegstr(op,"ASSIGN")) { continue; }
+  i++; // once initial group seen advance by 2 each step...
+  if((MYbegstr(op,"END-EXEC")) || (MYbegstr(op,";"))) { continue; }
+  if((MYbegstr(op2,"END-EXEC")) || (MYbegstr(op2,";"))) {
+   sprintf(err, " malformed ASSIGN block! 2%s 3%s", op, op2);
+   prt_error(err, 8);
+   No_Code();
+   return;
+   }
+
+  // find  matching.option..
+  for (ii=0, verb=-1; ii<as_max; ii++) {
+   if (!strcmp(op, assign_options[ii])) { verb = ii; break; }
+   }
+
+  // handle it
+  switch (verb) {
+        case ABCODE:     // i=0
+         break;
+    //  case ABDUMP:
+    //   break;
+    //  case ABPROGRAM:
+    //   break;
+    //  case ACTIVITY:
+    //   break;
+    //  case ACTIVITYID:
+    //   break;
+        case ALTSCRNHT:  // i=5
+         break;
+        case ALTSCRNWD:  // i=6
+         break;
+    //  case APLKYBD:
+    //   break;
+    //  case APLTEXT:
+    //   break;
+    //  case APPLID:
+    //   break;
+    //  case ASRAINTRPT:
+    //   break;
+    //  case ASRAKEY:
+    //   break;
+    //  case ASRAPSW:
+    //   break;
+    //  case ASRAREGS:
+    //   break;
+    //  case ASRASPC:
+    //   break;
+    //  case ASRASTG:
+    //   break;
+    //  case BRIDGE:
+    //   break;
+    //  case BTRANS:
+    //   break;
+    //  case CMDSEC:
+    //   break;
+        case COLOR:    // i=19
+         break;
+        case CWALENG:  // i=20
+         break;
+        case DEFSCRNHT: // i=21
+         break;
+        case DEFSCRNWD: // i=22
+         break;
+    //  case DELIMITER:
+    //   break;
+    //  case DESTCOUNT:
+    //   break;
+    //  case DESTID:
+    //   break;
+    //  case DESTIDLENG:
+    //   break;
+    //  case DS3270:  // i=27
+    //   break;
+    //  case DSSCS:
+    //   break;
+        case EWASUPP: // i=29
+         break;
+        case EXTDS:   // i=30
+         break;
+        case FACILITY: // i=31
+         break;
+        case FCI:      // i=32
+         break;
+    //  case GCHARS:
+    //   break;
+    //  case GCODES:
+    //   break;
+    //  case GMMI:
+    //   break;
+        case HILIGHT:  // i=36
+         break;
+    //  case INITPARM:
+    //   break;
+    //  case INITPARMLEN:
+    //   break;
+    //  case INPARTN:
+    //   break;
+    //  case INVOKINGPROG:
+    //   break;
+    //  case KATAKANA:
+    //   break;
+        case LANGINUSE:  // i=42
+         break;
+    //  case LDCMNEM:
+    //   break;
+    //  case LDCNUM:
+    //   break;
+    //  case MAPCOLUMN:
+    //   break;
+    //  case MAPHEIGHT:
+    //   break;
+    //  case MAPLINE:
+    //   break;
+    //  case MAPWIDTH:
+    //   break;
+    //  case MSRCONTROL:
+    //   break;
+        case NATLANGINUSE:  // i=50
+         break;
+        case NETNAME: // i=51
+         break;
+    //  case NEXTTRANSID:
+    //   break;
+    //  case OPCLASS:
+    //   break;
+    //  case OPERKEYS:
+    //   break;
+        case OPID: // i=56
+         break;
+    //  case OPSECURITY:
+    //   break;
+    //  case ORGABCODE:
+    //   break;
+    //  case OUTLINE:
+    //   break;
+    //  case PAGENUM:
+    //   break;
+    //  case PARTNPAGE:
+    //   break;
+        case PARTNS:  // i=62
+         break;
+    //  case PARTNSET:
+    //   break;
+    //  case PRINSYSID:
+    //   break;
+    //  case PROCESS:
+    //   break;
+    //  case PROCESSTYPE:
+    //   break;
+        case PROGRAM: // i=67
+         break;
+        case PS:  // i=68
+         break;
+    //  case QNAME:
+    //   break;
+    //  case RESSEC:
+    //   break;
+    //  case RESTART:
+    //   break;
+    //  case RETURNPROG:
+    //   break;
+        case SCRNHT: // i=73
+         break;
+        case SCRNWD: // i=74
+         break;
+    //  case SIGDATA:
+    //   break;
+    //  case SOSI:
+    //   break;
+    //  case STARTCODE:
+    //   break;
+    //  case STATIONID:
+    //   break;
+        case SYSID: // i=79
+         break;
+    //  case TASKPRIORITY:
+    //   break;
+        case TCTUALENG: // i=81
+         break;
+    //  case TELLERID:
+    //   break;
+        case TERMCODE:  // i=83
+         break;
+    //  case TERMPRIORITY:
+    //   break;
+    //  case TEXTKYBD:
+    //   break;
+    //  case TEXTPRINT:
+    //   break;
+    //  case TRANPRIORITY:
+    //   break;
+        case TWALENG: // i=88
+         break;
+    //  case UNATTEND:
+    //   break;
+        case USERID: // i=90
+         break;
+    //  case USERNAME:
+    //   break;
+    //  case USERPRIORITY:
+    //   break;
+    //  case VALIDATION:
+    //   break;
+        case TIOASIZE: // i=94
+         break;
+       default:
+         sprintf(err, "unknown/unsupported argument %s of ASSIGN", op);
+         prt_error(err, 8);
+         No_Code();
+         return;
+    }
+   // ** terminal stuff...
+   // altscrnht(5), altscrnwd(6), color(19),
+   // defscrnht(21), defscrnwd(22), ewasupp(29), extds(30)
+   // facility(31), fci(32), hilight(36), partns(62), ps(68)
+   // scrnht(73), scrnwd(74), termcode(83)
+   // ** user storage stuff
+   // cwaleng(20), tctualeng(81), twaleng(88)
+   // ** eib stuff - using call so kedf sees it...
+   // netname(51), opid(56), program(67), sysid(79), userid(90)
+   // ** other - abcode(0), langinuse(42), natlanginuse(50)
+#ifdef PPCOB
+   fprintf(stdout, "           MOVE 520 TO EIBFN-2\n");
+   fprintf(stdout, "           MOVE %d TO KIK-FLAGS\n", verb);
+   fprintf(stdout, "           CALL 'KIKCOBGL' USING KIKEIB,\n");
+   fprintf(stdout, "                 KIK-V1,\n");
+   fprintf(stdout, "                 KIK-FLAGS,\n");
+   fprintf(stdout, "                 %s", op2);
+#endif
+#ifdef PPGCC
+   fprintf(stdout, "\t{ short *eibfn2 = (short*)&__KIKEIB->eibfn;\n");
+   fprintf(stdout, "\t\t*eibfn2 = 520;\n");
+   fprintf(stdout, "\t int *v=&KIK_V1;\n");
+   fprintf(stdout, "\t int verb=%d, *VERB=&verb;\n", verb);
+   fprintf(stdout, "\t kikgccgl(__KIKEIB, v, VERB, &%s);\n", op2);
+#endif
+ }
+}

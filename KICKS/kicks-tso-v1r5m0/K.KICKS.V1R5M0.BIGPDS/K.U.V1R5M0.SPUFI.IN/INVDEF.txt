@@ -1,0 +1,20 @@
+--DROP TABLE  INV;
+--DROP INDEX  XINV;
+  CREATE TABLE INV
+   (
+    INVCUST         CHAR(6)        NOT NULL,
+    INVNO           CHAR(6)        NOT NULL,
+    INVDATE         DATE           NOT NULL,
+    INVSUBT         DECIMAL(9, 2)  NOT NULL,
+    INVSHIP         DECIMAL(7, 2)  NOT NULL,
+    INVTAX          DECIMAL(7, 2)  NOT NULL,
+    INVTOTAL        DECIMAL(9, 2)  NOT NULL,
+    INVPO           CHAR(10)       NOT NULL,
+   PRIMARY KEY (INVNO)
+   )
+    IN DB020.TABSP020;
+--
+  CREATE UNIQUE INDEX XINV
+    ON INV
+    (INVNO)
+    CLOSE YES;

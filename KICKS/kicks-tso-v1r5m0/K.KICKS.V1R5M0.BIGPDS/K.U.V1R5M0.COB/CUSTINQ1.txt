@@ -1,0 +1,195 @@
+       IDENTIFICATION DIVISION.
+
+       PROGRAM-ID.  CUSTINQ1.
+
+       ENVIRONMENT DIVISION.
+
+       DATA DIVISION.
+
+       WORKING-STORAGE SECTION.
+
+       01  SWITCHES.
+
+           05  VALID-DATA-SW               PIC X    VALUE 'Y'.
+               88 VALID-DATA                        VALUE 'Y'.
+
+       01  FLAGS.
+
+           05  SEND-FLAG                   PIC X.
+               88  SEND-ERASE                       VALUE '1'.
+               88  SEND-DATAONLY                    VALUE '2'.
+               88  SEND-DATAONLY-ALARM              VALUE '3'.
+
+       01  COMMUNICATION-AREA              PIC X.
+
+       01  RESPONSE-CODE                   PIC S9(8)  COMP.
+
+       01  CUSTOMER-MASTER-RECORD.
+
+           05  CM-CUSTOMER-NUMBER            PIC X(6).
+           05  CM-FIRST-NAME                 PIC X(20).
+           05  CM-LAST-NAME                  PIC X(30).
+           05  CM-ADDRESS                    PIC X(30).
+           05  CM-CITY                       PIC X(20).
+           05  CM-STATE                      PIC X(2).
+           05  CM-ZIP-CODE                   PIC X(10).
+
+       COPY INQSET1.
+
+       COPY KIKAID.
+
+       LINKAGE SECTION.
+
+       01  KIKCOMMAREA                     PIC X.
+
+       PROCEDURE DIVISION.
+
+       0000-PROCESS-CUSTOMER-INQUIRY.
+
+      *    EVALUATE TRUE
+
+      *        WHEN EIBCALEN = ZERO
+               IF EIBCALEN = ZERO
+                   MOVE LOW-VALUE TO INQMAP1O
+                   MOVE 'INQ1'    TO TRANIDO
+      *            SET SEND-ERASE TO TRUE
+                   MOVE '1' TO SEND-FLAG
+                   PERFORM 1400-SEND-CUSTOMER-MAP
+
+      *        WHEN EIBAID = KIKCLEAR
+               ELSE
+               IF EIBAID = KIKCLEAR
+                   MOVE LOW-VALUE TO INQMAP1O
+                   MOVE 'INQ1'    TO TRANIDO
+      *            SET SEND-ERASE TO TRUE
+                   MOVE '1' TO SEND-FLAG
+                   PERFORM 1400-SEND-CUSTOMER-MAP
+
+      *        WHEN EIBAID = DFHPA1 OR DFHPA2 OR DFHPA3
+      *           CONTINUE -- let these fall into 'other'...
+
+      *        WHEN EIBAID = KIKPF3 OR KIKPF12
+               ELSE
+               IF EIBAID = KIKPF3 OR KIKPF12
+                   EXEC KICKS
+                       XCTL PROGRAM('INVMENU')
+                   END-EXEC
+
+      *        WHEN EIBAID = KIKENTER
+               ELSE
+               IF EIBAID = KIKENTER
+                   PERFORM 1000-PROCESS-CUSTOMER-MAP
+
+      *        WHEN OTHER
+               ELSE
+                   MOVE LOW-VALUE TO INQMAP1O
+                   MOVE 'Invalid key pressed.' TO MESSAGEO
+      *            SET SEND-DATAONLY-ALARM TO TRUE
+                   MOVE '3' TO SEND-FLAG
+                   PERFORM 1400-SEND-CUSTOMER-MAP.
+
+      *    END-EVALUATE.
+
+           EXEC KICKS
+               RETURN TRANSID('INQ1')
+                      COMMAREA(COMMUNICATION-AREA)
+           END-EXEC.
+
+       1000-PROCESS-CUSTOMER-MAP.
+
+           PERFORM 1100-RECEIVE-CUSTOMER-MAP.
+           PERFORM 1200-EDIT-CUSTOMER-DATA.
+           IF VALID-DATA
+               PERFORM 1300-GET-CUSTOMER-RECORD.
+           IF VALID-DATA
+      *        SET SEND-DATAONLY TO TRUE
+               MOVE '2' TO SEND-FLAG
+               PERFORM 1400-SEND-CUSTOMER-MAP
+           ELSE
+      *        SET SEND-DATAONLY-ALARM TO TRUE
+               MOVE '3' TO SEND-FLAG
+               PERFORM 1400-SEND-CUSTOMER-MAP.
+
+       1100-RECEIVE-CUSTOMER-MAP.
+
+           EXEC KICKS
+               RECEIVE MAP('INQMAP1')
+                       MAPSET('INQSET1')
+                       INTO(INQMAP1I)
+           END-EXEC.
+
+       1200-EDIT-CUSTOMER-DATA.
+
+           IF       CUSTNOL = ZERO
+                 OR CUSTNOI = SPACE
+               MOVE 'N' TO VALID-DATA-SW
+               MOVE 'You must enter a customer number.' TO MESSAGEO.
+
+       1300-GET-CUSTOMER-RECORD.
+
+           EXEC KICKS
+               READ FILE('CUSTMAS')
+                    INTO(CUSTOMER-MASTER-RECORD)
+                    RIDFLD(CUSTNOI)
+                    RESP(RESPONSE-CODE)
+           END-EXEC.
+
+           IF RESPONSE-CODE = KIKRESP(NORMAL)
+               MOVE SPACE         TO MESSAGEO
+               MOVE CM-LAST-NAME  TO LNAMEO
+               MOVE CM-FIRST-NAME TO FNAMEO
+               MOVE CM-ADDRESS    TO ADDRO
+               MOVE CM-CITY       TO CITYO
+               MOVE CM-STATE      TO STATEO
+               MOVE CM-ZIP-CODE   TO ZIPCODEO
+           ELSE
+           PERFORM XXXX-UNNESTED-1.
+
+       1400-SEND-CUSTOMER-MAP.
+
+      *    EVALUATE TRUE
+      *        WHEN SEND-ERASE
+               IF SEND-ERASE
+                   EXEC KICKS
+                       SEND MAP('INQMAP1')
+                            MAPSET('INQSET1')
+                            FROM(INQMAP1O)
+                            ERASE
+                       END-EXEC
+      *        WHEN SEND-DATAONLY
+               ELSE
+               IF SEND-DATAONLY
+                   EXEC KICKS
+                       SEND MAP('INQMAP1')
+                            MAPSET('INQSET1')
+                            FROM(INQMAP1O)
+                            DATAONLY
+                       END-EXEC
+      *        WHEN SEND-DATAONLY-ALARM
+               ELSE
+               IF SEND-DATAONLY-ALARM
+                   EXEC KICKS
+                       SEND MAP('INQMAP1')
+                            MAPSET('INQSET1')
+                            FROM(INQMAP1O)
+                            DATAONLY
+                            ALARM
+                       END-EXEC.
+      *    END-EVALUATE.
+
+       XXXX-UNNESTED SECTION.
+
+       XXXX-UNNESTED-1.
+           IF RESPONSE-CODE = KIKRESP(NOTFND)
+               MOVE 'N' TO VALID-DATA-SW
+               MOVE 'That customer does not exist.' TO MESSAGEO
+               MOVE SPACE TO LNAMEO
+                             FNAMEO
+                             ADDRO
+                             CITYO
+                             STATEO
+                             ZIPCODEO
+           ELSE
+               EXEC KICKS
+                   ABEND
+               END-EXEC.

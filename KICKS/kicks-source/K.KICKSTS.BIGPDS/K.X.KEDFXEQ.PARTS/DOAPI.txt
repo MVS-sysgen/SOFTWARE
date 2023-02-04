@@ -1,0 +1,300 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+#include "kedfxeq.h"
+
+ ///// API router (calls  above API display routines) //////
+
+void API_top(KIKEIB *eib, DEBUGGERCA *comm) {
+char *tioa;
+int row=2, col;
+short *eibfn2, sbuf;
+
+ tioa = csa->tctte->tioa;
+
+ PUT_SBA(++row,1)
+ APPEND_MSG(" EXEC KICKS ");
+ eibfn2 = (short*)&eibSave.eibfn;
+ if (*eibfn2 == 514)   API_ADDRESS(eib, comm);
+ if (*eibfn2 == 516)   API_HANDLE_CONDITION(eib, comm);
+ if (*eibfn2 == 518)   API_H2NDLE_AID(eib, comm);
+ if (*eibfn2 == 520)   API_ASSIGN(eib, comm);
+ if (*eibfn2 == 522)   API_IGNORE_CONDITION(eib, comm);
+ // (*eibfn2 == 524)   API_PUSH_HANDLE(eib, comm);
+ // (*eibfn2 == 526)   API_POP_HANDLE(eib, comm);
+ if (*eibfn2 == 1026)  API_RECEIVE(eib, comm);
+ // (*eibfn2 == 1028)  API_SEND(eib, comm);
+ // (*eibfn2 == 1030)  API_CONVERSE(eib, comm);
+ // (*eibfn2 == 1036)  API_WAIT_TERMINAL(eib, comm);
+ // (*eibfn2 == 1054)  API_ISSUE_SIGNAL(eib, comm);
+ // (*eibfn2 == 1056)  API_ALLOCATE(eib, comm);
+ // (*eibfn2 == 1058)  API_FREE(eib, comm);
+ // (*eibfn2 == 1068)  API_WAIT CONVID(eib, comm);
+ // (*eibfn2 == 1070)  API_EXTRACT_PROCESS(eib, comm);
+ // (*eibfn2 == 1072)  API_ISSUE_ABEND(eib, comm);
+ // (*eibfn2 == 1074)  API_CONNECT_PROCESS(eib, comm);
+ // (*eibfn2 == 1076)  API_ISSUE_CONFIRMATION(eib, comm);
+ // (*eibfn2 == 1080)  API_ISSUE_ERROR(eib, comm);
+ // (*eibfn2 == 1078)  API_ISSUE_PREPARE(eib, comm);
+ // (*eibfn2 == 1086)  API_EXTRACT_ATTRIBUTES(eib, comm);
+ if (*eibfn2 == 1538)  API_READ(eib, comm);
+ if (*eibfn2 == 1540)  API_WRITE(eib, comm);
+ if (*eibfn2 == 1542)  API_REWRITE(eib, comm);
+ if (*eibfn2 == 1544)  API_DELETE(eib, comm);
+ if (*eibfn2 == 1546)  API_UNLOCK(eib, comm);
+ if (*eibfn2 == 1548)  API_STARTBR(eib, comm);
+ if (*eibfn2 == 1550)  API_READNEXT(eib, comm);
+ if (*eibfn2 == 1552)  API_READPREV(eib, comm);
+ if (*eibfn2 == 1554)  API_ENDBR(eib, comm);
+ if (*eibfn2 == 1556)  API_RESETBR(eib, comm);
+ if (*eibfn2 == 2050)  API_WRITEQ_TD(eib, comm);
+ if (*eibfn2 == 2052)  API_READQ_TD(eib, comm);
+ if (*eibfn2 == 2054)  API_DELETEQ_TD(eib, comm);
+ if (*eibfn2 == 2562)  API_WRITEQ_TS(eib, comm);
+ if (*eibfn2 == 2564)  API_READQ_TS(eib, comm);
+ if (*eibfn2 == 2566)  API_DELETEQ_TS(eib, comm);
+ if (*eibfn2 == 3074)  API_GETMAIN(eib, comm);
+ if (*eibfn2 == 3076)  API_FREEMAIN(eib, comm);
+ if (*eibfn2 == 3586)  API_LINK(eib, comm);
+ if (*eibfn2 == 3588)  API_XCTL(eib, comm);
+ if (*eibfn2 == 3590)  API_LOAD(eib, comm);
+ if (*eibfn2 == 3592)  API_RETURN(eib, comm);
+ if (*eibfn2 == 3594)  API_RELEASE(eib, comm);
+ if (*eibfn2 == 3596)  API_ABEND(eib, comm);
+ if (*eibfn2 == 3598)  API_HANDLE_ABEND(eib, comm);
+ if (*eibfn2 == 4098)  API_ASKTIME(eib, comm);
+ if (*eibfn2 == 4100)  API_DELAY(eib, comm);
+ // (*eibfn2 == 4104)  API_START(eib, comm);
+ // (*eibfn2 == 4106)  API_RETRIEVE(eib, comm);
+ // (*eibfn2 == 4108)  API_CANCEL(eib, comm);
+ if (*eibfn2 == 4612)  API_ENQ(eib, comm);
+ if (*eibfn2 == 4614)  API_DEQ(eib, comm);
+ if (*eibfn2 == 4616)  API_SUSPEND(eib, comm);
+ // (*eibfn2 == 5122)  API_JOURNAL(eib, comm);
+ // (*eibfn2 == 5124)  API_WAIT_JOURNAL(eib, comm);
+ if (*eibfn2 == 5602)  API_SPOOLOPEN(eib, comm);
+ // (*eibfn2 == 5604)  API_SPOOLREAD(eib, comm);
+ if (*eibfn2 == 5606)  API_SPOOLWRITE(eib, comm);
+ if (*eibfn2 == 5610)  API_SPOOLCLOSE(eib, comm);
+
+ if (*eibfn2 == 0x5602)  API_SPOOLOPEN(eib, comm);
+ // (*eibfn2 == 0x5604)  API_SPOOLREAD(eib, comm);
+ if (*eibfn2 == 0x5606)  API_SPOOLWRITE(eib, comm);
+ if (*eibfn2 == 0x5610)  API_SPOOLCLOSE(eib, comm);
+
+ if (*eibfn2 == 5634)  API_SYNCPOINT(eib, comm);
+ if (*eibfn2 == 6146)  API_RECEIVE_MAP(eib, comm);
+ if (*eibfn2 == 6148)  API_SEND_MAP(eib, comm);
+ if (*eibfn2 == 6150)  API_SEND_TEXT(eib, comm);
+ if (*eibfn2 == 6162)  API_SEND_CONTROL(eib, comm);
+ // (*eibfn2 == 6658)  API_TRACE(eib, comm);
+ if (*eibfn2 == 6660)  API_ENTER(eib, comm);
+
+ if (*eibfn2 == 18434)  API_ENTER(eib, comm);
+
+ if (*eibfn2 == 7170)  API_DUMP(eib, comm);
+ if (*eibfn2 == 18946) API_ASKTIME_ABSTIME(eib, comm);
+ if (*eibfn2 == 18948) API_FORMATTIME(eib, comm);
+ // (*eibfn2 == 19458) API_INQUIRE_FILE(eib, comm);              *****
+ // (*eibfn2 == 19460) API_SET_FILE(eib, comm);                  *****
+ // (*eibfn2 == 19970) API_INQUIRE_PROGRAM(eib, comm);           *****
+ // (*eibfn2 == 19972) API_SET_PROGRAM(eib, comm);               *****
+ // (*eibfn2 == 20482) API_INQUIRE_TRANSACTION(eib, comm);       *****
+ // (*eibfn2 == 20484) API_SET_TRANSACTION(eib, comm);           *****
+ // (*eibfn2 == 20994) API_INQUIRE_TERMINAL(eib, comm);          *****
+ // (*eibfn2 == 20996) API_SET_TERMINAL(eib, comm);              *****
+ // (*eibfn2 == 20998) API_INQUIRE_NETNAME(eib, comm);
+ // (*eibfn2 == 21506) API_INQUIRE_SYSTEM(eib, comm);
+ // (*eibfn2 == 22530) API_INQUIRE_CONNECTION(eib, comm);
+ // (*eibfn2 == 22532) API_SET_CONNECTION(eib, comm);
+ // (*eibfn2 == 23554) API_INQUIRE_TDQUEUE(eib, comm);           *****
+ // (*eibfn2 == 23556) API_SET_TDQUEUE(eib, comm);               *****
+ // (*eibfn2 == 24066)
+ //   API_INQUIRE_TASK or INQUIRE_TASK_LIST(eib, comm);
+ // (*eibfn2 == 24068) API_SET_TASK(eib, comm);
+ // (*eibfn2 == 24578) API_INQUIRE_JOURNALNUM(eib, comm);
+ // (*eibfn2 == 24580) API_SET_JOURNALNUM(eib, comm);
+ if (*eibfn2 == 27650) API_WRITE_OPERATOR(eib, comm);
+ // (*eibfn2 == 28674) API_INQUIRE_STATISTICS(eib, comm);
+ // (*eibfn2 == 28676) API_SET_STATISTICS(eib, comm);
+ // (*eibfn2 == 28678) API_PERFORM_STATISTICS_RECORD(eib, comm);
+ // (*eibfn2 == 28680) API_COLLECT_STATISTICS(eib, comm);
+ // (*eibfn2 == 29698) API_SIGNON(eib, comm);
+ if (*eibfn2 == 29700) API_SIGNOFF(eib, comm);
+ // (*eibfn2 == 29702) API_VERIFY_PASSWORD(eib, comm);
+ // (*eibfn2 == 29704) API_CHANGE_PASSWORD(eib, comm);
+ // (*eibfn2 == 32770) API_INQUIRE_TSQUEUE(eib,comm)             *****
+ // (*eibfn2 == 32772) API_SEQ_TSQUEUE(eib,comm)                 *****
+ // (*eibfn2 == 32786) API_INQUIRE_TSQNAME(eib,comm)             *****
+ // (*eibfn2 == 32788) API_SEQ_TSQNAME(eib,comm)                 *****
+ }
+
+ // above ***** for sp api's (SET/INQUIRE) I'll add in the near future
+
+void API_resp(KIKEIB *eib, DEBUGGERCA *comm) {
+
+ // seperated this from API so that it can be called from
+ // source trace as well...
+
+char *tioa, buffer[200];
+int row=2, col, topline, botline, lines;
+short *eibfn2, sbuf;
+
+ tioa = csa->tctte->tioa;
+
+ // lower middle, 'resp' stuff...
+ PUT_SBA(bot-helpv,2)
+ APPEND_MSG("Last Response:");
+ APPEND_MSG("\x1d\x40");
+ if (eibSave.eibresp != 0) {
+  APPEND_MSG("\x28\x42\xf2");
+  }
+ buffer[0]=0;
+ // mostly from dfhresp.rexx,
+ // Steve Ware, sfw@nersp.cns.ufl.edu, Copyright (C), 1994
+ if (eibSave.eibresp == 0)  STRCAT(buffer, "NORMAL");
+ if (eibSave.eibresp == 1)  STRCAT(buffer, "ERROR");
+ if (eibSave.eibresp == 2)  STRCAT(buffer, "RDATT");
+ if (eibSave.eibresp == 3)  STRCAT(buffer, "WRBRK");
+ if (eibSave.eibresp == 4)  STRCAT(buffer, "EOF");
+ if (eibSave.eibresp == 5)  STRCAT(buffer, "EODS");
+ if (eibSave.eibresp == 6)  STRCAT(buffer, "EOC");
+ if (eibSave.eibresp == 7)  STRCAT(buffer, "INBFMH");
+ if (eibSave.eibresp == 8)  STRCAT(buffer, "ENDINPT");
+ if (eibSave.eibresp == 9)  STRCAT(buffer, "NONVAL");
+ if (eibSave.eibresp == 10) STRCAT(buffer, "NOSTART");
+ if (eibSave.eibresp == 11) STRCAT(buffer, "TERMIDERR");
+ if (eibSave.eibresp == 12) STRCAT(buffer, "FILENOTFOUND (DSIDERR)");
+ if (eibSave.eibresp == 13) STRCAT(buffer, "NOTFND");
+ if (eibSave.eibresp == 14) STRCAT(buffer, "DUPREC");
+ if (eibSave.eibresp == 15) STRCAT(buffer, "DUPKEY");
+ if (eibSave.eibresp == 16) STRCAT(buffer, "INVREQ");
+ if (eibSave.eibresp == 17) STRCAT(buffer, "IOERR");
+ if (eibSave.eibresp == 18) STRCAT(buffer, "NOSPACE");
+ if (eibSave.eibresp == 19) STRCAT(buffer, "NOTOPEN");
+ if (eibSave.eibresp == 20) STRCAT(buffer, "ENDFILE");
+ if (eibSave.eibresp == 21) STRCAT(buffer, "ILLOGIC");
+ if (eibSave.eibresp == 22) STRCAT(buffer, "LENGERR");
+ if (eibSave.eibresp == 23) STRCAT(buffer, "QZERO");
+ if (eibSave.eibresp == 24) STRCAT(buffer, "SIGNAL");
+ if (eibSave.eibresp == 25) STRCAT(buffer, "QBUSY");
+ if (eibSave.eibresp == 26) STRCAT(buffer, "ITEMERR");
+ if (eibSave.eibresp == 27) STRCAT(buffer, "PGMIDERR");
+ if (eibSave.eibresp == 28) STRCAT(buffer, "TRANSIDERR");
+ if (eibSave.eibresp == 29) STRCAT(buffer, "ENDDATA");
+ if (eibSave.eibresp == 30) STRCAT(buffer, "INVTSREQ");
+ if (eibSave.eibresp == 31) STRCAT(buffer, "EXPIRED");
+ if (eibSave.eibresp == 32) STRCAT(buffer, "RETPAGE");
+ if (eibSave.eibresp == 33) STRCAT(buffer, "RTEFAIL");
+ if (eibSave.eibresp == 34) STRCAT(buffer, "RTESOME");
+ if (eibSave.eibresp == 35) STRCAT(buffer, "TSIOERR");
+ if (eibSave.eibresp == 36) STRCAT(buffer, "MAPFAIL");
+ if (eibSave.eibresp == 37) STRCAT(buffer, "INVERRTERM");
+ if (eibSave.eibresp == 38) STRCAT(buffer, "INVMPSZ");
+ if (eibSave.eibresp == 39) STRCAT(buffer, "IGREQID");
+ if (eibSave.eibresp == 40) STRCAT(buffer, "OVERFLOW");
+ if (eibSave.eibresp == 41) STRCAT(buffer, "INVLDC");
+ if (eibSave.eibresp == 42) STRCAT(buffer, "NOSTG");
+ if (eibSave.eibresp == 43) STRCAT(buffer, "JIDERR");
+ if (eibSave.eibresp == 44) STRCAT(buffer, "QIDERR");
+ if (eibSave.eibresp == 45) STRCAT(buffer, "NOJBUFSP");
+ if (eibSave.eibresp == 46) STRCAT(buffer, "DSSTAT");
+ if (eibSave.eibresp == 47) STRCAT(buffer, "SELNERR");
+ if (eibSave.eibresp == 48) STRCAT(buffer, "FUNCERR");
+ if (eibSave.eibresp == 49) STRCAT(buffer, "UNEXPIN");
+ if (eibSave.eibresp == 50) STRCAT(buffer, "NOPASSBKRD");
+ if (eibSave.eibresp == 51) STRCAT(buffer, "NOPASSBKWR");
+ /* no 52 in dfhresp.rexx */
+ if (eibSave.eibresp == 53) STRCAT(buffer, "SYSIDERR");
+ if (eibSave.eibresp == 54) STRCAT(buffer, "ISCINVREQ");
+ if (eibSave.eibresp == 55) STRCAT(buffer, "ENQBUSY");
+ if (eibSave.eibresp == 56) STRCAT(buffer, "ENVDEFERR");
+ if (eibSave.eibresp == 57) STRCAT(buffer, "IGREQCD");
+ if (eibSave.eibresp == 58) STRCAT(buffer, "SESSIONERR");
+ if (eibSave.eibresp == 59) STRCAT(buffer, "SYSBUSY");
+ if (eibSave.eibresp == 60) STRCAT(buffer, "SESSBUSY");
+ if (eibSave.eibresp == 61) STRCAT(buffer, "NOTALLOC");
+ if (eibSave.eibresp == 62) STRCAT(buffer, "CBIDERR");
+ if (eibSave.eibresp == 63) STRCAT(buffer, "INVEXITREQ");
+ if (eibSave.eibresp == 64) STRCAT(buffer, "INVPARTNSET");
+ if (eibSave.eibresp == 65) STRCAT(buffer, "INVPARTN");
+ if (eibSave.eibresp == 66) STRCAT(buffer, "PARTNFAIL");
+ /* no 67, 68 in dfhresp.rexx */
+ if (eibSave.eibresp == 69) STRCAT(buffer, "USERIDERR");
+ if (eibSave.eibresp == 70) STRCAT(buffer, "NOTAUTH");
+ /* no 71 in dfhresp.rexx */
+ if (eibSave.eibresp == 72) STRCAT(buffer, "SUPPRESSED");
+ /* no 73-80 in dfhresp.rexx */
+ if (eibSave.eibresp == 81) STRCAT(buffer, "TERMERR");
+ if (eibSave.eibresp == 82) STRCAT(buffer, "ROLLEDBACK");
+ if (eibSave.eibresp == 83) STRCAT(buffer, "END");
+ if (eibSave.eibresp == 84) STRCAT(buffer, "DISABLED");
+ /* no 85, 86 in dfhresp.rexx */
+ if (eibSave.eibresp == 87) STRCAT(buffer, "OPENERR");
+ /* no 88-90 in dfhresp.rexx */
+ if (eibSave.eibresp == 91) STRCAT(buffer, "TASKIDERR");
+ /* no 91-93 in dfhresp.rexx */
+ if (eibSave.eibresp == 94) STRCAT(buffer, "LOADING");
+ /* 222 is atcp - bad chars in tioa - a KICKS only thing */
+ if (eibSave.eibresp == 222) STRCAT(buffer, "ATCP Abend");
+ if (buffer[0] == 0) STRCAT(buffer, "???????");
+ APPEND_MSG(buffer);
+ SPRINTF(buffer, "EIBRESP=%d, EIBRESP2=%d",
+   eibSave.eibresp, eibSave.eibresp2);
+ col= sba_maxcol - 1 -  STRLEN(buffer);
+ PUT_SBA(bot-helpv,col)
+ APPEND_MSG(buffer);
+ APPEND_MSG("\x1d\x40");     // reset color to torquise, not
+ APPEND_MSG("\x28\x42\xf5"); // default (don't want nulls
+                             // in the tioa or strcat dies)
+}
+
+
+void API(KIKEIB *eib, DEBUGGERCA *comm) {
+char *tioa, buffer[200];
+int row=2, col, topline, botline, lines;
+short *eibfn2, sbuf;
+
+ // check for source debugger entry
+ if ((comm->mgtpgm  == kikpcpTYPE) &&
+     (comm->type_of == 256)) {
+  Source_Trace(eib, comm);
+  return;
+  }
+ // check for normal entry, in the special case where
+ // user want to see the api call embedded in the source
+ if (srcapi > 0) {
+  Source_Trace(eib, comm);
+  return;
+  }
+
+ tioa = csa->tctte->tioa;
+
+ // -- line 3
+ API_top(eib, comm);
+
+ // put eibfn next to / right of first line of api call (line 3)
+ // ** NOTE screen is direct access - don't have to do this
+ // ** 'in line' with the rest of line 3 output...
+ eibfn2 = (short*)&eibSave.eibfn;
+ SPRINTF(buffer, "EIBFN=X'%04X'", *eibfn2);
+ col= sba_maxcol -  STRLEN(buffer);
+ PUT_SBA(3,col)
+ APPEND_MSG(buffer);
+
+ // lower middle, 'resp' stuff...
+ if ((comm->BA & 3) == 2) API_resp(eib, comm);  // after
+ }
+
+

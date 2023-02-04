@@ -1,0 +1,216 @@
+//ASSADRTS JOB CLASS=C,MSGCLASS=A,MSGLEVEL=(1,1),REGION=2000K
+//*
+//JOBPROC DD   DSN=K.S.V1R5M0.PROCLIB,DISP=SHR
+//*
+//TESTCOB EXEC PROC=K2KCOBCL       KIKCB2CL for z/os
+//COPY.SYSUT1 DD *
+       ID DIVISION.
+       PROGRAM-ID. TESTCOB.
+
+      *///////////////////////////////////////////////////////////////
+      * KICKS is an enhancement for TSO that lets you run your CICS
+      * applications directly in TSO instead of having to 'install'
+      * those apps in CICS.
+      * You don't even need CICS itself installed on your machine!
+      *
+      * KICKS for TSO
+      * © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+      *
+      * Usage of 'KICKS for TSO' is in all cases subject to license.
+      * See http://www.kicksfortso.com
+      * for most current information regarding licensing options.
+      *//1/////////2/////////3/////////4/////////5/////////6/////////7
+
+      *  EXEC KICKS ADDRESS COMMAREA(DATA-AREA) END-EXEC.
+      *  EXEC KICKS ADDRESS CWA(DATA-AREA) END-EXEC.
+      *  EXEC KICKS ADDRESS EIB(DATA-AREA) END-EXEC.
+      *  EXEC KICKS ADDRESS TCTUA(DATA-AREA) END-EXEC.
+      *  EXEC KICKS ADDRESS TWA(DATA-AREA) END-EXEC.
+
+      *  EXEC KICKS ASSIGN ALTSCRNHT(DATA-AREA) END-EXEC.
+      *  EXEC KICKS ASSIGN ALTSCRNWD(DATA-AREA) END-EXEC.
+      *  EXEC KICKS ASSIGN COLOR(DATA-AREA) END-EXEC.
+      *  EXEC KICKS ASSIGN CWALENG(DATA-AREA) END-EXEC.
+      *  EXEC KICKS ASSIGN DEFSCRNHT(DATA-AREA) END-EXEC.
+      *  EXEC KICKS ASSIGN DEFSCRNWD(DATA-AREA) END-EXEC.
+      *  EXEC KICKS ASSIGN EWASUPP(DATA-AREA) END-EXEC.
+      *  EXEC KICKS ASSIGN EXTDS(DATA-AREA) END-EXEC.
+      *  EXEC KICKS ASSIGN FACILITY(DATA-AREA) END-EXEC.
+      *  EXEC KICKS ASSIGN FCI(DATA-AREA) END-EXEC.
+      *  EXEC KICKS ASSIGN HILIGHT(DATA-AREA) END-EXEC.
+      *  EXEC KICKS ASSIGN LANGINUSE(DATA-AREA) END-EXEC.
+      *  EXEC KICKS ASSIGN NATLANGINUSE(DATA-AREA) END-EXEC.
+      *  EXEC KICKS ASSIGN NETNAME(DATA-AREA) END-EXEC.
+      *  EXEC KICKS ASSIGN OPID(DATA-AREA) END-EXEC.
+      *  EXEC KICKS ASSIGN PARTNS(DATA-AREA) END-EXEC.
+      *  EXEC KICKS ASSIGN PROGRAM(DATA-AREA) END-EXEC.
+      *  EXEC KICKS ASSIGN PS(DATA-AREA) END-EXEC.
+      *  EXEC KICKS ASSIGN SCRNHT(DATA-AREA) END-EXEC.
+      *  EXEC KICKS ASSIGN SCRNWD(DATA-AREA) END-EXEC.
+      *  EXEC KICKS ASSIGN SYSID(DATA-AREA) END-EXEC.
+      *  EXEC KICKS ASSIGN TCTUALENG(DATA-AREA) END-EXEC.
+      *  EXEC KICKS ASSIGN TERMCODE(DATA-AREA) END-EXEC.
+      *  EXEC KICKS ASSIGN TWALENG(DATA-AREA) END-EXEC.
+      *  EXEC KICKS ASSIGN USERID(DATA-AREA) END-EXEC.
+
+       ENVIRONMENT DIVISION.
+       DATA DIVISION.
+       WORKING-STORAGE SECTION.
+       77  WS-BEGIN  PIC X(24) VALUE 'TESTCOB  WORKING STORAGE'.
+<NCB2>
+       77  WS-COMMAREA   PIC S9(8) COMP VALUE +0.
+       77  WS-CWA        PIC S9(8) COMP VALUE +0.
+       77  WS-EIB        PIC S9(8) COMP VALUE +0.
+       77  WS-TCTUA      PIC S9(8) COMP VALUE +0.
+       77  WS-TWA        PIC S9(8) COMP VALUE +0.
+</NCB2>
+<CB2>
+       77  WS-COMMAREA   USAGE POINTER.
+       77  WS-CWA        USAGE POINTER.
+       77  WS-EIB        USAGE POINTER.
+       77  WS-TCTUA      USAGE POINTER.
+       77  WS-TWA        USAGE POINTER.
+</CB2>
+       77  WS-ALTSCRNHT  PIC S9(4) COMP VALUE +0.
+       77  WS-ALTSCRNWD  PIC S9(4) COMP VALUE +0.
+       77  WS-COLOR      PIC X     VALUE LOW-VALUES.
+       77  WS-CWALENG    PIC S9(4) COMP VALUE +0.
+       77  WS-DEFSCRNHT  PIC S9(4) COMP VALUE +0.
+       77  WS-DEFSCRNWD  PIC S9(4) COMP VALUE +0.
+       77  WS-EWASUPP    PIC X     VALUE LOW-VALUES.
+       77  WS-EXTDS      PIC X     VALUE LOW-VALUES.
+       77  WS-FACILITY   PIC X(4)  VALUE LOW-VALUES.
+       77  WS-FCI        PIC X     VALUE LOW-VALUES.
+       77  WS-HILIGHT    PIC X     VALUE LOW-VALUES.
+       77  WS-LANGINUSE  PIC X(3)  VALUE LOW-VALUES.
+       77  WS-NATLANGINUSE  PIC X  VALUE LOW-VALUES.
+       77  WS-NETNAME    PIC X(8)  VALUE LOW-VALUES.
+       77  WS-OPID       PIC X(3)  VALUE LOW-VALUES.
+       77  WS-PARTNS     PIC X     VALUE LOW-VALUES.
+       77  WS-PROGRAM    PIC X(8)  VALUE LOW-VALUES.
+       77  WS-PS         PIC X     VALUE LOW-VALUES.
+       77  WS-SCRNHT     PIC S9(4) COMP VALUE +0.
+       77  WS-SCRNWD     PIC S9(4) COMP VALUE +0.
+       77  WS-SYSID      PIC X(8)  VALUE LOW-VALUES.
+       77  WS-TCTUALENG  PIC S9(4) COMP VALUE +0.
+       77  WS-TERMCODE   PIC S9(4) COMP VALUE +0.
+       77  WS-TWALENG    PIC S9(4) COMP VALUE +0.
+       77  WS-USERID     PIC X(8)  VALUE LOW-VALUES.
+       77  WS-TIOASIZE   PIC S9(4) COMP VALUE +0.
+
+       LINKAGE SECTION.
+<NCB2>
+       01  BLL-CELLS.
+           05  FILLER                  PIC S9(8) COMP.
+           05  BL-COMMAREA             PIC S9(8) COMP.
+           05  BL-CWA                  PIC S9(8) COMP.
+           05  BL-EIB                  PIC S9(8) COMP.
+           05  BL-TCTUA                PIC S9(8) COMP.
+           05  BL-TWA                  PIC S9(8) COMP.
+</NCB2>
+       01  LS-COMMAREA                 PIC X(100).
+       01  LS-CWA                      PIC X(100).
+       01  LS-EIB                      PIC X(100).
+       01  LS-TCTUA                    PIC X(100).
+       01  LS-TWA                      PIC X(100).
+
+       PROCEDURE DIVISION.
+
+           EXEC KICKS ADDRESS COMMAREA(WS-COMMAREA) END-EXEC.
+           EXEC KICKS ADDRESS CWA(WS-CWA) END-EXEC.
+      * NOTE - CICS supports address eib, but use makes
+      *        little sense since the EIB is always
+      *        available in a command level program...
+      * ALSO - the size of these data areas (expect EIB)
+      *        is variable, so you should use only the
+      *        the storage within what assign(xxxLENG)
+      *        says is allocated to the area of interest.
+           EXEC KICKS ADDRESS EIB(WS-EIB) END-EXEC.
+           EXEC KICKS ADDRESS TCTUA(WS-TCTUA) END-EXEC.
+           EXEC KICKS ADDRESS TWA(WS-TWA) END-EXEC.
+<CB2>
+           SET ADDRESS OF LS-COMMAREA TO WS-COMMAREA.
+           SET ADDRESS OF LS-CWA      TO WS-CWA.
+           SET ADDRESS OF LS-EIB      TO WS-EIB.
+           SET ADDRESS OF LS-TCTUA    TO WS-TCTUA.
+           SET ADDRESS OF LS-TWA      TO WS-TWA.
+</CB2>
+<NCB2>
+      * NOTE - the BLL cell approach, used as shown,
+      *        only addresses items up to 4096 bytes
+      *        long. See the GETFREE api example for
+      *        coding to handle larger data areas.
+           MOVE WS-COMMAREA TO BL-COMMAREA.
+           MOVE WS-CWA      TO BL-CWA.
+           MOVE WS-EIB      TO BL-EIB
+           MOVE WS-TCTUA    TO BL-TCTUA.
+           MOVE WS-TWA      TO BL-TWA.
+</NCB2>
+           EXEC KICKS ASSIGN ALTSCRNHT(WS-ALTSCRNHT) END-EXEC.
+           EXEC KICKS ASSIGN ALTSCRNWD(WS-ALTSCRNWD) END-EXEC.
+           EXEC KICKS ASSIGN COLOR(WS-COLOR) END-EXEC.
+           EXEC KICKS ASSIGN CWALENG(WS-CWALENG) END-EXEC.
+           EXEC KICKS ASSIGN DEFSCRNHT(WS-DEFSCRNHT) END-EXEC.
+           EXEC KICKS ASSIGN DEFSCRNWD(WS-DEFSCRNWD) END-EXEC.
+           EXEC KICKS ASSIGN EWASUPP(WS-EWASUPP) END-EXEC.
+           EXEC KICKS ASSIGN EXTDS(WS-EXTDS) END-EXEC.
+           EXEC KICKS ASSIGN FACILITY(WS-FACILITY) END-EXEC.
+           EXEC KICKS ASSIGN FCI(WS-FCI) END-EXEC.
+           EXEC KICKS ASSIGN HILIGHT(WS-HILIGHT) END-EXEC.
+           EXEC KICKS ASSIGN LANGINUSE(WS-LANGINUSE) END-EXEC.
+           EXEC KICKS ASSIGN NATLANGINUSE(WS-NATLANGINUSE) END-EXEC.
+           EXEC KICKS ASSIGN NETNAME(WS-NETNAME) END-EXEC.
+           EXEC KICKS ASSIGN OPID(WS-OPID) END-EXEC.
+           EXEC KICKS ASSIGN PARTNS(WS-PARTNS) END-EXEC.
+           EXEC KICKS ASSIGN PROGRAM(WS-PROGRAM) END-EXEC.
+           EXEC KICKS ASSIGN PS(WS-PS) END-EXEC.
+           EXEC KICKS ASSIGN SCRNHT(WS-SCRNHT) END-EXEC.
+           EXEC KICKS ASSIGN SCRNWD(WS-SCRNWD) END-EXEC.
+           EXEC KICKS ASSIGN SYSID(WS-SYSID) END-EXEC.
+           EXEC KICKS ASSIGN TCTUALENG(WS-TCTUALENG) END-EXEC.
+           EXEC KICKS ASSIGN TERMCODE(WS-TERMCODE) END-EXEC.
+           EXEC KICKS ASSIGN TWALENG(WS-TWALENG) END-EXEC.
+           EXEC KICKS ASSIGN USERID(WS-USERID) END-EXEC.
+
+      *    done now...
+
+           EXEC KICKS RETURN END-EXEC.
+/*
+//LKED.SYSLMOD DD DSN=&&GOSET(TESTCOB),UNIT=SYSDA,
+//     SPACE=(1024,(50,20,1)),DISP=(MOD,PASS)
+//LKED.SYSIN DD *
+ INCLUDE SKIKLOAD(KIKCOBGL)
+ ENTRY TESTCOB
+ NAME  TESTCOB(R)
+/*
+//GO EXEC PGM=KIKSIP1$,COND=(4,LT,TESTCOB.LKED),
+//   REGION=2000K,TIME=1,
+//   PARM='SIT=B$ ICVR=0 '
+//* kiksip1$ comes from steplib...
+//STEPLIB  DD DSN=K.S.V1R5M0.SKIKLOAD,DISP=SHR
+//* tables come from skikload...
+//SKIKLOAD DD DSN=K.S.V1R5M0.SKIKLOAD,DISP=SHR
+//* programs & maps come from kikrpl...
+//KIKRPL   DD DSN=&&GOSET,DISP=(OLD,DELETE),
+//         DCB=BLKSIZE=32000
+//         DD DSN=K.S.V1R5M0.KIKRPL,DISP=SHR
+//*
+//SYSPRINT DD SYSOUT=*,DCB=(RECFM=F,BLKSIZE=80)
+//SYSTERM  DD SYSOUT=*,DCB=(RECFM=F,BLKSIZE=80)
+//SYSOUT   DD SYSOUT=*,DCB=BLKSIZE=132
+//CRLPOUT  DD SYSOUT=*,DCB=(RECFM=F,BLKSIZE=132)
+//TRANDUMP DD SYSOUT=*,DCB=(RECFM=F,BLKSIZE=132)
+//SYSUDUMP DD SYSOUT=*
+//*
+//SYSO     DD DUMMY,DCB=(RECFM=F,BLKSIZE=132)
+//SYSI     DD DUMMY,DCB=(RECFM=F,BLKSIZE=132)
+//*
+//AUXTRC   DD SYSOUT=*,DCB=(RECFM=F,BLKSIZE=120)
+//*
+//SYSIN    DD DUMMY,DCB=(RECFM=F,BLKSIZE=80)
+//*
+//CRLPIN   DD *,DCB=BLKSIZE=80
+KEDF ON<ENTER>
+TCOB<ENTER>
+/*
+//

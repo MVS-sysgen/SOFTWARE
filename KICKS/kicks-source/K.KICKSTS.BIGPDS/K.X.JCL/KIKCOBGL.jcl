@@ -1,0 +1,85 @@
+//KIKCOBGL JOB CLASS=C,MSGCLASS=A,MSGLEVEL=(1,1),REGION=7000K
+//*
+//JOBPROC DD   DSN=K.S.V1R5M0.PROCLIB,DISP=SHR
+//*
+//KIKCGLU EXEC  PROC=KGCC,NAME=KIKCOBGL
+//COPY.SYSUT1 DD *,DCB=BLKSIZE=3120
+#define DOEDF
+/*
+// DD DISP=SHR,DSN=K.X.ROOT.C(KIKCOBGL)
+//ASM.SYSIN DD DISP=SHR,DSN=K.X.ROOT.ASM(KIKGLUMA)
+// DD *
+*  //////1/////////2/////////3/////////4/////////5/////////6/////////7
+* A CALL TO THIS ROUTINE SHOULD BE THE FIRST STATEMENT OF AN MVT
+* ANSI COBOL PROGRAM THAT USES THE 'BLL-CELLS' APPROACH TO ACCESSING
+* EXTERNAL DATA. THIS ROUTINE INITIALIZES THE BLL FOR THE BLL-CELLS
+* RECORD (BY WHATEVER NAME) TO POINT TO ITSELF.
+*
+* IE - CALL 'KIKBLLIN' USING BLL-CELLS.
+*  //////1/////////2/////////3/////////4/////////5/////////6/////////7
+KIKBLLIN START 0
+         USING *,15
+         STM   14,12,12(13)
+         LR    3,14             GET CALLING CODE ADDR
+         S     3,=F'26'         BKUP TO BLL LOAD
+         CLC   0(2,3),=XL2'58E0'  IS THIS A 'L 14,??'
+         BE    BLL2                 YES
+*
+         LA    1,1              PROBABLY SHOULD USE KICKS ABEND
+         LA    15,0             BUT IT'S GONNA DIE ANYWAY...
+         ABEND (1),DUMP
+*
+BLL2     MVC   BLL3+2(2),2(3)   MOVE BLL ADDR TO MY LA
+         EX    0,BLL3           EX TO DO LA OF BLL
+         ST    2,0(,2)          SAVE ITS OWN ADDR IN BLL
+         LM    14,12,12(13)
+         BR    14
+BLL3     LA    2,0
+         LTORG
+         DROP  15
+/*
+// DD DSN=&&TEMP2,DISP=(OLD,DELETE)
+//LKED.SYSLIN DD DSN=&&OBJSET,DISP=(OLD,DELETE)
+// DD *
+/*
+//KIKCGLUX EXEC  PROC=KGCC,NAME=KIKCOBGX
+//COPY.SYSUT1 DD *,DCB=BLKSIZE=3120
+#define DOEDF
+/*
+// DD DISP=SHR,DSN=K.X.ROOT.C(KIKCOBGL)
+//ASM.SYSIN DD DISP=SHR,DSN=K.X.ROOT.ASM(KIKGLUMA)
+// DD *
+*  //////1/////////2/////////3/////////4/////////5/////////6/////////7
+* A CALL TO THIS ROUTINE SHOULD BE THE FIRST STATEMENT OF AN MVT
+* ANSI COBOL PROGRAM THAT USES THE 'BLL-CELLS' APPROACH TO ACCESSING
+* EXTERNAL DATA. THIS ROUTINE INITIALIZES THE BLL FOR THE BLL-CELLS
+* RECORD (BY WHATEVER NAME) TO POINT TO ITSELF.
+*
+* IE - CALL 'KIKBLLIN' USING BLL-CELLS.
+*  //////1/////////2/////////3/////////4/////////5/////////6/////////7
+KIKBLLIN START 0
+         USING *,15
+         STM   14,12,12(13)
+         LR    3,14             GET CALLING CODE ADDR
+         S     3,=F'26'         BKUP TO BLL LOAD
+         CLC   0(2,3),=XL2'58E0'  IS THIS A 'L 14,??'
+         BE    BLL2                 YES
+*
+         LA    1,1              PROBABLY SHOULD USE KICKS ABEND
+         LA    15,0             BUT IT'S GONNA DIE ANYWAY...
+         ABEND (1),DUMP
+*
+BLL2     MVC   BLL3+2(2),2(3)   MOVE BLL ADDR TO MY LA
+         EX    0,BLL3           EX TO DO LA OF BLL
+         ST    2,0(,2)          SAVE ITS OWN ADDR IN BLL
+         LM    14,12,12(13)
+         BR    14
+BLL3     LA    2,0
+         LTORG
+         DROP  15
+/*
+// DD DSN=&&TEMP2,DISP=(OLD,DELETE)
+//LKED.SYSLIN DD DSN=&&OBJSET,DISP=(OLD,DELETE)
+// DD *
+/*
+//

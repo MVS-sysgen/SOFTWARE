@@ -1,0 +1,50 @@
+                           vsam test suite notes
+
+run  testcomp (which submits bep, bes, bkp, bks, brr, d's, pgm)
+run  testload
+run  testrun
+run  testdone
+
+since testcomp submits itself, you can't just submit comp, load,
+run, done - 'cause load, run, and done will finish before the
+compiles testcomp submits are run. to fix this, instead:
+run  testall
+
+-- tests may **NOT** leave files as they were, so it is always necessary to
+(re)run TESTLOAD before running TESTRUN...
+
+-- added CRNOTE to top of each pgm.
+
+-- added pgm name to 'expecting' msgs
+
+-- added logging to SYSO via KLOGIT -- however - if all is as 'expected'
+there will be nothing logged, so SYSO won't exist...
+
+-- added abort for bad aid (likely CLEAR at eof) for CRLP.  **NOTE** use of
+eibtrmid 'CRLP to determine terminal **type** is not very good, I should use
+exec as sign to obtain terminal type, but I didn't want to do that 'cause it
+would just clutter up KEDF reporting
+
+-- made screen msg/wait for 'expecting' msgs dependant on CRLP (see above note
+on eibtrmid).
+
+-- syncpoint added for pf12 so that files will always close when a test is done.
+this to ensure 'path' tests and base cluster tests don't interfer with each
+other (since you can't have both an upgrade path and a base cluster acb open
+at once).
+
+-- scripting -- don't use PF1 (rtn tranid) 'cause it will absorb another aid.
+for example,
+
+<pf1> rtn tranid
+<pf3> do next master menu function
+
+will fail. you'd need to code
+
+<pf1> rtn tranid
+<enter> (or something) to return to the TEST transaction
+<pf1> do next master menu function
+
+all in all, easier to just do a <pf12> xctl, and that's OK now with the
+SYNCPOINT added...
+

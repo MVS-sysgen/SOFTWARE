@@ -1,0 +1,140 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+void Do_DELAY() {
+// suspend a task
+// EXEC CICS DELAY [INTERVAL(hhmmss) |
+//       TIME(hhmmss) |
+//       FOR [HOURS(hh)] [MINUTES(mm)] [SECONDS(ss)] |
+//       UNTIL [HOURS(hh)] [MINUTES(mm)] [SECONDS(ss)]] [REQID(name)] END-EXEC.
+// *** REQID not supported
+
+ char op[100], op2[100], ops[30][100], *ip;
+ char err[100], saveblocks[4000];
+ int  i, numops=0, flags=0;
+ char hhmmss[100]="0", hh[100]="0", mm[100]="0", ss[100]="0";
+
+ strcpy(op2, kiknull);
+
+ // break up string my way
+ // NOTICE this uses strtok instead of SPCLTOK because
+ //        it goes thru the args two at at time...
+ numops = 0;
+ strcpy(saveblocks, cicsblks);
+ ip = strtok(saveblocks, " ()");   // EXEC
+ while (ip=strtok(0, " ()")) {     // KICKS, verb, ... END-EXEC
+  parrensDown(ip);
+  strcpy(ops[numops], ip);
+  numops++;
+  }
+
+ // march thru the args
+ for (i=0; i<numops; i++) {
+  strcpy(op, ops[i]);
+  if(strlen(op)==0) { continue; }
+  if(MYbegstr(op,".")) { continue; }
+  if(MYbegstr(op,"RESP")) { i++; continue; }
+  if(MYbegstr(op,"RESP2")) { i++; continue; }
+  if(MYbegstr(op,"NOHANDLE")) { continue; }
+  if(MYbegstr(op,"EXEC")) { continue; }
+  if(MYbegstr(op,"KICKS")) { continue; }
+  if(MYbegstr(op,"DELAY")) { continue; }
+  if((MYbegstr(op,"END-EXEC")) || (MYbegstr(op,";"))) { continue; }
+  if(MYbegstr(op,"FOR")) {
+   flags = 0;  // wait abs # sec, binary
+   continue;
+   }
+  if(MYbegstr(op,"INTERVAL")) {
+   flags = 2;    // wait abs # sec, decimal
+   strcpy(hhmmss, ops[i+1]); i++;
+   continue;
+   }
+  if(MYbegstr(op,"UNTIL")) {
+   flags = 1;   // calc # sec to wait, binary
+   continue;
+   }
+  if(MYbegstr(op,"TIME")) {
+   flags = 3; // calc # sec to wait, decimal
+   strcpy(hhmmss, ops[i+1]); i++;
+   continue;
+   }
+  if(MYbegstr(op,"HOURS")) {
+   strcpy(hh, ops[i+1]); i++;
+   continue;
+   }
+  if(MYbegstr(op,"MINUTES")) {
+   strcpy(mm, ops[i+1]); i++;
+   continue;
+   }
+  if(MYbegstr(op,"SECONDS")) {
+   strcpy(ss, ops[i+1]); i++;
+   continue;
+   }
+  sprintf(err,
+    " unknown argument %s of %s", op, blk_op1);
+  prt_error(err, 8);
+  No_Code();
+  return;
+  }
+#ifdef PPCOB
+ fprintf(stdout, "           MOVE 4100 TO EIBFN-2\n");
+ fprintf(stdout, "           MOVE %d TO KIK-FLAGS\n", flags);
+ if ((flags & 2) == 0) { // binary
+  fprintf(stdout, "           COMPUTE KIK-FLEN = %s\n", ss);
+  fprintf(stdout, "                  + 60 * %s \n", mm);
+  fprintf(stdout, "                  + 3600 * %s\n", hh);
+  }
+ else {                  // decimal
+ //
+ // NOTE off label use of KIK-AIDS1, 2 as scratch vars...
+ //
+  fprintf(stdout, "           DIVIDE %s BY 10000 GIVING\n", hhmmss);
+  fprintf(stdout, "                  KIK-FLEN REMAINDER KIK-AIDS1\n");
+  fprintf(stdout, "           DIVIDE KIK-AIDS1 BY 100 GIVING\n");
+  fprintf(stdout, "                  KIK-AIDS1 REMAINDER KIK-AIDS2\n");
+  fprintf(stdout, "           COMPUTE KIK-FLEN = 3600 * KIK-FLEN\n");
+  fprintf(stdout, "                  + 60 * KIK-AIDS1\n");
+  fprintf(stdout, "                  + KIK-AIDS2\n");
+  }
+ fprintf(stdout, "           CALL 'KIKCOBGL' USING KIKEIB,\n");
+ if (!strcmp(respvar, ""))
+  fprintf(stdout, "                 KIK-V1,\n");
+ else
+  fprintf(stdout, "                 KIK-V2,\n");
+ fprintf(stdout, "                 KIK-FLAGS,\n");
+ fprintf(stdout, "                 KIK-FLEN");
+#endif
+#ifdef PPGCC
+ fprintf(stdout, "\t{ short *eibfn2 = (short*)&__KIKEIB->eibfn;\n");
+ fprintf(stdout, "\t\t*eibfn2 = 4100;\n");
+ if (!strcmp(respvar, ""))
+  fprintf(stdout, "\t  int *v=&KIK_V1;\n");
+ else
+  fprintf(stdout, "\t  int *v=&KIK_V2;\n");
+ if ((flags & 2) == 0) { // binary
+  fprintf(stdout, "\t  int delay;\n");
+  fprintf(stdout, "\t\tdelay=%s+%s*60+%s*3600;\n", ss, mm, hh);
+  }
+ else {                  // decimal
+  fprintf(stdout, "\t int delay, hh, mm, ss;\n");
+  fprintf(stdout, "\t\thh=%s/10000;\n", hhmmss);
+  fprintf(stdout, "\t\tmm=%s%s10000;\n", hhmmss, "%");
+  fprintf(stdout, "\t\tss=mm%s100;\n", "%");
+  fprintf(stdout, "\t\tmm=mm/100;\n");
+  fprintf(stdout, "\t\tdelay=ss+mm*60+hh*3600;\n");
+  }
+ fprintf(stdout, "\t  int flags=%d, *FLAGS=&flags;\n", flags);
+ fprintf(stdout, "\t kikgccgl(__KIKEIB, v, FLAGS, &delay);\n");
+#endif
+}

@@ -1,0 +1,199 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+ // CRLPPGM - this pgm, is a KICKS application to control
+ //           some options for the simulated 3270 screen.
+ // KIKCRLP - other pgm, is the routine TCP calls to read
+ //           from and write to the simulated 3270 screen.
+
+ /////////////////////////////////////////////////////////////////////
+ // CRLPPGM (transid CRLP) is the CRLP (card read / line printer
+ // terminal option setting utility.
+ //
+ // I've replace most 'C' transactions with 'K' transactions in
+ // KICKS, but not this one, because (1) as far as I know there is
+ // no CRLP transaction in real CICS, and (2) CRLP actually stands
+ // for something (not 'cics') and making it KRLP would break that.
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+#include <stdio.h>
+#include <time.h>
+
+ // KICKS system include (includes CSA, etc)
+
+#include "kicks.h"
+
+
+KIKCSA *csa;
+
+
+char *MYstrstr(char *big, char *little) {
+ // I think gccmvs's strstr is broken so I'm using my own...
+ // ... look for 'little' in 'big' ...
+ int diffl, i, lb=STRLEN(big), ll=STRLEN(little);
+
+ diffl=lb-ll;
+ if (diffl < 0 ) return(NULL);
+ if (ll    == 0) return(big);
+ for (i=0; i<=diffl; i++) {
+  if (!MEMCMP(little, &big[i], ll)) return(&big[i]);
+ }
+ return(NULL);
+}
+
+
+int CRLPpgm (KIKEIB *eib) {
+ char *tioa, *p;
+ int dodump=0, suppress=1;
+ int zero=0;
+
+ // setup
+ p = ((char*)eib) - 8;         // backup into eib preface
+ csa = (KIKCSA *) *((int*)p);  // pull out the csa pointer
+
+ // do version checking
+ if (csa->version != MKVER(V, R, M, E))
+   KIKPCP(csa, kikpcpABND2, "VER4", &suppress);
+
+ // NOTE THAT USE OF STRLEN/STRCAT FOR THE TIOA IS A BAD IDEA
+ // SINCE 14 BIT SBA'S MIGHT GENERATE NULLS -- HOWEVER IN THIS
+ // CASE THAT'S NOT GONNA HAPPEND BECAUSE THE SEQUENTIAL
+ // TERMINAL IS ALWAYS 24X80 SO ALL SBA'S WILL BE 12 BIT...
+
+ // make sure this is CRLP terminal...
+ if ((csa->tctte->flags & tctteflag$crlpinuse) == 0) {
+  tioa = csa->tctte->tioa;
+  STRCPY(tioa,
+    "\x27\xf5\xc3     Transaction only valid for CRLP terminal!");
+  STRCAT(tioa, "\x11\x40\x40\x13"); // put cursor at the beginning
+  csa->tctte->tioaused = STRLEN(tioa);
+  KIKTCP(csa, kiktcpSEND);
+  KIKPCP(csa, kikpcpRETN, NULL, NULL, &zero);
+  }
+
+ // get input
+ KIKTCP(csa, kiktcpRECV);
+
+ // make input tioa upper case
+ tioa = csa->tctte->tioa;
+ p = tioa + csa->tctte->tioaused;
+ while (p > tioa) { *tioa = TOUPPER(*tioa); tioa++; }
+ tioa = csa->tctte->tioa;
+
+ // punch in a NULL at cursor so rest of unformatted input
+ // (which is junk leftover from last output) is ignored...
+ p = tioa + 3 + (eib->eibcposn & 255); *p = 0;
+
+ // make input tioa upper case
+ tioa = csa->tctte->tioa;
+ p = tioa + csa->tctte->tioaused;
+ *p = 0; // stopper for STRXXX calls...
+ while (p > tioa) { *tioa = TOUPPER(*tioa); tioa++; }
+ tioa = csa->tctte->tioa;
+
+ // analyse input
+
+ if((p = MYstrstr(tioa, " TERMID=")) != NULL) {
+  char *id, *id4;
+  p += 8;
+  id = csa->tctte->trmid;
+  id4 = csa->tctte->trmid4;
+  MEMSET(id,  ' ', 8);
+  MEMCPY(id,  p, 4);
+  MEMCPY(id4, p, 4);
+  }
+
+
+ if(MYstrstr(tioa, " TRIM")     != NULL) {
+  csa->tctte->flags |=   tctteflag$crlptrimline;
+  // trim turns off border
+  csa->tctte->flags &=  ~tctteflag$crlpshowbord;
+  }
+
+ if(MYstrstr(tioa, " NOTRIM")   != NULL)
+  csa->tctte->flags &=  ~tctteflag$crlptrimline;
+
+
+ if(MYstrstr(tioa, " BORDER")   != NULL) {
+  // border turns off trim
+  csa->tctte->flags &=  ~tctteflag$crlptrimline;
+  csa->tctte->flags |=   tctteflag$crlpshowbord;
+  }
+
+ if(MYstrstr(tioa, " NOBORDER") != NULL)
+   csa->tctte->flags &=  ~tctteflag$crlpshowbord;
+
+
+ if(MYstrstr(tioa, " ECHO")     != NULL)
+   csa->tctte->flags |=   tctteflag$crlpechoi;
+
+ if(MYstrstr(tioa, " NOECHO")   != NULL)
+   csa->tctte->flags &=  ~tctteflag$crlpechoi;
+
+
+ if(MYstrstr(tioa, " TIOA")     != NULL)
+   csa->tctte->flags |=   tctteflag$crlpdisplayt;
+
+ if(MYstrstr(tioa, " NOTIOA")   != NULL)
+   csa->tctte->flags &=  ~tctteflag$crlpdisplayt;
+
+
+ if(MYstrstr(tioa, " SHOWI")    != NULL)
+   csa->tctte->flags |=  tctteflag$crlpdisplayi;
+
+ if(MYstrstr(tioa, " NOSHOWI")  != NULL)
+   csa->tctte->flags &= ~tctteflag$crlpdisplayi;
+
+
+ if(MYstrstr(tioa, " NO3270")    != NULL)
+   csa->tctte->flags |=  tctteflag$crlppure;
+ if(MYstrstr(tioa, " PURE")    != NULL)
+   csa->tctte->flags |=  tctteflag$crlppure;
+
+ if(MYstrstr(tioa, " 3270")  != NULL)
+   csa->tctte->flags &= ~tctteflag$crlppure;
+
+
+ // send message
+ STRCPY(tioa, "\x27\xf5\xc3");
+ STRCAT(tioa, "     CRLP TERMID=");
+ STRNCAT(tioa, csa->tctte->trmid4, 4);
+ STRCAT(tioa, " ");
+ if((csa->tctte->flags & tctteflag$crlptrimline)  == 0)
+   STRCAT(tioa, "NO");
+ STRCAT(tioa, "TRIM ");
+ if((csa->tctte->flags & tctteflag$crlpshowbord)  == 0)
+   STRCAT(tioa, "NO");
+ STRCAT(tioa, "BORDER ");
+ if((csa->tctte->flags & tctteflag$crlpechoi)  == 0)
+   STRCAT(tioa, "NO");
+ STRCAT(tioa, "ECHO ");
+ if((csa->tctte->flags & tctteflag$crlpdisplayt)  == 0)
+   STRCAT(tioa, "NO");
+ STRCAT(tioa, "TIOA ");
+ if((csa->tctte->flags & tctteflag$crlpdisplayi) == 0)
+   STRCAT(tioa, "NO");
+ STRCAT(tioa, "SHOWI ");
+ if((csa->tctte->flags & tctteflag$crlppure) != 0)
+   STRCAT(tioa, "NO");
+ STRCAT(tioa, "3270");
+ STRCAT(tioa, "\x11\x40\x40\x13"); // put cursor at the beginning
+ csa->tctte->tioaused = STRLEN(tioa);
+ KIKTCP(csa, kiktcpSEND);
+
+ // quit
+ KIKPCP(csa, kikpcpRETN, NULL, NULL, &zero);
+
+ }
+

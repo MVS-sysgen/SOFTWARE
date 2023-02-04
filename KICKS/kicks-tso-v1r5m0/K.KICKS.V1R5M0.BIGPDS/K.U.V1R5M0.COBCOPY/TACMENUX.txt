@@ -1,0 +1,459 @@
+       01  M-TITLES.
+      *01  M-TITLES.
+           05  FILLER PIC X(24) VALUE SPACES.
+           05  FILLER PIC X(31) VALUE 'EMPLOYEE AUTOMATIC REFUND MENU'.
+           05  FILLER PIC X(30) VALUE SPACES.
+           05  FILLER PIC X(25) VALUE 'MANUAL REFUND MENU'.
+           05  FILLER PIC X(31) VALUE SPACES.
+           05  FILLER PIC X(24) VALUE 'CANCELLATION MENU'.
+           05  FILLER PIC X(29) VALUE SPACES.
+           05  FILLER PIC X(26) VALUE 'DISHONORED ITEM MENU'.
+           05  FILLER PIC X(33) VALUE SPACES.
+           05  FILLER PIC X(22) VALUE 'DEPOSIT MENU'.
+           05  FILLER PIC X(32) VALUE SPACES.
+           05  FILLER PIC X(23) VALUE 'REDEMPTION MENU'.
+           05  FILLER PIC X(26) VALUE SPACES.
+           05  FILLER PIC X(29) VALUE 'OTHER MANUAL PROCESSES MENU'.
+           05  FILLER PIC X(34) VALUE SPACES.
+           05  FILLER PIC X(21) VALUE 'MASTER MENU'.
+       01  MX-TITLES REDEFINES M-TITLES.
+           05  MENU-TITLES OCCURS 8   PIC X(55).
+
+       01  M-LINES.
+           05  FILLER PIC X(6)  VALUE SPACES.
+           05  FILLER PIC X(10) VALUE 'PF1  ---  '.
+           05  FILLER PIC X(23) VALUE 'ADD    REFUND REQUEST  '.
+           05  FILLER PIC X(16) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF13      '.
+           05  FILLER PIC X(6)  VALUE SPACES.
+           05  FILLER PIC X(10) VALUE 'PF2  ---  '.
+           05  FILLER PIC X(23) VALUE 'REVIEW REFUND REQUEST  '.
+           05  FILLER PIC X(16) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF14      '.
+           05  FILLER PIC X(6)  VALUE 'N/A   '.
+           05  FILLER PIC X(10) VALUE 'PF3  ---  '.
+           05  FILLER PIC X(23) VALUE 'CHANGE REFUND REQUEST  '.
+           05  FILLER PIC X(16) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF15   N/A'.
+           05  FILLER PIC X(6)  VALUE 'N/A   '.
+           05  FILLER PIC X(10) VALUE 'PF4  ---  '.
+           05  FILLER PIC X(23) VALUE 'DELETE REFUND REQUEST  '.
+           05  FILLER PIC X(16) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF16   N/A'.
+           05  FILLER PIC X(6)  VALUE 'N/A   '.
+           05  FILLER PIC X(10) VALUE 'PF5  ---  '.
+           05  FILLER PIC X(39) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF17   N/A'.
+           05  FILLER PIC X(6)  VALUE 'N/A   '.
+           05  FILLER PIC X(10) VALUE 'PF6  ---  '.
+           05  FILLER PIC X(39) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF18   N/A'.
+           05  FILLER PIC X(6)  VALUE 'N/A   '.
+           05  FILLER PIC X(10) VALUE 'PF7  ---  '.
+           05  FILLER PIC X(39) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF19   N/A'.
+           05  FILLER PIC X(6)  VALUE 'N/A   '.
+           05  FILLER PIC X(10) VALUE 'PF8  ---  '.
+           05  FILLER PIC X(39) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF20   N/A'.
+           05  FILLER PIC X(6)  VALUE 'N/A   '.
+           05  FILLER PIC X(10) VALUE 'PF9  ---  '.
+           05  FILLER PIC X(39) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF21   N/A'.
+           05  FILLER PIC X(6)  VALUE 'N/A   '.
+           05  FILLER PIC X(10) VALUE 'PF10 ---  '.
+           05  FILLER PIC X(39) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF22   N/A'.
+           05  FILLER PIC X(6)  VALUE 'N/A   '.
+           05  FILLER PIC X(10) VALUE 'PF11 ---  '.
+           05  FILLER PIC X(39) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF23   N/A'.
+           05  FILLER PIC X(6)  VALUE SPACES.
+           05  FILLER PIC X(10) VALUE 'PF12 ---  '.
+           05  FILLER PIC X(23) VALUE 'RETURN TO MASTER MENU  '.
+           05  FILLER PIC X(16) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF24      '.
+
+           05  FILLER PIC X(6)  VALUE SPACES.
+           05  FILLER PIC X(10) VALUE 'PF1  ---  '.
+           05  FILLER PIC X(23) VALUE 'ADD    REFUND REQUEST  '.
+           05  FILLER PIC X(16) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF13      '.
+           05  FILLER PIC X(6)  VALUE SPACES.
+           05  FILLER PIC X(10) VALUE 'PF2  ---  '.
+           05  FILLER PIC X(23) VALUE 'REVIEW REFUND REQUEST  '.
+           05  FILLER PIC X(16) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF14      '.
+           05  FILLER PIC X(6)  VALUE 'N/A   '.
+           05  FILLER PIC X(10) VALUE 'PF3  ---  '.
+           05  FILLER PIC X(23) VALUE 'CHANGE REFUND REQUEST  '.
+           05  FILLER PIC X(16) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF15   N/A'.
+           05  FILLER PIC X(6)  VALUE 'N/A   '.
+           05  FILLER PIC X(10) VALUE 'PF4  ---  '.
+           05  FILLER PIC X(23) VALUE 'DELETE REFUND REQUEST  '.
+           05  FILLER PIC X(16) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF16   N/A'.
+           05  FILLER PIC X(6)  VALUE 'N/A   '.
+           05  FILLER PIC X(10) VALUE 'PF5  ---  '.
+           05  FILLER PIC X(39) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF17   N/A'.
+           05  FILLER PIC X(6)  VALUE 'N/A   '.
+           05  FILLER PIC X(10) VALUE 'PF6  ---  '.
+           05  FILLER PIC X(39) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF18   N/A'.
+           05  FILLER PIC X(6)  VALUE 'N/A   '.
+           05  FILLER PIC X(10) VALUE 'PF7  ---  '.
+           05  FILLER PIC X(39) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF19   N/A'.
+           05  FILLER PIC X(6)  VALUE 'N/A   '.
+           05  FILLER PIC X(10) VALUE 'PF8  ---  '.
+           05  FILLER PIC X(39) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF20   N/A'.
+           05  FILLER PIC X(6)  VALUE 'N/A   '.
+           05  FILLER PIC X(10) VALUE 'PF9  ---  '.
+           05  FILLER PIC X(39) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF21   N/A'.
+           05  FILLER PIC X(6)  VALUE 'N/A   '.
+           05  FILLER PIC X(10) VALUE 'PF10 ---  '.
+           05  FILLER PIC X(39) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF22   N/A'.
+           05  FILLER PIC X(6)  VALUE 'N/A   '.
+           05  FILLER PIC X(10) VALUE 'PF11 ---  '.
+           05  FILLER PIC X(39) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF23   N/A'.
+           05  FILLER PIC X(6)  VALUE SPACES.
+           05  FILLER PIC X(10) VALUE 'PF12 ---  '.
+           05  FILLER PIC X(23) VALUE 'RETURN TO MASTER MENU  '.
+           05  FILLER PIC X(16) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF24      '.
+
+           05  FILLER PIC X(6)  VALUE SPACES.
+           05  FILLER PIC X(10) VALUE 'PF1  ---  '.
+           05  FILLER PIC X(29) VALUE 'ADD    CANCELLATION REQUEST  '.
+           05  FILLER PIC X(10) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF13      '.
+           05  FILLER PIC X(6)  VALUE SPACES.
+           05  FILLER PIC X(10) VALUE 'PF2  ---  '.
+           05  FILLER PIC X(29) VALUE 'REVIEW CANCELLATION REQUEST  '.
+           05  FILLER PIC X(10) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF14      '.
+           05  FILLER PIC X(6)  VALUE 'N/A   '.
+           05  FILLER PIC X(10) VALUE 'PF3  ---  '.
+           05  FILLER PIC X(29) VALUE ALL '-'.
+           05  FILLER PIC X(10) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF15   N/A'.
+           05  FILLER PIC X(6)  VALUE 'N/A   '.
+           05  FILLER PIC X(10) VALUE 'PF4  ---  '.
+           05  FILLER PIC X(29) VALUE 'DELETE CANCELLATION REQUEST  '.
+           05  FILLER PIC X(10) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF16   N/A'.
+           05  FILLER PIC X(6)  VALUE 'N/A   '.
+           05  FILLER PIC X(10) VALUE 'PF5  ---  '.
+           05  FILLER PIC X(39) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF17   N/A'.
+           05  FILLER PIC X(6)  VALUE 'N/A   '.
+           05  FILLER PIC X(10) VALUE 'PF6  ---  '.
+           05  FILLER PIC X(39) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF18   N/A'.
+           05  FILLER PIC X(6)  VALUE 'N/A   '.
+           05  FILLER PIC X(10) VALUE 'PF7  ---  '.
+           05  FILLER PIC X(39) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF19   N/A'.
+           05  FILLER PIC X(6)  VALUE 'N/A   '.
+           05  FILLER PIC X(10) VALUE 'PF8  ---  '.
+           05  FILLER PIC X(39) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF20   N/A'.
+           05  FILLER PIC X(6)  VALUE 'N/A   '.
+           05  FILLER PIC X(10) VALUE 'PF9  ---  '.
+           05  FILLER PIC X(39) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF21   N/A'.
+           05  FILLER PIC X(6)  VALUE 'N/A   '.
+           05  FILLER PIC X(10) VALUE 'PF10 ---  '.
+           05  FILLER PIC X(39) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF22   N/A'.
+           05  FILLER PIC X(6)  VALUE 'N/A   '.
+           05  FILLER PIC X(10) VALUE 'PF11 ---  '.
+           05  FILLER PIC X(39) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF23   N/A'.
+           05  FILLER PIC X(6)  VALUE SPACES.
+           05  FILLER PIC X(10) VALUE 'PF12 ---  '.
+           05  FILLER PIC X(23) VALUE 'RETURN TO MASTER MENU  '.
+           05  FILLER PIC X(16) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF24      '.
+
+           05  FILLER PIC X(6)  VALUE SPACES.
+           05  FILLER PIC X(10) VALUE 'PF1  ---  '.
+           05  FILLER PIC X(27) VALUE 'ADD    DISHONORED REQUEST  '.
+           05  FILLER PIC X(12) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF13      '.
+           05  FILLER PIC X(6)  VALUE SPACES.
+           05  FILLER PIC X(10) VALUE 'PF2  ---  '.
+           05  FILLER PIC X(27) VALUE 'REVIEW DISHONORED REQUEST  '.
+           05  FILLER PIC X(12) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF14      '.
+           05  FILLER PIC X(6)  VALUE 'N/A   '.
+           05  FILLER PIC X(10) VALUE 'PF3  ---  '.
+           05  FILLER PIC X(27) VALUE 'CHANGE DISHONORED REQUEST  '.
+           05  FILLER PIC X(12) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF15   N/A'.
+           05  FILLER PIC X(6)  VALUE 'N/A   '.
+           05  FILLER PIC X(10) VALUE 'PF4  ---  '.
+           05  FILLER PIC X(27) VALUE 'DELETE DISHONORED REQUEST  '.
+           05  FILLER PIC X(12) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF16   N/A'.
+           05  FILLER PIC X(6)  VALUE 'N/A   '.
+           05  FILLER PIC X(10) VALUE 'PF5  ---  '.
+           05  FILLER PIC X(39) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF17   N/A'.
+           05  FILLER PIC X(6)  VALUE 'N/A   '.
+           05  FILLER PIC X(10) VALUE 'PF6  ---  '.
+           05  FILLER PIC X(39) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF18   N/A'.
+           05  FILLER PIC X(6)  VALUE 'N/A   '.
+           05  FILLER PIC X(10) VALUE 'PF7  ---  '.
+           05  FILLER PIC X(39) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF19   N/A'.
+           05  FILLER PIC X(6)  VALUE 'N/A   '.
+           05  FILLER PIC X(10) VALUE 'PF8  ---  '.
+           05  FILLER PIC X(39) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF20   N/A'.
+           05  FILLER PIC X(6)  VALUE 'N/A   '.
+           05  FILLER PIC X(10) VALUE 'PF9  ---  '.
+           05  FILLER PIC X(39) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF21   N/A'.
+           05  FILLER PIC X(6)  VALUE 'N/A   '.
+           05  FILLER PIC X(10) VALUE 'PF10 ---  '.
+           05  FILLER PIC X(39) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF22   N/A'.
+           05  FILLER PIC X(6)  VALUE 'N/A   '.
+           05  FILLER PIC X(10) VALUE 'PF11 ---  '.
+           05  FILLER PIC X(39) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF23   N/A'.
+           05  FILLER PIC X(6)  VALUE SPACES.
+           05  FILLER PIC X(10) VALUE 'PF12 ---  '.
+           05  FILLER PIC X(23) VALUE 'RETURN TO MASTER MENU  '.
+           05  FILLER PIC X(16) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF24      '.
+
+           05  FILLER PIC X(6)  VALUE SPACES.
+           05  FILLER PIC X(10) VALUE 'PF1  ---  '.
+           05  FILLER PIC X(24) VALUE 'ADD    DEPOSIT REQUEST  '.
+           05  FILLER PIC X(15) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF13      '.
+           05  FILLER PIC X(6)  VALUE SPACES.
+           05  FILLER PIC X(10) VALUE 'PF2  ---  '.
+           05  FILLER PIC X(24) VALUE 'REVIEW DEPOSIT REQUEST  '.
+           05  FILLER PIC X(15) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF14      '.
+           05  FILLER PIC X(6)  VALUE 'N/A   '.
+           05  FILLER PIC X(10) VALUE 'PF3  ---  '.
+           05  FILLER PIC X(24) VALUE 'CHANGE DEPOSIT REQUEST  '.
+           05  FILLER PIC X(15) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF15   N/A'.
+           05  FILLER PIC X(6)  VALUE 'N/A   '.
+           05  FILLER PIC X(10) VALUE 'PF4  ---  '.
+           05  FILLER PIC X(24) VALUE 'DELETE DEPOSIT REQUEST  '.
+           05  FILLER PIC X(15) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF16   N/A'.
+           05  FILLER PIC X(6)  VALUE 'N/A   '.
+           05  FILLER PIC X(10) VALUE 'PF5  ---  '.
+           05  FILLER PIC X(39) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF17   N/A'.
+           05  FILLER PIC X(6)  VALUE 'N/A   '.
+           05  FILLER PIC X(10) VALUE 'PF6  ---  '.
+           05  FILLER PIC X(39) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF18   N/A'.
+           05  FILLER PIC X(6)  VALUE 'N/A   '.
+           05  FILLER PIC X(10) VALUE 'PF7  ---  '.
+           05  FILLER PIC X(39) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF19   N/A'.
+           05  FILLER PIC X(6)  VALUE 'N/A   '.
+           05  FILLER PIC X(10) VALUE 'PF8  ---  '.
+           05  FILLER PIC X(39) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF20   N/A'.
+           05  FILLER PIC X(6)  VALUE 'N/A   '.
+           05  FILLER PIC X(10) VALUE 'PF9  ---  '.
+           05  FILLER PIC X(39) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF21   N/A'.
+           05  FILLER PIC X(6)  VALUE 'N/A   '.
+           05  FILLER PIC X(10) VALUE 'PF10 ---  '.
+           05  FILLER PIC X(39) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF22   N/A'.
+           05  FILLER PIC X(6)  VALUE 'N/A   '.
+           05  FILLER PIC X(10) VALUE 'PF11 ---  '.
+           05  FILLER PIC X(39) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF23   N/A'.
+           05  FILLER PIC X(6)  VALUE SPACES.
+           05  FILLER PIC X(10) VALUE 'PF12 ---  '.
+           05  FILLER PIC X(23) VALUE 'RETURN TO MASTER MENU  '.
+           05  FILLER PIC X(16) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF24      '.
+
+           05  FILLER PIC X(6)  VALUE SPACES.
+           05  FILLER PIC X(10) VALUE 'PF1  ---  '.
+           05  FILLER PIC X(27) VALUE 'ADD    REDEMPTION REQUEST  '.
+           05  FILLER PIC X(12) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF13      '.
+           05  FILLER PIC X(6)  VALUE SPACES.
+           05  FILLER PIC X(10) VALUE 'PF2  ---  '.
+           05  FILLER PIC X(27) VALUE 'REVIEW REDEMPTION REQUEST  '.
+           05  FILLER PIC X(12) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF14      '.
+           05  FILLER PIC X(6)  VALUE 'N/A   '.
+           05  FILLER PIC X(10) VALUE 'PF3  ---  '.
+           05  FILLER PIC X(27) VALUE 'CHANGE REDEMPTION REQUEST  '.
+           05  FILLER PIC X(12) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF15   N/A'.
+           05  FILLER PIC X(6)  VALUE 'N/A   '.
+           05  FILLER PIC X(10) VALUE 'PF4  ---  '.
+           05  FILLER PIC X(27) VALUE 'DELETE REDEMPTION REQUEST  '.
+           05  FILLER PIC X(12) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF16   N/A'.
+           05  FILLER PIC X(6)  VALUE 'N/A   '.
+           05  FILLER PIC X(10) VALUE 'PF5  ---  '.
+           05  FILLER PIC X(39) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF17   N/A'.
+           05  FILLER PIC X(6)  VALUE 'N/A   '.
+           05  FILLER PIC X(10) VALUE 'PF6  ---  '.
+           05  FILLER PIC X(39) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF18   N/A'.
+           05  FILLER PIC X(6)  VALUE 'N/A   '.
+           05  FILLER PIC X(10) VALUE 'PF7  ---  '.
+           05  FILLER PIC X(39) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF19   N/A'.
+           05  FILLER PIC X(6)  VALUE 'N/A   '.
+           05  FILLER PIC X(10) VALUE 'PF8  ---  '.
+           05  FILLER PIC X(39) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF20   N/A'.
+           05  FILLER PIC X(6)  VALUE 'N/A   '.
+           05  FILLER PIC X(10) VALUE 'PF9  ---  '.
+           05  FILLER PIC X(39) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF21   N/A'.
+           05  FILLER PIC X(6)  VALUE 'N/A   '.
+           05  FILLER PIC X(10) VALUE 'PF10 ---  '.
+           05  FILLER PIC X(39) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF22   N/A'.
+           05  FILLER PIC X(6)  VALUE 'N/A   '.
+           05  FILLER PIC X(10) VALUE 'PF11 ---  '.
+           05  FILLER PIC X(39) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF23   N/A'.
+           05  FILLER PIC X(6)  VALUE SPACES.
+           05  FILLER PIC X(10) VALUE 'PF12 ---  '.
+           05  FILLER PIC X(23) VALUE 'RETURN TO MASTER MENU  '.
+           05  FILLER PIC X(16) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF24      '.
+
+           05  FILLER PIC X(6)  VALUE SPACES.
+           05  FILLER PIC X(10) VALUE 'PF1  ---  '.
+           05  FILLER PIC X(16) VALUE 'ADD    REQUEST  '.
+           05  FILLER PIC X(23) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF13      '.
+           05  FILLER PIC X(6)  VALUE SPACES.
+           05  FILLER PIC X(10) VALUE 'PF2  ---  '.
+           05  FILLER PIC X(16) VALUE 'REVIEW REQUEST  '.
+           05  FILLER PIC X(23) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF14      '.
+           05  FILLER PIC X(6)  VALUE 'N/A   '.
+           05  FILLER PIC X(10) VALUE 'PF3  ---  '.
+           05  FILLER PIC X(16) VALUE 'CHANGE REQUEST  '.
+           05  FILLER PIC X(23) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF15   N/A'.
+           05  FILLER PIC X(6)  VALUE 'N/A   '.
+           05  FILLER PIC X(10) VALUE 'PF4  ---  '.
+           05  FILLER PIC X(16) VALUE 'DELETE REQUEST  '.
+           05  FILLER PIC X(23) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF16   N/A'.
+           05  FILLER PIC X(6)  VALUE 'N/A   '.
+           05  FILLER PIC X(10) VALUE 'PF5  ---  '.
+           05  FILLER PIC X(39) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF17   N/A'.
+           05  FILLER PIC X(6)  VALUE 'N/A   '.
+           05  FILLER PIC X(10) VALUE 'PF6  ---  '.
+           05  FILLER PIC X(39) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF18   N/A'.
+           05  FILLER PIC X(6)  VALUE 'N/A   '.
+           05  FILLER PIC X(10) VALUE 'PF7  ---  '.
+           05  FILLER PIC X(39) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF19   N/A'.
+           05  FILLER PIC X(6)  VALUE 'N/A   '.
+           05  FILLER PIC X(10) VALUE 'PF8  ---  '.
+           05  FILLER PIC X(39) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF20   N/A'.
+           05  FILLER PIC X(6)  VALUE 'N/A   '.
+           05  FILLER PIC X(10) VALUE 'PF9  ---  '.
+           05  FILLER PIC X(39) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF21   N/A'.
+           05  FILLER PIC X(6)  VALUE 'N/A   '.
+           05  FILLER PIC X(10) VALUE 'PF10 ---  '.
+           05  FILLER PIC X(39) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF22   N/A'.
+           05  FILLER PIC X(6)  VALUE 'N/A   '.
+           05  FILLER PIC X(10) VALUE 'PF11 ---  '.
+           05  FILLER PIC X(39) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF23   N/A'.
+           05  FILLER PIC X(6)  VALUE SPACES.
+           05  FILLER PIC X(10) VALUE 'PF12 ---  '.
+           05  FILLER PIC X(23) VALUE 'RETURN TO MASTER MENU  '.
+           05  FILLER PIC X(16) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF24      '.
+
+           05  FILLER PIC X(6)  VALUE SPACES.
+           05  FILLER PIC X(10) VALUE 'PF1  ---  '.
+           05  FILLER PIC X(27) VALUE 'EMPLOYEE AUTOMATIC REFUND  '.
+           05  FILLER PIC X(12) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF13      '.
+           05  FILLER PIC X(6)  VALUE SPACES.
+           05  FILLER PIC X(10) VALUE 'PF2  ---  '.
+           05  FILLER PIC X(15) VALUE 'MANUAL REFUND  '.
+           05  FILLER PIC X(24) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF14      '.
+           05  FILLER PIC X(6)  VALUE '      '.
+           05  FILLER PIC X(10) VALUE 'PF3  ---  '.
+           05  FILLER PIC X(14) VALUE 'CANCELLATION  '.
+           05  FILLER PIC X(25) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF15      '.
+           05  FILLER PIC X(6)  VALUE '      '.
+           05  FILLER PIC X(10) VALUE 'PF4  ---  '.
+           05  FILLER PIC X(17) VALUE 'DISHONORED ITEM  '.
+           05  FILLER PIC X(22) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF16      '.
+           05  FILLER PIC X(6)  VALUE '      '.
+           05  FILLER PIC X(10) VALUE 'PF5  ---  '.
+           05  FILLER PIC X(09) VALUE 'DEPOSIT  '.
+           05  FILLER PIC X(30) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF17      '.
+           05  FILLER PIC X(6)  VALUE '      '.
+           05  FILLER PIC X(10) VALUE 'PF6  ---  '.
+           05  FILLER PIC X(12) VALUE 'REDEMPTION  '.
+           05  FILLER PIC X(27) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF18      '.
+           05  FILLER PIC X(6)  VALUE '      '.
+           05  FILLER PIC X(10) VALUE 'PF7  ---  '.
+           05  FILLER PIC X(24) VALUE 'OTHER MANUAL PROCESSES  '.
+           05  FILLER PIC X(15) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF19      '.
+           05  FILLER PIC X(6)  VALUE 'N/A   '.
+           05  FILLER PIC X(10) VALUE 'PF8  ---  '.
+           05  FILLER PIC X(39) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF20   N/A'.
+           05  FILLER PIC X(6)  VALUE 'N/A   '.
+           05  FILLER PIC X(10) VALUE 'PF9  ---  '.
+           05  FILLER PIC X(39) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF21   N/A'.
+           05  FILLER PIC X(6)  VALUE 'N/A   '.
+           05  FILLER PIC X(10) VALUE 'PF10 ---  '.
+           05  FILLER PIC X(39) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF22   N/A'.
+           05  FILLER PIC X(6)  VALUE 'N/A   '.
+           05  FILLER PIC X(10) VALUE 'PF11 ---  '.
+           05  FILLER PIC X(39) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF23   N/A'.
+           05  FILLER PIC X(6)  VALUE SPACES.
+           05  FILLER PIC X(10) VALUE 'PF12 ---  '.
+           05  FILLER PIC X(16) VALUE 'RETURN TO CICS '.
+           05  FILLER PIC X(23) VALUE ALL '-'.
+           05  FILLER PIC X(11) VALUE ' PF24      '.
+       01  MX-LINE REDEFINES M-LINES.
+           05  FILLER OCCURS 8.
+               10  MENU-LINE OCCURS 12 PIC X(66).

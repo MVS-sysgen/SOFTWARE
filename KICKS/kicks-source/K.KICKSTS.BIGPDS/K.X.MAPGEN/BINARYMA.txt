@@ -1,0 +1,440 @@
+/////////////////////////////////////////////////////////////////////
+// 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+// in MVS/TSO. Its CICS functionality is delivered at the source code
+// level, not at the object code level. Applications must be
+// recompiled and the recompiled programs are not compatible with any
+// known version of 'real' CICS (the IBM program product),
+//
+// © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+//
+// Usage of 'KICKS for TSO' is in all cases subject to license. See
+// http://www.kicksfortso.com
+// for most current information regarding licensing options..
+////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+#include <stdio.h>
+#include <string.h>
+#include <time.h>
+
+#include "kikmg01.h"
+
+void BinaryMap(int final) {
+ char err[100];
+ int i, ii, iii, attrbyte;
+ int OO, OOO, OOpos, OOmax, OOpos1, OOpos2, OOlong, OOsiz1, OOsiz2;
+
+
+ // pass 2 generates binary map
+ if(passno != 2) return;
+
+ if(!strcmp(opcode, "KIKMSD")) {
+  if( ! final ) {
+   // for first msd start by printing my blurb
+   fprintf(stdout, "\
+*///////////////////////////////////////////////////////////////////// \n\
+* 'BMS' map for use with %s \n\
+*   generated %s at %s with mapgen version %s \n\
+* \n\
+* %s  \n\
+* © Copyright 2008-2014, Michael Noel, All Rights Reserved. \n\
+*  \n\
+* Assuming the input belongs to you this generated map is also your  \n\
+* property and you may do whatever you like with it.   HOWEVER \n\
+* \n\
+* Usage of %s is subject to license. See\n\
+* http://www.kicksfortso.com \n\
+* for most current information regarding licensing options.. \n\
+*////////1/////////2/////////3/////////4/////////5/////////6/////////7 \n",
+  __KFT__, sysdate, systime, mkv1, __KFT__, __KFT__);
+  // after the blurb comes the source MSD stmt
+  fprintf(stdout, "*%s KIKMSD TYPE=%s\n", msd_label, msd_type);
+  fprintf(stdout, "*  LANG=%s\n", msd_lang);
+  if (msd_mode[0] != '\0') {
+   fprintf(stdout, "*  MODE=%s\n", msd_mode);
+   }
+  //rintf(stdout, "*  TIOAPFX=%s\n", msd_tioapfx);
+  fprintf(stdout, "*  TIOAPFX=YES\n");
+          // note to self - TIOAPFX is ignored and assumed
+          // to be 'YES', so the 12 byte leading filler will
+          // always be generated for the dsects.
+  if (msd_extatt[0] != 0)
+    fprintf(stdout, "*  EXTATT=%s\n", msd_extatt);
+
+  iii = mdi_elong;
+  if (iii > 0) {
+   iii=0;
+   fprintf(stdout, "*  DSATTS=(");
+   for (i=0; i<8; i++) {
+    if ((msd_dsatts[i][0] != 0) && (msd_dsatts[i][0] != ' ')) {
+     if (iii > 0) fprintf(stdout, ",");
+     iii++;
+     fprintf(stdout, "%s", msd_dsatts[i]);
+     }
+    }
+   fprintf(stdout, ")\n");
+   }
+
+  iii = 0;
+  for (i=0; i<8; i++) if (msd_mapatts[i] != 0) iii++;
+  if (iii > 0) {
+   iii=0;
+   fprintf(stdout, "*  MAPATTS=(");
+   for (i=0; i<8; i++) {
+    if ((msd_mapatts[i][0] != 0) && (msd_mapatts[i][0] != ' ')) {
+     if (iii > 0) fprintf(stdout, ",");
+     iii++;
+     fprintf(stdout, "%s", msd_mapatts[i]);
+     }
+    }
+   fprintf(stdout, ")\n");
+   }
+
+  if (msd_color[0] != 0)
+    fprintf(stdout, "*  COLOR=%s\n", msd_color);
+  if (msd_hilight[0] != 0)
+    fprintf(stdout, "*  HILIGHT=%s\n", msd_hilight);
+
+  for (i=0, ii=0; i<10; i++) {
+   if (msd_ctrl[i][0] != '\0') ii++;
+   }
+  if (ii > 0) {
+   fprintf(stdout, "*  CTRL=");
+   if (ii > 1) { fprintf(stdout, "("); }
+   for (i=0; i<10; i++) {
+    if (msd_ctrl[i][0] != '\0') {
+     if (i>0) fprintf(stdout, ",");
+     fprintf(stdout, "%s", msd_ctrl[i]);
+     }
+    }
+   if (ii > 1) { fprintf(stdout, ")"); }
+   }
+  fprintf(stdout, "\n");
+  // after the source stmt comes the header
+  fprintf(stdout, " LCLA &CMAP,&CFLD,&NMAP,&NFLD\n");
+  fprintf(stdout, " LCLC &KPFX,&CML,&CFL,&NML,&NFL\n");
+  fprintf(stdout, "&KPFX SETC 'K'\n");
+  fprintf(stdout, "&CMAP SETA 0\n");
+  fprintf(stdout, "&NMAP SETA &CMAP+1\n");
+  fprintf(stdout, "&CML  SETC '&KPFX&CMAP'\n");
+  fprintf(stdout, "&NML  SETC '&KPFX&NMAP'\n");
+  fprintf(stdout, "&CFLD SETA 1\n");
+  fprintf(stdout, "&NFLD SETA &CFLD+1\n");
+  fprintf(stdout, "&CFL  SETC '&KPFX&CMAP&KPFX&CFLD'\n");
+  fprintf(stdout, "&NFL  SETC '&KPFX&CMAP&KPFX&NFLD'\n");
+  // then the code
+  fprintf(stdout, "%s CSECT\n", msd_label);
+  fprintf(stdout, " DS 0F\n");
+  fprintf(stdout, " DC A(&NML) POINTER TO FIRST MAP\n");
+  fprintf(stdout, " DC CL8'%s' MAPSET NAME\n", msd_label);
+  fprintf(stdout, " DC CL8'&SYSDATE' ASSEMBLY DATE\n");
+  fprintf(stdout, " DC CL6'&SYSTIME' ASSEMBLY TIME\n");
+  fprintf(stdout, " DC XL4'%s' 'GCCMVS' MAPGEN VERSION\n", mkv2);
+  }
+ else { // for last msd (type=final) just wrap up assembly
+  // - first the input macro as comments
+  fprintf(stdout, "* KIKMSD TYPE=FINAL\n");
+  // - end the assembly
+  fprintf(stdout, " DS 0F\n");
+  fprintf(stdout, "&NML EQU *\n");
+  fprintf(stdout, " DC A(0) MARKER FOR END OF MAP\n");
+  fprintf(stdout, " LTORG\n");
+  fprintf(stdout, " END\n");
+  }
+  return;
+  } // end of KIKMSD...
+
+ if(!strcmp(opcode, "KIKMDI")) {
+  if( ! final ) {
+  // first the source MDI stmt
+  fprintf(stdout, "*%s KIKMDI SIZE=(%s,%s)\n",
+     mdi_label, mdi_siz1, mdi_siz2);
+  if (mdi_extatt[0] != 0)
+    fprintf(stdout, "*  EXTATT=%s\n", mdi_extatt);
+
+  iii = mdi_elong;
+  if (iii > 0) {
+   iii=0;
+   fprintf(stdout, "*  DSATTS=(");
+   for (i=0; i<8; i++) {
+    if ((mdi_dsatts[i][0] != 0) && (mdi_dsatts[i][0] != ' ')) {
+     if (iii > 0) fprintf(stdout, ",");
+     iii++;
+     fprintf(stdout, "%s", mdi_dsatts[i]);
+     }
+    }
+   fprintf(stdout, ")\n");
+   }
+
+  iii = 0;
+  for (i=0; i<8; i++) if (mdi_mapatts[i] != 0) iii++;
+  if (iii > 0) {
+   iii=0;
+   fprintf(stdout, "*  MAPATTS=(");
+   for (i=0; i<8; i++) {
+    if ((mdi_mapatts[i][0] != 0) && (mdi_mapatts[i][0] != ' ')) {
+     if (iii > 0) fprintf(stdout, ",");
+     iii++;
+     fprintf(stdout, "%s", mdi_mapatts[i]);
+     }
+    }
+   fprintf(stdout, ")\n");
+   }
+
+  if (mdi_color[0] != 0)
+    fprintf(stdout, "*  COLOR=%s\n", mdi_color);
+  if (mdi_hilight[0] != 0)
+    fprintf(stdout, "*  HILIGHT=%s\n", mdi_hilight);
+
+  // then the code
+  fprintf(stdout, " DS 0F\n");
+  fprintf(stdout, "&NML  EQU *\n");
+  fprintf(stdout, "&CMAP SETA &NMAP\n");
+  fprintf(stdout, "&NMAP SETA &CMAP+1\n");
+  fprintf(stdout, "&CML  SETC '&KPFX&CMAP'\n");
+  fprintf(stdout, "&NML  SETC '&KPFX&NMAP'\n");
+  fprintf(stdout, "&CFLD SETA 1\n");
+  fprintf(stdout, "&NFLD SETA &CFLD+1\n");
+  fprintf(stdout, "&CFL  SETC '&KPFX&CMAP&KPFX&CFLD'\n");
+  fprintf(stdout, "&NFL  SETC '&KPFX&CMAP&KPFX&NFLD'\n");
+  if (mdi_label[0] != '\0') {
+   fprintf(stdout, "%s EQU * CATCH DUP LABELS\n", mdi_label);
+   }
+  fprintf(stdout, " DC A(&NML) POINTER TO NEXT MAP\n");
+  fprintf(stdout, " DC A(&NFL) POINTER TO FIRST FIELD\n");
+  fprintf(stdout, " DC CL8'%s' MAPSET NAME\n", mdi_label);
+  fprintf(stdout, " DC AL1(%s) MAP LENGTH, # LINES\n", mdi_siz1);
+  fprintf(stdout, " DC AL1(%s) MAP WIDTH,  # COLUMNS\n", mdi_siz2);
+  fprintf(stdout, " DC AL1(0) CURSOR LINE \n");
+  fprintf(stdout, " DC AL1(0) CURSOR COLUMN\n");
+
+  // mark use of extatt or mapatts/dsatts
+  ii  = mdi_ebits;
+
+  // following needed for 1.4.0 only - remove/comment later...
+  ii |= 0x80; // set hi bit so BMS knows it's new fmt...
+
+  fprintf(stdout, " DC AL1(%d) FLAGS\n", ii);
+
+  // generate wcc from msd fields
+  for (i=0, ii=0; i<30; i++) {
+   if (!strcmp(msd_ctrl[i], "FRSET"))  { ii = ii | 1; }
+   if (!strcmp(msd_ctrl[i], "FREEKB")) { ii = ii | 2; }
+   if (!strcmp(msd_ctrl[i], "ALARM"))  { ii = ii | 4; }
+   if (!strcmp(msd_ctrl[i], "PRINT"))  { ii = ii | 8; }
+   }
+  fprintf(stdout, " DC AL1(%d) WCC\n", ii);
+  }
+ else {
+  // - generate end the previous map
+  // - ***  mark end of fields
+  fprintf(stdout, " DS 0F\n");
+  fprintf(stdout, "&NFL EQU *\n");
+  fprintf(stdout, " DC A(0) MARKER FOR END OF FIELDS\n");
+  // - ***  insert the cursor position in map
+  fprintf(stdout, " ORG &CML+18\n");
+  fprintf(stdout, " DC AL1(%ld)\n", mdi_ic1pos);
+  fprintf(stdout, " DC AL1(%ld)\n", mdi_ic2pos);
+  fprintf(stdout, " ORG\n");
+  }
+ return;
+ } // end of KIKMDI...
+
+ if(!strcmp(opcode, "KIKMDF")) {
+
+  // first the source MDF stmt
+  fprintf(stdout, "*%s KIKMDF POS=(%s,%s)\n",
+     mdf_label, mdf_pos1, mdf_pos2);
+  fprintf(stdout, "*  LENGTH=%s\n", mdf_length);
+  if (mdf_occurs[0] != '\0') {
+   fprintf(stdout, "*  OCCURS=\'%s\'\n", mdf_occurs);
+   }
+  if (!strcmp(mdi_extatt, "YES")) {
+   fprintf(stdout, "*  EXTATT=%s\n", mdi_extatt);
+   fprintf(stdout, "*  COLOR=%s\n", mdi_color);
+   fprintf(stdout, "*  HILIGHT=%s\n", mdi_hilight);
+   }
+  if (mdf_initial[0] != '\0') {
+   char longwork[1010];
+   strcpy(longwork, mdf_initial);
+   strcat(longwork, "'");
+   if (strlen(longwork) > 40) {
+    longwork[36] = '\0';
+    strcat(longwork, " ...");
+    }
+   fprintf(stdout, "*  INITIAL='%s\n", longwork);
+   }
+  if (mdf_picin[0] != '\0') {
+   fprintf(stdout, "*  PICIN=\'%s\'\n", mdf_picin);
+   }
+  if (mdf_picout[0] != '\0') {
+   fprintf(stdout, "*  PICOUT=\'%s\'\n", mdf_picout);
+   }
+  if (!strcmp(mdi_extatt, "YES")) {
+   if (strcmp(mdf_color, mdi_color)) {
+    fprintf(stdout, "*  COLOR=\'%s\'\n", mdf_color);
+    }
+   if (strcmp(mdf_hilight, mdi_hilight)) {
+    fprintf(stdout, "*  HILIGHT=\'%s\'\n", mdf_hilight);
+    }
+   }
+  for (i=0, ii=0; i<20; i++) {
+   if (mdf_attrb[i][0] != '\0') ii++;
+   }
+  if (ii > 0) {
+   fprintf(stdout, "*  ATTRB=");
+   if (ii > 1) { fprintf(stdout, "("); }
+   for (i=0; i<20; i++) {
+    if (mdf_attrb[i][0] != '\0') {
+     if (i>0) fprintf(stdout, ",");
+     fprintf(stdout, "%s", mdf_attrb[i]);
+     }
+    }
+   if (ii > 1) { fprintf(stdout, ")"); }
+   fprintf(stdout, "\n");
+   }
+
+  // then the code
+  OO=strtol(mdf_occurs, NULL, 10);          // number of occurences
+  if (OO == 0) OO++;                        // (alway at least 1)
+  OOpos1=strtol(mdf_pos1, NULL, 10);        // position of 'next' occurence
+  OOpos2=strtol(mdf_pos2, NULL, 10);
+  OOlong=strtol(mdf_length, NULL, 10);      // length of each occurence
+  OOsiz1=strtol(mdi_siz1, NULL, 10);
+  OOsiz2=strtol(mdi_siz2, NULL, 10);
+  for (OOO=0; OOO<OO; OOO++) {
+   // other each (or only) occurance...
+   fprintf(stdout, "&CFLD SETA &NFLD\n");
+   fprintf(stdout, "&NFLD SETA &CFLD+1\n");
+   fprintf(stdout, "&CFL  SETC '&NFL'\n");
+   fprintf(stdout, "&NFL  SETC '&KPFX&CMAP&KPFX&NFLD'\n");
+   fprintf(stdout, " DS 0F\n");
+   fprintf(stdout, "&CFL EQU *\n");
+   if (mdf_label[0] != '\0') {
+           if (OOO == 0) {
+            fprintf(stdout, "%s EQU * CATCH DUP LABELS\n", mdf_label);
+            }
+           }
+   fprintf(stdout, " DC A(&NFL) POINTER TO NEXT FIELD\n");
+   if (mdf_label[0] != '\0') {
+           fprintf(stdout, " DC CL8'%s' FIELD NAME\n", mdf_label);
+           } else {
+           fprintf(stdout, " DC CL8' ' NO FIELD NAME\n");
+           }
+   fprintf(stdout, " DC AL1(%d) FIELD ROW\n", OOpos1);
+   fprintf(stdout, " DC AL1(%d) FIELD COLUMN\n", OOpos2);
+   fprintf(stdout, " DC AL2(%d) FIELD LENGTH\n", OOlong);
+   for (i=0, ii=0; i<20; i++) { // count attributes
+    if (mdf_attrb[i][0] != '\0') ii++;
+    }
+   if (ii == 0) {
+    attrbyte = 48; // default to askip if nothing specified
+    }
+   else {
+    attrbyte =  0; // otherwise set bits for what was given
+    for (i=0; i<20; i++) {
+     if (mdf_attrb[i][0] != '\0') {
+      if (!strcmp(mdf_attrb[i], "ASKIP")) {
+       attrbyte=attrbyte | 48;
+       }
+      if((!strcmp(mdf_attrb[i], "IC")) && (OOO == 0)) {
+       mdi_ic1pos = strtol(mdf_pos1,NULL,10);
+       mdi_ic2pos = strtol(mdf_pos2,NULL,10);
+       mdi_ic2pos++;
+       }
+      if (!strcmp(mdf_attrb[i], "UNPROT")) {
+       attrbyte=attrbyte & (255-32);
+       }
+      if (!strcmp(mdf_attrb[i], "PROT")) {
+       attrbyte=attrbyte | 32;
+       }
+      if (!strcmp(mdf_attrb[i], "NUM")) {
+       attrbyte=attrbyte | 16;
+       }
+      if (!strcmp(mdf_attrb[i], "BRT")) {
+       attrbyte=attrbyte | 8;
+       }
+      if (!strcmp(mdf_attrb[i], "DRK")) {
+       attrbyte=attrbyte | 12;
+       }
+      if (!strcmp(mdf_attrb[i], "NORM")) {
+       attrbyte=attrbyte & (255-12);
+       }
+      if (!strcmp(mdf_attrb[i], "FSET")) {
+       attrbyte=attrbyte | 1;
+       }
+      }
+     }
+    }
+   //trbyte = encode_3270(attrbyte);.*** don't encode it...
+   fprintf(stdout, " DC AL1(%d) ATTRIBUTES\n", attrbyte);
+   ii = 0;
+   if (mdf_initial[0] != '\0') ii = ii | 1;
+   if (OO > 1) ii = ii | 2;                  // occurs
+   if((OO > 1) && (OOO == 0)) ii = ii | 8;   // 1st of occurs
+   fprintf(stdout, " DC AL1(%d) FLAGS\n", ii);
+   { char fldcolor[10];
+   strcpy(fldcolor, mdi_color);
+   if (mdf_color[0] != '\0') strcpy(fldcolor, mdf_color);
+   ii = 0;
+   if (!strcmp(fldcolor, "BLUE"))      ii = 0xF1;
+   if (!strcmp(fldcolor, "RED"))       ii = 0xF2;
+   if (!strcmp(fldcolor, "PINK"))      ii = 0xF3;
+   if (!strcmp(fldcolor, "GREEN"))     ii = 0xF4;
+   if (!strcmp(fldcolor, "TURQUOISE")) ii = 0xF5;
+   if (!strcmp(fldcolor, "YELLOW"))    ii = 0xF6;
+   if (!strcmp(fldcolor, "NEUTRAL"))   ii = 0xF7;
+   fprintf(stdout, " DC AL1(%d) COLOR\n", ii);
+   }
+   { char fldhilight[10];
+   strcpy(fldhilight, mdi_hilight);
+   if (mdf_hilight[0] != '\0') strcpy(fldhilight, mdf_hilight);
+   ii = 0;
+   if (!strcmp(fldhilight, "BLINK"))     ii = 0xF1;
+   if (!strcmp(fldhilight, "REVERSE"))   ii = 0xF2;
+   if (!strcmp(fldhilight, "UNDERLINE")) ii = 0xF4;
+   fprintf(stdout, " DC AL1(%d) HILIGHT\n", ii);
+   }
+   if (mdf_initial[0] != '\0') {
+    long numlength;
+    int llwork;
+    char longwork[1010];
+    strcpy(longwork, mdf_initial);
+
+    llwork = strlen(longwork);              // length of INITIAL string
+    numlength=strtol(mdf_length, NULL, 10); // length from field LENGTH
+    if (llwork > numlength) {               // adjust if INITIAL to long
+     longwork[numlength] = 0;
+     llwork = strlen(longwork);
+     }
+    while (llwork < numlength) {            // adjust if INITIAL to short
+     strcat(longwork, " ");
+     llwork = strlen(longwork);
+     }
+
+    while (llwork > 0) {
+     if (llwork > 45) {
+      fprintf(stdout, " DC CL45'%.45s'\n", longwork);
+      strcpy(longwork, &longwork[45]);
+      }
+     else {
+      fprintf(stdout, " DC CL%d'%s'\n", llwork, longwork);
+      longwork[0] = '\0';
+      }
+     llwork = strlen(longwork);
+     }
+    }
+   // setup for next iteration
+   OOpos2 += OOlong + 1;
+   if (OOpos2 > OOsiz2) {
+    OOmax  = OOsiz1 * OOsiz2;
+    OOpos  = ((OOpos1-1) * OOsiz2) + (OOpos2-1);
+    OOpos  = OOpos % OOmax; // wrap screen
+    OOpos1 = OOpos / OOsiz2; OOpos1++;
+    OOpos2 = OOpos % OOsiz2; OOpos2++;
+    }
+   } // end of 'for each OO...'
+
+  return;
+  } // end of KIKMDF...
+
+}

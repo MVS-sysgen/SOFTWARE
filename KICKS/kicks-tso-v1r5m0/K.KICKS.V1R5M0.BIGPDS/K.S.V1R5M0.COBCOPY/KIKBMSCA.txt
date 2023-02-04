@@ -1,0 +1,187 @@
+      *///////////////////////////////////////////////////////////////
+      * KICKS is an enhancement for TSO that lets you run your CICS
+      * applications directly in TSO instead of having to 'install'
+      * those apps in CICS.
+      * You don't even need CICS itself installed on your machine!
+      *
+      * KICKS for TSO
+      * © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+      *
+      * Usage of 'KICKS for TSO' is in all cases subject to license.
+      * See http://www.kicksfortso.com
+      * for most current information regarding licensing options.
+      *//1/////////2/////////3/////////4/////////5/////////6/////////7
+
+
+       01  KIKBMSCA.
+
+      *    KIKBMPEM Printer end-of-message
+
+      *    KIKBMPNL Printer new-line
+
+      *    KIKBMPFF Printer form feed
+
+      *    KIKBMPCR Printer carriage return
+
+      *    KIKBMASK Autoskip
+
+           05  KIKBMASK PIC X VALUE X'F0'.
+
+      *    KIKBMUNP Unprotected
+
+      *    KIKBMUNN Unprotected and numeric
+           05  KIKBMUNN PIC X VALUE X'50'.
+
+      *    KIKBMPRO Protected
+           05  KIKBMPRO PIC X VALUE X'60'.
+
+      *    KIKBMBRY Bright
+
+      *    KIKBMDAR Dark
+           05  KIKBMDAR PIC X VALUE X'4C'.
+
+      *    KIKBMFSE MDT set
+
+      *    KIKBMPRF Protected and MDT set
+           05  KIKBMPRF PIC X VALUE X'61'.
+
+      *    KIKBMASF Autoskip and MDT set
+           05  KIKBMASF PIC X VALUE X'F1'.
+
+      *    KIKBMASB Autoskip and bright
+           05  KIKBMASB PIC X VALUE X'F8'.
+
+      *    KIKBMPSO shift-out value X'0E'.
+
+      *    KIKBMPSI shift-in value X'0F'.
+
+      *    KIKBMEOF Field erased
+           05  KIKBMEOF PIC X VALUE X'80'.
+
+      *    KIKBMCUR Field containing cursor flagged
+
+      *    KIKBMEC Erased field containing cursor (COBOL only)
+
+      *    KIKBMFLG Flags (COBOL only)
+
+      *    KIKBMDET Field detected
+
+      *    KIKSA(1) Set attribute (SA) order
+
+      *    KIKERROR Error code
+
+      *    KIKCOLOR(1 Color
+
+      *    KIKPS(1) Programmed symbols
+
+      *    KIKHLT(1) Highlight
+
+      *    KIK3270(1) Base 3270 field attribute
+
+      *    KIKVAL Validation
+
+      *    KIKOUTLN Field outlining attribute code
+
+      *    KIKBKTRN Background transparency attribute code
+
+      *    KIKALL(1) Reset all to defaults
+
+      *    KIKDFT Default
+           05  KIKDFT PIC X VALUE X'FF'.
+
+      *    KIKDFCOL(1 Default color
+
+      *    KIKBLUE Blue
+           05  KIKBLUE PIC X VALUE X'F1'.
+
+      *    KIKRED Red
+           05  KIKRED PIC X VALUE X'F2'.
+
+      *    KIKPINK Pink
+           05  KIKPINK PIC X VALUE X'F3'.
+
+      *    KIKGREEN Green
+           05  KIKGREEN PIC X VALUE X'F4'.
+
+      *    KIKTURQ Turquoise
+           05  KIKTURQ PIC X VALUE X'F5'.
+
+      *    KIKYELLO Yellow
+           05  KIKYELLO PIC X VALUE X'F6'.
+
+      *    KIKNEUTR Neutral
+           05  KIKNEUTR PIC X VALUE X'F7'.
+
+      *    KIKBASE(1) Base programmed symbols
+
+      *    KIKKIKI(1) Normal
+
+      *    KIKBLINK Blink
+           05  KIKBLINK PIC X VALUE X'F1'.
+
+      *    KIKREVRS Reverse video
+           05  KIKREVRS PIC X VALUE X'F2'.
+
+      *    KIKUNDLN Underscore
+           05  KIKUNDLN PIC X VALUE X'F4'.
+
+      *    KIKMFIL(2) Mandatory fill
+
+      *    KIKMENT(2) Mandatory enter
+
+      *    KIKMFE Mandatory fill and mandatory enter
+
+      *    KIKMT Trigger
+
+      *    KIKMFT Mandatory fill and trigger
+
+      *    KIKMET Mandatory enter and trigger
+
+      *    KIKMFET Mandatory fill and mandatory enter and trigger
+
+      *    KIKUNNOD Unprotected, nondisplay, nonprint, nondetectable, MDT
+           05  KIKUNNOD PIC X VALUE X'4D'.
+
+      *    KIKUNIMD Unprotected, intensify, light-pen detectable, MDT
+           05  KIKUNIMD PIC X VALUE X'C9'.
+
+      *    KIKUNNUM Unprotected, numeric, MDT
+           05  KIKUNNUM PIC X VALUE X'D1'.
+
+      *    KIKUNNUB Unprotected, numeric, intensify, intensify,
+      *                          light-pen detectable
+           05  KIKUNNUB PIC X VALUE X'D8'.
+
+      *    KIKUNINT Unprotected, numeric, intensify,
+      *                          light-pen detectable, MDT
+           05  KIKUNINT PIC X VALUE X'D9'.
+
+      *    KIKUNNON Unprotected, numeric, nondisplay, nonprint,
+      *                          nondetectable, MDT
+           05  KIKUNNON PIC X VALUE X'5D'.
+
+      *    KIKPROTI Protected, intensify, light-pen detectable
+           05  KIKPROTI PIC X VALUE X'E8'.
+
+      *    KIKPROTN Protected, nondisplay, nonprint, nondetectable
+           05  KIKPROTN PIC X VALUE X'6C'.
+
+      *    KIKDFFR Default outline
+
+      *    KIKUNDER Underline
+
+      *    KIKRIGHT Right vertical line
+
+      *    KIKOVER Overline
+
+      *    KIKLEFT Left vertical line
+
+      *    KIKBOX Underline and right vertical and overline
+      *                          and left vertical
+
+      *    KIKSOSI SOSI=yes
+
+      *    KIKTRANS Background transparency
+
+      *    KIKOPAQ No background transparency
+

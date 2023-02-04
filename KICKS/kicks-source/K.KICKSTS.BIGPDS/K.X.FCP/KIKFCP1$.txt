@@ -1,0 +1,1091 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+ // issues:
+ //  - ksds access via rba
+
+#include "kicks.h"
+
+KIKCSA *csa = (KIKCSA*)&csa;
+
+#include "ifgacb.h"
+#include "ifgrpl.h"
+#include "iefjfcb.h"
+iefjfcb *rdjfcb(char *ddname);
+
+#ifdef __CMS__
+ int CMSlinkFLAG; // flag for holding LINK/ACCESS
+
+ // following stuff vm/370 only...
+ int *MAINLIST = (int*)0x500;
+ int *MAINSTRT = (int*)0x504;
+ int *MAINHIGH = (int*)0x510;
+ int *FREELOWE = (int*)0x514;
+ int *LOCCNT   = (int*)0x574;
+ int *ABGCOM   = (int*)0x4E0;
+
+ typedef struct __rsave__ {
+  int MAINLIST;
+  int MAINSTRT;
+  int MAINHIGH;
+  int LOCCNT;
+  int PPEND;
+  int EOCADR;
+  int PROPOSED;
+ } RSAVE;
+
+ RSAVE RKSAVE, RVSAVE;  // kicks and vsam memory pointer saves
+#endif
+
+#include "fcthdr.h"
+#include "fctent.h"
+
+#include "pcthdr.h"
+#include "pctent.h"
+
+ ///////////////////////////////////////////////////////////////
+ //
+ //  function prototypes
+ //
+ ///////////////////////////////////////////////////////////////
+
+void ETRACE(int type_of, char *more, int intense);
+void VTRACE(int *vcodes, int intense);
+void XTRACE(int retcode, char *more, int intense);
+void TRACEstring(char *sometxt);
+void TRACEint(int someint);
+int  enq(char *dsname);
+void deq(char *dsname);
+
+#ifdef __CMS__
+int  chkstk(void);
+int  rdstk(char *buffer, int maxbufl);
+int  ascan (char *buf, int start);
+int  LnkAcc(void);
+void RelDet(void);
+#endif
+
+void sw2vsam(void);
+void sw2kicks(void);
+
+int openacb(fcte *f);
+int reopenacb(fcte *f);
+fcte *FindAndOpen(char *file);
+void closeacb(fcte *f);
+void finalcloseacb(fcte *f);
+void maprtn(fcte *f, short reqID);
+int mapReqId(fcte *f, short reqID);
+
+void pointk(fcte *f, short reqid, int dir);
+void pointe(fcte *f, short reqid, int dir);
+void pointr(fcte *f, short reqid, int dir);
+void point(fcte *f, short reqid, int dir);
+
+int delete(fcte *f, int flags,
+             char *ridfld, short keylen,
+             short *numrec);
+int endbr(fcte *f, short reqID);
+int readnext(fcte *f, short reqID, int flags,
+             char *into, short *length,
+             char *ridfld, short keylen);
+int readprev(fcte *f, short reqID, int flags,
+             char *into, short *length,
+             char *ridfld, short keylen);
+int read(fcte *f, int flags,
+              char *into, short *length,
+              char *ridfld, short keylen);
+//int resetbr(); none such - uses endbr/startbr
+int rewrite(fcte *f, int flags,
+              char *from, short *length);
+int startbr(fcte *f, short reqID, int flags,
+             char *ridfld, short keylen);
+int unlock(fcte *f, int flags);
+int write(fcte *f, int flags,
+              char *from, short *length,
+              char *ridfld, short keylen);
+
+int FAOAPS; // FindAndOpen AllowPath switch, 0 = allow
+
+
+ ///////////////////////////////////////////////////////////////
+ //
+ //  kikfcp mainline
+ //
+ ///////////////////////////////////////////////////////////////
+
+int kikfcp (KIKCSA *kikcsa, int type_of,
+   char *arg1, char *arg2, char *arg3, char *arg4,
+   char *arg5, char *arg6, char *arg7, char *arg8) {
+
+ int dodump=0, suppress=1;
+#define firstnl arg1
+
+ fcte *fctent, *fctbase, *fctpath;
+ fcth *fcthdr;
+ int i, ii, iii;
+ int rc, tim;
+
+switch (type_of)
+  {
+  case kikfcpINIT:     // startup
+    {
+    csa = kikcsa;
+    ETRACE(type_of, "", 0);
+    //
+    //no arguments
+
+#ifdef DEBUGIT
+     // message if debugging version
+     FPRINTF(csa->csastderr,"%s", firstnl); firstnl[0]=0;
+     FPRINTF(csa->csastderr,"*** DEBUGGING version of FCP *** *** ***\n");
+#endif
+
+    // check table version matches csa version
+    //  -- ALL 4 bytes of it...
+    //  -- at some point we may be able to relax that some
+    fcthdr = (fcth *)csa->fcp_table_addr;
+    if (MEMCMP((char *)&csa->version, &fcthdr->ver[0], 4)) {
+     FPRINTF(csa->csastderr,"%s", firstnl); firstnl[0]=0;
+     FPRINTF(csa->csastderr,"FCT version does not match CSA!\n");
+     FPRINTF(csa->csastderr, "This is a fatal error! Bye Bye!\n\n");
+     EXIT (999);
+     }
+
+#ifdef __CMS__
+
+    // ensure the VSAM pack is available
+    RelDet(); // incase it was already linked/accessed
+    tim = 15; rc = 105;
+    while ((tim > 0) & (rc == 105)) {
+     tim--;
+     rc = LnkAcc();
+     if (rc == 105) STIMER(100);
+     }
+    if (rc != 0) {
+     FPRINTF(csa->csastderr,"%s", firstnl); firstnl[0]=0;
+     FPRINTF(csa->csastderr,
+     "?Unable (%d) to LINK/ACCESS the VSAM disk, disabling all files\n",
+      rc);
+     for (fctent=fcthdr->first; fctent != NULL; fctent=fctent->next)
+      fctent->flag1 |= FCTEflag1disabled;
+     XTRACE(0, "", 0);
+     return(0);
+     }
+#endif
+
+#ifdef __MVS__
+    // first pass thru fct - obtain dsns from jfcb
+
+    // in CMS enq aren't used so we don't need this...
+
+    for (fctent=fcthdr->first; fctent != NULL; fctent=fctent->next) {
+     iefjfcb *j;
+
+     if((fctent->flag1 & FCTEflag1disabled) > 0) {
+      FPRINTF(csa->csastderr,"%s", firstnl); firstnl[0]=0;
+      FPRINTF(csa->csastderr,"file %8.8s is disabled in FCT...\n",
+             fctent->ddname);
+      continue;
+      }
+     j = rdjfcb(fctent->ddname);
+     if (j->jfcbind2 == 0)   { // DD not present
+      FPRINTF(csa->csastderr,"%s", firstnl); firstnl[0]=0;
+      FPRINTF(csa->csastderr,"no alloc/DD for file %8.8s, disabling...\n",
+             fctent->ddname);
+      fctent->flag1 |= FCTEflag1disabled;
+      continue;
+      }
+     else {
+      MEMCPY(fctent->dsname, j->jfcbdsnm, 44);
+      if ((j->jfcbind2 & jfcshare) > 0)
+       fctent->flag1 |= FCTEflag1dispshr;
+       }
+     } // end for (pass 1)
+
+    // second pass - obtain enqueue names from base clusters
+
+    // in CMS enq aren't used so we don't need this...
+
+    for (fctent = fcthdr->first; fctent != NULL; fctent=fctent->next) {
+     if((fctent->flag1 & FCTEflag1disabled) > 0) continue;
+     if(fctent->ddbase[0] != ' ') {
+      fcte *f2;
+      for (f2 = fcthdr->first; f2 != NULL; f2=f2->next) {
+       if((f2->flag1 & FCTEflag1disabled) > 0) continue;
+       if(!MEMCMP(fctent->ddbase, f2->ddname, 8)) {
+        f2->flag1 |= FCTEflag1usedbase;
+        MEMCPY(fctent->dsname, f2->dsname, 44);
+        break;
+        }
+       }
+      if (f2 == NULL) {
+       FPRINTF(csa->csastderr,"%s", firstnl); firstnl[0]=0;
+       FPRINTF(csa->csastderr,"file %8.8s specified %8.8s as base but\n",
+             fctent->ddname, fctent->ddbase);
+       FPRINTF(csa->csastderr,"   %8.8s not in FCT, so %8.8s disabled...\n",
+             fctent->ddbase, fctent->ddname);
+       fctent->flag1 |= FCTEflag1disabled;
+       }
+      }
+     } // end for (pass 2)
+#endif
+
+    // third pass - open to confirm existance and
+    //              get info (type, key info, disp, etc)
+    //              ** immed close unless disp=old **
+    ii = 1; iii=1;
+    while (ii>0) {
+     for (fctent = fcthdr->first, ii=0;
+          fctent != NULL; fctent=fctent->next) {
+      if((fctent->flag1 & FCTEflag1disabled) > 0) continue;
+      if((fctent->flag1 & FCTEflag1InitOpend) > 0) continue;
+#ifdef __CMS__
+      // all files are DISP=SHR in CMS...
+      // -- we don't want any OLD's trying to stay open...
+      fctent->flag1 |= FCTEflag1dispshr;
+#endif
+
+      fctbase = NULL;
+      if(fctent->ddbase[0] != ' ') {
+       fcthdr = (fcth *)csa->fcp_table_addr;
+       for (fctbase = fcthdr->first;
+            fctbase != NULL; fctbase=fctbase->next) {
+        if(!MEMCMP(fctent->ddbase, fctbase->ddname, 8)) break;
+        }
+       // quit if base not found
+       if (fctbase == NULL) {
+        FPRINTF(csa->csastderr,"%s", firstnl); firstnl[0]=0;
+        FPRINTF(csa->csastderr,"base for path %8.8s not found, disabling...\n",
+             fctent->ddname);
+        fctent->flag1 |= FCTEflag1disabled;
+        continue; // for (fctent =
+        }
+       // quit if base is itself a path
+       if ((fctbase->flag1 & FCTEflag1path) > 0) {
+        FPRINTF(csa->csastderr,"%s", firstnl); firstnl[0]=0;
+        FPRINTF(csa->csastderr,
+         "base for path %8.8s is itself a path, disabling both...\n",
+         fctent->ddname);
+        fctbase->flag1 |= FCTEflag1disabled;
+        fctent->flag1 |= FCTEflag1disabled;
+        continue; // for (fctent =
+        }
+       }
+      if (fctbase == NULL)  fctbase = fctent;
+      if(enq(fctbase->dsname) == 0) {
+        ii++;
+       if(openacb(fctent) != 0) {
+        if((fctent->flag1 & FCTEflag1dispshr) > 0)
+           closeacb(fctent);
+        fctent->flag1 |= FCTEflag1InitOpend;
+        }
+       else {
+        FPRINTF(csa->csastderr,"%s", firstnl); firstnl[0]=0;
+        FPRINTF(csa->csastderr,"file %8.8s did not open, disabling...\n",
+             fctent->ddname);
+        fctent->flag1 |= FCTEflag1disabled;
+        }
+       deq(fctbase->dsname);
+       }
+      else ii++;
+      } // end for
+      if (ii==0) continue;
+      if ((iii % 10) == 0 ) {
+       FPRINTF(csa->csastderr,"%s", firstnl); firstnl[0]=0;
+       FPRINTF(csa->csastderr,"waiting for files...\n");
+       }
+      STIMER(30);
+      iii++;
+      if (iii>100) break; // max 30 seconds waiting for files
+     } // end while (pass 3a)
+
+#ifdef __MVS__
+    // third pass - part b - disable anything we could not
+    //              enqueue in the first part of pass 3
+
+    // in CMS enq always returns true so there will never be any...
+
+    for (fctent = fcthdr->first; fctent != NULL; fctent=fctent->next) {
+     if((fctent->flag1 & FCTEflag1disabled) > 0) continue;
+     if((fctent->flag1 & FCTEflag1InitOpend) == 0) {
+      FPRINTF(csa->csastderr,"%s", firstnl); firstnl[0]=0;
+      FPRINTF(csa->csastderr,"unable to enqueue file %8.8s, disabling...\n",
+           fctent->ddname);
+      fctent->flag1 |= FCTEflag1disabled;
+      }
+     } // end for (pass 3b)
+
+    // fourth pass - make sure all files used as bases are
+    //               ksds or esds base clusters
+
+    // in CMS enq aren't used so we don't need this...
+
+    for (fctent = fcthdr->first; fctent != NULL; fctent=fctent->next) {
+     if((fctent->flag1 & FCTEflag1disabled) > 0) continue;
+     if(fctent->ddbase[0] != ' ') {
+      if((fctent->flag1 & FCTEflag1path) == 0) {
+       FPRINTF(csa->csastderr,"%s", firstnl); firstnl[0]=0;
+       FPRINTF(csa->csastderr,
+        "%8.8s specifies a base but is not a path! disabled.\n",
+        fctent->ddname);
+       fctent->flag1 |= FCTEflag1disabled;
+       }
+      else {
+       fcte *f2;
+       for (f2 = fcthdr->first; f2 != NULL; f2=f2->next) {
+        if((f2->flag1 & FCTEflag1disabled) > 0) continue;
+        if(!MEMCMP(fctent->ddbase, f2->ddname, 8)) {
+         if(((f2->flag1 & FCTEflag1base) > 0) &
+           (((f2->flag1 & FCTEflag1ksds) > 0) |
+           ((f2->flag1 & FCTEflag1esds) > 0))) break;
+         FPRINTF(csa->csastderr,"%s", firstnl); firstnl[0]=0;
+         FPRINTF(csa->csastderr,"file %8.8s specified %8.8s as base but ",
+               fctent->ddname, fctent->ddbase);
+         FPRINTF(csa->csastderr,"%8.8s is not ksds or esds base cluster, ",
+               fctent->ddbase);
+         FPRINTF(csa->csastderr,"so %8.8s disabled...\n", fctent->ddname);
+         fctent->flag1 |= FCTEflag1disabled;
+         break;
+         }
+        }
+       if (f2 == NULL) {
+        FPRINTF(csa->csastderr,"%s", firstnl); firstnl[0]=0;
+        FPRINTF(csa->csastderr,"file %8.8s specified %8.8s as base but ",
+              fctent->ddname, fctent->ddbase);
+        FPRINTF(csa->csastderr,
+         "%8.8s not enabled in FCT, so %8.8s disabled...\n",
+         fctent->ddbase, fctent->ddname);
+        fctent->flag1 |= FCTEflag1disabled;
+        }
+       }
+      }
+     } // end for (pass 4)
+
+    // fifth pass - make sure all real paths have bases
+    //              and the bases are still enabled
+
+    // in CMS enq aren't used so we don't need this...
+
+    for (fctent = fcthdr->first; fctent != NULL; fctent=fctent->next) {
+     if((fctent->flag1 & FCTEflag1disabled) > 0) continue;
+     if((fctent->flag1 & FCTEflag1path) > 0) {
+      if(fctent->ddbase[0] == ' ') {
+       FPRINTF(csa->csastderr,"%s", firstnl); firstnl[0]=0;
+       FPRINTF(csa->csastderr,"%8.8s is actually a path but ", fctent->ddname);
+       FPRINTF(csa->csastderr,"no base is given so it's disabled...\n");
+       fctent->flag1 |= FCTEflag1disabled;
+       }
+      }
+     } // end for (pass 5)
+#endif
+
+#ifdef __CMS__
+    RelDet();
+#endif
+
+    XTRACE(0, "", 0);
+    return(0);
+    }
+    //break;
+
+  case kikfcpTERM:     // shutdown & close DISP=OLD files
+    {
+    KIKTCA *tca = csa->tca;
+
+    ETRACE(type_of, "", 0);
+    //
+    //no arguments
+
+    fcthdr = (fcth *)csa->fcp_table_addr;
+    for (fctent = fcthdr->first; fctent != NULL; fctent=fctent->next) {
+     if((fctent->flag1 & FCTEflag1disabled) > 0) continue;
+     if((fctent->flag1 & FCTEflag1open) > 0) {
+
+#ifdef __CMS__
+    if(CMSlinkFLAG == 0) {
+     // should never happen - open file wo/flag set...
+     }
+#endif
+
+#ifdef __CMS__
+    // make sure not in CMS vsam overlay abend...
+    if((tca->abusr != 0x888) && (tca->abusr != 0x889)) {
+#endif
+      finalcloseacb(fctent);
+#ifdef __CMS__
+    }
+#endif
+      fctbase = NULL;
+      if(fctent->ddbase[0] != ' ') {
+       fcthdr = (fcth *)csa->fcp_table_addr;
+       for (fctbase = fcthdr->first;
+            fctbase != NULL; fctbase=fctbase->next) {
+        if(!MEMCMP(fctent->ddbase, fctbase->ddname, 8)) break;
+        }
+       }
+      if (fctbase == NULL)  fctbase = fctent;
+      deq(fctbase->dsname); // prob not enq'd, but OK anyway...
+      }
+     }
+
+#ifdef __CMS__
+    if((tca->abusr != 0x888) && (tca->abusr != 0x889)) {
+     if(CMSlinkFLAG != 0) RelDet();
+    }
+#endif
+
+    XTRACE(0, "", 0);
+    return(0);
+    }
+    //break;
+
+  case kikfcpTRANSTRT:
+  case kikfcpTRANEND:       // close files
+    {
+    ETRACE(type_of, "", 1); // 'intense'
+    //
+    //no arguments
+
+    // TRANSTART
+    // Called by attach to clean up fct Used to do slightly different
+    // things than TRANEND, now the same...
+    //
+    // TRANEND
+    // Can get called
+    // 1 -- by SIP when transaction really ends (ie, when kcpattach
+    //      returns) or
+    // 2 -- by SYNCPOINT, or
+    // 3 -- by TCP when a conversational program tries to read the
+    //      terminal
+    // SIP calling, task number zero & it's OK to clean up everything.
+    // SYNCPOINT last function 5634 & it's OK to clean up everything
+    // Otherwise it's conversational,
+    // -- so see if it's KEDF in which case files need to stay open
+    // -- if not SIP, SYNCPOINT, KEDF we need to find the pct entry
+    //    for the current transid & see if 'KPOPEN' (keep files open)
+    //    set. if not then once again clean up everything.
+
+    if ((csa->trc.trcflags & 16) > 0) {
+     XTRACE(0, "", 1); // 'intense'      // leave KEDF alone...
+     return(0);
+     }
+
+    if(csa->tca->tasknum != 0)
+     if (*(short*)&csa->tca->kikeib.eibfn != 5634 ) {
+      pcte *pctent;
+      pcth *pcthdr;
+      pcthdr = (pcth *)csa->kcp_table_addr;
+      for (pctent = pcthdr->first; pctent != NULL; pctent=pctent->next) {
+       if (!MEMCMP(csa->tca->tranid, pctent->tranid, 4)) { break; }
+       }
+      if (pctent != NULL) {
+       if (pctent->fcpenableflag > 0) {     // if current tran has the
+        XTRACE(0, "", 1); // 'intense'      // flag set leave it along
+        return(0);
+        }
+       }
+      }
+
+    // here when SIP call
+    //  or SYNCPOINT
+    //  or current trans does not have flag set
+    fcthdr = (fcth *)csa->fcp_table_addr;
+    for (fctent = fcthdr->first; fctent != NULL; fctent=fctent->next) {
+     if((fctent->flag1 & FCTEflag1disabled) > 0) continue;
+     if((fctent->flag1 & FCTEflag1open) == 0) continue;
+     // NOTE - older behavior was to only close SHR files, but we
+     //        now close/deq ALL vsam files at end of transaction
+
+#ifdef __CMS__
+    if(CMSlinkFLAG == 0) {
+     // should never happen - open file wo/flag set...
+     }
+#endif
+
+     closeacb(fctent);
+     fctbase = NULL;
+     if(fctent->ddbase[0] != ' ') {
+      fcthdr = (fcth *)csa->fcp_table_addr;
+      for (fctbase = fcthdr->first;
+           fctbase != NULL; fctbase=fctbase->next) {
+       if(!MEMCMP(fctent->ddbase, fctbase->ddname, 8)) break;
+       }
+      }
+     if (fctbase == NULL)  fctbase = fctent;
+     deq(fctbase->dsname);
+     }
+
+#ifdef __CMS__
+    if(CMSlinkFLAG != 0) RelDet();
+#endif
+
+    XTRACE(0, "", 1);           // 'intense'
+    return(0);
+    }
+    //break;
+
+  case kikfcpCLOSE:             // close a file
+    {
+
+    //file name = arg1;        // (Ir) file
+
+    ETRACE(type_of, arg1, 1);  // 'intense'
+
+    // CLOSE
+    // Called by KEDF to close it's files after use, to enable KEDF
+    // sessions to be less 'conversational'.  It uses this for
+    // KIKINTRA, KIKTEMP, and KSDB
+    // ** not part of the API, so probably (hopefully) *only* KEDF...
+    // ** no-op in CMS, since can't release-detach anyway...
+    // ** no-op in DEBUG (so 2$ will allow KEDF to debug TSP/DCP)
+
+#ifndef __CMS__
+#ifndef DEBUGIT
+    char  *file; file = arg1;
+
+    fcthdr = (fcth *)csa->fcp_table_addr;
+    for (fctent = fcthdr->first; fctent != NULL; fctent=fctent->next) {
+     if((fctent->flag1 & FCTEflag1disabled) > 0) continue;
+     if((fctent->flag1 & FCTEflag1open) == 0) continue;
+     if(MEMCMP(file, fctent->ddname, 8)) continue;
+     closeacb(fctent);
+     fctbase = NULL;
+     if(fctent->ddbase[0] != ' ') {
+      fcthdr = (fcth *)csa->fcp_table_addr;
+      for (fctbase = fcthdr->first;
+           fctbase != NULL; fctbase=fctbase->next) {
+       if(!MEMCMP(fctent->ddbase, fctbase->ddname, 8)) break;
+       }
+      }
+     if (fctbase == NULL)  fctbase = fctent;
+     deq(fctbase->dsname);
+     break;
+     }
+#endif
+#endif
+
+    XTRACE(0, "", 1);           // 'intense'
+    return(0);
+    }
+    //break;
+
+  case kikfcpDELE:     // delete
+    {
+    KIKTCA *tca=csa->tca;
+
+    ETRACE(type_of, arg1, 0);
+    //
+    //file name = arg1; // (Ir) file
+    //flags     = arg2  // (Ir) flags
+                           // generic
+                           // rba
+                           // rrn
+    // - null - = arg3; //
+    // - null - = arg4; //
+    //ridfld    = arg5; // (Io) ridfld (null if missing)
+    //keylen    = arg6; // (Io) keylen (-1 if missing)
+    //numrec    = arg7; // (Ir) numrec (+1 if 'missing')
+
+    char  *file, *ridfld;
+    int    flags;
+    short  keylen, *numrec;
+
+    file = arg1; flags = *(int*)arg2;
+    ridfld = arg5; keylen = *(short*)arg6;
+    numrec = (short*)arg7;
+    if ((flags & FCTEflagsbridfld) > 0) ridfld = NULL;
+
+    fcthdr = (fcth *)csa->fcp_table_addr;
+    fctent = FindAndOpen(file);
+
+    // do the delete
+    i = delete(fctent, flags, ridfld, keylen, numrec);
+
+    // copy resp, resp2, rcode from fcte to eib
+    tca->kikeib.eibresp  = fctent->resp;
+    tca->kikeib.eibresp2 = fctent->resp2;
+    MEMCPY(tca->kikeib.eibrcode, fctent->rcode, 6);
+
+    // check for abend or normal return
+    if (i != 0) {
+     KIKPCP(csa, kikpcpABND, "F003", &dodump); // abend, resp posted
+     }
+
+    XTRACE(0, arg1, 0);
+    return(0);
+    }
+    //break;
+
+  case kikfcpENDB:     // end browse
+    {
+    KIKTCA *tca=csa->tca;
+
+    ETRACE(type_of, arg1, 0);
+    //
+    //file name = arg1; // (Ir) file
+    //flags     = arg2  // (Ir) flags - NOT USED
+    // - null - = arg3; //
+    // - null - = arg4; //
+    // - null - = arg5; //
+    // - null - = arg6; //
+    //reqid     = arg7; // (Ir) reqid  (+0 if 'missing')
+
+    char  *file;
+    int    flags;
+    short  reqid;
+
+    file = arg1; flags = *(int*)arg2; reqid = *(short*)arg7;
+
+    fcthdr = (fcth *)csa->fcp_table_addr;
+    fctent = FindAndOpen(file);
+
+    // do the end-browse
+    i = endbr(fctent, reqid);
+
+    // copy resp, resp2, rcode from fcte to eib
+    tca->kikeib.eibresp  = fctent->resp;
+    tca->kikeib.eibresp2 = fctent->resp2;
+    MEMCPY(tca->kikeib.eibrcode, fctent->rcode, 6);
+
+    // check for abend or normal return
+    if (i != 0) {
+     KIKPCP(csa, kikpcpABND, "F003", &dodump); // abend, resp posted
+     }
+
+    XTRACE(0, arg1, 0);
+    return(0);
+    }
+    //break;
+
+  case kikfcpREDN:     // read next
+    {
+    KIKTCA *tca=csa->tca;
+
+    ETRACE(type_of, arg1, 0);
+    //
+    //file name = arg1; // (Ir) file
+    //flags     = arg2  // (Ir) flags
+                           // rba
+                           // rrn
+    //into      = arg3; // (Or) into/from
+    //length    = arg4; // (Io) length (-1 if missing)
+    //ridfld    = arg5; // (Io) ridfld (null if missing)
+    //keylen    = arg6; // (Io) keylen (-1 if missing)
+    //reqid     = arg7; // (Ir) reqid  (+0 if 'missing')
+
+    char  *file, *into, *ridfld;
+    int    flags;
+    short *length, keylen, reqid;
+
+    file = arg1; flags = *(int*)arg2;
+    into = arg3; length = (short*)arg4;
+    ridfld = arg5; keylen = *(short*)arg6;
+    reqid = *(short*)arg7;
+    if ((flags & FCTEflagsbridfld) > 0) ridfld = NULL;
+
+    fcthdr = (fcth *)csa->fcp_table_addr;
+    fctent = FindAndOpen(file);
+
+    // do the read-next
+    i = readnext(fctent, reqid, flags, into, length, ridfld, keylen);
+
+    // copy resp, resp2, rcode from fcte to eib
+    tca->kikeib.eibresp  = fctent->resp;
+    tca->kikeib.eibresp2 = fctent->resp2;
+    MEMCPY(tca->kikeib.eibrcode, fctent->rcode, 6);
+
+    // check for abend or normal return
+    if (i != 0) {
+     KIKPCP(csa, kikpcpABND, "F003", &dodump); // abend, resp posted
+     }
+
+    XTRACE(0, arg1, 0);
+    return(0);
+    }
+    //break;
+
+  case kikfcpREDP:     // read previous
+    {
+    KIKTCA *tca=csa->tca;
+
+    ETRACE(type_of, arg1, 0);
+    //
+    //file name = arg1; // (Ir) file
+    //flags     = arg2  // (Ir) flags
+                           // rba
+                           // rrn
+    //into      = arg3; // (Or) into/from
+    //length    = arg4; // (Io) length (-1 if missing)
+    //ridfld    = arg5; // (Io) ridfld (null if missing)
+    //keylen    = arg6; // (Io) keylen (-1 if missing)
+    //reqid     = arg7; // (Ir) reqid  (+0 if 'missing')
+
+    char  *file, *into, *ridfld;
+    int    flags;
+    short *length, keylen, reqid;
+
+    file = arg1; flags = *(int*)arg2;
+    into = arg3; length = (short*)arg4;
+    ridfld = arg5; keylen = *(short*)arg6;
+    reqid = *(short*)arg7;
+    if ((flags & FCTEflagsbridfld) > 0) ridfld = NULL;
+
+    fcthdr = (fcth *)csa->fcp_table_addr;
+    fctent = FindAndOpen(file);
+
+    // do the read-prev
+    i = readprev(fctent, reqid, flags, into, length, ridfld, keylen);
+
+    // copy resp, resp2, rcode from fcte to eib
+    tca->kikeib.eibresp  = fctent->resp;
+    tca->kikeib.eibresp2 = fctent->resp2;
+    MEMCPY(tca->kikeib.eibrcode, fctent->rcode, 6);
+
+    // check for abend or normal return
+    if (i != 0) {
+     KIKPCP(csa, kikpcpABND, "F003", &dodump); // abend, resp posted
+     }
+
+    XTRACE(0, arg1, 0);
+    return(0);
+    }
+    //break;
+
+  case kikfcpREAD:     // read
+    {
+    KIKTCA *tca=csa->tca;
+
+    ETRACE(type_of, arg1, 0);
+    //
+    //file name = arg1; // (Ir) file
+    //flags     = arg2  // (Ir) flags
+                           // generic
+                           // rba
+                           // rrn
+                           // gteq
+                           // equal
+                           // update
+    //into      = arg3; // (Or) into/from
+    //length    = arg4; // (Io) length (-1 if missing)
+    //ridfld    = arg5; // (Io) ridfld (null if missing)
+    //keylen    = arg6; // (Io) keylen (-1 if missing)
+
+    char  *file, *into, *ridfld;
+    int    flags;
+    short *length, keylen;
+
+    file = arg1; flags = *(int*)arg2;
+    into = arg3; length = (short*)arg4;
+    ridfld = arg5; keylen = *(short*)arg6;
+    if ((flags & FCTEflagsbridfld) > 0) ridfld = NULL;
+
+    fcthdr = (fcth *)csa->fcp_table_addr;
+    fctent = FindAndOpen(file);
+
+    // do the read
+    i = read(fctent, flags, into, length, ridfld, keylen);
+
+    // copy resp, resp2, rcode from fcte to eib
+    tca->kikeib.eibresp  = fctent->resp;
+    tca->kikeib.eibresp2 = fctent->resp2;
+    MEMCPY(tca->kikeib.eibrcode, fctent->rcode, 6);
+
+    // check for abend or normal return
+    if (i != 0) {
+     KIKPCP(csa, kikpcpABND, "F003", &dodump); // abend, resp posted
+     }
+
+    XTRACE(0, arg1, 0);
+    return(0);
+    }
+    //break;
+
+  case kikfcpREBR:     // reset browse
+    {
+    KIKTCA *tca=csa->tca;
+
+    ETRACE(type_of, arg1, 0);
+    //
+    //file name = arg1; // (Ir) file
+    //flags     = arg2  // (Ir) flags
+                           // generic
+                           // rba
+                           // rrn
+                           // gteq
+                           // equal
+    // - null - = arg3; //
+    // - null - = arg4; //
+    //ridfld    = arg5; // (Io) ridfld (null if missing)
+    //keylen    = arg6; // (Io) keylen (-1 if missing)
+    //reqid     = arg7; // (Ir) reqid  (+0 if 'missing')
+
+    char  *file, *ridfld;
+    int    flags;
+    short  keylen, reqid;
+
+    file = arg1; flags = *(int*)arg2;
+    ridfld = arg5; keylen = *(short*)arg6;
+    reqid = *(short*)arg7;
+    if ((flags & FCTEflagsbridfld) > 0) ridfld = NULL;
+
+    fcthdr = (fcth *)csa->fcp_table_addr;
+    fctent = FindAndOpen(file);
+
+    // do the end-browse
+    i = endbr(fctent, reqid);
+    // do the start-browse
+    if (i == 0) {
+     i = startbr(fctent, reqid, flags, ridfld, keylen);
+     }
+
+    // copy resp, resp2, rcode from fcte to eib
+    tca->kikeib.eibresp  = fctent->resp;
+    tca->kikeib.eibresp2 = fctent->resp2;
+    MEMCPY(tca->kikeib.eibrcode, fctent->rcode, 6);
+
+    // check for abend or normal return
+    if (i != 0) {
+     KIKPCP(csa, kikpcpABND, "F003", &dodump); // abend, resp posted
+     }
+
+    XTRACE(0, arg1, 0);
+    return(0);
+    }
+    //break;
+
+  case kikfcpREWR:     // rewrite
+    {
+    KIKTCA *tca=csa->tca;
+
+    ETRACE(type_of, arg1, 0);
+    //
+    //file name = arg1; // (Ir) file
+    //flags     = arg2  // (Ir) flags - NOT USED
+    //from      = arg3; // (Ir) into/from
+    //length    = arg4; // (Io) length (-1 if missing)
+
+    char  *file, *from;
+    int    flags;
+    short *length;
+
+    file = arg1; flags = *(int*)arg2;
+    from = arg3; length = (short*)arg4;
+
+    fcthdr = (fcth *)csa->fcp_table_addr;
+    fctent = FindAndOpen(file);
+
+    // do the write
+    i = rewrite(fctent, flags, from, length);
+
+    // copy resp, resp2, rcode from fcte to eib
+    tca->kikeib.eibresp  = fctent->resp;
+    tca->kikeib.eibresp2 = fctent->resp2;
+    MEMCPY(tca->kikeib.eibrcode, fctent->rcode, 6);
+
+    // check for abend or normal return
+    if (i != 0) {
+     KIKPCP(csa, kikpcpABND, "F003", &dodump); // abend, resp posted
+     }
+
+    XTRACE(0, arg1, 0);
+    return(0);
+    }
+    //break;
+
+  case kikfcpSTBR:     // start browse
+    {
+    KIKTCA *tca=csa->tca;
+
+    ETRACE(type_of, arg1, 0);
+    //
+    //file name = arg1; // (Ir) file
+    //flags     = arg2  // (Ir) flags
+                           // generic
+                           // rba
+                           // rrn
+                           // gteq
+                           // equal
+    // - null - = arg3; //
+    // - null - = arg4; //
+    //ridfld    = arg5; // (Io) ridfld (null if missing)
+    //keylen    = arg6; // (Io) keylen (-1 if missing)
+    //reqid     = arg7; // (Ir) reqid  (+0 if 'missing')
+
+    char  *file, *ridfld;
+    int    flags;
+    short  keylen, reqid;
+
+    file = arg1; flags = *(int*)arg2;
+    ridfld = arg5; keylen = *(short*)arg6;
+    reqid = *(short*)arg7;
+    if ((flags & FCTEflagsbridfld) > 0) ridfld = NULL;
+
+    fcthdr = (fcth *)csa->fcp_table_addr;
+    fctent = FindAndOpen(file);
+
+    // do the start-browse
+    i = startbr(fctent, reqid, flags, ridfld, keylen);
+
+    // copy resp, resp2, rcode from fcte to eib
+    tca->kikeib.eibresp  = fctent->resp;
+    tca->kikeib.eibresp2 = fctent->resp2;
+    MEMCPY(tca->kikeib.eibrcode, fctent->rcode, 6);
+
+    // check for abend or normal return
+    if (i != 0) {
+     KIKPCP(csa, kikpcpABND, "F003", &dodump); // abend, resp posted
+     }
+
+    XTRACE(0, arg1, 0);
+    return(0);
+    }
+    //break;
+
+  case kikfcpUNLK:     // unlock
+    {
+    KIKTCA *tca=csa->tca;
+
+    ETRACE(type_of, arg1, 0);
+    //
+    //file name = arg1; // (Ir) file
+    //flags     = arg2  // (Ir) flags - NOT USED
+
+    char  *file;
+    int    flags;
+
+    file = arg1; flags = *(int*)arg2;
+
+    fcthdr = (fcth *)csa->fcp_table_addr;
+    fctent = FindAndOpen(file);
+
+    // do the end-browse
+    i = unlock(fctent, flags);
+
+    // copy resp, resp2, rcode from fcte to eib
+    tca->kikeib.eibresp  = fctent->resp;
+    tca->kikeib.eibresp2 = fctent->resp2;
+    MEMCPY(tca->kikeib.eibrcode, fctent->rcode, 6);
+
+    // check for abend or normal return
+    if (i != 0) {
+     KIKPCP(csa, kikpcpABND, "F003", &dodump); // abend, resp posted
+     }
+
+    XTRACE(0, arg1, 0);
+    return(0);
+    }
+    //break;
+
+  case kikfcpWRIT:     // write
+    {
+    KIKTCA *tca=csa->tca;
+
+    ETRACE(type_of, arg1, 0);
+    //
+    //file name = arg1; // (Ir) file
+    //flags     = arg2  // (Ir) flags
+                           // rba
+                           // rrn
+                           // massinsert
+    //from      = arg3; // (Ir) into/from
+    //length    = arg4; // (Io) length (-1 if missing)
+    //ridfld    = arg5; // (Io) ridfld (null if missing)
+    //keylen    = arg6; // (Io) keylen (-1 if missing)
+
+
+    char  *file, *from, *ridfld;
+    int    flags;
+    short *length, keylen;
+
+    file = arg1; flags = *(int*)arg2;
+    from = arg3; length = (short*)arg4;
+    ridfld = arg5; keylen = *(short*)arg6;
+    if ((flags & FCTEflagsbridfld) > 0) ridfld = NULL;
+
+    fcthdr = (fcth *)csa->fcp_table_addr;
+    fctent = FindAndOpen(file);
+
+    // do the write
+    i = write(fctent, flags, from, length, ridfld, keylen);
+
+    // copy resp, resp2, rcode from fcte to eib
+    tca->kikeib.eibresp  = fctent->resp;
+    tca->kikeib.eibresp2 = fctent->resp2;
+    MEMCPY(tca->kikeib.eibrcode, fctent->rcode, 6);
+
+    // check for abend or normal return
+    if (i != 0) {
+     KIKPCP(csa, kikpcpABND, "F003", &dodump); // abend, resp posted
+     }
+
+    XTRACE(0, arg1, 0);
+    return(0);
+    }
+    //break;
+
+  default:    // bad calls get here
+    ETRACE( type_of, "", 0);
+    {
+    if ((csa->trc.trcflags & 4) > 0) {
+      FCLOSE((FILE*)kikcsa->auxtrc);
+      csa->trc.trcflags &= ~4; // show closed
+     }
+    ABEND(kikfcpTYPE, type_of);
+    }
+  }
+}
+
+
+void ETRACE(int type_of, char *more, int intense)
+{ char tmsg[20]; int t; t = csa->tca->tasknum;
+  csa->AICAtime = -1;
+  csa->tca->kikeib.eibresp = csa->tca->kikeib.eibresp2 = 0;
+  if (more == NULL)
+  SPRINTF(tmsg, "F%2.2X%8.8s %4.4X", type_of, "", t);
+  else
+  SPRINTF(tmsg, "F%2.2X%8.8s %4.4X", type_of, more, t);
+  ((SubPtr)csa->trc_addr)(tmsg, intense);
+}
+
+
+void VTRACE(int *vcodes, int intense)
+// vcodes is 4 low order bytes of 001122334455 eibrcode
+// ie, it's 22334455, with
+// 22 = vsam return code, 33 = vsam error code
+// 44 = vsam prob det code, 55 = vsam comp code
+{ char tmsg[20]; int t; t = csa->tca->tasknum;
+  SPRINTF(tmsg, "FV %8.8X %4.4X", *vcodes, t);
+  ((SubPtr)csa->trc_addr)(tmsg, intense);
+}
+
+
+void XTRACE(int retcode, char *more, int intense)
+{ char tmsg[20]; int t; t = csa->tca->tasknum;
+  SPRINTF(tmsg, "FX%03.3d       %4.4X", retcode, t);
+  ((SubPtr)csa->trc_addr)(tmsg, intense);
+  //return(retcode);
+  csa->AICAtime = csa->AICAmax;
+}
+
+
+void TRACEstring(char *sometxt)
+{
+  FPRINTF((FILE*)csa->auxtrc, "%80s\n", sometxt);
+}
+
+
+void TRACEint(int someint)
+{
+  FPRINTF((FILE*)csa->auxtrc, "%x\n", someint);
+}

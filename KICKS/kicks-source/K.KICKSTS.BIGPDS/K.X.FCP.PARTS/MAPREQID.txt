@@ -1,0 +1,34 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+ ///////////////////////////////////////////////////////////////
+ //
+ // SUBROUTINE TO MAP A REQUEST ID INTO AN RPL TABLE INDEX
+ //
+ ///////////////////////////////////////////////////////////////
+
+ int mapReqId(fcte *f, short reqID) {
+ int i;
+
+  if (reqID == 0) {
+   return (0);   // reqid=0 always is first rpl
+   }
+  else {         // reqid anything else must match
+   for (i=1; i<f->numreq; i++) {
+    if (f->reqids[i].reqid== reqID) return (i);
+    }
+   return (-1);  // negative return if no match
+   }
+ }
+

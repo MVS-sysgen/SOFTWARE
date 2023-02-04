@@ -1,0 +1,238 @@
+#ifndef __IFGRPL__
+#define __IFGRPL__
+
+ // from SYS1.MACLIB(IFGRPL) on MVS 3.8J 'MVS380' system, 4/7/2009
+
+ // for VSAM usage in KICKS - does not include ifgrplvs/ifgrplvt as
+ // it should to be 'complete' (for use with VTAM)...
+
+ //******************************************************************/
+ //*                                                                */
+ //*     REQUEST PARAMETER LIST (RPL)                               */
+ //*                                                                */
+ //*     THE RPL CONTAINS USER REQUEST AND ERROR PASSBACK           */
+ //*     INFORMATION.  IT IS USED BY VSAM AND VTAM, OR WHEN THE     */
+ //*     JOB ENTRY SUBSYSTEM(JES) IS BEING USED IN VS1, TO          */
+ //*     MAINTAIN INFORMATION REQUIRED BY THE GET AND PUT MACROS.   */
+ //*                                                                */
+ //*     THE RPL IS CREATED WITH INFORMATION SUPPLIED BY THE        */
+ //*     USER IN THE RPL MACRO AND IS ACCESSED BY THE REQUEST       */
+ //*     PROCESSING ROUTINES THROUGH REGISTER 1.                    */
+ //*                                                                */
+ //*     THE CONTROL BLOCK CONSISTS OF AN AREA COMMON TO ALL USERS  */
+ //*     AND AN APPENDED VSAM EXTENSION. THE VSAM EXTENSION @ZA34940*/
+ //*     MACRO INVOKES THE VTAM RPL EXTENSION, ISTRPLEX, IF @ZA34940*/
+ //*     'AM=VTAM' IS CODED IN THE RPL MACRO.               @ZA34940*/
+ //*                                                                */
+ //*     COPYRIGHT = NONE                                           */
+ //*                                                                */
+ //*     STATUS = MVS VERSION 037                                   */
+ //*                                                                */
+ //*     CHANGE LEVEL = 12                                  @ZA34940*/
+ //*                                                                */
+ //*     DATE OF LAST CHANGE = 13  NOV  78  ( 78*317 )      @ZA34940*/
+ //*                           22  FEB  79  ( 79*053 )      @ZA37315*/
+ //*                                                                */
+ //*     CHANGE ACTIVITY                                            */
+ //*   C41509-41513,80331-80373,97681-97685,129426-129427   @XM08790*/
+ //*   C83580,D83560,83564,83584,131064,131065              @XM07756*/
+ //*   C83580,A83584,131065                                 @XM01127*/
+ //*   C83580,A83584,131065                                 @ZM30034*/
+ //*   C619200,A619210,1157610                              @ZA07549*/
+ //*   A87671,93608                                         @ZA32757*/
+ //*   CBMM SPLIT SUPPORT                                   @ZA34940*/
+ //*   VSAM SUPPORT FOR MSS ENHANCEMENT PROGRAM PRODUCT     @ZA37315*/
+ //*   C05900                                               @ZA42006*/
+ //*                                                        @ZA65719*/
+ //*   ADD CODE FOR BDT                                     @ZA92381*/
+ //*                                                                */
+ //******************************************************************/
+ //*
+
+ //*                                                                */
+ //*     RPL DIAGRAM                                                */
+ //*                                                                */
+ //*                                                                */
+ //*   0  _______________________________________________           */
+ //*     |           |           |           |           |          */
+ //*     |  RPLID    | RPLSTYP   | RPLREQ    | RPLLEN    |          */
+ //*   4 |___________|___________|___________|___________|          */
+ //*     |                                               |          */
+ //*     |                   RPLPLHPT                    |          */
+ //*   8 |_______________________________________________|          */
+ //*     |                                               |          */
+ //*     |                    RPLECB                     |          */
+ //*  12 |_______________________________________________|          */
+ //*     |                   RPLFDBWD                    |          */
+ //*     |           |          RPLFDBK                  |          */
+ //*     |  RPLSTAT  |  RPLRTNCD |      RPLCNDCD         |          */
+ //*     |  RPLFUNCD |           | RPLFDB2 |  RPLFDB3    |  @ZA42006*/
+ //*  16 |___________|___________|_________|_____________|          */
+ //*     |                       |                       |          */
+ //*     |       RPLKEYLE        |    RPLSTRID           |          */
+ //*  20 |_______________________|_______________________|          */
+ //*     |                                               |          */
+ //*     |                    RPLCCHAR                   |          */
+ //*  24 |_______________________________________________|          */
+ //*     |                                               |          */
+ //*     |                    RPLDACB                    |          */
+ //*  28 |_______________________________________________|          */
+ //*     |                                               |          */
+ //*     |                    RPLTCBPT                   |          */
+ //*  32 |_______________________________________________|          */
+ //*     |                                               |          */
+ //*     |                    RPLAREA                    |          */
+ //*  36 |_______________________________________________|          */
+ //*     |                    RPLARG                     |          */
+ //*     |        RPLSAF         |        RPLDAF         |          */
+ //*  40 |_______________________|_______________________|          */
+ //*     |                    RPLOPTCD                   |          */
+ //*     |                   RPLECB                      |          */
+ //*  44 |___________|___________|___________|___________|          */
+ //*     |                                               |          */
+ //*     |                    RPLNXTRP                   |          */
+ //*  48 |_______________________________________________|          */
+ //*     |                      RPLEXITP                 |          */
+ //*     |                    RPLRLEN                    |          */
+ //*  52 |_______________________________________________|          */
+ //*     |                                               |          */
+ //*     |                    RPLBUFL                    |          */
+ //*  56 |_______________________________________________|          */
+ //*     |                    RPLOPTC2                   |          */
+ //*     | RPLOPT5   | RPLOPT6   | RPLOPT7   | RPLOPT8   |          */
+ //*  60 |_______________________________________________|          */
+ //*     |                     RPLRBAR                   |          */
+ //*     |       RPLAIXPC        | RPLAIXID  | RPLENDRQ  |          */
+ //*     |_______________________|___________|___________|          */
+ //*     |                                               |          */
+ //*     |                                               |          */
+ //*  68 |_______________________________________________|          */
+ //*     |           |           |                       |          */
+ //*     |  RPLEXTDS | RPLACTIV  |       RPLEMLEN        |          */
+ //*  72 |___________|___________|_______________________|          */
+ //*     |                                               |          */
+ //*     |                     RPLERMSA                  |          */
+ //*     |_______________________________________________|          */
+ //*                                                                */
+ //*         THE VTAM EXTENSION BEGINS AT OFFSET 76.                */
+ //*        IT IS CONTIGUOUS TO THE COMMON AREA ABOVE.              */
+ //*                                                                */
+ //*  76  _______________________________________________           */
+ //*     |                                               |          */
+ //*     |                     RPLAAREA                  |          */
+ //*  80 |_______________________________________________|          */
+ //*     |                                               |          */
+ //*     |                     RPLAARLN                  |          */
+ //*  84 |_______________________________________________|          */
+ //*     |                                               |          */
+ //*     |                     RPLARCLN                  |          */
+ //*  88 |_______________________________________________|          */
+ //*     |                 RPLFDBK2/RPLSIGDA             |          */
+ //*     |    RPLDSB/RPLSSNSI    |      RPLSSNSO         |          */
+ //*     | RPLDSB1   | RPLDSB2   | RPLESR1   | RPLESR2   |          */
+ //*  92 |_______________________________________________|          */
+ //*     |                                               |          */
+ //*     |                     RPLUSFLD                  |          */
+ //*  96 |_______________________________________________|          */
+ //*     |                    RPLOPTC3                   |          */
+ //*     | RPLOPT9   | RPLOPT10  | RPLOPT11  | RPLOPT12  |          */
+ //* 100 |_______________________________________________|          */
+ //*     |                       |                       |          */
+ //*     |        RPLSSNSO       |       RPLUSNSO        |          */
+ //* 104 |_______________________________________________|          */
+ //*     |                                               |          */
+ //*     |                   RPLSAV13                    |          */
+ //* 108 |_______________________________________________|          */
+ //*     |                                               |  @Z40BHUC*/
+ //*     |                   RPLSIGDA                    |  @Z40BHUC*/
+ //* 112 |_______________________________________________|  @Z40BHUC*/
+ //*                                                                */
+ //*     IN A VTAM RPL THE TWO WORDS BEGINNING AT OFFSET 16         */
+ //*     ARE OVERLAYED AS SHOWN BELOW.                              */
+ //*                                                                */
+ //*  16  _______________________________________________           */
+ //*     |           |           |         |             |          */
+ //*     |  RPLRH3   |  RPLSRTYP | RPLCHN  |  RPLVTFL1   |          */
+ //*  20 |___________|___________|_________|_____________|          */
+ //*     |           |                                   |          */
+ //*     | RPLVTFL2  |          RPLCNTRL                 |          */
+ //*     |___________|___________________________________|          */
+ //*                                                                */
+ //*     IN A VTAM RPL THE TWO WORDS BEGINNING AT OFFSET 60         */
+ //*     ARE OVERLAYED AS SHOW BELOW.                               */
+ //*                                                                */
+ //*  60  _______________________________________________           */
+ //*     |                       |                       |          */
+ //*     |       RPLOBSQV        |       RPLIBSQV        |          */
+ //*  64 |_______________________|_______________________|          */
+ //*     |           |           |                       |          */
+ //*     |  RPLOBSQ  |  RPLIBSQ  |       RPLSEQNO        |          */
+ //*     |___________|___________|_______________________|          */
+ //*                                                                */
+ //*                                                                */
+
+
+ typedef struct __ifgrpl__
+ { // rplid/styp/req/len = dos type if they (together) = XL4'00100034'
+   char  rplid;       // +000
+   char  rplstyp;     // +001
+   char  rplreq;      // +002
+   char  rpllen;      // +003
+   char *rplplhpt;    // +004
+   int   rplecb;      // +008
+   struct {
+    char rplstat;     // +012
+    struct {
+     char rplrtncd;   // +013 return code (of feedback)
+     struct {
+      char rplfdb2;   // +014
+      char rplfdb3;
+     } rplcndcd;      // +014
+    } rplfdbk;        // +013
+   } rplfdbwd;        // +012 feedback
+   short rplkeyle;    // +016 key length         KEYLEN
+   short rplstrid;    // +018
+   char *rplcchar;    // +020
+   char *rpldacb;     // +024
+   char *rpltcbpt;    // +028
+   char *rplarea;     // +032 data area pointer  AREA
+   struct {
+    short rplsaf;     // +036
+    short rpldaf;     // +038
+   } rplarg;          // +036 key pointer        ARG
+   int   rploptcd;    // +040 option bytes
+   char *rplnxtrp;    // +044
+   int   rplrlen;     // +048 record length      RECLEN
+   int   rplbufl;     // +052 user buffer size
+   char  rppoptc2[4]; // +056
+   struct {
+    short rplaixpc;   // +060
+    char  rplaixid;   // +062
+    char  rplendrq;   // +063
+    int   rpldddd;    // +064 rba                RBA
+   } rplrbar;         // +060
+   char  rplextds;    // +068
+   char  rplactiv;    // +069
+   short rplemlen;    // +070
+   char *rplermsa;    // +072
+
+ } ifgrpl;
+
+ // option bits in rploptcd (+040)
+#define rplloc   0x80000000 // locate mode 1, mov mode 0
+#define rpldir   0x40000000 // direct
+#define rplseq   0x20000000 // sequential
+#define rplskp   0x10000000 // skip sequential
+#define rplasy   0x08000000 // async processing
+#define rplkge   0x04000000 // kge
+#define rplgen   0x02000000 // generic
+
+#define rplkey   0x00800000 // keyed access
+#define rpladr   0x00400000 // addressed access
+#define rplbwd   0x00100000 // fwd=0, bwd=1
+#define rpllrd   0x00080000 // ard=0, lrd=1
+#define rplupd   0x00020000 // update
+#define rplnsp   0x00010000 // note string position
+
+#endif
+

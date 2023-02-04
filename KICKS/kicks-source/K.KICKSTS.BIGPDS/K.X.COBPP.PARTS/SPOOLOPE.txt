@@ -1,0 +1,186 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+void Do_SPOOLOPEN() {
+// opens a spool report for input from the system spooler to CICS
+// EXEC CICS
+//  SPOOLOPEN INPUT
+//    TOKEN(data-area)  USERID(data-value)  [ CLASS(data-value) ]
+// END-EXEC.
+// -- or --
+// open a spool report for output from CICS to the system spooler.
+// EXEC CICS
+//  SPOOLOPEN OUTPUT
+//    TOKEN(data-area)  USERID(data-value)  NODE(data-value)
+//    [ CLASS(data-value) ] [ PRINT | PUNCH ]
+// END-EXEC.
+
+// *** INPUT, PRINT, PUNCH not supported
+
+ char err[100], saveblocks[4000];
+
+ char op[100], ops[30][100], *ip;
+ int  i, numops=0;
+
+#ifdef PPCOB
+ char token[100]="' '", userid[100]="";
+ char node[100]="", class[100]="'A'";
+#endif
+#ifdef PPGCC
+ char token[100]="\"\"", userid[100]="";
+ char node[100]="", class[100]="\"A\"";
+#endif
+
+ // break up string my way
+ numops = 0;
+ strcpy(saveblocks, cicsblks);
+ ip = SPCLTOK(saveblocks, " ");   // EXEC
+ while (ip=SPCLTOK(0, " ")) {     // KICKS, verb, ... END-EXEC
+  strcpy(ops[numops], ip);
+  numops++;
+  }
+
+ // march thru the args
+ for (i=0; i<numops; i++) {
+  strcpy(op, ops[i]);
+  if(strlen(op)==0) { continue; }
+  if(MYbegstr(op,".")) { continue; }
+  if(MYbegstr(op,"RESP")) { continue; }
+  if(MYbegstr(op,"RESP2")) { continue; }
+  if(MYbegstr(op,"NOHANDLE")) { continue; }
+  if(MYbegstr(op,"EXEC")) { continue; }
+  if(MYbegstr(op,"KICKS")) { continue; }
+  if(MYbegstr(op,"SPOOLOPEN")) { continue; }
+  if(MYbegstr(op,"OUTPUT")) { continue; }
+  if(MYbegstr(op,"END-EXEC") || MYbegstr(op,";")) { continue; }
+  if(MYbegstr(op,"TOKEN")) {
+   ip = strtok(op, "()");   // TOKEN
+   ip = strtok(0, "()");    // the name of the TOKEN
+   if (ip == NULL) {
+    sprintf(err,
+    "malformed argument %s of SPOOLOPEN", op);
+    prt_error(err, 8);
+    No_Code();
+    return;
+    }
+   parrensDown(ip);
+   strcpy(token, ip);
+   continue;
+   }
+  if((MYbegstr(op,"USERID")) ||
+     (MYbegstr(op,"WRITER"))) {
+   ip = strtok(op, "()");   // USERID
+   ip = strtok(0, "()");    // the name of the var to get data
+   if (ip == NULL) {
+    sprintf(err,
+    "malformed argument %s of SPOOLOPEN", op);
+    prt_error(err, 8);
+    No_Code();
+    return;
+    }
+   parrensDown(ip);
+   strcpy(userid, ip);
+   fixXNAME(userid, 8);
+   continue;
+   }
+  if(MYbegstr(op,"NODE")) {
+   ip = strtok(op, "()");   // NODE
+   ip = strtok(0, "()");    // the name of the var holding the node
+   if (ip == NULL) {
+    sprintf(err,
+    "malformed argument %s of SPOOLOPEN", op);
+    prt_error(err, 8);
+    No_Code();
+    return;
+    }
+   parrensDown(ip);
+   strcpy(node, ip);
+   continue;
+   }
+  if(MYbegstr(op,"CLASS")) {
+   ip = strtok(op, "()");   // CLASS
+   ip = strtok(0, "()");    // the name of the var holding the class
+   if (ip == NULL) {
+    sprintf(err,
+    "malformed argument %s of SPOOLOPEN", op);
+    prt_error(err, 8);
+    No_Code();
+    return;
+    }
+   parrensDown(ip);
+   strcpy(class, ip);
+   continue;
+   }
+
+  sprintf(err,
+  "unknown/unsupported argument %s of SPOOLOPEN", op);
+  prt_error(err, 8);
+  No_Code();
+  return;
+  }
+
+ if(userid[0] == 0) {
+  sprintf(err, "USERID/WRITER required -- use USERID('*') for local");
+  prt_error(err, 8);
+  No_Code();
+  return;
+  }
+
+ if(node[0] == 0) {
+  sprintf(err, "NODE required -- use NODE('*') for local");
+  prt_error(err, 8);
+  No_Code();
+  return;
+  }
+
+#ifdef PPCOB
+ fprintf(stdout, "           MOVE 22018 TO EIBFN-2\n");
+ fprintf(stdout, "           MOVE %s TO KIK-FILENAME\n", token);
+ fprintf(stdout, "           MOVE %s TO KIK-PROGRAM\n",  userid);
+ fprintf(stdout, "           MOVE %s TO KIK-MAPNAME\n",  node);
+ fprintf(stdout, "           MOVE %s TO KIK-TRAN\n",     class);
+
+ fprintf(stdout, "           CALL 'KIKCOBGL' USING KIKEIB,\n");
+ if (!strcmp(respvar, ""))
+  fprintf(stdout, "                 KIK-V1,\n");
+ else
+  fprintf(stdout, "                 KIK-V2,\n");
+ fprintf(stdout, "                 KIK-FILENAME,\n");
+ fprintf(stdout, "                 KIK-PROGRAM,\n");
+ fprintf(stdout, "                 KIK-MAPNAME,\n");
+ fprintf(stdout, "                 KIK-TRAN");
+ // ***************
+ // 'move after's are a bad thing because a HANDLE CONDITION
+ //  will not see the changed variable from the move, **BUT**
+ // ** following 'move after' is OK because
+ // ** the token is not valid after *any* abend.
+ // ***************
+ if(token[0] != '\'') {
+  fprintf(stdout, "\n           MOVE KIK-FILENAME TO %s", token);
+  }
+#endif
+#ifdef PPGCC
+ fprintf(stdout, "\t{ short *eibfn2 = (short*)&__KIKEIB->eibfn;\n");
+ fprintf(stdout, "\t\t*eibfn2 = 22018;\n");
+ if (!strcmp(respvar, ""))
+  fprintf(stdout, "\t  int *v=&KIK_V1;\n");
+ else
+  fprintf(stdout, "\t  int *v=&KIK_V2;\n");
+ fprintf(stdout, "\t kikgccgl(__KIKEIB, v, &%s,\n", token);
+ fprintf(stdout, "\t\t&%s, &%s, &%s);\n", userid, node, class);
+ // ***************
+ // no move after here, token directly referenced (it's a sting)
+ // ***************
+#endif
+}

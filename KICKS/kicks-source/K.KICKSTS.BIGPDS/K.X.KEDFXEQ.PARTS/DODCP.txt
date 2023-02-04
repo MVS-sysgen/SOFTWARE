@@ -1,0 +1,148 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+#include "kedfxeq.h"
+
+ ////////////////////// DCP api calls /////////////////////
+
+#define API_DELETEQ_TD API_RTDDQ_TD
+#define API_WRITEQ_TD API_RTDDQ_TD
+#define API_READQ_TD API_RTDDQ_TD
+void API_RTDDQ_TD(KIKEIB *eib, DEBUGGERCA *comm) { // eibfn = 2052
+ char *tioa = csa->tctte->tioa;
+ short sbuf, *eibfn2 = (short*)&eibSave.eibfn;
+ int col, topline, botline, lines;
+
+ if (*eibfn2 == 2052)
+  { APPEND_MSG("READQ TD  "); }
+ else
+ if (*eibfn2 == 2050)
+  { APPEND_MSG("WRITEQ TD  "); }
+ else
+ if (*eibfn2 == 2054)
+  { APPEND_MSG("DELETEQ TD  "); }
+  /* */
+ char  *queue, *into, buffer[200];
+ int   length, row=3;
+  /* */
+ queue = (char*)cobarg[1];
+ into = (char*)cobarg[2]; length = *(short*)cobarg[3];
+  /* */
+ SPRINTF(buffer, "QUEUE(%4.4s) ", queue);
+ APPEND_MSG(buffer);
+ if (*eibfn2 != 2054) {
+  PUT_SBA(++row,1)
+  if(*eibfn2 == 2052)
+   SPRINTF(buffer, "  INTO(X'%06X') ", into);
+  else
+   SPRINTF(buffer, "  FROM(X'%06X') ", into);
+  APPEND_MSG(buffer);
+  SPRINTF(buffer, " LENGTH(%d) ", length);
+  APPEND_MSG(buffer);
+  //DoDump(into, length, 0, ++row, -1);
+  row++; row++; // skip 2 lines
+  topline = row;
+  botline = bot - helpv - 1;
+  lines = botline - topline + 1;
+  if (eib->eibaid == 0) offset = 0;        // initial entry
+  if (eib->eibaid == KIKPF7) {             // scroll back
+   offset -= lines*sba_1632;
+   if (offset < 0) offset = 0;
+   }
+  if (eib->eibaid == KIKPF8) {             // scroll fwd
+   col = offset + lines*sba_1632;
+   if (col < length) offset = col;
+   }
+  if (eib->eibaid == KIKPF19) offset = 0;  // scroll top
+  if (eib->eibaid == KIKPF20) {            // scroll bottom
+   offset = length / sba_1632;             // num lines in area
+   if (length % sba_1632 > 0) offset++;
+   offset -= lines;              // less num lines on screen
+   offset *= sba_1632;           // times chars / line
+   if (offset < 0) offset = 0;   // zero if negative...
+   }
+  DoDump(into, length, offset, topline, lines);
+  }
+ }
+
+#define API_SPOOLCLOSE API_SPOOLOPEN
+#define API_SPOOLWRITE API_SPOOLOPEN
+void API_SPOOLOPEN(KIKEIB *eib, DEBUGGERCA *comm) { // eibfn = 5602
+ char *tioa = csa->tctte->tioa;
+ short sbuf, *eibfn2 = (short*)&eibSave.eibfn;
+ int col, topline, botline, lines;
+
+ if((*eibfn2 == 5602) || (*eibfn2 == 0x5602))
+  { APPEND_MSG("SPOOLOPEN OUTPUT "); }
+ else
+ if((*eibfn2 == 5606) || (*eibfn2 == 0x5606))
+  { APPEND_MSG("SPOOLWRITE "); }
+ else
+ if((*eibfn2 == 5610) || (*eibfn2 == 0x5610))
+  { APPEND_MSG("SPOOLCLOSE "); }
+ /* */
+ char  *token, *from, *class, *node, *writer, buffer[200];
+ int   flength, row=3;
+  /* */
+ token = (char*)cobarg[1];
+  /* */
+ SPRINTF(buffer, "TOKEN(%8.8s) ", token);
+ APPEND_MSG(buffer);
+ PUT_SBA(++row,1)
+  if((*eibfn2 == 5602) || (*eibfn2 == 0x5602)) { // spoolopen
+  writer = (char*)cobarg[2];
+  node   = (char*)cobarg[3];
+  class  = (char*)cobarg[4];
+  SPRINTF(buffer, "  CLASS(%1.1s) ",   class);
+  APPEND_MSG(buffer);
+  SPRINTF(buffer, "  NODE(%8.8s) ",    node);
+  APPEND_MSG(buffer);
+  SPRINTF(buffer, "  USERID(%8.8s) ",  writer);
+  APPEND_MSG(buffer);
+  }
+ if((*eibfn2 == 5606) || (*eibfn2 == 0x5606)) { // spoolwrite
+  from    = (char*)cobarg[2];
+  flength = *(int*)cobarg[3];
+  SPRINTF(buffer, "  FROM(X'%06X') ", from);
+  APPEND_MSG(buffer);
+  SPRINTF(buffer, " FLENGTH(%d) ", flength);
+  APPEND_MSG(buffer);
+  //DoDump(from, flength, 0, ++row, -1);
+  row++; row++; // skip 2 lines
+  topline = row;
+  botline = bot - helpv - 1;
+  lines = botline - topline + 1;
+  if (eib->eibaid == 0) offset = 0;        // initial entry
+  if (eib->eibaid == KIKPF7) {             // scroll back
+   offset -= lines*sba_1632;
+   if (offset < 0) offset = 0;
+   }
+  if (eib->eibaid == KIKPF8) {             // scroll fwd
+   col = offset + lines*sba_1632;
+   if (col < flength) offset = col;
+   }
+  if (eib->eibaid == KIKPF19) offset = 0;  // scroll top
+  if (eib->eibaid == KIKPF20) {            // scroll bottom
+   offset = flength / sba_1632;            // num lines in area
+   if (flength % sba_1632 > 0) offset++;
+   offset -= lines;              // less num lines on screen
+   offset *= sba_1632;           // times chars / line
+   if (offset < 0) offset = 0;   // zero if negative...
+   }
+  DoDump(from, flength, offset, topline, lines);
+  }
+ if((*eibfn2 == 5610) || (*eibfn2 == 0x5610)) { // spoolclose
+  }
+ }
+

@@ -1,0 +1,70 @@
+ /////////////////////////////////////////////////////////////////////
+ //
+ // STKCARDS numcards numcolumes
+ //
+ // concatenates (stacks) multiple card images read from stdin
+ // (aka SYSIN) onto stdout (aka SYSPRINT). The number of cards
+ // to stack per output line comes from input parm (ie, PARM=)
+ // and the number of columns per card to use also comes from
+ // input parm (following number of cards).
+ //
+ // Written as part of 'KICKS for TSO' project
+ // © Copyright 2009-2014, Michael Noel, All Rights Reserved.
+ //
+ /////////////////////////////////////////////////////////////////////
+
+#include <stdio.h>
+#include <string.h>
+
+int main (int argc, char *argv[]) {
+int i, j, maxcols=80, numcards=1;
+long k=0;
+char card[90], out[900];
+
+ // obtain number of cards to stack
+ memset(&card, 0, 90);
+ strcpy(card, argv[1]);
+ k=strtol(card);
+ if ((k>0) && (k<10)) numcards=k;
+ fprintf(stderr,
+  "stkcards will concat %d cards per output record\n",
+  numcards);
+
+ // obtain number of columns per card
+ memset(&card, 0, 90);
+ strcpy(card, argv[2]);
+ k=strtol(card);
+ if ((k>0) && (k<80)) maxcols=k;
+ fprintf(stderr,
+  "stkcards will concat %d columns per card\n\n",
+  maxcols);
+
+ // stack the cards
+ while (!feof (stdin)) {
+
+  memset(&out, 0, 900);
+
+  // get cards
+  for (i=0; i<numcards; i++) {
+   memset(&card, 0, 90);
+   fgets (card, 85, stdin);
+   if(feof(stdin)) break;
+   j = strlen(card);
+   if (j > 0) if (card[j-1] == '\n') card[j-1] = 0;
+   while (j < maxcols) {
+    strcat(card, " ");
+    j = strlen(card);
+    }
+   strncat(out, card, maxcols);
+   }
+
+  // write output
+  if (i > 0) {
+   fputs(out, stdout);
+   fputc('\n', stdout);
+   }
+
+  }
+
+}
+

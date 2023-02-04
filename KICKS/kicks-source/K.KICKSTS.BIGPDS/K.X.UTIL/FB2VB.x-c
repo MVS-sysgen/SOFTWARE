@@ -1,0 +1,35 @@
+ /////////////////////////////////////////////////////////////////////
+ //
+ // FB2VB
+ //
+ // reads SYSUT1 input and prints trimmed lines to SYSUT2.
+ // - similar jcl to IEBGENER, better for vb input and/or output...
+ //
+ // Written as part of 'KICKS for TSO' project
+ // © Copyright 2009-2014, Michael Noel, All Rights Reserved.
+ //
+ /////////////////////////////////////////////////////////////////////
+
+#include <stdio.h>
+
+int main()
+{
+ FILE *sysut1, *sysut2;
+ char buffer[80];
+ int i;
+
+     sysut1 = fopen("dd:sysut1", "r");
+     sysut2 = fopen("dd:sysut2", "w");
+     while (fgets(buffer, 80, sysut1) != NULL) {
+      for (i=79; i>0; i--) {
+       if((buffer[i] == ' ') | (buffer[i] == 0)) {
+        buffer[i] = 0;
+        continue; /* the 'for' */
+        }
+       break;     /* out of the 'for' */
+       }
+      fputs(buffer, sysut2);
+      }
+     fclose(sysut1); fclose(sysut2);
+}
+

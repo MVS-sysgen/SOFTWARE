@@ -1,0 +1,33 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+#ifndef __KIKTRACE__
+#define __KIKTRACE__
+
+typedef struct _TRACEHDR
+{
+ char *trctbl;             // address of trace table
+ short trcnum;             // number of entries in table
+ short trccur;             // number of current entry
+ char trcflags;            // bit flags - all 0 disabled
+                           //           - 1  enables int trace
+                           //           - 2  enables aux trace
+                           //           - 4  aux trace file open
+                           //           - 8  trace 'intense' units
+                           //           - 16 edf trace disablement
+ char trcsize;             // number bytes in each entry
+
+} TRACEHDR;
+
+#endif

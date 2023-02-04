@@ -1,0 +1,37 @@
+#ifndef __IHASDWA__
+#define __IHASDWA__
+
+ // from SYS1.AMODGEN(IHASDWA) on MVS 3.8J 'MVS380' system
+
+ typedef struct __ihasdwa__
+ {
+  char fill1[5];           // +000 just filler for me...
+  char sdwacmpc[3];        // +005 first 12 bits sys, last 12 bit usr
+  char sdwactl1[8];        // +008 bc mode psw at time of error
+  char sdwactl2[8];        // +016 bc mode psw from last prb
+  int  sdwagrsv[16];       // +024 gr's at time of error (0-15)
+  char sdwaname[8];        // +088 name of abending program
+  int  sdwaepa;            // +096 entry point of abending program
+  int  sdwaiobr;           // +100 just filler for me...
+  char sdwaec1[8];         // +104 ec mode psw at time of error
+  char sdwaaec1[8];        // +112 more ec mode stuff
+  char sdwaec2[8];         // +120 ec mode psw of rb the created estae
+  char sdwaaec2[8];        // +128 more ec mode stuff
+  int  sdwasrsv[16];       // +136 gr's of rb the created estae
+  char sdwaidnt[4];        // +200 sdwa id
+  char sdwamch[28];        // +204 machine check data if ...
+  char sdwaflgs[4];        // +232
+  char sdwafmid[2];        // +236 asid of memory where error occurred
+   /* quite a bit more that   +238 is presently of no interest... */
+
+ } ihasdwa;
+
+#endif
+
+
+
+
+
+
+
+

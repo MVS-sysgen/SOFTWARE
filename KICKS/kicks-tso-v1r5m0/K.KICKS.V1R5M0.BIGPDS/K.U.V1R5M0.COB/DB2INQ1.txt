@@ -1,0 +1,341 @@
+       IDENTIFICATION DIVISION.
+
+       PROGRAM-ID.  DB2INQ1.
+
+       ENVIRONMENT DIVISION.
+
+       DATA DIVISION.
+
+       WORKING-STORAGE SECTION.
+
+       01  SWITCHES.
+
+           05  VALID-DATA-SW       PIC X(01)     VALUE 'Y'.
+               88  VALID-DATA                    VALUE 'Y'.
+           05  CUSTOMER-FOUND-SW   PIC X(01)     VALUE 'Y'.
+               88  CUSTOMER-FOUND                VALUE 'Y'.
+           05  MORE-INVOICES-SW    PIC X(01)     VALUE 'Y'.
+               88  MORE-INVOICES                 VALUE 'Y'.
+
+       01  FLAGS.
+
+           05  DISPLAY-FLAG        PIC X(01).
+               88  DISPLAY-NEW-CUSTOMER          VALUE '1'.
+               88  DISPLAY-SPACES                VALUE '2'.
+               88  DISPLAY-LOW-VALUES            VALUE '3'.
+           05  SEND-FLAG           PIC X(01).
+               88  SEND-ERASE                    VALUE '1'.
+               88  SEND-DATAONLY                 VALUE '2'.
+               88  SEND-DATAONLY-ALARM           VALUE '3'.
+
+       01  WORK-FIELDS.
+
+           05  INVOICE-SUB         PIC S9(04)    COMP.
+
+       01  INVOICE-LINE.
+
+           05  IL-INVOICE-NUMBER   PIC X(06).
+           05  FILLER              PIC X(02)     VALUE SPACE.
+           05  IL-PO-NUMBER        PIC X(10).
+           05  FILLER              PIC X(02)     VALUE SPACE.
+           05  IL-INVOICE-DATE     PIC X(10).
+           05  FILLER              PIC X(02)     VALUE SPACE.
+           05  IL-INVOICE-TOTAL    PIC Z,ZZZ,ZZ9.99.
+
+       01  COMMUNICATION-AREA      PIC X(01).
+
+      *COPY DB2SET1.
+       COPY DB2SET1X.
+
+       COPY KIKAID.
+
+       COPY ERRPARM.
+
+           EXEC SQL
+               INCLUDE CUST
+           END-EXEC.
+
+           EXEC SQL
+               INCLUDE INV
+           END-EXEC.
+
+           EXEC SQL
+               INCLUDE SQLCA
+           END-EXEC.
+
+           EXEC SQL
+               DECLARE CUSTINV CURSOR FOR
+                   SELECT INVNO, INVPO, CHAR(INVDATE,USA), INVTOTAL
+                       FROM MMADBV.INV
+                       WHERE INVCUST = :CIM-D-CUSTNO
+                       ORDER BY 1 DESC
+           END-EXEC.
+
+       LINKAGE SECTION.
+
+       01  KIKCOMMAREA             PIC X(01).
+
+       PROCEDURE DIVISION.
+
+       0000-PROCESS-CUSTOMER-INQUIRY.
+
+      *    EVALUATE TRUE
+
+      *        WHEN EIBCALEN = ZERO
+               IF EIBCALEN = ZERO
+                   MOVE LOW-VALUE TO CUSTOMER-INQUIRY-MAP
+                   MOVE 'DIN1' TO CIM-D-TRANID
+      *            SET SEND-ERASE TO TRUE
+                   MOVE '1' TO SEND-FLAG
+                   PERFORM 1500-SEND-INQUIRY-MAP
+
+      *        WHEN EIBAID = KIKCLEAR
+               ELSE
+               IF EIBAID = KIKCLEAR
+                   MOVE LOW-VALUE TO CUSTOMER-INQUIRY-MAP
+                   MOVE 'DIN1' TO CIM-D-TRANID
+      *            SET SEND-ERASE TO TRUE
+                   MOVE '1' TO SEND-FLAG
+                   PERFORM 1500-SEND-INQUIRY-MAP
+
+      *        WHEN EIBAID = DFHPA1 OR DFHPA2 OR DFHPA3
+
+      *           CONTINUE -- let these fall into 'other'...
+
+
+      *        WHEN EIBAID = KIKPF3 OR KIKPF12
+               ELSE
+               IF EIBAID = KIKPF3 OR KIKPF12
+                   EXEC KICKS
+                       XCTL PROGRAM('INVMENU')
+                   END-EXEC
+
+      *        WHEN EIBAID = KIKENTER
+               ELSE
+               IF EIBAID = KIKENTER
+                   PERFORM 1000-DISPLAY-SELECTED-CUSTOMER
+
+      *        WHEN OTHER
+               ELSE
+                   MOVE LOW-VALUE TO CUSTOMER-INQUIRY-MAP
+                   MOVE 'Invalid key pressed.' TO CIM-D-MESSAGE
+      *            SET SEND-DATAONLY-ALARM TO TRUE
+                   MOVE '3' TO SEND-FLAG
+                   PERFORM 1500-SEND-INQUIRY-MAP.
+
+      *    END-EVALUATE.
+
+           EXEC KICKS
+               RETURN TRANSID('DIN1')
+                      COMMAREA(COMMUNICATION-AREA)
+           END-EXEC.
+
+       1000-DISPLAY-SELECTED-CUSTOMER.
+
+           PERFORM 1100-RECEIVE-INQUIRY-MAP.
+           PERFORM 1200-EDIT-CUSTOMER-NUMBER.
+           IF VALID-DATA
+               PERFORM 1300-SELECT-CUSTOMER-ROW
+               PERFORM XXXX-UNNESTED-1
+           ELSE
+      *        SET DISPLAY-LOW-VALUES TO TRUE
+               MOVE '3' TO DISPLAY-FLAG
+               PERFORM 1400-DISPLAY-INQUIRY-RESULTS.
+
+       1100-RECEIVE-INQUIRY-MAP.
+
+           EXEC KICKS
+               RECEIVE MAP('DB2MAP1')
+                       MAPSET('DB2SET1')
+                       INTO(CUSTOMER-INQUIRY-MAP)
+           END-EXEC.
+
+      *    INSPECT CUSTOMER-INQUIRY-MAP
+           EXAMINE CUSTOMER-INQUIRY-MAP
+               REPLACING ALL '_' BY SPACE.
+
+       1200-EDIT-CUSTOMER-NUMBER.
+
+           IF       CIM-L-CUSTNO = ZERO
+                 OR CIM-D-CUSTNO = SPACE
+               MOVE 'N' TO VALID-DATA-SW
+               MOVE 'You must enter a customer number.'
+                   TO CIM-D-MESSAGE.
+
+       1300-SELECT-CUSTOMER-ROW.
+
+           EXEC SQL
+               SELECT    FNAME,       LNAME,
+                         ADDR,        CITY,
+                         STATE,       ZIPCODE
+                   INTO :CIM-D-FNAME, :CIM-D-LNAME,
+                        :CIM-D-ADDR,  :CIM-D-CITY,
+                        :CIM-D-STATE, :CIM-D-ZIPCODE
+                   FROM MMADBV.CUST
+                   WHERE CUSTNO = :CIM-D-CUSTNO
+           END-EXEC.
+
+           IF SQLCODE = 100
+               MOVE 'N' TO CUSTOMER-FOUND-SW
+               MOVE 'That customer does not exist.' TO CIM-D-MESSAGE
+           ELSE
+               PERFORM XXXX-UNNESTED-2.
+
+       1400-DISPLAY-INQUIRY-RESULTS.
+
+      *    EVALUATE TRUE
+      *        WHEN DISPLAY-NEW-CUSTOMER
+               IF DISPLAY-NEW-CUSTOMER
+                   PERFORM 1410-OPEN-INVOICE-CURSOR
+                   PERFORM 1420-FORMAT-INVOICE-LINE
+                       VARYING INVOICE-SUB FROM 1 BY 1
+                       UNTIL INVOICE-SUB > 10
+                   PERFORM 1440-CLOSE-INVOICE-CURSOR
+                   MOVE SPACE         TO CIM-D-MESSAGE
+      *            SET SEND-DATAONLY TO TRUE
+                   MOVE '2' TO SEND-FLAG
+      *        WHEN DISPLAY-SPACES
+               ELSE
+               IF DISPLAY-SPACES
+                   MOVE LOW-VALUE TO CIM-D-CUSTNO
+                   MOVE SPACE     TO CIM-D-LNAME
+                                     CIM-D-FNAME
+                                     CIM-D-ADDR
+                                     CIM-D-CITY
+                                     CIM-D-STATE
+                                     CIM-D-ZIPCODE
+                   PERFORM 1405-PERFORMED-PAR
+
+                           VARYING INVOICE-SUB FROM 1 BY 1
+
+                           UNTIL INVOICE-SUB > 10
+      *            SET SEND-DATAONLY-ALARM TO TRUE
+                   MOVE '3' TO SEND-FLAG
+      *        WHEN DISPLAY-LOW-VALUES
+               ELSE
+               IF DISPLAY-LOW-VALUES
+      *                SET SEND-DATAONLY-ALARM TO TRUE
+                       MOVE '3' TO SEND-FLAG.
+      *    END-EVALUATE.
+           PERFORM 1500-SEND-INQUIRY-MAP.
+
+
+       1405-PERFORMED-PAR.
+
+           MOVE SPACE TO CIM-D-INVOICE-LINE(INVOICE-SUB).
+
+
+       1410-OPEN-INVOICE-CURSOR.
+
+           EXEC SQL
+               OPEN CUSTINV
+           END-EXEC.
+
+           IF SQLCODE NOT = 0
+              PERFORM 9999-TERMINATE-PROGRAM.
+
+       1420-FORMAT-INVOICE-LINE.
+
+           IF MORE-INVOICES
+               PERFORM 1430-FETCH-NEXT-INVOICE
+               PERFORM XXXX-UNNESTED-3
+           ELSE
+               MOVE SPACE TO CIM-D-INVOICE-LINE(INVOICE-SUB).
+
+       1430-FETCH-NEXT-INVOICE.
+
+           EXEC SQL
+               FETCH CUSTINV
+                   INTO :INVNO, :INVPO, :INVDATE, :INVTOTAL
+           END-EXEC.
+
+      *    EVALUATE SQLCODE
+      *        WHEN 0
+               IF SQLCODE EQUAL 0
+                   MOVE INVNO    TO IL-INVOICE-NUMBER
+                   MOVE INVPO    TO IL-PO-NUMBER
+                   MOVE INVDATE  TO IL-INVOICE-DATE
+                   MOVE INVTOTAL TO IL-INVOICE-TOTAL
+      *        WHEN 100
+               ELSE
+               IF SQLCODE EQUAL 100
+                   MOVE 'N' TO MORE-INVOICES-SW
+      *        WHEN OTHER
+               ELSE
+                   PERFORM 9999-TERMINATE-PROGRAM.
+      *    END-EVALUATE.
+
+       1440-CLOSE-INVOICE-CURSOR.
+
+           EXEC SQL
+               CLOSE CUSTINV
+           END-EXEC.
+
+           IF SQLCODE NOT = 0
+               PERFORM 9999-TERMINATE-PROGRAM.
+
+       1500-SEND-INQUIRY-MAP.
+
+      *    EVALUATE TRUE
+      *        WHEN SEND-ERASE
+               IF SEND-ERASE
+                   EXEC KICKS
+                       SEND MAP('DB2MAP1')
+                            MAPSET('DB2SET1')
+                            FROM(CUSTOMER-INQUIRY-MAP)
+                            ERASE
+                   END-EXEC
+      *        WHEN SEND-DATAONLY
+               ELSE
+               IF SEND-DATAONLY
+                   EXEC KICKS
+                       SEND MAP('DB2MAP1')
+                            MAPSET('DB2SET1')
+                            FROM(CUSTOMER-INQUIRY-MAP)
+                            DATAONLY
+                   END-EXEC
+      *        WHEN SEND-DATAONLY-ALARM
+               ELSE
+               IF SEND-DATAONLY-ALARM
+                   EXEC KICKS
+                       SEND MAP('DB2MAP1')
+                            MAPSET('DB2SET1')
+                            FROM(CUSTOMER-INQUIRY-MAP)
+                            DATAONLY
+                            ALARM
+                   END-EXEC.
+      *    END-EVALUATE.
+
+       9999-TERMINATE-PROGRAM.
+
+           MOVE EIBRESP  TO ERR-RESP.
+           MOVE EIBRESP2 TO ERR-RESP2.
+           MOVE EIBTRNID TO ERR-TRNID.
+           MOVE EIBRSRCE TO ERR-RSRCE.
+
+           EXEC KICKS
+               XCTL PROGRAM('SYSERR')
+                    COMMAREA(ERROR-PARAMETERS)
+           END-EXEC.
+
+       XXXX-UNNESTED SECTION.
+
+       XXXX-UNNESTED-1.
+               IF CUSTOMER-FOUND
+      *            SET DISPLAY-NEW-CUSTOMER TO TRUE
+                   MOVE '1' TO DISPLAY-FLAG
+                   PERFORM 1400-DISPLAY-INQUIRY-RESULTS
+               ELSE
+      *            SET DISPLAY-SPACES TO TRUE
+                   MOVE '2' TO DISPLAY-FLAG
+                   PERFORM 1400-DISPLAY-INQUIRY-RESULTS.
+
+       XXXX-UNNESTED-2.
+               IF SQLCODE NOT = 0
+                   PERFORM 9999-TERMINATE-PROGRAM.
+
+       XXXX-UNNESTED-3.
+               IF MORE-INVOICES
+                   MOVE INVOICE-LINE TO CIM-D-INVOICE-LINE(INVOICE-SUB)
+               ELSE
+                   MOVE SPACE TO CIM-D-INVOICE-LINE(INVOICE-SUB).

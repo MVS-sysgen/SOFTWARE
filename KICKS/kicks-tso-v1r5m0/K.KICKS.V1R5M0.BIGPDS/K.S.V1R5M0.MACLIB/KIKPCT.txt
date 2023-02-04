@@ -1,0 +1,101 @@
+         MACRO
+&LABEL   KIKPCT &SUFFIX=00,                                            *
+               &TYPE=ENTRY,                                            *
+               &TPURGE=,&SPURGE=,&TRANSEC=,                            *
+               &TRANSID=,                                              *
+               &PROGRAM=,                                              *
+               &TWASIZE=0,                                             *
+               &KPOPEN=DISABLED,                                       *
+               &ISTAT=ENABLED
+.*
+.* MACRO TO GENERATE 'PCT' TABLE FOR KICKS
+.*
+.* HISTORY:
+.*  V0R9M0 - TWASIZE,TPURGE,SPURGE,TRANSEC TOLOERATED BUT IGNORED
+.*  V1R0M0 - ADDED TWA SUPPORT (TWASIZE ACTUALLY USED!)
+.*  V1R1M0 - ADDED KPOPEN FLAG TO ALLOW CONV PGM TO KEEP FILES OPEN
+.*  V1R1M1 - 9/1/2010
+.*  V1R1M2 - 11/28/2010
+.*  V1R1M3 - 04/13/2011
+.*  V1R4M0 - 05/01/2011
+.*  V1R4M1 - 07/01/2012
+.*  V1R5M0 - 07/01/2013
+.*
+.* COPYRIGHT MIKE NOEL, 2008-2014. ALL RIGHTS RESERVED.
+.*
+         GBLA  &NUMENTS
+         GBLA  &TWASIZ
+         LCLC  &OLDLBL,&NEWLBL
+.*
+         AIF   ('&TYPE' EQ 'ENTRY').TRANS
+         AIF   ('&TYPE' EQ 'FINAL').FINAL
+         AIF   ('&TYPE' EQ 'INITIAL').INITIAL
+         MNOTE 8,'TYPE VALUE IS INVALID'
+         MEXIT
+.*
+.*
+.INITIAL ANOP
+KIKPCT&SUFFIX CSECT
+         DC    CL2'&SUFFIX'
+         DC    XL4'01050000'    4 BYTE VERSION: (V),(R),(M),(EDIT)
+         DC    H'0'             FILLER
+         DC    A(PCT1)          ADDRESS FIRST ENTRY
+         DC    A(TWASTO)        ADDRESS TWA STORAGE
+         MEXIT
+.*
+.*
+.TRANS   ANOP
+.*
+         AIF   (&TWASIZE LE &TWASIZ).LOTWA
+&TWASIZ  SETA  &TWASIZE
+.LOTWA   ANOP
+.*
+&OLDLBL  SETC  'PCT&NUMENTS'
+&NUMENTS SETA  &NUMENTS+1
+&NEWLBL  SETC  'PCT&NUMENTS'
+         AIF   (&NUMENTS LT 2).LBLFIX
+         ORG  &OLDLBL
+         DC    A(&NEWLBL)
+         ORG
+.LBLFIX  ANOP
+&NEWLBL  DC    F'0'          PLACE HOLDER FOR 'NEXT'
+.*
+         AIF   ('&TRANSID' GT '').USEID
+         AIF   ('&LABEL' GT '').USENAM
+         MNOTE 8,'LABEL,TRANSID DO NOT REVEAL NAME!'
+         MEXIT
+.USEID   ANOP
+         DC    CL4'&TRANSID'
+         AGO   .USEUSE
+.USENAM  ANOP
+         DC    CL4'&LABEL'
+.USEUSE  ANOP
+         DC    CL8'&PROGRAM'
+         AIF   ('&ISTAT' EQ 'ENABLED').TRANS2
+         AIF   ('&ISTAT' EQ 'DISABLED').TRANS3
+         MNOTE 8,'ISTAT VALUE IS INVALID'
+.*       MEXIT
+.TRANS2  DC    H'1'
+         AGO   .KP1
+.TRANS3  DC    H'0'
+.KP1     ANOP
+         AIF   ('&KPOPEN' EQ 'ENABLED').KP2
+         AIF   ('&KPOPEN' EQ 'DISABLED').KP3
+         MNOTE 8,'KPOPEN VALUE IS INVALID'
+.*       MEXIT
+.KP2     DC    H'1'
+         AGO   .SETTWA
+.KP3     DC    H'0'
+.SETTWA  DC    H'&TWASIZE'
+         MEXIT
+.*
+.*
+.FINAL   ANOP
+TWASTO   DS    0D
+.*
+         AIF   (&TWASIZ EQ 0).LOTWA2
+         DS    CL&TWASIZ
+.LOTWA2  ANOP
+.*
+         LTORG
+         MEND

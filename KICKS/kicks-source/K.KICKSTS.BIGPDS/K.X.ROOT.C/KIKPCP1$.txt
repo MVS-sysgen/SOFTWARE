@@ -1,0 +1,950 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+#include <stdio.h>
+
+#include "kicks.h"
+
+
+
+KIKCSA *csa = (KIKCSA*)&csa;
+
+#include "ppthdr.h"
+#include "pptent.h"
+
+
+ ///////////////////////////////////////////////////////////////
+ //
+ //  function prototypes
+ //
+ ///////////////////////////////////////////////////////////////
+
+ void ETRACE(int type_of, char *more, int intense);
+ void ETRAC2(int type_of, char *more, int intense);
+ void XTRACE(int retcode, int intense);
+ void TRACEstring(char *sometxt);
+ void TRACEint(int someint);
+ void DumpHex(FILE *D, char *begin, int size, int flag);
+ void DoTranDump (int option, char *from, int length);
+ void MapAbendCode(char *old, char *new, int *resp, int *resp2);
+
+ ///////////////////////////////////////////////////////////////
+ //
+ //  kikpcp mainline
+ //
+ ///////////////////////////////////////////////////////////////
+
+int kikpcp (KIKCSA *kikcsa, int type_of,
+   char *arg1, char *arg2, char *arg3, char *arg4,
+   char *arg5, char *arg6, char *arg7, char *arg8) {
+
+ int dodump=0, suppress=1, two=2;
+#define firstnl arg1
+
+ ppte *pptent;
+ ppth *ppthdr;
+ int i;
+ char *p;
+
+
+ switch (type_of)
+  {
+
+  case kikpcpINIT:     // startup
+      {
+
+      csa = kikcsa;
+      ETRACE(type_of, "", 0);
+      //
+      //no arguments
+
+#ifdef DEBUGIT
+      // message if debugging version
+      FPRINTF(csa->csastderr,"%s", firstnl); firstnl[0]=0;
+      FPRINTF(csa->csastderr,"*** DEBUGGING version of PCP *** *** ***\n");
+#endif
+
+      // check table version matches csa version
+      //  -- ALL 4 bytes of it...
+      //  -- at some point we may be able to relax that some
+      ppthdr = (ppth *)csa->pcp_table_addr;
+      if (MEMCMP((char *)&csa->version, &ppthdr->ver[0], 4)) {
+       FPRINTF(csa->csastderr,"%s", firstnl); firstnl[0]=0;
+       FPRINTF(csa->csastderr,"PPT version does not match CSA!\n");
+       FPRINTF(csa->csastderr,"This is a fatal error! Bye Bye!\n\n");
+       EXIT (999);
+       }
+
+      // change loader from skikload to kikrpl
+      KIKLOAD(csa, 1); // close prev open
+      MEMCPY(&csa->loadcb->loadlib, "KIKRPL  ", 8);
+      KIKLOAD(csa, 0); // reopen
+
+      // scan thru ppt, bldl anything not disabled
+      // or deferred, if bldl fails mark disabled.
+      // -- avoids the 806-4's for missing stuff...
+      for (pptent = ppthdr->first; pptent != NULL; pptent=pptent->next) {
+       if(pptent->pgmenableflag == 0) continue;
+       if(pptent->pgmdeferloadflag == 0) continue;
+       MEMCPY(&csa->loadcb->loadbase,
+          pptent->pgmname, 8);
+       KIKLOAD(csa, 4); // bldl
+       if (csa->loadcb->loaderr1 != 0) {
+        pptent->pgmenableflag = 0;
+        }
+       } // end for
+
+      // 2nd scan thru ppt, load anything not
+      // disabled or deferred (and not cobol)
+      for (pptent = ppthdr->first; pptent != NULL; pptent=pptent->next) {
+       if(pptent->pgmenableflag == 0) continue;
+       if(pptent->pgmdeferloadflag == 0) continue;
+       if(pptent->pgmtype == 0) continue;
+       MEMCPY(&csa->loadcb->loadbase,
+          pptent->pgmname, 8);
+       KIKLOAD(csa, 2); // load
+       if (csa->loadcb->loaderr1 != 0) {
+        pptent->pgmenableflag = 0;
+        pptent->pgmload = 0;
+        pptent->pgmaddr = 0;
+        pptent->pgmsize = 0;
+        }
+       else {
+        pptent->pgmload = csa->loadcb->loadedwhere;
+        pptent->pgmaddr = csa->loadcb->ep;
+        pptent->pgmsize = csa->loadcb->loadlength;
+        pptent->pgmholdflag = 1; // load initial always hold...
+        }
+       } // end for
+
+      }
+      XTRACE(0, 0);
+      return(0);
+      //break;
+
+  case kikpcpTERM:     // shutdown
+
+      ETRACE(type_of, "", 0);
+      //
+      //no arguments
+
+      KIKLOAD(csa, 1); // close
+
+#ifdef __CMS__
+      CloseTranDump();
+#endif
+
+      XTRACE(0, 0);
+      return(0);
+      //break;
+
+  case kikpcpTRANEND:  // delete all cobol programs
+
+      ETRAC2(type_of, "", 1); // 'intense'
+      //
+      //no arguments
+
+     // scan thru ppt for loaded cobol pgms, delete them
+     ppthdr = (ppth *)csa->pcp_table_addr;
+     for (pptent = ppthdr->first; pptent != NULL; pptent=pptent->next) {
+      // COBOL PROGRAMS CAN'T BE REUSED...
+      if ((pptent->pgmtype == 0) || (pptent->pgmholdflag == 0)) {
+       if (pptent->pgmaddr != NULL) {
+        MEMCPY(&csa->loadcb->loadbase,
+           pptent->pgmname, 8);
+        KIKLOAD(csa, 3); // delete
+        if (csa->loadcb->loaderr1 != 0) {
+         pptent->pgmenableflag = 0;
+         KIKPCP(csa, kikpcpABND, "P006", &dodump); // abend, bad delete
+         }
+        pptent->pgmload = 0;
+        pptent->pgmaddr = 0;
+        pptent->pgmsize = 0;
+        }
+       }
+      }
+      XTRACE(0, 1);           // 'intense'
+      return(0);
+      //break;
+
+  case kikpcpLOAD:     // load module into storage
+      {                //      and return addr/size
+
+      ETRACE(type_of, arg1, 0);
+      //
+      //pgm name=arg1;        // (Ir) name of module to load
+      //pgm entry=arg2;       // (Or) where to call it (ENTRY)
+      //pgm size=(int *)arg3; // (Or) how big it is (LENGTH/FLENGTH)
+      //flags=*(int *)arg4;   // (Ir) flags
+      //                         1 - size is short, not int
+      //                         2 - hold
+      //                      --- newer flag values below ---
+      //                         4 - rtn load point (arg 5) (SET)
+      //                         8 - no ENTRY specified
+      //                        16 - no LENGTH/FLENGTH specified
+      //pgm load point=arg5;  // (Or) where it is loaded (SET)
+
+      KIKTCA *tca;
+      tca = csa->tca;
+
+      // post last load name
+      if ((csa->trc.trcflags & 16) == 0) { // don't post KEDFXEQ...
+       MEMCPY(csa->tca->kikeib.eibpgmid, arg1, 8);
+       MEMCPY(csa->tca->kikeib.eibrsrce, arg1, 8);
+       }
+
+      // scan thru ppt for requested module
+      ppthdr = (ppth *)csa->pcp_table_addr;
+      for (pptent = ppthdr->first; pptent != NULL; pptent=pptent->next) {
+       if (!MEMCMP(arg1, pptent->pgmname, 8)) { break; }
+       }
+      if (pptent == NULL) {
+       KIKPCP(csa, kikpcpABND, "P001", &dodump); // abend, not in ppt
+       }
+
+      // found, check for disabled
+      if (pptent->pgmenableflag == 0) {
+       KIKPCP(csa, kikpcpABND, "P002", &dodump); // abend, disabled
+       }
+
+
+
+ // test - always delete/reload first - always new copy
+ // THIS IS CONFIRMED NECESSARY - OR AT LEAST THAT COBOL
+ // PROGRAMS CAN'T BE REUSED...
+ if (pptent->pgmtype == 0) {
+  if (pptent->pgmaddr != NULL) {
+   MEMCPY(&csa->loadcb->loadbase,
+      pptent->pgmname, 8);
+   KIKLOAD(csa, 3); // delete
+   if (csa->loadcb->loaderr1 != 0) {
+    pptent->pgmenableflag = 0;
+    KIKPCP(csa, kikpcpABND, "P006", &dodump); // abend, bad delete
+    }
+   pptent->pgmload = 0;
+   pptent->pgmaddr = 0;
+   pptent->pgmsize = 0;
+   pptent->pgmholdflag = 0;
+   }
+  }
+
+
+      // if not loaded (might be deferred) try load now
+      if (pptent->pgmaddr == NULL) {
+       MEMCPY(&csa->loadcb->loadbase,
+          pptent->pgmname, 8);
+       KIKLOAD(csa, 4); // bldl
+       if (csa->loadcb->loaderr1 != 0) {
+        pptent->pgmenableflag = 0;
+        KIKPCP(csa, kikpcpABND, "P003", &dodump); // abend, bad bldl
+        }
+       KIKLOAD(csa, 2); // load
+       if (csa->loadcb->loaderr1 != 0) {
+        pptent->pgmenableflag = 0;
+        KIKPCP(csa, kikpcpABND, "P004", &dodump); // abend, bad load
+        }
+
+       pptent->pgmload = csa->loadcb->loadedwhere;
+       pptent->pgmaddr = csa->loadcb->ep;
+       pptent->pgmsize = csa->loadcb->loadlength;
+       if(((*(int*)arg4) & 2)  > 0) pptent->pgmholdflag = 1;
+       }
+
+      // recover entrypoint from table
+      if(((*(int*)arg4) & 8) == 0)
+       *((int*)arg2) = (int)pptent->pgmaddr;
+
+      // if arg5 present recover loadpoint from table
+      if(((*(int*)arg4) & 4) != 0)
+       *((int*)arg5) = (int)pptent->pgmload;
+
+      // recover size (as either int or short) from table
+      if(((*(int*)arg4) & 16) == 0) {
+       if(((*(int*)arg4) & 1) == 0)
+        *((int*)arg3) = pptent->pgmsize;
+       else
+        *((short*)arg3) = pptent->pgmsize;
+       }
+
+      // copy pptent to tctte
+      csa->tctte->pptent = (char *)pptent;
+
+      }
+      XTRACE(0, 0);
+      return(0);
+      //break;
+
+  case kikpcpXCTL:     // pass control wo/return
+      {
+
+      ETRACE(type_of, arg1, 0);
+
+      //
+      //pgm  name=arg1;             // (Ir) name of module to xctl
+      //comm area=arg2;             // (Io) comm-area address
+      //comm area length=(int)arg3; // (Io) comm-area size
+
+      KIKTCA *tca;
+      KIKTCTTE *tctte;
+      char *pgmaddr;
+      int  pgmsize;
+
+      FiniAbend *myFA;
+
+      tca = csa->tca;
+      tctte = csa->tctte;
+
+      // do load NOW so existing comm-area (etal) still avail
+      // if user wants to catch load failure...
+      KIKPCP (csa, kikpcpLOAD, arg1, &pgmaddr, &pgmsize, &two);
+      tca->xctlpgm = pgmaddr;
+
+      // fixup comm-area
+      if (*(int*)arg3 != 0) { // new comm-area IS present
+       if (tca->kikeibp.eibpca != arg2) {
+        // ***************** FIX THIS !!!*****************
+        // *** not the same as when called so must update
+        // *** system comm-area, this is a **BAD** thing.
+        //.*** It works 'cause most (all?) pgms copy the
+        // *** inbound CA to working storage then don't
+        // *** look at the original inbound CA again...
+        // ***************** FIX THIS !!!*****************
+        tctte->calen = *(int*)arg3;
+        MEMCPY(csa->usrcommarea, arg2, tctte->calen);
+        tca->kikeibp.eibpca = csa->usrcommarea;
+        tca->kikeibp.eibpcalen = tctte->calen;
+        tca->kikeib.eibcalen = tca->kikeibp.eibpcalen;
+        }
+       else {
+        // same as when called so just (maybe) update length
+        tctte->calen = *(int*)arg3;
+        tca->kikeibp.eibpcalen = tctte->calen;
+        tca->kikeib.eibcalen = tca->kikeibp.eibpcalen;
+        }
+       }
+      else {              // new comm-area is NOT present
+       // clear address and length
+       tca->kikeibp.eibpca = 0;
+       tca->kikeibp.eibpcalen = 0;
+       tca->kikeib.eibcalen = 0;
+       tctte->calen = 0;
+       }
+      tca->xctlca  = tca->kikeibp.eibpca;
+      tca->xctlcal = tca->kikeibp.eibpcalen;
+
+      // following code lifted from RETURN - unstack fini & goback
+      myFA = csa->tca->next_FA;
+      if (myFA != NULL) {
+       csa->tca->next_FA = myFA->next;
+       if (myFA->fini_rtntos.regs[13] > 0) {
+        *(short*)myFA->fini_gotovars = 1;
+        SETPMASK(myFA->fini_pgmmask);
+
+        //BACKPASTGLUE(myFA->fini_rtntos);
+        MYlongjmp(myFA->fini_rtntos, 1);
+        // s.b. no return to this place...
+        //      return will be under the LINK or ATTACH...
+        // so abend if we get here...
+        ABEND(kikpcpTYPE, type_of);
+        }
+       }
+
+      // we get here where there was no 'fini' to call...
+      // back to caller (maybe task control)
+      tca->jmpbufhi--;
+      MYlongjmp(tca->env[tca->jmpbufhi], 1); // normal return
+
+      // dead code (can't get here, behind longjmp...)
+      }
+
+      //break;
+
+  case kikpcpRETN:     // program rtn
+      {
+
+      ETRACE(type_of, arg1, 0);
+
+      //
+      //tranid =arg1;               // (Io) name of trans to start
+      //comm area=arg2;             // (Io) comm-area address
+      //comm area length=(int)arg3; // (Io) comm-area size
+
+      KIKTCA *tca;
+      KIKTCTTE *tctte;
+
+      FiniAbend *myFA;
+
+      tca = csa->tca;
+      tctte = csa->tctte;
+
+      // set 'rtn transid' in tctte
+      //MEMSET(tctte->trnid, '\0', 4);
+      if (arg1 != NULL) {
+        MEMCPY(tctte->trnid, arg1, 4);
+       }
+
+      // check for comm-area being returned
+      if (*(int*)arg3 != 0) { // comm-area being returned
+       // make sure at top level, illegal otherwise
+       if (tca->jmpbufhi != 1) {
+        KIKPCP(csa, kikpcpABND, "P007", &dodump);
+        }
+       // clear all comm-area memory
+       MEMSET(csa->usrcommarea, '\0', csa->maxcommsize);
+       // set new info in it and about it
+       tctte->calen = *(int*)arg3;
+       MEMCPY(csa->usrcommarea, arg2, tctte->calen);
+       }
+      else {              // comm-area not being returned
+       // clear all comm-area and info iff at top
+       if (tca->jmpbufhi == 1) {
+        MEMSET(csa->usrcommarea, '\0', csa->maxcommsize);
+        tctte->calen = 0;
+        }
+       }
+
+      // unstack fini block & call routine
+      myFA = csa->tca->next_FA;
+      if (myFA != NULL) {
+       csa->tca->next_FA = myFA->next;
+       if (myFA->fini_rtntos.regs[13] > 0) {
+        *(short*)myFA->fini_gotovars = 1;
+        SETPMASK(myFA->fini_pgmmask);
+
+        //BACKPASTGLUE(myFA->fini_rtntos);
+        MYlongjmp(myFA->fini_rtntos, 1);
+        // s.b. no return to this place...
+        //      return will be under the LINK or ATTACH...
+        // so abend if we get here...
+        ABEND(kikpcpTYPE, type_of);
+        }
+       }
+
+      // we get here where there was no 'fini' to call...
+      // back to caller (maybe task control)
+      tca->jmpbufhi--;
+      MYlongjmp(tca->env[tca->jmpbufhi], 1); // normal return
+
+      // dead code (can't get here, behind longjmp...)
+      }
+
+      //break;
+
+  case kikpcpLINK:     // pass control w/return
+      {
+
+      ETRACE(type_of, arg1, 0);
+
+      //
+      //pgm  name=arg1;             // (Ir) name of module to link
+      //comm area=arg2;             // (Io) comm-area address
+      //comm area length=(int)arg3; // (Io) comm-area size
+
+      KIKTCA *tca;
+      KIKTCTTE *tctte;
+      char *pgmaddr, *r13;
+      int  SJrtn, pgmsize;
+
+      struct {
+       char *old_save_comm;
+       char *save_cobR13;
+       char *save_gluR13;
+       char *save_commarea;
+       int   save_commarea_l;
+       int   save_eibline;
+       char  save_eibprog[8];
+       char  save_eibwc[20];
+      } save_old;
+
+      FiniAbend *myFA;
+
+      tca = csa->tca;
+      tctte = csa->tctte;
+
+      // do load NOW so existing comm-area (etal) still avail
+      // if user wants to catch load failure...
+      KIKPCP (csa, kikpcpLOAD, arg1, &pgmaddr, &pgmsize, &two);
+
+      // save old comm-area, length
+      save_old.old_save_comm = tca->savecomm;
+      save_old.save_commarea = tca->kikeibp.eibpca;
+      save_old.save_commarea_l = tca->kikeibp.eibpcalen;
+
+      // save old source trace fields
+      save_old.save_eibline = tca->kikeib.eibline;
+      MEMCPY(save_old.save_eibprog, tca->kikeib.eibprog, 8);
+      MEMCPY(save_old.save_eibwc, tca->kikeib.eibwc, 20);
+
+      if (STRNCMP(arg1,"KEDFXEQ ",8)) {
+       // unless this is the KEDFXEQ link itself,
+       // clear fields so non-cmdlvl's don't confuse KEDF
+       tca->kikeib.eibline = 0;
+       MEMSET(tca->kikeib.eibprog, '\0', 8);
+       MEMSET(tca->kikeib.eibwc, '\0', 20);
+       }
+
+      // fixup comm-area
+      if (*(int*)arg3 != 0) { // comm-area IS present
+       tca->kikeibp.eibpca = arg2;
+       tctte->calen = *(int*)arg3;
+       }
+      else {                  // comm-area is NOT present
+       tca->kikeibp.eibpca = 0;
+       tctte->calen = 0;
+       }
+      tca->kikeibp.eibpcalen = tctte->calen;
+      tca->kikeib.eibcalen = tca->kikeibp.eibpcalen;
+
+      // save old R13's (in local vare) 'cause about to make new ones
+      save_old.save_cobR13 = tca->kikeibp.cobR13;
+      save_old.save_gluR13 = tca->kikeibp.gluR13;
+
+
+      // following label is to allow code falling out of the
+      // setjmp (ie, a return) to do another link, thus simulating
+      // an xctl
+
+ XCTL_LOOP:
+
+
+      // setup the next setjmp
+      SJrtn = MYsetjmp(tca->env[tca->jmpbufhi]);
+      if (SJrtn != 0) {
+
+       // we get here directly when the pgm returns wo/ 'fini' exit
+
+       // we get here indirect otherwise, via code after ((SubPtr)...
+
+       // but one way or another, this is where we get out...
+
+       // restore caller's comm-area & length
+       tca->kikeibp.eibpca = save_old.save_commarea;
+       tca->kikeibp.eibpcalen = save_old.save_commarea_l;
+       tca->kikeib.eibcalen = tca->kikeibp.eibpcalen;
+       tctte->calen = tca->kikeibp.eibpcalen;
+       tca->savecomm = save_old.old_save_comm;
+
+      // restore old source trace fields
+      tca->kikeib.eibline = save_old.save_eibline;
+      MEMCPY(tca->kikeib.eibprog, save_old.save_eibprog, 8);
+      MEMCPY(tca->kikeib.eibwc, save_old.save_eibwc, 20);
+
+       // restore cobol's R13's
+       tca->kikeibp.cobR13 = (char*)save_old.save_cobR13;
+       tca->kikeibp.gluR13 = (char*)save_old.save_gluR13;
+
+       // here to check for abends
+       if (tca->abendflags > 1) {
+
+        myFA = csa->tca->next_FA;
+        if (myFA != NULL) {
+         csa->tca->next_FA = myFA->next;
+
+         if (myFA->abend_rtntos.regs[13] > 0) {
+          *(short*)myFA->abend_gotovars = 1;
+          tca->abendflags = 1;
+          SETPMASK(myFA->abend_pgmmask);
+
+          // restack FA for for continuation...
+          myFA->next = csa->tca->next_FA;
+          csa->tca->next_FA = myFA;
+
+          //BACKPASTGLUE(myFA->abend_rtntos);
+          MYlongjmp(myFA->abend_rtntos, 1);
+          // s.b. no return to this place...
+          //      return will be under the LINK or ATTACH...
+          // so abend if we get here...
+          ABEND(kikpcpTYPE, type_of);
+          }
+
+         if (myFA->fini_rtntos.regs[13] > 0) {
+          *(short*)myFA->fini_gotovars = 1;
+          SETPMASK(myFA->fini_pgmmask);
+
+          //BACKPASTGLUE(myFA->fini_rtntos);
+          MYlongjmp(myFA->fini_rtntos, 1);
+          // s.b. no return to this place...
+          //      return will be under the LINK or ATTACH...
+          // so abend if we get here...
+          ABEND(kikpcpTYPE, type_of);
+          } // end fini_
+
+         }  // end myFA != NULL
+        }   // end tca->abendflags > 1
+
+       // here to check for xctl...
+       if (tca->xctlpgm != 0) {
+        pgmaddr = tca->xctlpgm;
+        tca->xctlpgm = 0;
+        tca->kikeibp.eibpca = tca->xctlca;
+        tctte->calen = tca->xctlcal;
+        tca->kikeibp.eibpcalen = tctte->calen;
+        tca->kikeib.eibcalen = tca->kikeibp.eibpcalen;
+        goto XCTL_LOOP;
+       }
+
+       XTRACE(SJrtn, 0);
+       return(0);
+       }
+
+      // we get here after the setjmp call (ie, SJrtn==0)
+      tca->jmpbufhi++;
+
+      GETR13(r13);
+      tca->kikeibp.cobR13 = (char*)r13; // in case this is cobol!
+      tca->kikeib.eibcalen = tca->kikeibp.eibpcalen;
+      tca->savecomm = (char*)&save_old;
+
+      // call user routine with eib, comm-area
+      ((SubPtr)pgmaddr)(&tca->kikeib, tca->kikeibp.eibpca);
+
+      // we get here if there was a 'fini' exit
+
+      // we also get here if the pgm just does a 'goback/stoprun'
+      // instead of an exec kicks return.
+
+      // in either case, do longjmp to go thru common exit above...
+
+      tca->jmpbufhi--;
+      MYlongjmp(tca->env[tca->jmpbufhi], 1);
+
+      // dead code (can't get here, behind longjmp...)
+      }
+
+      //break;
+
+  case kikpcpDELE:     // delete - opposite of load
+      {                //        - probably should be 'release'
+
+      ETRACE(type_of, arg1, 0);
+
+      //
+      //pgmname=arg1;        // (Ir) name of module to delete
+
+      // scan thru ppt for requested module
+      ppthdr = (ppth *)csa->pcp_table_addr;
+      for (pptent = ppthdr->first; pptent != NULL; pptent=pptent->next) {
+       if (!MEMCMP(arg1, pptent->pgmname, 8)) { break; }
+       }
+      if (pptent == NULL) {
+       KIKPCP(csa, kikpcpABND, "P005", &dodump); // abend, not in ppt
+       }
+
+      // if loaded delete it
+      if (pptent->pgmaddr != NULL) {
+       MEMCPY(&csa->loadcb->loadbase,
+          pptent->pgmname, 8);
+       KIKLOAD(csa, 3); // delete
+       if (csa->loadcb->loaderr1 != 0) {
+        pptent->pgmenableflag = 0;
+        KIKPCP(csa, kikpcpABND, "P006", &dodump); // abend, bad delete
+        }
+       pptent->pgmload = 0;
+       pptent->pgmaddr = 0;
+       pptent->pgmsize = 0;
+       pptent->pgmholdflag = 0;
+       }
+      }
+      XTRACE(0, 0);
+      return(0);
+      //break;
+
+  case kikpcpABND:     // transaction abend (may branch
+      {                //   to user recovery routine)
+
+      // 1st etrace (intense) shows unmapped code
+      ETRAC2(type_of, arg1,1);
+
+      //
+      //abend code=arg1;        // (Ir) 4 char code for abend
+      //option=arg2;            // (Ir) option (nodump=1)
+
+      KIKTCA *tca;
+      char newcode[6];
+      int  resp, resp2;
+
+      tca   = csa->tca;
+
+      // map the abend code
+      MapAbendCode(arg1, &newcode[0], &resp, &resp2);
+      //MEMCPY(arg1, &newcode[0], 4);
+      // 2nd etrace (not intense this time) shows mapped code
+      ETRAC2(type_of, newcode,0);
+
+      // post resp code(s) in eib
+      tca->kikeib.eibresp  = resp;
+      tca->kikeib.eibresp2 = resp2;
+      MEMCPY((char*)tca->abcode, newcode, 4);
+      tca->abendflags = 1;
+
+      // longjmp to user recovery routine iff available
+      if( tca->abenv1.regs[14] != 0) {
+       resp=(*arg2)+1;
+       MYlongjmp(tca->abenv1, resp);  // glue recovery rtn
+       }
+
+      // else fall into ABND2 handler
+     }
+
+     // for macro level pgms no handler, so
+     //  signature of unhandled abend is p7, and abend taken,
+     //
+     // for cmd-level pgms glue always handles, may call
+     //           back to p8 if user didn't say 'resp',
+     //           'resp2', 'handlecondition', ...
+     // so for cmd-level pgms
+     //  signature of handled is p7, no abend taken
+     //  signature of unhandled is p7/p8, abend taken
+
+ case kikpcpABND2:     // unconditional transaction abend
+      {
+
+      if (type_of == kikpcpABND2) ETRAC2(type_of, arg1,0);
+      //
+      //abend code=arg1;        // (Ir) 4 char code for abend
+      //option=arg2;            // (Ir) option (nodump=1)
+
+      KIKTCA *tca;
+      KIKTCTTE *tctte;
+      char *tioa;
+      int  option;
+
+      FiniAbend *myFA;
+
+      tca   = csa->tca;
+      tctte = csa->tctte;
+      tioa  = csa->tctte->tioa;
+
+      // post abend in tca
+      if (type_of == kikpcpABND2) MEMCPY((char*)tca->abcode, arg1, 4);
+
+      // do transaction dump unless suppressed
+      option = *(int*)arg2;
+      DoTranDump (option, NULL, 0);
+
+      // unstack abend/fini blocks & call routine
+      tca->abendflags = 2;
+      tca->xctlpgm = 0;
+      myFA = tca->next_FA;
+      if (myFA != NULL) {
+       tca->next_FA = myFA->next;
+
+       if (myFA->abend_rtntos.regs[13] > 0) {
+        *(short*)myFA->abend_gotovars = 1;
+        tca->abendflags = 1;
+        SETPMASK(myFA->abend_pgmmask);
+
+        // restack FA for for continuation...
+        myFA->next = tca->next_FA;
+        tca->next_FA = myFA;
+
+        //BACKPASTGLUE(myFA->abend_rtntos);
+        MYlongjmp(myFA->abend_rtntos, 1);
+        // s.b. no return to this place...
+        //      return will be under the LINK or ATTACH...
+        // so abend if we get here...
+        ABEND(kikpcpTYPE, type_of);
+        }
+
+       if (myFA->fini_rtntos.regs[13] > 0) {
+        *(short*)myFA->fini_gotovars = 1;
+        SETPMASK(myFA->fini_pgmmask);
+
+        //BACKPASTGLUE(myFA->fini_rtntos);
+        MYlongjmp(myFA->fini_rtntos, 1);
+        // s.b. no return to this place...
+        //      return will be under the LINK or ATTACH...
+        // so abend if we get here...
+        ABEND(kikpcpTYPE, type_of);
+        }
+
+       }
+
+      // if no fini blocks
+      //(should not happen, except for APCT)
+
+      // reset rtn trnid, comm-area, comm-area length
+      MEMSET(tctte->trnid, '\0', 4);
+      MEMSET(csa->usrcommarea, '\0', csa->maxcommsize);
+      tctte->calen = 0;
+
+      // finally back to task control
+      tca->jmpbufhi=0;
+      MYlongjmp(tca->env[0], 2);  // abend return
+
+      // dead code (can't get here, behind longjmp...)
+     }
+
+  case kikpcpDUMP:     // transaction dump
+      { // just like ABND, but only does the dump...
+        // also used by AICA, ASRA, ASRB...
+
+      ETRAC2(type_of, arg1,0);
+      //
+      //abend code = arg1; // (Ir) 4 char code for abend
+      //      flag = arg2; // (Ir) flags for what to do
+      //                      1 - from & fromlength type
+      //                      4 - acia, asra, asrb calling...
+      //from       = arg3; // (Ir) from
+      //fromlength = arg4; // (Io) length
+
+      KIKTCA *tca;
+      tca   = csa->tca;
+      {
+      int  flags;
+
+      flags = *(int*)arg2;
+
+      // ********** looks like there is room in the flags to support
+      // ********** a few more dump options
+      // ********** TABLES (aka PPT, PCT, DCT, FCT, SIT, TCT)
+      // **********   TCT being mostly just tctteua
+      // ********** TERMINAL (aka tioa, maybe term stuff from assign)
+      // ********** STORAGE (cwa, twa, gotten storage chains)
+      // ********** complete (meaning current default TASK plus
+      // **********   tables, storage, terminal)
+      // **********
+      // ********** issue is that anything I decide to dump I also
+      // ********** need to handle in KEDF...
+
+      if((flags & 4) > 0) {
+       // AICA, ASRA, or ASRB
+       DoTranDump (0, NULL, 0);
+       }
+      else {
+       // just normal user call
+       char saveabcode[4];
+       MEMCPY(saveabcode, tca->abcode, 4);
+       // post abend in tca
+       MEMCPY((char*)tca->abcode, arg1, 4);
+       // do transaction dump unless suppressed
+       if((flags & 1) > 0)
+        DoTranDump (6, arg3, *(int*)arg4); //dump title + from/length
+       else {
+      // ********** could be improved by skipping the 'suppressed' dump
+      // ********** and returning resp=suppressed, resp2=3 (by user exit)
+        DoTranDump (2, NULL, 0); // title w/DUMP
+        }
+       // restore abcode
+       MEMCPY(tca->abcode, saveabcode, 4);
+       }
+      }
+      csa->tca->kikeib.eibresp = csa->tca->kikeib.eibresp2 = 0;
+      XTRACE(0, 0);
+      return(0);
+      }
+      //break;
+
+  case kikpcpENTR:     // user trace
+      {
+
+      ETRAC2(type_of, arg1, 1); // intense trace call itself
+                                // so that user trace is 'bare'
+      //
+      //tracenum   = arg1; // (Ir) tracenum/traceid
+      //flags      = arg2  // (Ir) flags
+                             // exception
+                             // source debugger
+      //from       = arg3; // (Ir) into/from
+      //fromlength = arg4; // (Io) length
+      //resource   = arg5; // (Io) resource
+
+      char tmsg[300];
+      char *from, *resource;
+      int   tracenum, flags, fromlength;
+
+      tracenum = *(int*)arg1; flags = *(int*)arg2;
+      // ********** should audit tracenum for 0-199
+      // ********** else returning resp=invreq, resp2=1
+      from = arg3; fromlength = *(int*)arg4;
+      resource = arg5;
+
+      if (fromlength > 256) { from[256] = 0; }
+      // ********** should audit fromlength <= 4000
+      // ********** else returning resp=lengerr, resp2=4
+      // ********** actually it makes more sense to detect the max
+      // ********** lrecl for auxtrc and use that to set lengerr...
+      SPRINTF(tmsg, "PU%d %s", tracenum, from);
+      if ((flags & 2) == 0)
+       ((SubPtr)csa->trc_addr)(tmsg, 0);
+      else // use 'intense' for debugger
+       ((SubPtr)csa->trc_addr)(tmsg, 1);
+
+      csa->tca->kikeib.eibresp = csa->tca->kikeib.eibresp2 = 0;
+      XTRACE(0, 1);
+      return(0);
+      }
+      //break;
+
+  case 256:   // source code trace
+      ETRAC2(type_of, arg1, 1);
+      XTRACE(0, 1);
+      return(0);
+      //break;
+
+  default:    // bad calls get here
+
+      ETRAC2(type_of, 0,0);
+      {
+      if ((csa->trc.trcflags & 4) > 0) {
+        FCLOSE((FILE*)kikcsa->auxtrc);
+        csa->trc.trcflags &= ~4; // show closed
+       }
+      ABEND(kikpcpTYPE, type_of);
+      }
+  }
+}
+
+
+void ETRACE(int type_of, char *more, int intense)
+{ char tmsg[20]; int t; t = csa->tca->tasknum;
+  csa->AICAtime = -1;
+  csa->tca->kikeib.eibresp = csa->tca->kikeib.eibresp2 = 0;
+  if (more == NULL)
+  SPRINTF(tmsg, "P%2.2X%8.8s %4.4X", type_of, "", t);
+  else
+  SPRINTF(tmsg, "P%2.2X%8.8s %4.4X", type_of, more, t);
+  ((SubPtr)csa->trc_addr)(tmsg, intense);
+}
+
+void ETRAC2(int type_of, char *more, int intense)
+{ char tmsg[20]; int t; t = csa->tca->tasknum;
+  csa->AICAtime = -1;
+  //a few calls (ABEND, etc) must not disturb resp/resp2
+  //a->tca->kikeib.eibresp = csa->tca->kikeib.eibresp2 = 0;
+  if (more == NULL)
+  SPRINTF(tmsg, "P%2.2X%8.8s %4.4X", type_of, "", t);
+  else
+  SPRINTF(tmsg, "P%2.2X%8.8s %4.4X", type_of, more, t);
+  ((SubPtr)csa->trc_addr)(tmsg, intense);
+}
+
+void XTRACE(int retcode, int intense)
+{ char tmsg[20]; int t; t = csa->tca->tasknum;
+  SPRINTF(tmsg, "PX%03.3d       %4.4X", retcode, t);
+  ((SubPtr)csa->trc_addr)(tmsg, intense);
+  //return(retcode);
+  csa->AICAtime = csa->AICAmax;
+}
+
+void TRACEstring(char *sometxt)
+{
+  FPRINTF((FILE*)csa->auxtrc, "%50s\n", sometxt);
+}
+
+void TRACEint(int someint)
+{
+  FPRINTF((FILE*)csa->auxtrc, "%x\n", someint);
+}
+

@@ -1,0 +1,157 @@
+#ifndef __IFGEXLST__
+#define __IFGEXLST__
+
+ // from SYS1.MACLIB(IFGEXLST) on MVS 3.8J 'MVS380' system, 4/7/2009
+
+ // for VSAM usage in KICKS - does not include ifgexlvs/ifgexlvt as
+ // it should to be 'complete' (for use with VTAM). Thus only the
+ // first 40 bytes are defined (thru OPENAD).
+
+ //******************************************************************/
+ //*                                                                */
+ //*     EXIT LIST (EXLST)                                          */
+ //*                                                                */
+ //*     THE EXIT LIST CONTAINS ADDRESSES OF USER EXIT ROUTINES     */
+ //*     ASSOCIATED WITH A PARTICULAR VSAM DATA SET OR VTAM         */
+ //*     APPLICATION, TOGETHER WITH FLAGS GIVING INFORMATION        */
+ //*     ABOUT EACH EXIT ROUTINE.  THE INFORMATION IS SUPPLIED      */
+ //*     BY THE USER IN THE EXLST MACRO.  THE EXIT LIST IS          */
+ //*     ACCESSED VIA THE ACBEXLST FIELD IN THE ACB(ACCESS METHOD   */
+ //*     CONTROL BLOCK) IN VSAM AND VTAM OR VIA THE NIBEXLST        */
+ //*     FIELD IN THE NIB(NODE INFORMATION BLOCK) IN VTAM           */
+ //*     FOR A CONNECTION EXIT LIST.                                */
+ //*                                                                */
+ //*     VTAM EXITS ARE GENERATED ONLY IF AM=VTAM IS CODED IN THE   */
+ //*     EXLST MACRO.                                               */
+ //*                                                                */
+ //*     THE LENGTH OF THE EXIT LIST VARIES ACCORDING TO THE        */
+ //*     EXITS SPECIFIED.  THE FOLLOWING TABLE GIVES ITS MINIMUM    */
+ //*     LENGTH WHEN THE CORRESPONDING EXIT IS SPECIFIED AND THE    */
+ //*     PURPOSE OF EACH EXIT:                                      */
+ //*                                                                */
+ //*     EODAD          10 BYTES    FOR SPECIAL PROCESSING WHEN     */
+ //*                                THE END OF A DATA SET IS        */
+ //*                                REACH BY SEQUENTIAL ACCESS      */
+ //*     SYNAD          15 BYTES    FOR ANALYZING PHYSICAL ERRORS   */
+ //*     LERAD          20 BYTES    FOR ANALYZING LOGICAL ERRORS    */
+ //*  ** UPAD(VSAM)     25 BYTES    FOR  SYNCHRONOUS PROCESSING --  */
+ //*                                THIS FIELD OVERLAYS SCIP        */
+ //*     SCIP(VTAM)     25 BYTES    FOR PROCESSING WHEN SESSION     */
+ //*                                CONTROL INPUT IS RECEIVED       */
+ //*     LOGON(VTAM)    30 BYTES    FOR PROCESSING USER LOGON       */
+ //*                                REQUESTS TO AN APPLICATION      */
+ //*  ** JRNAD(VSAM)    35 BYTES    FOR JOURNALLING AS DATA         */
+ //*                                RECORDS ARE PROCESSED           */
+ //*     DFASY(VTAM)    35 BYTES    FOR PROCESSING WHEN DATA FLOW   */
+ //*                                ASYNCHRONOUS INPUT IS RECEIVED  */
+ //*  ** OPENAD         40 BYTES    FOR SPECIAL PROCESSING WHEN     */
+ //*                                THE ACB IS BEING OPENED         */
+ //*     RESP(VTAM)     40 BYTES    FOR PROCESSING WHEN A RESPONSE  */
+ //*                                IS RECEIVED                     */
+ //*     LOSTERM(VTAM)  45 BYTES    FOR SPECIAL PROCESSING WHEN     */
+ //*                                A TERMINAL IS LOST BY AN        */
+ //*                                APPLICATION                     */
+ //*     RELREQ(VTAM)   50 BYTES    FOR SPECIAL PROCESSING WHEN     */
+ //*                                A TERMINAL HELD BY AN APPLICA-  */
+ //*                                TION IS REQUIRED BY ANOTHER     */
+ //*                                APPLICATION                     */
+ //*     ATTN(VTAM)     60 BYTES    FOR HANDLING AN UNSOLICITED     */
+ //*                                ATTENTION INTERRUPT COMING      */
+ //*                                FROM A TERMINAL HELD BY AN      */
+ //*                                APPLICATION                     */
+ //*     TPEND(VTAM)    65 BYTES    FOR SPECIAL PROCESSING BY AN    */
+ //*                                APPLICATION WHEN VTAM IS        */
+ //*                                CLOSING DOWN                    */
+ //*     NSEXIT(VTAM)   70 BYTES    FOR SPECIAL PROCESSING BY AN    */
+ //*                                APPLICATION WHEN VTAM IS        */
+ //*                                CLOSING DOWN           G40AKCM  */
+ //*                                                                */
+ //*                                                                */
+ //*     CHANGE LEVEL = 10                                  @ZA34940*/
+ //*                                                                */
+ //*     DATE OF LAST CHANGE = 13  NOV  78  ( 78*314 )      @ZA34940*/
+ //*                                                                */
+ //*     CHANGE ACTIVITY                                            */
+ //*  C25460,26140,28500,29500                             @XM07756 */
+ //*  D25760,26220,28569,31021                             @XM07756 */
+ //*  CBMM SPLIT SUPPORT                                   @ZA34940 */
+ //******************************************************************/
+ //*
+
+ //*                                                                */
+ //*       EXLST DIAGRAM                                            */
+ //*                                                                */
+ //*      1 BYTE       1 BYTE         2 BYTES           1 BYTE      */
+ //*  ____________________________________________________________  */
+ //* |             |            |                     |           | */
+ //* |    EXLID    |  EXLSTYP   |       EXLLEN        |     *     | */
+ //* |_____________|____________|_____________________|___________| */
+ //* |             |                                              | */
+ //* |    EXLEODF  |                   EXLEODP                    | */
+ //* |_____________|______________________________________________| */
+ //* |             |                                              | */
+ //* |    EXLSYNF  |                   EXLSYNP                    | */
+ //* |_____________|______________________________________________| */
+ //* |             |                                              | */
+ //* |    EXLLERF  |                   EXLLERP                    | */
+ //* |_____________|______________________________________________| */
+ //* |    EXLUPADF |                   EXLUPADP                   | */
+ //* |    EXLSCIPF |                   EXLSCIPP                   | */
+ //* |_____________|______________________________________________| */
+ //* |             |                                              | */
+ //* |    EXLLGNF  |                   EXLLGNP                    | */
+ //* |_____________|______________________________________________| */
+ //* |    EXLJRNF/ |                   EXLJRNP/                   | */
+ //* |    EXLDFASF |                   EXLDFASP                   | */
+ //* |_____________|______________________________________________| */
+ //* |    EXLOPNF/ |                   EXLOPNP/                   | */
+ //* |    EXLRESPF |                   EXLRESPP                   | */
+ //* |_____________|______________________________________________| */
+ //* |             |                                              | */
+ //* |    EXLNLGNF |                   EXLNLGNP                   | */
+ //* |_____________|______________________________________________| */
+ //* |             |                                              | */
+ //* |    EXLRLRQF |                   EXLRLRQP                   | */
+ //* |_____________|______________________________________________| */
+ //* |             |                                              | */
+ //* |       *     |                      *                       | */
+ //* |_____________|______________________________________________| */
+ //* |             |                                              | */
+ //* |    EXLATTNF |                   EXLATTNP                   | */
+ //* |_____________|______________________________________________| */
+ //* |             |                                              | */
+ //* |    EXLTPNDF |                   EXLTPNDP                   | */
+ //* |_____________|______________________________________________| */
+ //* |             |                                              | */
+ //* |    EXLTNSEF |                   EXLTNSEP                   | */
+ //* |_____________|______________________________________________| */
+ //*  ___________________________ 5 BYTES ________________________  */
+ //*                                                                */
+ //*     EXLST DECLARATION                                          */
+ //*
+
+ typedef struct __ifgexlst__
+ {
+   char  exlid;       // +000
+   char  exlstyp;     // +001
+   short exllen;      // +002
+   char  fill1;       // +003 filler ?
+   char  exleodf;     // +004 eodf flags (eods, eoda, eodk)
+   char *exleodp;     // +005 eod exit
+   char  exlsynf;     // +009 synad flags (syns, syna, synk)
+   char *exlsynp;     // +010 synad exit
+   char  exllerf;     // +014 lerad flags (lers, lera, lerk)
+   char *exllerp;     // +015 lerad exit
+   char  exlupadf;    // +019 upad flags (upads, upada, upadk)
+   char *exlupadp;    // +020 upad exit
+   char  fill2[5];    // +024 vtam logon exit...
+   char  exljrnf;     // +029 jrnf flags (jrns, jrna, jrnk)
+   char *exljrnp;     // +030 jrnad exit
+   char  exlopnf;     // +034 opnf flags (opns, opna, opnk)
+   char *exlopnp;     // +035 opnad exit
+
+ } ifgexlst;
+
+#endif
+
+

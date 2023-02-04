@@ -1,0 +1,167 @@
+ /////////////////////////////////////////////////////////////////////
+ // I got the REXX I used as a base for this from CBT429.FILE433(BLOX)
+ //   -->  the CBT site, not TK3 (FILE433 is missing for some reason).
+ // I selected this as the basis for my block letters 'cause I'd used
+ // hand-made 9x9, and this was the closest I found to that size...
+ //
+ // Written as part of 'KICKS for TSO' port to VM/370
+ // © Copyright 2011-2014, Michael Noel, All Rights Reserved.
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+//* gcce kblock
+//* term chardel off
+//* load kblock (clear
+//* include @@kstrt (reset @@kstrt
+//* genmod kblock
+
+ #include <stdlib.h>
+ #include <stdio.h>
+ #include <string.h>
+
+ extern int __KSR1;
+
+ char *patn[] = {
+   "081422417F4141",   /*  A   */
+   "7E41417E41417E",   /*  B   */
+   "3E41404040413E",   /*  C   */
+   "7C42414141427C",   /*  D   */
+   "7F40407C40407F",   /*  E   */
+   "7F40407C404040",   /*  F   */
+   "7E41404047417E",   /*  G   */
+   "4141417F414141",   /*  H   */
+   "1C08080808081C",   /*  I   */
+   "7F02020202423C",   /*  J   */
+   "41424478444241",   /*  K   */
+   "4040404040407F",   /*  L   */
+   "41635549414141",   /*  M   */
+   "41615149454341",   /*  N   */
+   "3E41414141413E",   /*  O   */
+   "7E41417E404040",   /*  P   */
+   "3E41414145423D",   /*  Q   */
+   "7E41417E444241",   /*  R   */
+   "3E41403E01413E",   /*  S   */
+   "7F080808080808",   /*  T   */
+   "4141414141413E",   /*  U   */
+   "41414141221408",   /*  V   */
+   "41414141494936",   /*  W   */
+   "41221408142241",   /*  X   */
+   "41221408080808",   /*  Y   */
+   "7F02040810207F",   /*  Z   */
+   "3E43454951613E",   /*  0   */
+   "0818080808083E",   /*  1   */
+   "3E41020408103E",   /*  2   */
+   "7F020C0201413E",   /*  3   */
+   "2040487F080808",   /*  4   */
+   "7F40407E01017E",   /*  5   */
+   "0408103E41413E",   /*  6   */
+   "7F020408080808",   /*  7   */
+   "3E41413E41413E",   /*  8   */
+   "3E41413E040810",   /*  9   */
+   "22227F227F2222",   /*  #   */
+ /*"143E403E013E14",   old $   */
+   "083E483E093E08",   /*  $   */
+   "21522408122542",   /*  %   */
+   "0018241825423D",   /*  &   */
+   "0022143E142200",   /*  *   */
+   "04081010100804",   /*  (   */
+   "10080404040810",   /*  )   */
+   "0000003E000000",   /*  -   */
+   "00181800181800",   /*  :   */
+   "00000000000000",   /*blank */
+   "00181800181808",   /*  ;   */
+   "3E410104080008"    /*  ?   */
+ };
+
+ int patn_max=sizeof(patn)/sizeof(char*);
+
+ char *choices = { "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789#$%&*()-: ;?" };
+
+
+int main (int argc, char *argv[]) {
+
+ int   ARGC=0;
+ char *ARGV[20];
+
+ int i, j, ltrpos, slug, l2;
+ char ltr, byte[3], txtbuf[80], *ip;
+ char prtbuf[80];
+
+ // regenerate ARGC, ARGV as the input parms may
+ // be fouled up by a failed gcc compile step...
+
+ ip = __KSR1; // recover pre-CMSSTART r1
+
+ while (*ip != 0xff) {
+  if (ARGC > 19) break;
+  ARGV[ARGC++] = ip;
+  ip += 8;
+  }
+
+ // now use ARGC/ARGV instead of argc/argv...
+
+ memset(txtbuf, 0, 80);
+ memset(prtbuf, 0, 80);
+
+ // concat the args
+ for (i=1; i<ARGC; i++) {
+  if(strlen(txtbuf) > 9) break;
+  if(strlen(txtbuf)>0) strcat(txtbuf, " ");
+  strncpy(prtbuf, ARGV[i], 8); prtbuf[8]=0;
+  strncat(txtbuf, prtbuf, 75-strlen(txtbuf));
+  while (txtbuf[strlen(txtbuf)-1] == ' ')
+         txtbuf[strlen(txtbuf)-1] =  0;
+  }
+
+ // make all upper case
+ for (i=0; i < strlen(txtbuf); i++) txtbuf[i] = toupper(txtbuf[i]);
+
+ // trunc to 9 chars max & strip any trailing space
+ txtbuf[9] = 0; // max 9 chars
+ if (strlen(txtbuf) > 0 )
+  if (txtbuf[strlen(txtbuf)-1] == ' ')
+   txtbuf[strlen(txtbuf)-1] = 0;
+
+ // print leading line of astricks
+ fprintf(stderr, "**");
+ for (i=0; i<strlen(txtbuf); i++) fprintf(stderr, "********");
+ fprintf(stderr, "***\n");
+
+ // print block letters
+ for (i=0; i<7; i++) {                  // for each line
+  fprintf(stderr, "* ");
+  for (j=0; j<strlen(txtbuf); j++) {    // for each letter
+   // get array subscript
+   ltr = txtbuf[j];
+   for (ltrpos=0; ltrpos<patn_max; ltrpos++)
+    if (choices[ltrpos] == txtbuf[j]) break;
+   if (ltrpos == patn_max) ltrpos -= 3; // use blank for unknowns
+   // get char & make binary
+   strncpy(byte, &patn[ltrpos][i*2], 2);
+   slug = strtol(byte, NULL, 16);
+   // write out bit values
+   if((slug & 0x80) > 0) fprintf(stderr, "%c", ltr);
+                    else fprintf(stderr, " ");;
+   if((slug & 0x40) > 0) fprintf(stderr, "%c", ltr);
+                    else fprintf(stderr, " ");;
+   if((slug & 0x20) > 0) fprintf(stderr, "%c", ltr);
+                    else fprintf(stderr, " ");;
+   if((slug & 0x10) > 0) fprintf(stderr, "%c", ltr);
+                    else fprintf(stderr, " ");;
+   if((slug & 0x08) > 0) fprintf(stderr, "%c", ltr);
+                    else fprintf(stderr, " ");;
+   if((slug & 0x04) > 0) fprintf(stderr, "%c", ltr);
+                    else fprintf(stderr, " ");;
+   if((slug & 0x02) > 0) fprintf(stderr, "%c", ltr);
+                    else fprintf(stderr, " ");;
+   if((slug & 0x01) > 0) fprintf(stderr, "%c", ltr);
+                    else fprintf(stderr, " ");;
+   }
+  fprintf(stderr, "  *\n");
+  }
+
+ // print trailing line of astricks
+ fprintf(stderr, "**");
+ for (i=0; i<strlen(txtbuf); i++) fprintf(stderr, "********");
+ fprintf(stderr, "***\n");
+
+ }

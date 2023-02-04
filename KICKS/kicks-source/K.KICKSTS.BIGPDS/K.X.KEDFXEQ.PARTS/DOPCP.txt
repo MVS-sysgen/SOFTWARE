@@ -1,0 +1,348 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+#include "kedfxeq.h"
+
+ ////////////////////// PCP api calls //////////////////////
+
+#define API_HANDLE_ABEND API_H3NDLE_ABEND
+void API_HANDLE_ABEND(KIKEIB *eib, DEBUGGERCA *comm) {
+  char *tioa = csa->tctte->tioa;
+  char   buffer[200];
+  short sbuf, *eibfn2 = (short*)&eibSave.eibfn;
+  int row=3;
+
+  APPEND_MSG("HANDLE ABEND ");
+
+ }
+
+
+#define API_IGNORE_CONDITION API_HANDLE_CONDITION
+void API_HANDLE_CONDITION(KIKEIB *eib, DEBUGGERCA *comm) {
+  char *tioa = csa->tctte->tioa;
+  char   buffer[200];
+  short sbuf, *eibfn2 = (short*)&eibSave.eibfn;
+  int row=3;
+
+  char *resp_text[] = {"NORMAL", "ERROR", "RDATT", "WRBRK", "EOF",
+  "EODS", "EOC", "INBFMH", "ENDINPT", "NONVAL", "NOSTART", "TERMIDERR",
+  "FILENOTFOUND", "DSIDERR", "NOTFND", "DUPREC", "DUPKEY", "INVREQ", "IOERR",
+  "NOSPACE", "NOTOPEN", "ENDFILE", "ILLOGIC", "LENGERR", "QZERO",
+  "SIGNAL", "QBUSY", "ITEMERR", "PGMIDERR", "TRANSIDERR", "ENDDATA",
+  "INVTSREQ", "EXPIRED", "RETPAGE", "RTEFAIL", "RTESOME", "TSIOERR",
+  "MAPFAIL", "INVERRTERM", "INVMPSZ", "IGREQID", "OVERFLOW", "INVLDC",
+  "NOSTG", "JIDERR", "QIDERR", "NOJBUFSP", "DSSTAT", "SELNERR", "FUNCERR",
+  "UNEXPIN", "NOPASSBKRD", "NOPASSBKWR", "SYSIDERR", "ISCINVREQ", "ENQBUSY",
+  "ENVDEFERR", "IGREQCD", "SESSIONERR", "SYSBUSY", "SESSBUSY", "NOTALLOC",
+  "CBIDERR", "INVEXITREQ", "INVPARTNSET", "INVPARTN", "PARTNFAIL",
+  "USERIDERR", "NOTAUTH", "SUPPRESSED", "TERMERR", "ROLLEDBACK",
+  "DISABLED", "OPENERR", "LOADING"};
+
+  int rt_max=sizeof(resp_text)/sizeof(char*);
+
+  int resp_codes[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 12, 13, 14,
+  15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32,
+  33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50,
+  51, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 69, 70, 72,
+  81, 82, 84, 87, 94};
+
+  int numacs, aptr, ac, acs, acs14, acs58, acs9c, acsdg, bptr;
+
+  if (comm->type_of == kikpcpIGNORECOND) {
+   APPEND_MSG("IGNORE CONDITION ");
+   }
+  else {
+   APPEND_MSG("HANDLE CONDITION ");
+   }
+
+  numacs  = *(int*)cobarg[2];
+  acs14   = *(int*)cobarg[3]; acs58 = *(int*)cobarg[4];
+  acs9c   = *(int*)cobarg[5]; acsdg = *(int*)cobarg[6];
+
+  for(aptr=0; aptr<numacs; aptr++) {
+   acs = acs14;
+   if (aptr>3) acs = acs58;
+   if (aptr>7) acs = acs9c;
+   if (aptr>11) acs = acsdg;
+   ac = (acs>>((aptr%4)*8))&255;
+   if ((aptr & 1) == 0) {
+    row++; // skip a line
+    PUT_SBA(++row,1)
+    APPEND_MSG("  ");
+    }
+   buffer[0] = 0;
+   for(bptr=0; bptr<rt_max; bptr++) {
+    if (ac == resp_codes[bptr]) {
+     STRCAT(buffer, resp_text[bptr]);
+     break;
+     }
+    }
+   if (comm->type_of == kikpcpHANDLECOND) {
+     STRCAT(buffer, "  (set) ");
+    }
+   if (comm->type_of == kikpcpIGNORECOND) {
+     STRCAT(buffer, "  (ignore) ");
+    }
+   if (comm->type_of == kikpcpCANCELCOND) {
+     STRCAT(buffer, "  (clear) ");
+    }
+   STRNCAT(buffer, "                              ", 30-STRLEN(buffer));
+   APPEND_MSG(buffer);
+   }
+ }
+
+void API_LOAD(KIKEIB *eib, DEBUGGERCA *comm) {
+  char *tioa = csa->tctte->tioa;
+  char  buffer[200];
+  short sbuf, *eibfn2 = (short*)&eibSave.eibfn;
+  int row=3;
+  char *name;
+  int *entry, size, flags, lp;
+
+  name = (char*)cobarg[1];
+  entry = (int*)cobarg[2];
+  size  = *(int*)cobarg[3];
+  flags = *(int*)cobarg[4];
+  // flags 1 -> size is short, not int
+  //       2 -> HOLD
+  //       4 -> ret SET into arg 5 (else cobarg[5] is dummy)
+  //       8 -> no EP (cobarg[2] is dummy)
+  //      16 -> no size (cobarg[3] is dummy)
+  lp    = *(int*)cobarg[5];
+
+  APPEND_MSG("LOAD ");
+  SPRINTF(buffer, "PROGRAM(%8.8s) ", name);
+  APPEND_MSG(buffer);
+  row++; // skip a line
+  PUT_SBA(++row,1)
+  APPEND_MSG(buffer);
+  if((flags & 2) > 0) APPEND_MSG("HOLD");
+  // now decide what else to display...
+  if((flags & 1) > 0) size = *(short*)cobarg[3];
+ }
+
+#define API_XCTL API_LINK
+void API_LINK(KIKEIB *eib, DEBUGGERCA *comm) {
+  char *tioa = csa->tctte->tioa;
+  char  buffer[200];
+  short sbuf, *eibfn2 = (short*)&eibSave.eibfn;
+  int row=3, col, topline, botline, lines;
+  char *name, *comma;
+  int   length;
+
+  name = (char*)cobarg[1];
+  comma = (char*)cobarg[2]; length = *(int*)cobarg[3];
+  if (*eibfn2 == 3586)
+   { APPEND_MSG("LINK "); }
+  else
+  if (*eibfn2 == 3588)
+   { APPEND_MSG("XCTL "); }
+  SPRINTF(buffer, "PROGRAM(%8.8s) ", name);
+  APPEND_MSG(buffer);
+  if (length > 0) {
+   row++; // skip a line
+   PUT_SBA(++row,1)
+   SPRINTF(buffer, "  COMM-AREA(%08X)     COMM-AREA LENGTH(%d)",
+           (int)comma, length);
+   APPEND_MSG(buffer);
+   row++; row++; // skip 2 lines
+   topline = row;
+   botline = bot - helpv - 1;
+   lines = botline - topline + 1;
+   if (eib->eibaid == 0) offset = 0;        // initial entry
+   if (eib->eibaid == KIKPF7) {             // scroll back
+    offset -= lines*sba_1632;
+    if (offset < 0) offset = 0;
+    }
+   if (eib->eibaid == KIKPF8) {             // scroll fwd
+    col = offset + lines*sba_1632;
+    if (col < length) offset = col;
+    }
+   if (eib->eibaid == KIKPF19) offset = 0;  // scroll top
+   if (eib->eibaid == KIKPF20) {            // scroll bottom
+    offset = length / sba_1632;             // num lines in area
+    if (length % sba_1632 > 0) offset++;
+    offset -= lines;              // less num lines on screen
+    offset *= sba_1632;           // times chars / line
+    if (offset < 0) offset = 0;   // zero if negative...
+    }
+   DoDump(comma, length, offset, topline, lines);
+   }
+ }
+
+void API_RETURN(KIKEIB *eib, DEBUGGERCA *comm) {
+  char *tioa = csa->tctte->tioa;
+  char  buffer[200];
+  short sbuf, *eibfn2 = (short*)&eibSave.eibfn;
+  int row=3, col, topline, botline, lines;
+  char *name, *comma;
+  int   length;
+
+  name = (char*)cobarg[1];
+  comma = (char*)cobarg[2]; length = *(int*)cobarg[3];
+  APPEND_MSG("RETURN ");
+  if (name[0] != 0) {
+   SPRINTF(buffer, "TRANSID(%4.4s) ", name);
+   APPEND_MSG(buffer);
+   }
+  if (length > 0) {
+   row++; // skip a line
+   PUT_SBA(++row,1)
+   SPRINTF(buffer, "  COMM-AREA(%08X)     COMM-AREA LENGTH(%d)",
+           (int)comma, length);
+   APPEND_MSG(buffer);
+   row++; row++; // skip 2 lines
+   topline = row;
+   botline = bot - helpv - 1;
+   lines = botline - topline + 1;
+   if (eib->eibaid == 0) offset = 0;        // initial entry
+   if (eib->eibaid == KIKPF7) {             // scroll back
+    offset -= lines*sba_1632;
+    if (offset < 0) offset = 0;
+    }
+   if (eib->eibaid == KIKPF8) {             // scroll fwd
+    col = offset + lines*sba_1632;
+    if (col < length) offset = col;
+    }
+   if (eib->eibaid == KIKPF19) offset = 0;  // scroll top
+   if (eib->eibaid == KIKPF20) {            // scroll bottom
+    offset = length / sba_1632;             // num lines in area
+    if (length % sba_1632 > 0) offset++;
+    offset -= lines;              // less num lines on screen
+    offset *= sba_1632;           // times chars / line
+    if (offset < 0) offset = 0;   // zero if negative...
+    }
+   DoDump(comma, length, offset, topline, lines);
+   }
+ }
+
+void API_RELEASE(KIKEIB *eib, DEBUGGERCA *comm) {
+  char *tioa = csa->tctte->tioa;
+  char  buffer[200];
+  char *name;
+
+  name = (char*)cobarg[1];
+  SPRINTF(buffer, "RELEASE PROGRAM(%8.8s) ", name);
+  APPEND_MSG(buffer);
+ }
+
+#define API_ABEND API_DUMP
+void API_DUMP(KIKEIB *eib, DEBUGGERCA *comm) {
+  char *tioa = csa->tctte->tioa;
+  int col, row=3, topline, botline, lines;
+  char  buffer[200];
+  short sbuf, *eibfn2 = (short*)&eibSave.eibfn;
+  char *name, *from;
+  int option, fromlength;
+
+  name = (char*)cobarg[1];
+  if (*eibfn2 == 3596)
+   { APPEND_MSG("ABEND "); }
+  else
+  if (*eibfn2 == 7170)
+   { APPEND_MSG("DUMP "); }
+  SPRINTF(buffer, " CODE(%4.4s) ", name);
+  APPEND_MSG(buffer);
+  if (*eibfn2 == 3596) {
+   option = *(int*)cobarg[2];
+   if ((option & 1) > 0) APPEND_MSG("  NODUMP");
+   }
+  if (*eibfn2 == 7170) {
+   option = *(int*)cobarg[2];
+   if ((option & 4) > 0) APPEND_MSG("  AICA/ASRA/ASRB");
+   if ((option & 1) > 0) {
+    row++; // skip a line
+    PUT_SBA(++row,1)
+    from       = (char*)cobarg[3];
+    fromlength = *(int*)cobarg[4];
+    SPRINTF(buffer, "  FROM(%08X)     FROM LENGTH(%d)",
+            (int)from, fromlength);
+    APPEND_MSG(buffer);
+    row++; row++; // skip 2 lines
+    topline = row;
+    botline = bot - helpv - 1;
+    lines = botline - topline + 1;
+    if (eib->eibaid == 0) offset = 0;        // initial entry
+    if (eib->eibaid == KIKPF7) {             // scroll back
+     offset -= lines*sba_1632;
+     if (offset < 0) offset = 0;
+     }
+    if (eib->eibaid == KIKPF8) {             // scroll fwd
+     col = offset + lines*sba_1632;
+     if (col < fromlength) offset = col;
+     }
+    if (eib->eibaid == KIKPF19) offset = 0;  // scroll top
+    if (eib->eibaid == KIKPF20) {            // scroll bottom
+     offset = fromlength / sba_1632;         // num lines in area
+     if (fromlength % sba_1632 > 0) offset++;
+     offset -= lines;              // less num lines on screen
+     offset *= sba_1632;           // times chars / line
+     if (offset < 0) offset = 0;   // zero if negative...
+     }
+    DoDump(from, fromlength, offset, topline, lines);
+    }
+   }
+ }
+
+void API_ENTER(KIKEIB *eib, DEBUGGERCA *comm) {
+  char *tioa = csa->tctte->tioa;
+  char  buffer[200];
+  short sbuf, *eibfn2 = (short*)&eibSave.eibfn;
+  int col, row=3, topline, botline, lines;
+  int tracenum, flags, fromlength;
+  char *from, *resource;
+
+  tracenum   = *(int*)cobarg[1];
+  flags      = *(int*)cobarg[2];
+  from       = (char*)cobarg[3];
+  fromlength = *(int*)cobarg[4];
+  resource   = (char*)cobarg[5];
+  SPRINTF(buffer, "ENTER  TRACENUM(%d)  FLAGS(%d)",
+          tracenum, flags);
+  APPEND_MSG(buffer);
+  row++; // skip a line
+  PUT_SBA(++row,1)
+  SPRINTF(buffer, "  FROM(%08X)     FROM LENGTH(%d)",
+          (int)from, fromlength);
+  APPEND_MSG(buffer);
+  row++; // skip a line
+  PUT_SBA(++row,1)
+  SPRINTF(buffer, "  RESOURCE(%08X)", (int)resource);
+  APPEND_MSG(buffer);
+
+  row++; row++; // skip 2 lines
+  topline = row;
+  botline = bot - helpv - 1;
+  lines = botline - topline + 1;
+  if (eib->eibaid == 0) offset = 0;        // initial entry
+  if (eib->eibaid == KIKPF7) {             // scroll back
+   offset -= lines*sba_1632;
+   if (offset < 0) offset = 0;
+   }
+  if (eib->eibaid == KIKPF8) {             // scroll fwd
+   col = offset + lines*sba_1632;
+   if (col < fromlength) offset = col;
+   }
+  if (eib->eibaid == KIKPF19) offset = 0;  // scroll top
+  if (eib->eibaid == KIKPF20) {            // scroll bottom
+   offset = fromlength / sba_1632;         // num lines in area
+   if (fromlength % sba_1632 > 0) offset++;
+   offset -= lines;              // less num lines on screen
+   offset *= sba_1632;           // times chars / line
+   if (offset < 0) offset = 0;   // zero if negative...
+   }
+  DoDump(from, fromlength, offset, topline, lines);
+
+ }
+

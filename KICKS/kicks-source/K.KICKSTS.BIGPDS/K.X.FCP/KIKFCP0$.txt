@@ -1,0 +1,353 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+#include <stdio.h>
+
+#include "kicks.h"
+
+KIKCSA *csa = (KIKCSA*)&csa;
+
+#include "ifgacb.h"
+#include "ifgrpl.h"
+#include "iefjfcb.h"
+iefjfcb *rdjfcb(char *ddname);
+
+#include "fcthdr.h"
+#include "fctent.h"
+
+#include "pcthdr.h"
+#include "pctent.h"
+
+ ///////////////////////////////////////////////////////////////
+ //
+ //  function prototypes
+ //
+ ///////////////////////////////////////////////////////////////
+
+void ETRACE(int type_of, char *more, int intense);
+void XTRACE(int retcode, int intense);
+
+ ///////////////////////////////////////////////////////////////
+ //
+ //  kikfcp mainline
+ //
+ ///////////////////////////////////////////////////////////////
+
+int kikfcp (KIKCSA *kikcsa, int type_of,
+   char *arg1, char *arg2, char *arg3, char *arg4,
+   char *arg5, char *arg6, char *arg7, char *arg8) {
+
+ int dodump=0, suppress=1;
+#define firstnl arg1
+
+ fcte *fctent, *fctbase, *fctpath;
+ fcth *fcthdr;
+
+switch (type_of)
+  {
+  case kikfcpINIT:     // startup
+    {
+    csa = kikcsa;
+    ETRACE(type_of, "", 0);
+
+    XTRACE(0, 0);
+    return(0);
+    }
+    //break;
+
+  case kikfcpTERM:     // shutdown & close DISP=OLD files
+    {
+    ETRACE(type_of, "", 0);
+    XTRACE(0, 0);
+    return(0);
+    }
+    //break;
+
+  case kikfcpTRANSTRT:
+  case kikfcpTRANEND:       // close files
+    {
+    ETRACE(type_of, "", 1); // 'intense'
+    XTRACE(0, 1);           // 'intense'
+    return(0);
+    }
+    //break;
+
+  case kikfcpCLOSE:             // close a file
+    {
+    //file name = arg1;         // (Ir) file
+    ETRACE(type_of, arg1, 1);   // 'intense'
+    XTRACE(0, 1);               // 'intense'
+    return(0);
+    }
+    //break;
+
+  case kikfcpDELE:     // delete
+    {
+    KIKTCA *tca=csa->tca;
+
+    ETRACE(type_of, arg1, 0);
+    //
+    //file name = arg1; // (Ir) file
+    //flags     = arg2  // (Ir) flags
+                           // generic
+                           // rba
+                           // rrn
+    // - null - = arg3; //
+    // - null - = arg4; //
+    //ridfld    = arg5; // (Io) ridfld (null if missing)
+    //keylen    = arg6; // (Io) keylen (-1 if missing)
+    //numrec    = arg7; // (Ir) numrec (+1 if 'missing')
+
+    KIKPCP(csa, kikpcpABND, "F005", &dodump); // abend, open failed
+
+    XTRACE(0, 0);
+    return(0);
+    }
+    //break;
+
+  case kikfcpENDB:     // end browse
+    {
+    KIKTCA *tca=csa->tca;
+
+    ETRACE(type_of, arg1, 0);
+    //
+    //file name = arg1; // (Ir) file
+    //flags     = arg2  // (Ir) flags - NOT USED
+    // - null - = arg3; //
+    // - null - = arg4; //
+    // - null - = arg5; //
+    // - null - = arg6; //
+    //reqid     = arg7; // (Ir) reqid  (+0 if 'missing')
+
+    KIKPCP(csa, kikpcpABND, "F005", &dodump); // abend, open failed
+
+    XTRACE(0, 0);
+    return(0);
+    }
+    //break;
+
+  case kikfcpREDN:     // read next
+    {
+    KIKTCA *tca=csa->tca;
+
+    ETRACE(type_of, arg1, 0);
+    //
+    //file name = arg1; // (Ir) file
+    //flags     = arg2  // (Ir) flags
+                           // rba
+                           // rrn
+    //into      = arg3; // (Or) into/from
+    //length    = arg4; // (Io) length (-1 if missing)
+    //ridfld    = arg5; // (Io) ridfld (null if missing)
+    //keylen    = arg6; // (Io) keylen (-1 if missing)
+    //reqid     = arg7; // (Ir) reqid  (+0 if 'missing')
+
+    KIKPCP(csa, kikpcpABND, "F005", &dodump); // abend, open failed
+
+    XTRACE(0, 0);
+    return(0);
+    }
+    //break;
+
+  case kikfcpREDP:     // read previous
+    {
+    KIKTCA *tca=csa->tca;
+
+    ETRACE(type_of, arg1, 0);
+    //
+    //file name = arg1; // (Ir) file
+    //flags     = arg2  // (Ir) flags
+                           // rba
+                           // rrn
+    //into      = arg3; // (Or) into/from
+    //length    = arg4; // (Io) length (-1 if missing)
+    //ridfld    = arg5; // (Io) ridfld (null if missing)
+    //keylen    = arg6; // (Io) keylen (-1 if missing)
+    //reqid     = arg7; // (Ir) reqid  (+0 if 'missing')
+
+    KIKPCP(csa, kikpcpABND, "F005", &dodump); // abend, open failed
+
+    XTRACE(0, 0);
+    return(0);
+    }
+    //break;
+
+  case kikfcpREAD:     // read
+    {
+    KIKTCA *tca=csa->tca;
+
+    ETRACE(type_of, arg1, 0);
+    //
+    //file name = arg1; // (Ir) file
+    //flags     = arg2  // (Ir) flags
+                           // generic
+                           // rba
+                           // rrn
+                           // gteq
+                           // equal
+                           // update
+    //into      = arg3; // (Or) into/from
+    //length    = arg4; // (Io) length (-1 if missing)
+    //ridfld    = arg5; // (Io) ridfld (null if missing)
+    //keylen    = arg6; // (Io) keylen (-1 if missing)
+
+    KIKPCP(csa, kikpcpABND, "F005", &dodump); // abend, open failed
+
+    XTRACE(0, 0);
+    return(0);
+    }
+    //break;
+
+  case kikfcpREBR:     // reset browse
+    {
+    KIKTCA *tca=csa->tca;
+
+    ETRACE(type_of, arg1, 0);
+    //
+    //file name = arg1; // (Ir) file
+    //flags     = arg2  // (Ir) flags
+                           // generic
+                           // rba
+                           // rrn
+                           // gteq
+                           // equal
+    // - null - = arg3; //
+    // - null - = arg4; //
+    //ridfld    = arg5; // (Io) ridfld (null if missing)
+    //keylen    = arg6; // (Io) keylen (-1 if missing)
+    //reqid     = arg7; // (Ir) reqid  (+0 if 'missing')
+
+    KIKPCP(csa, kikpcpABND, "F005", &dodump); // abend, open failed
+
+    XTRACE(0, 0);
+    return(0);
+    }
+    //break;
+
+  case kikfcpREWR:     // rewrite
+    {
+    KIKTCA *tca=csa->tca;
+
+    ETRACE(type_of, arg1, 0);
+    //
+    //file name = arg1; // (Ir) file
+    //flags     = arg2  // (Ir) flags - NOT USED
+    //from      = arg3; // (Ir) into/from
+    //length    = arg4; // (Io) length (-1 if missing)
+
+    KIKPCP(csa, kikpcpABND, "F005", &dodump); // abend, open failed
+
+    XTRACE(0, 0);
+    return(0);
+    }
+    //break;
+
+  case kikfcpSTBR:     // start browse
+    {
+    KIKTCA *tca=csa->tca;
+
+    ETRACE(type_of, arg1, 0);
+    //
+    //file name = arg1; // (Ir) file
+    //flags     = arg2  // (Ir) flags
+                           // generic
+                           // rba
+                           // rrn
+                           // gteq
+                           // equal
+    // - null - = arg3; //
+    // - null - = arg4; //
+    //ridfld    = arg5; // (Io) ridfld (null if missing)
+    //keylen    = arg6; // (Io) keylen (-1 if missing)
+    //reqid     = arg7; // (Ir) reqid  (+0 if 'missing')
+
+    KIKPCP(csa, kikpcpABND, "F005", &dodump); // abend, open failed
+
+    XTRACE(0, 0);
+    return(0);
+    }
+    //break;
+
+  case kikfcpUNLK:     // unlock
+    {
+    KIKTCA *tca=csa->tca;
+
+    ETRACE(type_of, arg1, 0);
+    //
+    //file name = arg1; // (Ir) file
+    //flags     = arg2  // (Ir) flags - NOT USED
+
+    KIKPCP(csa, kikpcpABND, "F005", &dodump); // abend, open failed
+
+    XTRACE(0, 0);
+    return(0);
+    }
+    //break;
+
+  case kikfcpWRIT:     // write
+    {
+    KIKTCA *tca=csa->tca;
+
+    ETRACE(type_of, arg1, 0);
+    //
+    //file name = arg1; // (Ir) file
+    //flags     = arg2  // (Ir) flags
+                           // rba
+                           // rrn
+                           // massinsert
+    //from      = arg3; // (Ir) into/from
+    //length    = arg4; // (Io) length (-1 if missing)
+    //ridfld    = arg5; // (Io) ridfld (null if missing)
+    //keylen    = arg6; // (Io) keylen (-1 if missing)
+
+
+    KIKPCP(csa, kikpcpABND, "F005", &dodump); // abend, open failed
+
+    XTRACE(0, 0);
+    return(0);
+    }
+    //break;
+
+  default:    // bad calls get here
+    ETRACE( type_of, "", 0);
+    {
+    if ((csa->trc.trcflags & 4) > 0) {
+      FCLOSE((FILE*)kikcsa->auxtrc);
+      csa->trc.trcflags &= ~4; // show closed
+     }
+    ABEND(kikfcpTYPE, type_of);
+    }
+  }
+}
+
+
+void ETRACE(int type_of, char *more, int intense)
+{ char tmsg[20]; int t; t = csa->tca->tasknum;
+  csa->AICAtime = -1;
+  csa->tca->kikeib.eibresp = csa->tca->kikeib.eibresp2 = 0;
+  if (more == NULL)
+  SPRINTF(tmsg, "F%2.2X%8.8s %4.4X", type_of, "", t);
+  else
+  SPRINTF(tmsg, "F%2.2X%8.8s %4.4X", type_of, more, t);
+  ((SubPtr)csa->trc_addr)(tmsg, intense);
+}
+
+
+void XTRACE(int retcode, int intense)
+{ char tmsg[20]; int t; t = csa->tca->tasknum;
+  SPRINTF(tmsg, "FX%03.3d       %4.4X", retcode, t);
+  ((SubPtr)csa->trc_addr)(tmsg, intense);
+  //return(retcode);
+  csa->AICAtime = csa->AICAmax;
+}

@@ -1,0 +1,1075 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+#include <stdio.h>
+
+#include "kicks.h"
+
+#include "bmsfld.h"
+#include "bmsmap.h"
+#include "bmsms.h"
+
+KIKCSA *csa = (KIKCSA*)&csa;
+
+ ///////////////////////////////////////////////////////////////
+ //
+ //  function prototypes
+ //
+ ///////////////////////////////////////////////////////////////
+
+void ETRACE(int type_of, char *more, int intense);
+void XTRACE(int retcode, int intense);
+void TRACEstring(char *sometxt);
+void TRACEint(int someint);
+
+int check_mapset (BMSMAPSET *mapsetaddr,
+                  char *mapsetname,
+                  int mapsetlong);
+void append_tioa (char *str, int strl);
+void dump_attr (char *strf, char *strl);
+
+
+ ///////////////////////////////////////////////////////////////
+ //
+ //  kikbms mainline
+ //
+ ///////////////////////////////////////////////////////////////
+
+
+int kikbms (KIKCSA *kikcsa, int type_of,
+   char *arg1, char *arg2, char *arg3, char *arg4,
+   char *arg5, char *arg6) {
+
+ int dodump=0, suppress=1;
+#define firstnl arg1
+
+ switch (type_of)
+    {
+
+
+    case kikbmsINIT:    // startup
+
+        csa=kikcsa;
+        ETRACE(type_of, "", 0);
+        //
+        //no arguments
+
+#ifdef DEBUGIT
+        // message if debugging version
+        FPRINTF(csa->csastderr,"%s", firstnl); firstnl[0]=0;
+        FPRINTF(csa->csastderr,"*** DEBUGGING version of BMS *** *** ***\n");
+#endif
+
+        XTRACE(0, 0);
+        return(0);
+        //break;
+
+
+    case kikbmsTERM:    // shutdown
+        ETRACE(type_of, "", 0);
+        //
+        //no arguments
+
+        XTRACE(0, 0);
+        return(0);
+        //break;
+
+
+    case kikbmsSEND:
+               // generate output 3270 data stream from
+               // loaded binary map and passed 'output' map
+
+        ETRACE(type_of,arg2,0);
+        //
+        //mapset name = arg1; // (Ir) mapset
+        //map name    = arg2; // (Ir) map
+        //map dsect   = arg3; // (Ir) dsect
+        //cursor      = arg4; // (Ir) cursor address
+        //flags       = arg5  // (Ir)
+        // low order - char 0 - options (like 'maponly')
+        //                      1 - maponly
+        //                      2 - symbolic positioning
+        //                      4 - physical positioning
+        //                      8 - dataonly
+        //             char 1 - i/o control (like print or erase)
+        //             char 2 - wcc (freekb, frset, alarm)
+        //             char 3 - unused
+        {
+        char  *mapset;
+        char  *map;
+        char  *mapdsect;
+        int    cursor, maybecursor=0, two=2;
+        int    flags;
+
+        char *tioa;
+        int  tioaSIZE, somethingNOTzero, fldoffset;
+        char attr, attraccum[25], *attraccumx;
+        short sba, gotfldval;
+        int chk, cmd, mapsetlong;
+        BMSMAPSET *mapsetaddr;
+        BMSMAP *mapaddr, *mapchain;
+        BMSMAPFIELD *mapfieldaddr, *fieldchain;
+        char *dsectL, *dsectF, *dsectA, *dsectO, *dsectC, *dsectH;
+        char *dsectP, *dsectV, *dsectU, *dsectM, *dsectT;
+
+        tioa = csa->tctte->tioa;
+        tioaSIZE = csa->tctte->tioasize;
+        mapset = arg1; map = arg2; mapdsect = arg3;
+        cursor = *(int*)arg4; flags = *(int*)arg5;
+
+        // load the mapset, find the map
+        KIKPCP (csa, kikpcpLOAD,
+               mapset, &mapsetaddr, &mapsetlong, &two);
+        chk = check_mapset(mapsetaddr, mapset, mapsetlong);
+        if(chk < 0) {                              // map fail sanity check
+         KIKPCP(csa, kikpcpABND, "B001", &dodump); // trans abend
+         }
+        mapchain = mapsetaddr->firstmap;
+        while (mapchain != NULL) {
+         if (!MEMCMP(&mapchain->mapname, map, 8)) break;
+         mapchain = mapchain->nextmap;
+         if (mapchain == NULL) break;
+         if (mapchain->nextmap == NULL) break;
+         }
+        if (MEMCMP(&mapchain->mapname, map, 8)) {   // map not found in set
+         KIKPCP(csa, kikpcpABND, "B002", &dodump); // trans abend
+         }
+
+        // clear the tioa
+        MEMSET(tioa, 0, tioaSIZE);
+        csa->tctte->tioaused=0;
+
+        // put 3270 data steam header into tioa
+        append_tioa ("\x27", 1);  // escape always leads
+        attr = '\xf1';            // simple write unless override
+        cmd = flags; cmd = cmd>>8; cmd = cmd & 255;
+        if (cmd != 0) attr = cmd; // use override if it exists
+        append_tioa (&attr, 1);
+
+        // drop in the wcc
+        attr = mapchain->mapWCC;  // use map wcc unless override
+        cmd = flags; cmd = cmd>>16; cmd = cmd & 255;
+        if (cmd != 0) attr = cmd; // use override if it exists
+        append_tioa (&xlt3270[attr], 1);
+
+        // setup screen size encoding
+        SetUsingAlt;
+        SetMaxRowCol;
+
+        // ensure map is reasonable for physical screen
+        if(mapchain->mapwidth != sba_maxcol) {
+         KIKPCP(csa, kikpcpABND, "B008", &dodump); // trans abend
+         }
+        if(mapchain->maplength > sba_maxrow) {
+         KIKPCP(csa, kikpcpABND, "B008", &dodump); // trans abend
+         }
+
+        // prep dsect pointer(s)
+        dsectL=mapdsect;
+        dsectL += 12; /* past tioapfx */
+        dsectC = NULL; dsectP = NULL; dsectH = NULL; dsectV = NULL;
+        dsectU = NULL; dsectM = NULL; dsectT = NULL;
+
+        // then all the field info for each field
+        fieldchain = mapchain->firstfield;
+        while (fieldchain != NULL) {
+         MEMSET(attraccum, 0, 25); attraccumx = &attraccum[0];
+
+         // first handle dataonly case
+         cmd = flags; cmd = cmd & 255;
+         if ((cmd & 8) > 0) {
+          // dataonly
+          if (fieldchain->fieldname[0] != ' ') {
+           // named field
+           dsectF = dsectL+2; dsectA = dsectF;
+
+           fldoffset=0;
+           if ((mapchain->mapflags & 0x01) > 0)
+              { fldoffset++; dsectC = dsectA+fldoffset; }
+           if ((mapchain->mapflags & 0x02) > 0)
+              { fldoffset++; dsectP = dsectA+fldoffset; }
+           if ((mapchain->mapflags & 0x04) > 0)
+              { fldoffset++; dsectH = dsectA+fldoffset; }
+           if ((mapchain->mapflags & 0x08) > 0)
+              { fldoffset++; dsectV = dsectA+fldoffset; }
+           if ((mapchain->mapflags & 0x10) > 0)
+              { fldoffset++; dsectU = dsectA+fldoffset; }
+           if ((mapchain->mapflags & 0x20) > 0)
+              { fldoffset++; dsectM = dsectA+fldoffset; }
+           if ((mapchain->mapflags & 0x40) > 0)
+              { fldoffset++; dsectT = dsectA+fldoffset; }
+           fldoffset++; dsectO = dsectA+fldoffset;
+
+           if (*(short*)dsectL == -1) {
+            // symbolic positioning?
+            if (maybecursor == 0) maybecursor =
+              encode_sba(fieldchain->fieldrow, fieldchain->fieldcol+1);
+            }
+
+           somethingNOTzero=0;
+
+           if (  (*dsectA != '\x00') && (*dsectA != '\x80')
+            //&& (*dsectA != '\x02') && (*dsectA != '\x82')
+            ) {
+            // see O'Reilly book, p 223 for the 02/82 case...
+            // ***** KICKS bms doesn't generate them *****
+            *attraccumx++ = '\xC0';
+            *attraccumx++ = *dsectA;
+            somethingNOTzero++;
+            }
+
+           if(dsectC != NULL) {
+            attr = *dsectC; if (attr == '\xff') attr = '\x00';
+            if (*dsectC != '\00') {
+             *attraccumx++ = '\x42';
+             *attraccumx++ = attr;
+             somethingNOTzero++;
+             }
+            }
+           if(dsectH != NULL) {
+            attr = *dsectH; if (attr == '\xff') attr = '\x00';
+            if (*dsectH != '\00') {
+             *attraccumx++ = '\x41';
+             *attraccumx++ = attr;
+             somethingNOTzero++;
+             }
+            }
+
+           if (somethingNOTzero > 0) {
+            append_tioa ("\x11", 1);
+            sba=encode_sba(fieldchain->fieldrow, fieldchain->fieldcol);
+            append_tioa((char *)&sba, 2);
+            dump_attr(attraccum, attraccumx);
+            MEMSET(attraccum, 0, 25); attraccumx = &attraccum[0];
+            }
+
+           if (*dsectO != '\0') {
+            if (somethingNOTzero == 0) {
+             append_tioa ("\x11", 1);
+             sba=encode_sba(fieldchain->fieldrow, fieldchain->fieldcol+1);
+             append_tioa((char *)&sba, 2);
+             }
+            append_tioa (dsectO, fieldchain->fieldlength);
+            }
+           dsectL += 3+fieldchain->fieldlength;
+           dsectL += (fldoffset-1);  // adj for extatt/dsatts
+           }  // end 'named field'
+          }   // end 'dataonly'
+
+        // then not dataonly case
+          else {
+          append_tioa ("\x11", 1);
+          sba=encode_sba(fieldchain->fieldrow, fieldchain->fieldcol);
+          append_tioa((char *)&sba, 2);
+          attr = fieldchain->fieldattributes;
+
+          *attraccumx++ = '\xC0';
+          *attraccumx++ = xlt3270[attr];
+
+          if ((mapchain->mapflags & 0x01) > 0) { // color
+           *attraccumx++ = '\x42';
+           *attraccumx++ = fieldchain->fieldcolor;
+           }
+          if ((mapchain->mapflags & 0x04) > 0) { // hilight
+           *attraccumx++ = '\x41';
+           *attraccumx++ = fieldchain->fieldhilight;
+           }
+
+          // if named field merge in data from dsect
+          gotfldval = false;
+          if (fieldchain->fieldname[0] != ' ') {
+           dsectF = dsectL+2; dsectA = dsectF;
+
+           fldoffset=0;
+           if ((mapchain->mapflags & 0x01) > 0)
+              { fldoffset++; dsectC = dsectA+fldoffset; }
+           if ((mapchain->mapflags & 0x02) > 0)
+              { fldoffset++; dsectP = dsectA+fldoffset; }
+           if ((mapchain->mapflags & 0x04) > 0)
+              { fldoffset++; dsectH = dsectA+fldoffset; }
+           if ((mapchain->mapflags & 0x08) > 0)
+              { fldoffset++; dsectV = dsectA+fldoffset; }
+           if ((mapchain->mapflags & 0x10) > 0)
+              { fldoffset++; dsectU = dsectA+fldoffset; }
+           if ((mapchain->mapflags & 0x20) > 0)
+              { fldoffset++; dsectM = dsectA+fldoffset; }
+           if ((mapchain->mapflags & 0x40) > 0)
+              { fldoffset++; dsectT = dsectA+fldoffset; }
+           fldoffset++; dsectO = dsectA+fldoffset;
+
+           if (*(short*)dsectL == -1)  // symbolic positioning?
+            { if (maybecursor == 0) maybecursor =
+                encode_sba(fieldchain->fieldrow, fieldchain->fieldcol+1);
+            }
+
+           cmd = flags; cmd = cmd & 255;
+           if ((cmd & 1) == 0) { // ignore dsect info if 'MAPONLY'
+            if((*dsectA != '\x00') && (*dsectA != '\x80')) {
+             attraccum[1] = *dsectA;   // overlay map value...
+             }
+            if(dsectC != NULL) {
+             attr = *dsectC; if (attr == '\xff') attr = '\x00';
+             if (*dsectC != '\00') {
+              *attraccumx++ = '\x42';
+              *attraccumx++ = attr;
+              }
+             }
+            if(dsectH != NULL) {
+             attr = *dsectH; if (attr == '\xff') attr = '\x00';
+             if (*dsectH != '\00') {
+              *attraccumx++ = '\x41';
+              *attraccumx++ = attr;
+              }
+             }
+            if (*dsectO != '\0') {
+              dump_attr(attraccum, attraccumx); // sf/attr's before dsect values
+              MEMSET(attraccum, 0, 25); attraccumx = &attraccum[0];
+              append_tioa (dsectO, fieldchain->fieldlength);
+              gotfldval = true;
+              }
+            }
+           dsectL += 3+fieldchain->fieldlength;
+           dsectL += (fldoffset-1);  // adj for extatt/dsatts
+           // note - would need to 'back up' dsectL
+           //        if needed again below. F, A, O, C, H
+           //        are ok,..
+          }
+
+          // if not dsect info maybe 'initial' was given?
+          if (!gotfldval) {
+           if ((fieldchain->fieldflags & 1) > 0) { // initial= was given
+            dump_attr(attraccum, attraccumx); // sf/attr's before initial
+            MEMSET(attraccum, 0, 25); attraccumx = &attraccum[0];
+            append_tioa (&fieldchain->fieldinitial[0], fieldchain->fieldlength);
+            gotfldval = true;
+            } // end 'if ((fieldchain->fieldflags...'
+           } // end if (!gotfldval)
+
+          dump_attr(attraccum, attraccumx); // just sf/attr's, no data
+          MEMSET(attraccum, 0, 25); attraccumx = &attraccum[0];
+          }
+
+         fieldchain = fieldchain->nextfield;
+         if (fieldchain == NULL) break;
+         if (fieldchain->nextfield == NULL) break;
+         } // end 'while (fieldchain...'
+
+        // finally the IC - 3 possibilities:
+        cmd = flags; cmd = cmd & 255;
+        if ((cmd & 4) > 0) {
+         // physical positioning (cursor w/displacement)
+         int row, col;
+         row = cursor / 80; col = cursor - (row*80);
+         row++; col++;
+         append_tioa ("\x11", 1);
+         sba=encode_sba(row, col);
+         append_tioa ((char *)&sba, 2);
+         append_tioa ("\x13", 1);
+         }
+        else if ((cmd & 2) > 0) {
+         // symbolic positioning (cursor wo/displacement)
+         append_tioa ("\x11", 1);
+         sba = maybecursor;
+         if (maybecursor == 0) sba = encode_sba(1, 1);
+         append_tioa ((char *)&sba, 2);
+         append_tioa ("\x13", 1);
+         }
+        else {
+         // cursor as specified by 'IC' in mapgen
+         append_tioa ("\x11", 1);
+         sba = 0x4040;
+         if (mapchain->mapcursorrow > 0) // (0,0) if not defined
+          sba=encode_sba(mapchain->mapcursorrow, mapchain->mapcursorcol);
+         append_tioa ((char *)&sba, 2);
+         append_tioa ("\x13", 1);
+         }
+
+        KIKTCP(csa, kiktcpSEND);
+
+        XTRACE(0,0);
+        return(0);
+        }    // end '{' enclosing kikbmsSEND code
+        //break;
+
+
+    case kikbmsSTXT:
+               // generate output 3270 data stream from
+               // just text message
+
+        ETRACE(type_of,"",0);
+        //
+        //msg         = arg1; // (Ir)
+        //msg length  = arg2; // (Ir)
+        //  - null -  = arg3; //
+        //cursor      = arg4; // (Ir) cursor address
+        //flags       = arg5  // (Ir)
+        // low order - char 0 - ?
+        //             char 1 - i/o control (like print or erase)
+        //             char 2 - wcc (freekb, frset, alarm)
+        //             char 3 - unused
+
+        //  when flags = -1 we are doing STRFIELD, so
+        //       so - no cmd, no wcc, no formatting,
+        //            what we got is tioa,
+        //            just add ESC if not already there...
+        {
+        char  *msg;
+        int    msglen;
+        int    cursor;
+        int    flags;
+
+        char *tioa, attr;
+        int  tioaSIZE, cmd;
+
+        tioa = csa->tctte->tioa;
+        tioaSIZE = csa->tctte->tioasize;
+        msg = arg1; msglen = *(int*)arg2;
+        cursor = *(int*)arg4; flags = *(int*)arg5;
+
+        // clear the tioa
+        MEMSET(tioa, 0, tioaSIZE);
+        csa->tctte->tioaused=0;
+
+        // put 3270 data steam header into tioa
+        append_tioa ("\x27", 1);  // escape always leads
+
+        if (flags == -1) {
+         // STRFIELD
+         if (*msg == 0x27) {
+          msg++; // skip leading escape if present
+          msglen--;
+          }
+         // copy cmd, wcc, and everything from user...
+         append_tioa (msg, msglen);
+         }
+        else {
+         // normal SEND TEXT
+         attr = '\xf1';             // simple write unless override
+         cmd = flags; cmd = cmd>>8; cmd = cmd & 255;
+         if (cmd != 0) attr = cmd; // use override if it exists
+         append_tioa (&attr, 1);
+
+         // drop in the wcc
+         // - use simple wcc (03->C3) (frset, freekb) unless overriden
+         //   (unless it's send control, then default 00->C0)
+         attr = '\x03';
+         if (msglen == 0) attr=0;  /* special case for send control */
+         cmd = flags; cmd = cmd>>16; cmd = cmd & 255;
+         if (cmd != 0) attr = cmd; // use override if it exists
+         append_tioa (&xlt3270[attr], 1);
+
+         // setup screen size encoding
+         SetUsingAlt;
+         SetMaxRowCol;
+
+         // put the msg in the tioa
+         // -- note that real CICS avoids splitting
+         //         words, but this code does not.
+         {
+         char *m; int l, maxcol;
+         m = msg; l = msglen; maxcol = sba_maxcol - 1;
+         while (l>0) {
+          if (l>=maxcol) {
+           append_tioa (m, maxcol);
+           append_tioa (" ", 1);
+           }
+          else {
+           append_tioa (m, l);
+           }
+          l-=79; m+=maxcol;
+          }
+         }
+
+         // finally the IC - only 1 possibility:
+         cmd = flags; cmd = cmd & 255;
+         if ((cmd & 4) > 0) {
+          // physical positioning (cursor w/displacement)
+          int row, col; short sba;
+          row = cursor / 80; col = cursor - (row*80);
+          row++; col++;
+          append_tioa ("\x11", 1);
+          sba=encode_sba(row, col);
+          append_tioa ((char *)&sba, 2);
+          append_tioa ("\x13", 1);
+          } else
+          {
+          // if no cursor supplied put it 'here'
+          // unless nothing written (SEND CONTROL case)
+          if (msglen >0) append_tioa ("\x13", 1);
+          }
+         }
+
+        // normal or STRFIELD, time to write the tioa...
+        KIKTCP(csa, kiktcpSEND);
+
+        XTRACE(0,0);
+        return(0);
+        }    // end '{' enclosing kikbmsSTXT code
+        //break;
+
+
+    case kikbmsRECV:
+               // process the 3270 input data stream (tioa)
+               // thru loaded binary map (map) into passed
+               // 'input' map (mapdsect)
+        {
+        ETRACE(type_of, arg2,0);
+        //
+        //mapset name = arg1; // (Ir) mapset
+        //map name    = arg2; // (Ir) map
+        //map dsect   = arg3; // (Ir) dsect
+        //  - null -  = arg4; //
+        //flags       = arg5  // (Ir)
+        // low order - char 0 - options (like 'asis')
+
+        char  *mapset;
+        char  *map;
+        char  *mapdsect;
+        int    flags;
+
+        char *tioa;
+        int tioaSIZE, fldcnt, fldoffset, two=2;
+
+        char aid, *d, *t;
+        int cmd, i, j, k, ii, iii, jj, jjj, cursor, mapsetlong;
+        BMSMAPSET *mapsetaddr;
+        BMSMAP *mapaddr, *mapchain;
+        BMSMAPFIELD *mapfieldaddr, *fieldchain;
+        char *dsectL, *dsectF, *dsectA, *dsectI, *dsectC, *dsectH;
+        char *dsectP, *dsectV, *dsectU, *dsectM, *dsectT, *OlddsectL;
+
+        KIKTCP(csa, kiktcpRECV);
+
+        tioa = csa->tctte->tioa;
+        tioaSIZE = csa->tctte->tioaused;
+        mapset = arg1; map = arg2; mapdsect = arg3; flags = *(int*)arg5;
+
+        // setup screen size encoding
+        SetMaxRowCol;
+
+        aid = tioa[0];
+        csa->tca->kikeib.eibaid = aid;
+        {
+         int x, y;
+         decode_sba (&tioa[1], &x, &y);
+         if((csa->tctte->flags & tctteflag$usingalt) > 0)
+            y += (x-1)*csa->tctte->ALTcols;
+         else
+            y += (x-1)*csa->tctte->PRMcols;
+         csa->tca->kikeib.eibcposn = y-1;
+        }
+        if ((aid == '\x6d') |  // clear
+            (aid == '\x6c') |  // pa1
+            (aid == '\x6e') |  // pa2
+            (aid == '\x6b')) { // pa3 have no data...
+         // MAPFAIL...
+         KIKPCP(csa, kikpcpABND, "B003", &dodump); // trans abend
+         }
+
+        // load the mapset, find the map
+        KIKPCP (csa, kikpcpLOAD,
+               mapset, &mapsetaddr, &mapsetlong, &two);
+        i = check_mapset(mapsetaddr, mapset, mapsetlong);
+        if(i<0) {                                  // map failed sanity check
+         KIKPCP(csa, kikpcpABND, "B001", &dodump); // trans abend
+         }
+        mapchain = mapsetaddr->firstmap;
+        while (mapchain != NULL) {
+         if (!MEMCMP(&mapchain->mapname, map, 8)) break;
+         mapchain = mapchain->nextmap;
+         if (mapchain == NULL) break;
+         if (mapchain->nextmap == NULL) break;
+         }
+        if (MEMCMP(&mapchain->mapname, map, 8)) {  // map not found in mapset
+         KIKPCP(csa, kikpcpABND, "B002", &dodump); // trans abend
+         }
+
+        // ensure map is reasonable for physical screen
+        if(mapchain->mapwidth != sba_maxcol) {
+         KIKPCP(csa, kikpcpABND, "B008", &dodump); // trans abend
+         }
+        if(mapchain->maplength > sba_maxrow) {
+         KIKPCP(csa, kikpcpABND, "B008", &dodump); // trans abend
+         }
+
+        /* */
+        // compute field offset for dsect lenght computation
+        fldoffset=0;
+        if ((mapchain->mapflags & 0x01) > 0) fldoffset++;
+        if ((mapchain->mapflags & 0x02) > 0) fldoffset++;
+        if ((mapchain->mapflags & 0x04) > 0) fldoffset++;
+        if ((mapchain->mapflags & 0x08) > 0) fldoffset++;
+        if ((mapchain->mapflags & 0x10) > 0) fldoffset++;
+        if ((mapchain->mapflags & 0x20) > 0) fldoffset++;
+        if ((mapchain->mapflags & 0x40) > 0) fldoffset++;
+        fldoffset++;
+        // loop thru map fields to compute corr input dsect length
+        fieldchain = mapchain->firstfield;
+        dsectL=mapdsect; dsectL += 12;
+        while (fieldchain != NULL) {
+         if (fieldchain->fieldname[0] != ' ') {
+          dsectL += 3+fieldchain->fieldlength;
+          dsectL += (fldoffset-1);  // adj for extatt/dsatts
+          }
+         fieldchain = fieldchain->nextfield;
+         if (fieldchain == NULL) break;
+         if (fieldchain->nextfield == NULL) break;
+         }
+        // pre-clear input dsect
+        ii = dsectL - mapdsect;
+        MEMSET(mapdsect, 0, ii);
+        /* */
+
+        decode_sba (&tioa[1], &i, &j); // get cursor loc
+        cursor = 256 * i + j;  // (as abs value - what we seek
+
+        j = 2;             // where we start looking
+        k = tioaSIZE;      // how far we look
+        fldcnt = 0;        // set field found count (for mapfail ck)
+        while (j < k) {    // find next field
+         if (tioa[j] == '\x11') {
+          fldcnt++;
+          decode_sba (&tioa[j+1], &ii, &jj);
+          // sba will be one greater than field start
+          // since the sf itself is bypassed. so backup
+          // address by one and take care of possible
+          // 'wrap'
+          jj--;
+          if (jj < 1) {
+           jj=mapchain->mapwidth;
+           ii--;
+           if (ii < 1) ii=mapchain->maplength;
+           }
+          // use field location to identify map field
+          fieldchain = mapchain->firstfield;
+          // prep dsect pointer(s)
+          dsectL=mapdsect;
+          dsectL += 12; /* past tioapfx */
+          while (fieldchain != NULL) {
+           // advance dsect pointers as we find named fields
+           if(fieldchain->fieldname[0] != ' ') {
+            dsectF = dsectL+2; dsectA = dsectF;
+
+            fldoffset=0;
+            if ((mapchain->mapflags & 0x01) > 0)
+               { fldoffset++; dsectC = dsectA+fldoffset; }
+            if ((mapchain->mapflags & 0x02) > 0)
+               { fldoffset++; dsectP = dsectA+fldoffset; }
+            if ((mapchain->mapflags & 0x04) > 0)
+               { fldoffset++; dsectH = dsectA+fldoffset; }
+            if ((mapchain->mapflags & 0x08) > 0)
+               { fldoffset++; dsectV = dsectA+fldoffset; }
+            if ((mapchain->mapflags & 0x10) > 0)
+               { fldoffset++; dsectU = dsectA+fldoffset; }
+            if ((mapchain->mapflags & 0x20) > 0)
+               { fldoffset++; dsectM = dsectA+fldoffset; }
+            if ((mapchain->mapflags & 0x40) > 0)
+               { fldoffset++; dsectT = dsectA+fldoffset; }
+            fldoffset++; dsectI = dsectA+fldoffset;
+
+            OlddsectL = dsectL;
+            dsectL += 3+fieldchain->fieldlength;
+            dsectL += (fldoffset-1);  // adj for extatt/dsatts
+            // note - would need to 'back up' dsectL
+            //        if needed again below. F, A, I, C, H
+            //        are ok,..
+            }
+           if ((fieldchain->fieldrow == ii) &
+               (fieldchain->fieldcol == jj)) {
+            // when sba's match see if this is named field
+            if(fieldchain->fieldname[0] != ' ') {
+             cmd = flags; cmd = cmd & 255;
+             if((tioa[j+3] == '\0') | (tioa[j+3] == 0x11))
+              // if field user nulled set flag
+              *dsectF = 0x80; // set user modified wo/data
+             else {
+              //   otherwise move entered characters
+              for (d=dsectI, t=&tioa[j+3], iii=0, jjj=fieldchain->fieldlength;
+                   (iii<jjj) & (*t != 0) & (*t != 0x11);
+                   iii++, d++, t++) {
+               *d = *t;
+               if ((cmd & 2) == 0) *d = TOUPPER(*d); // not ASIS
+               }
+              //   after moving, justify & pad
+              d=dsectI, jjj=fieldchain->fieldlength-1;
+              if((fieldchain->fieldattributes & FAnum) > 0) {
+               // numeric - right justify & left pad w/zeros
+               while (d[jjj] == 0) {
+                for (iii=jjj; iii>0; iii--) d[iii] = d[iii-1];
+                d[0] = '0';
+                }
+               } else {
+               // not numeric - just right pad w/spaces
+               while (d[jjj] == 0) {
+                d[jjj] = ' ';
+                jjj--;
+                } // end while (d[jjj
+               }  // end else  (FAnum
+              }   // end else  (field nulled
+             }    // end if    (field matched
+            *(short*)OlddsectL = fieldchain->fieldlength;
+            }
+           fieldchain = fieldchain->nextfield;
+           if (fieldchain == NULL) break;
+           if (fieldchain->nextfield == NULL) break;
+           } // end 'while (fieldchain...'
+
+          }  // end 'if (tioa[j] ...'
+         j++;
+         }   // end 'while (j < k) ... '
+        if (fldcnt == 0) {
+         // MAPFAIL...
+         KIKPCP(csa, kikpcpABND, "B003", &dodump); // trans abend
+         }
+
+        XTRACE(aid,0);
+        return(aid);
+        }    // end '{' enclosing kikbmsRECV code
+        //break;
+
+
+    case kikbmsRTXT:
+               // get input 3270 data stream into
+               // plain text area
+
+        //
+        //msg         = arg1; // (Or) into
+        //msg length  = arg2; // (Or) flength
+        //max length  = arg3; // (Or) maxflength
+        //  - null -  = arg4; //
+        //flags       = arg5  // (Ir)
+        // low order - char 0 - options (asis=2,buffer=4) (1, 8 not used)
+        //           - flen    NOT present = 16
+        //           - maxflen NOT present = 32
+        //           - into    NOT present = 64
+        //           - length used instead of flength = 128
+        //           - CHECK       present = 256
+        {
+        char *tioa = csa->tctte->tioa;
+        int  tioaSIZE, cursor, i, j;
+
+        char aid, *msg = arg1;
+        int  *flength = (int*)arg2;    short *length = (short*)arg2;
+        int  maxflength = *(int*)arg3;
+        int  flags = *(int*)arg5;
+
+        if ((flags & 256) != 0) {
+         // doing check instead of real input...
+         ETRACE(type_of,"",1); // intense unit...
+         KIKTCP(csa, kiktcpCHEK);
+         aid = csa->tca->kikeib.eibaid = tioa[0];
+         if (aid == 'N')        // NOT ready
+          { int huns=10;        // wait 1/10 second
+          STIMER(huns);
+          }
+         XTRACE(aid,1);
+         return(aid);
+         }
+
+        ETRACE(type_of,"",0);
+        KIKTCP(csa, kiktcpRECV);
+        tioaSIZE = csa->tctte->tioaused;
+
+        // setup screen size encoding
+        SetMaxRowCol;
+
+        if ((flags & 32) != 0) {  // if no maxflength
+         maxflength = 0;          //  set 0
+         if ((flags & 16) == 0) { // set to incoming flength
+          if ((flags & 128) == 0) maxflength = *flength;
+          else                    maxflength = *length;
+          }
+         }
+
+        aid = tioa[0];
+        csa->tca->kikeib.eibaid = aid;
+        {
+         int x, y;
+         decode_sba (&tioa[1], &x, &y);
+         if((csa->tctte->flags & tctteflag$usingalt) > 0)
+            y += (x-1)*csa->tctte->ALTcols;
+         else
+            y += (x-1)*csa->tctte->PRMcols;
+         csa->tca->kikeib.eibcposn = y-1;
+        }
+        // --- this happens automatically now that I have tioaSIZE = used...
+        //if ((aid == '\x6d') |  // clear
+        //    (aid == '\x6c') |  // pa1
+        //    (aid == '\x6e') |  // pa2
+        //    (aid == '\x6b')) { // pa3 have no data...
+        // XTRACE(aid,0);
+        // return(aid);
+        // }
+
+        if ((flags & 64) == 0) { // there is an 'into' for data
+         i = tioaSIZE;     // if BUFFER xfr whole thing
+         if((flags & 4) == 0) i -= 3; // else skip aid, sba
+         if (maxflength > 0)
+          if (i > maxflength) i = maxflength;
+
+         if ((flags & 16) == 0) { // set to incoming flength
+          if ((flags & 128) == 0) *flength = i; // post as long
+          else                    *length  = i; // post as short
+          }
+
+         j = 0;            // if BUFFER start at AID
+         if((flags & 4) == 0) j = 3; // else bypass aid, sba
+         while (i > 0) {   // copy chars 1 at a time
+          *msg = tioa[j];   //  & map to upper case unless ASIS;
+          if((flags & 2) == 0) *msg = TOUPPER(*msg);
+
+          msg++; j++; i--;
+          }
+         if (maxflength > 0) { // if max was specified
+          i = tioaSIZE;        // check for LENGERR
+          if((flags & 4) == 0) i -= 3; // else skip aid, sba
+          if (i > maxflength)  {
+           // LENGERR...
+           KIKPCP(csa, kikpcpABND, "B004", &dodump); // trans abend
+           }
+          }
+         }
+
+        XTRACE(aid,0);
+        return(aid);
+        }    // end '{' enclosing kikbmsRTXT code
+        //break;
+
+
+    default:    // bad calls get here
+      ETRACE(type_of, "",0);
+      {
+      if ((csa->trc.trcflags & 4) > 0) {
+        FCLOSE((FILE*)kikcsa->auxtrc);
+        csa->trc.trcflags &= ~4; // show closed
+       }
+      ABEND(kikbmsTYPE, type_of);
+      }
+    }
+}
+
+
+void ETRACE(int type_of, char *more, int intense)
+{ char tmsg[20]; int t; t = csa->tca->tasknum;
+  csa->AICAtime = -1;
+  csa->tca->kikeib.eibresp = csa->tca->kikeib.eibresp2 = 0;
+  if (more == NULL)
+  SPRINTF(tmsg, "B%2.2X%8.8s %4.4X", type_of, "", t);
+  else
+  SPRINTF(tmsg, "B%2.2X%8.8s %4.4X", type_of, more, t);
+  ((SubPtr)csa->trc_addr)(tmsg, intense);
+}
+
+void XTRACE(int retcode, int intense)
+{ char tmsg[20]; int t; t = csa->tca->tasknum;
+  SPRINTF(tmsg, "BX%03.3d       %4.4X", retcode, t);
+  ((SubPtr)csa->trc_addr)(tmsg, intense);
+  //return(retcode);
+}
+
+void TRACEstring(char *sometxt)
+{
+  FPRINTF((FILE*)csa->auxtrc, "%80s\n", sometxt);
+}
+
+void TRACEint(int someint)
+{
+  FPRINTF((FILE*)csa->auxtrc, "%x\n", someint);
+}
+
+
+  // >>>>>>>>>>> function to 'sanity check' a mapset <<<<<<<<<<<
+int check_mapset (BMSMAPSET *mapsetaddr,
+                  char *mapsetname,
+                  int mapsetlong) {
+short sba; // a short is a halfword...
+BMSMAP *mapaddr, *mapchain;
+BMSMAPFIELD *mapfieldaddr, *fieldchain;
+
+  // sanity check the mapset
+    // -- internal mapset name match external?
+    if (MEMCMP(&mapsetaddr->mapsetname, mapsetname, 8)) {
+     return (-1);
+     }
+    // -- version stamps match?
+    if (MEMCMP(&mapsetaddr->mapgenversion, &csa->version, 4)) {
+     return (-2);
+     }
+
+    // -- chain fields all within loadmod size?
+      // -- first the 'next map' chain
+      mapchain = mapsetaddr->firstmap;
+      while (mapchain != NULL) {
+       if ((int)mapchain < (int)mapsetaddr) {
+        return (-4);
+        }
+       if ((int)mapchain > ((int)mapsetaddr + mapsetlong)) {
+        return (-5);
+        }
+       mapchain = mapchain->nextmap;
+       if (mapchain == NULL) break;
+       if (mapchain->nextmap == NULL) break;
+       }
+      // -- then the 'next field' chain in each map
+      mapchain = mapsetaddr->firstmap;
+      while (mapchain != NULL) {
+       fieldchain = mapchain->firstfield;
+       while (fieldchain != NULL) {
+        if ((int)fieldchain < (int)mapsetaddr) {
+         return (-6);
+         }
+        if ((int)fieldchain > ((int)mapsetaddr + mapsetlong)) {
+         return (-7);
+         }
+        fieldchain = fieldchain->nextfield;
+        if (fieldchain == NULL) break;
+        if (fieldchain->nextfield == NULL) break;
+        }
+       mapchain = mapchain->nextmap;
+       if (mapchain == NULL) break;
+       if (mapchain->nextmap == NULL) break;
+       }
+    // sanity check each map
+       // -- sba's within screen size?
+       mapchain = mapsetaddr->firstmap;
+       while (mapchain != NULL) {
+        if ((mapchain->mapcursorrow > mapchain->maplength) ||
+            (mapchain->mapcursorcol > mapchain->mapwidth)) {
+         return (-8);
+         }
+        fieldchain = mapchain->firstfield;
+        while (fieldchain != NULL) {
+         if ((fieldchain->fieldrow > mapchain->maplength) |
+             (fieldchain->fieldcol > mapchain->mapwidth)) {
+          return (-9);
+          }
+         // thought about checking to see if length would
+         // overflow but that is actually legal so no point...
+         fieldchain = fieldchain->nextfield;
+         if (fieldchain == NULL) break;
+         if (fieldchain->nextfield == NULL) break;
+         }
+        mapchain = mapchain->nextmap;
+        if (mapchain == NULL) break;
+        if (mapchain->nextmap == NULL) break;
+        }
+
+    // fix extatt flags for 1.4.0  ********* remove later *********
+       mapchain = mapsetaddr->firstmap;
+       while (mapchain != NULL) {
+        if (mapchain->mapflags == 0) mapchain->mapflags = 0x80;
+        else
+        if (mapchain->mapflags == 1) mapchain->mapflags = 0x8F;
+        mapchain = mapchain->nextmap;
+        if (mapchain == NULL) break;
+        if (mapchain->nextmap == NULL) break;
+        }
+
+ return (0);
+}
+
+
+  // >>>>>>>>>>> routine to append 'string' to tioa <<<<<<<<<<<
+  // >>>>>>> memcpy used as 'string' may contain nulls <<<<<<<<
+void append_tioa (char *str, int strl) {
+ int dodump=0, suppress=1;
+ if (strl <= 0) return;
+ if ((strl + csa->tctte->tioaused) > csa->tctte->tioasize) {
+  KIKPCP(csa, kikpcpABND, "B005", &dodump); // trans abend
+  }
+ MEMCPY(&(csa->tctte->tioa[csa->tctte->tioaused]), str, strl);
+ csa->tctte->tioaused += strl;
+}
+
+
+  // >>>>>>>>> routine to dump accumulated attributes <<<<<<<<<
+void dump_attr (char *strf, char *strl) {
+ int dodump=0, suppress=1;
+ int paircnt;
+ char pc;
+
+ // count attr pairs
+ paircnt = (strl - strf) / 2;
+
+ if((csa->tctte->flags & tctteflag$use14bitsba) > 0) {
+  // could use 14 bit sba's so must be using NOEDIT
+  switch (paircnt)
+     {
+     case 0:
+      break;
+     case 1:
+      if (*strf == '\xC0') {
+       append_tioa ("\x1d", 1);
+       append_tioa (strf+1, 1);
+       break;
+       }
+     default:
+      append_tioa ("\x29", 1);
+      pc = paircnt;
+      append_tioa (&pc, 1);
+      append_tioa (strf,   paircnt*2);
+    }
+  return;
+  }
+
+ // can't use 14 bit sba's, so assume FULLSCR
+ // ie, don't generate 'bad' characters...
+ switch (paircnt)
+    {
+    case 0:
+     break;
+    case 1:
+     if (*strf == '\xC0') {
+      append_tioa ("\x1d", 1);
+      append_tioa (strf+1, 1);
+      break;
+      }
+     *(strf+2) = *(strf+0);
+     *(strf+3) = *(strf+1);
+    case 2:  // a nasty...
+     *(strf+4) = *(strf+2);
+     *(strf+5) = *(strf+3);
+    case 3:  // a nasty...
+     *(strf+6) = *(strf+4);
+     *(strf+7) = *(strf+5);
+    case 4:  // a nasty...
+     *(strf+8) = *(strf+6);
+     *(strf+9) = *(strf+7);
+    case 5:
+     append_tioa ("\x29", 1);
+     append_tioa ("\x05", 1);
+     append_tioa (strf,   10);
+     break;
+    case 6:  // a nasty...
+     *(strf+12) = *(strf+10);
+     *(strf+13) = *(strf+11);
+    case 7:
+     append_tioa ("\x29", 1);
+     append_tioa ("\x07", 1);
+     append_tioa (strf,   14);
+     break;
+    case 8: case 9: case 10: case 11: case 12: case 13:
+     append_tioa ("\x29", 1);
+     pc = paircnt;
+     append_tioa (&pc, 1);
+     append_tioa (strf,   paircnt*2);
+     break;
+    default:
+     // B006 abend means more than 13 pairs...
+     // (14 being the next nasty)
+     KIKPCP(csa, kikpcpABND, "B006", &dodump);
+   }
+}
+
+

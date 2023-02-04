@@ -1,0 +1,52 @@
+ //
+ // Written as part of 'KICKS for TSO' port to VM/370
+ // © Copyright 2011-2014, Michael Noel, All Rights Reserved.
+ //
+
+#include <stdio.h>
+
+int chkstk() {
+ // returns number of lines in console stack
+ // NUMFINRD same vm370 thru zvm 5.4 (at least)
+ short *NUMFINRD = (short *)0x55C;
+ int rc = *NUMFINRD;
+ return rc;
+ }
+
+int rdstk(char *buffer, int maxbufl) {
+ // returns length of line retrieved from console stack
+ short bufl;char buf[132];
+   __asm__ (
+    "L   1,%1\n\t"
+    "ST  1,S%=+8\n\t"
+    "LA  1,1\n\t"
+    "STC 1,S%=+8\n\t"
+    "LA  1,S%=\n\t"
+    "SVC 202\n\t"
+    "DC AL4(*+4)\n\t"
+    "B X%=\n"
+   "S%= DS 0D\n\t"
+    "DC CL8'CONREAD'\n\t"
+    "DC AL1(1)\n\t"
+    "DC AL3(0) buffer address\n\t"
+    "DC CL1'U'\n\t"
+    "DC AL3(0) returned count\n\t"
+    "DC 8X'FF'\n"
+   "X%= EQU *\n\t"
+    "L 1,S%=+12\n\t"
+    "STH 1,%0"
+   : "=m"(bufl)
+   : "m"(&buf[0])
+   : "0", "1", "15"
+   );
+ memcpy(buffer, buf, maxbufl);
+ return bufl;
+ }
+
+int main (int argc, char *argv[]) {
+ char conbuf[132];
+
+   // purge lines in console stack
+   while (chkstk() > 0) rdstk(conbuf, 80);
+
+ }

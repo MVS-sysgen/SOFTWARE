@@ -1,0 +1,177 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+#include "kedfxeq.h"
+
+void DoTop(KIKEIB *eib, DEBUGGERCA *comm) {
+
+char *tioa, buffer[80];
+int row, col;
+short sbuf;
+
+ { // obtain date and time (will differ from eib...).
+ int dp[2], db, ddd, yy;
+ int tp[2], tb, hh, mm, ss;
+ if (timebuf[0] == 0) {
+   dp[0]=0; tp[0]=0; TIMEMAC(dp[1], tp[1]);
+   tp[1] = tp[1] >> 4; tp[1] |= 15;  // at this point both tp
+                                     // and dp are as in eib...
+   CVB(dp[0], db);
+   ddd = db % 1000;
+   yy = (db / 1000) % 100;
+   CVB(tp[0], tb);
+   ss = tb  % 100;
+   mm = (tb / 100) % 100;
+   hh = (tb / 10000) % 100;
+   SPRINTF(timebuf, "%02d:%02d:%02d %02d.%03d",
+                     hh,  mm,  ss,  yy,  ddd);
+  }
+ }
+
+ { // obtain program name & offset value by backtracking
+   // from the cobol save area r14 that called the glue.
+   // also in eibpgmid & tctte->pptent but those might
+   // reference a map or table instead of running pgm...
+ ppte *pptent;
+ ppth *ppthdr;
+ savearea *sa;
+ int p, ret;
+
+ if (pname[0] == 0) {
+  sa = (savearea*)csa->tca->kikeibp.gluR13;
+  sa = sa->bp;
+  ret = (0x0ffffff & sa->gr14);
+  ppthdr = (ppth *)csa->pcp_table_addr;
+  for (pptent = ppthdr->first, p=0;
+       pptent != NULL; pptent=pptent->next) {
+   if (pptent->pgmload == NULL) continue;
+   if (ret < (int)pptent->pgmload) continue;
+   if (ret > (int)pptent->pgmload+pptent->pgmsize) continue;
+   p = (int)pptent;
+   break;
+   }
+  pname[0] = 0; poff=0; padd=0; psiz=0;
+  if(p!=0) {
+   STRNCAT(pname, &pptent->pgmname, 8);
+   poff  = ret - (int)pptent->pgmload;
+   padd  = (int)pptent->pgmload;
+   psiz  = pptent->pgmsize;
+   }
+  }
+ }
+
+ if ((comm->BA & 4) == 0) {
+     // obtain glue arguments by backtracking from cobol sa
+     // onput cobarg[] is list of argument addresses
+     // since not all arguments are present for each call
+     // derefencing them is the job of the individual
+     // api display routines...
+     // cobarg[0] is unused; [1] is arg1, [2] is arg2, etc
+   savearea *sa;
+   int *r1, i;
+
+   sa = (savearea*)csa->tca->kikeibp.gluR13;
+   sa = sa->bp;
+   r1 = (int*)(0x0ffffff & sa->gr1);
+   r1++; // bypass eib
+   r1++; // bypass version
+   //r1++; // bypass mgtpgm
+   //r1++; // bypass type_of
+   for (i=1; i<13; i++) { cobarg[i] = *r1; r1++; }
+   }
+ else {
+     // this is an 'internal' call so the arguments are in
+     // the extended comm-area instead of on the cobol sa.
+   DEBUGGERXA *commx = (DEBUGGERXA*)comm;
+   int i;
+   for (i=2; i<14; i++) { cobarg[i-1] = commx->cobargs[i]; }
+   }
+
+ tioa  = csa->tctte->tioa;
+ tioau = 0;
+
+ // top of the screen
+ // -- line 1
+
+ if (bot == csa->tctte->PRMlines) // use alternate if 'bot' set for it
+  { APPEND_MSG("\x27\xf5\xc3"); }
+ else
+  { APPEND_MSG("\x27\x7e\xc3"); }
+
+ PUT_SBA(1,1)
+ //                            42  f5  is Turquoise
+ APPEND_MSG("\x29\x05\xc0\xf0\x42\xf5\x42\xf5\x42\xf5\x42\xf5");
+
+ APPEND_MSG("Transaction: ");
+ APPEND_MSGN(eibSave.eibtrnid, 4);
+ SPRINTF(buffer, " Task: %04X", eibSave.eibtaskn);
+ APPEND_MSG(buffer);
+ APPEND_MSG(" Program: ");
+ APPEND_MSGN(pname, 8);
+ SPRINTF(buffer, " Offset X'%06X'", poff);
+ APPEND_MSG(buffer);
+
+ STRCPY(buffer, "KICKS 1.5.0");
+
+ col= sba_maxcol - 1 - STRLEN(buffer);
+ PUT_SBA(1,col)
+ APPEND_MSG(buffer);
+
+ // -- line 2
+ PUT_SBA(2,1)
+ if (sourct < 0) { // source trace not active
+  APPEND_MSG(" Status:");
+  }
+ else
+ if (srcapi < 0) { // source trace active, API mode
+  APPEND_MSG(" Status (A):");
+  }
+ else {            // source trace active, show source mode
+  APPEND_MSG(" Status (S):");
+  }
+ if ((comm->BA & 3) == 1) {
+  if (comm->type_of < 256) { // 42 f6 is Yellow
+   APPEND_MSG("\x29\x05\xc0\xf0\x42\xf5\x42\xf5\x42\xf5\x42\xf6");
+   APPEND_MSG("ABOUT TO EXECUTE COMMAND");
+   }
+  else {                     // 42 f6 is Yellow
+   APPEND_MSG("\x29\x05\xc0\xf0\x42\xf5\x42\xf5\x42\xf5\x42\xf6");
+   APPEND_MSG("SOURCE CODE TRACE");
+   }
+  }
+ else
+ if ((comm->BA & 3) == 2) { // 42 f7 is White
+  APPEND_MSG("\x29\x05\xc0\xf0\x42\xf5\x42\xf5\x42\xf5\x42\xf7");
+  APPEND_MSG("COMMAND EXECUTION COMPLETE");
+  }
+ else {                     // 42 f3 is Pink
+  APPEND_MSG("\x29\x05\xc0\xf0\x42\xf5\x42\xf5\x42\xf5\x42\xf3");
+  SPRINTF(buffer, "USER CALL (%d)", comm->BA);
+  APPEND_MSG(buffer);
+  }                         // 42 f5 is Turquoise
+ APPEND_MSG("\x29\x05\xc0\xf0\x42\xf5\x42\xf5\x42\xf5\x42\xf5");
+
+ col= sba_maxcol - 1 - STRLEN(timebuf);
+ PUT_SBA(2,col)
+ APPEND_MSG(timebuf);
+ APPEND_MSG("\x1d\xf0");
+
+#define GREEN
+#ifdef  GREEN
+ // see 1.5.0 issue 12         42 f4 is green
+ APPEND_MSG("\x29\x05\xc0\xf0\x42\xf4\x42\xf4\x42\xf4\x42\xf4");
+#endif
+
+}
+

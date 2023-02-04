@@ -1,0 +1,181 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+#define showcb_acb 1
+#define showcb_rpl 2
+
+ // following for both rpl & acb
+#define showcb_field_keylen 1
+
+ // following for acb
+#define showcb_field_lrecl 2
+#define showcb_field_nlogr 3
+#define showcb_field_rkp 4
+
+ // following for rpl
+#define showcb_field_reclen 11
+#define showcb_field_rba 12
+#define showcb_field_area 13
+#define showcb_field_arg 14
+#define showcb_field_arealen 15
+
+
+ int showcb(char *ar, int cb, int field) {
+
+ ifgacb *a = (ifgacb*)ar;
+ ifgrpl *r = (ifgrpl*)ar;
+#ifdef __CMS__
+ ikqrpl *d = (ikqrpl*)r; // DOS version of rpl...
+#endif
+int rtn=-1;
+
+ sw2vsam();
+ switch (cb) {
+   case showcb_acb:    // *** SHOWCB ACB work OK for all tested MVS/CMS ***
+     switch (field) {
+       case showcb_field_keylen:
+         __asm__ (
+          "L  2,%0\n\t"
+          "LA 3,%1\n\t"
+          "SHOWCB ACB=(2),AREA=(3),LENGTH=4,FIELDS=(KEYLEN)"
+          : /* no output */
+          : "m"(a),"m"(rtn)
+          : "0","1","2","3","14","15"
+         );
+         sw2kicks();
+         return rtn;
+       case showcb_field_lrecl:
+         __asm__ (
+          "L  2,%0\n\t"
+          "LA 3,%1\n\t"
+          "SHOWCB ACB=(2),AREA=(3),LENGTH=4,FIELDS=(LRECL)"
+          : /* no output */
+          : "m"(a),"m"(rtn)
+          : "0","1","2","3","14","15"
+         );
+         sw2kicks();
+         return rtn;
+       case showcb_field_nlogr:
+         __asm__ (
+          "L  2,%0\n\t"
+          "LA 3,%1\n\t"
+          "SHOWCB ACB=(2),AREA=(3),LENGTH=4,FIELDS=(NLOGR)"
+          : /* no output */
+          : "m"(a),"m"(rtn)
+          : "0","1","2","3","14","15"
+         );
+         sw2kicks();
+         return rtn;
+       case showcb_field_rkp:
+         __asm__ (
+          "L  2,%0\n\t"
+          "LA 3,%1\n\t"
+          "SHOWCB ACB=(2),AREA=(3),LENGTH=4,FIELDS=(RKP)"
+          : /* no output */
+          : "m"(a),"m"(rtn)
+          : "0","1","2","3","14","15"
+         );
+         sw2kicks();
+         return rtn;
+       default:
+         sw2kicks();
+         ABEND(kikfcpTYPE, 900);
+         return rtn;
+       }
+   case showcb_rpl:
+     switch (field) {
+       case showcb_field_keylen:
+         __asm__ (
+          "L  2,%0\n\t"
+          "LA 3,%1\n\t"
+          "SHOWCB RPL=(2),AREA=(3),LENGTH=4,FIELDS=(KEYLEN)"
+          : /* no output */
+          : "m"(r),"m"(rtn)
+          : "0","1","2","3","14","15"
+         );
+         sw2kicks();
+         return rtn;
+       case showcb_field_reclen:
+         // showcb reclen is broken for CMS because the version i use
+         // (aka OSVSAM38) copies reclen directly from the (MVS) RPL,
+         // which fails in CMS since the RPL is in DOS format...
+#ifdef __MVS__
+         rtn = r->rplrlen;
+#endif
+#ifdef __CMS__
+         if((csa->systype == csasystype$vm6pk) ||
+            (csa->systype == csasystype$vmsp))
+           rtn = d->rplrlen;
+         else
+           rtn = r->rplrlen;
+#endif
+         sw2kicks();
+         return rtn;
+       case showcb_field_rba:
+         __asm__ (
+          "L  2,%0\n\t"
+          "LA 3,%1\n\t"
+          "SHOWCB RPL=(2),AREA=(3),LENGTH=4,FIELDS=(RBA)"
+          : /* no output */
+          : "m"(r),"m"(rtn)
+          : "0","1","2","3","14","15"
+         );
+         sw2kicks();
+         return rtn;
+       case showcb_field_area:
+         __asm__ (
+          "L  2,%0\n\t"
+          "LA 3,%1\n\t"
+          "SHOWCB RPL=(2),AREA=(3),LENGTH=4,FIELDS=(AREA)"
+          : /* no output */
+          : "m"(r),"m"(rtn)
+          : "0","1","2","3","14","15"
+         );
+         sw2kicks();
+         return rtn;
+       case showcb_field_arg:
+         __asm__ (
+          "L  2,%0\n\t"
+          "LA 3,%1\n\t"
+          "SHOWCB RPL=(2),AREA=(3),LENGTH=4,FIELDS=(ARG)"
+          : /* no output */
+          : "m"(r),"m"(rtn)
+          : "0","1","2","3","14","15"
+         );
+         sw2kicks();
+         return rtn;
+       case showcb_field_arealen:
+         __asm__ (
+          "L  2,%0\n\t"
+          "LA 3,%1\n\t"
+          "SHOWCB RPL=(2),AREA=(3),LENGTH=4,FIELDS=(AREALEN)"
+          : /* no output */
+          : "m"(r),"m"(rtn)
+          : "0","1","2","3","14","15"
+         );
+         sw2kicks();
+         return rtn;
+       default:
+         sw2kicks();
+         ABEND(kikfcpTYPE, 901);
+         return rtn;
+       }
+   default:
+     sw2kicks();
+     ABEND(kikfcpTYPE, 902);
+     return rtn;
+   }
+  sw2kicks();
+  ABEND(kikfcpTYPE, 903);
+  }

@@ -1,0 +1,52 @@
+#ifndef __IEFJFCB__
+#define __IEFJFCB__
+
+ // from SYS1.AMODGEN(IEFJFCBN) on MVS 3.8J, 'MVS380', 5/7/2009
+
+ // for VSAM usage in KICKS - not complete, just enought to obtain
+ // dsname (for enqueue) and disp (to see if sharing needed)
+
+ typedef struct __iefjfcb__
+ {
+   char  jfcbdsnm[44]; // 000  data set name
+   char  jfcbelnm[8];  // 044  relative generation number
+   char  jfcbtsdm;     // 052  job management / data management
+   char  jfcbdscb[3];  // 053  ttr of dscb
+   char  jfcbcbid[4];  // 056
+   short jfcbadbf;     // 060
+   short jfcnlrec;     // 062  logical record length for vsam
+   short jfcvindx;     // 064
+   char  jfcbltyp;     // 066  label type
+   char  jfcbottr[3];  // 067
+   short jfcbvlsq;     // 070  volume sequence number
+   char  jfcbmask[8];  // 072
+   char  jfcbcrdt[3];  // 080  data set creation date (ydd)
+   char  jfcbxpdt[3];  // 083  data set expiration date (ydd)
+   char  jfcbind1;     // 086
+   char  jfcbind2;     // 087  disp (old, new, mod, shr)
+   char  *jfcamptr;    // 088
+   char  jfceropt;     // 092
+   char  jfctrtch;     // 093
+   // more ...
+
+ } iefjfcb;
+
+ // some flag bits for jfcbtsdm
+#define jfccat   0x80  // data set cataloged
+#define jfcsds   0x20  // sysin or sysout data set
+
+ // some flag bits for jfcbind1
+#define jfcgdg   0x02  // member of a gdg
+#define jfcpds   0x01  // pds member
+
+ // some flag bits for jfcbind2
+#define jfcdisp  0xC0  // disp = new, mod, or old
+#define jfcnew   0xC0  // disp = new
+#define jfcmod   0x80  // disp = mod
+#define jfcold   0x40  // disp = old
+#define jfcshare 0x08  // disp = shr
+#define jfctemp  0x01  // temporary data set
+
+#endif
+
+

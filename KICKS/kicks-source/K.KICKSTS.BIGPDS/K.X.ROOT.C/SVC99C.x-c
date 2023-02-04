@@ -1,0 +1,435 @@
+ /* see http://ftp.sas.com/techsup/download/SASC/sample/c/SVC99C.html  */
+ /*---------------------------------------------------------------------+
+ |                Copyright (c) 1995, SAS Institute Inc.                |
+ |                  Unpublished - All Rights Reserved                   |
+ |                      S A S / C   S A M P L E                         |
+ |                                                                      |
+ |         NAME: SVC99C                                                 |
+ |     LANGUAGE: C                                                      |
+ |      PURPOSE: Demonstrate how to call SVC 99 from within a SAS/C     |
+ |               application.                                           |
+ |        NOTES: SVC99C is a C MAIN function that calls SVC 99          |
+ |               sub-functions, in: prefix.SAMPLE.C(SVC99).             |
+ |               where "prefix" is the installation defined high-level  |
+ |               qualifier for the SAS/C product.                       |
+ |        NOTES: You must customize the: #define DATA_SET_NAME          |
+ |               The default value is:  "your.dataset.name"             |
+ |   MVS -                                                              |
+ |      COMPILE, LINK, EXECUTE: SUBMIT prefix.SAMPLE.AUX(SVC99CLG)      |
+ |   TSO -                                                              |
+ |      COMPILE: LC370 CLIST                                            |
+ |         LINK: CLK370 CLIST                                           |
+ |      EXECUTE: CALL 'your.load.lib(SVC99C)' 'your.jcl.job(name)'      |
+ |   CMS - N/A                                                          |
+ |   MISC NOTES: SVC99C sub-functions:                                  |
+ |                                                                      |
+ |          1- Alloc a new dataset, write to it, close & unalloc.       |
+ |          2- Delete the prev dataset with the unalc_ds func.          |
+ |          3- Alloc a new dataset, write to it, close & unalloc.       |
+ |          4- Alloc the prev dataset, write agin, close unalloc.       |
+ |          5- Allocate the INTRDR and submit a job to it.              |
+ |                                                                      |
+ +---------------------------------------------------------------------*/
+
+#include <stdio.h>
+
+#include "svc99.h"
+
+
+#include "kicks.h"
+
+KIKCSA *csa, kikcsa;
+extern vconstb5;
+
+#define decksize 80
+#define maxdeck 9
+#define DATA_SET_NAME "HERC01.SVC99.TESTDATA"
+
+
+
+ /*----------------------------------------------------------------+
+  | Test the svc99() function                                      |
+  +----------------------------------------------------------------*/
+int main(int argc, char *argv[])
+{
+ FILE *fptr,                  /* ddname for TST DD                */
+      *inf;                   /* ddname for job to submit         */
+ int rc;                      /* Return code                      */
+ char buffer[81];             /* Buffer to read in job to submit  */
+ char infile[50] = "DSN:";    /* Area for the infile name         */
+
+
+ // setup use of vconstb (ie, MEMSET instead of memset)
+ csa = &kikcsa;
+ memset(csa, 0, sizeof(*csa));
+ csa->vcons = (VCONS *)&vconstb5;
+
+
+#define T1
+#undef  T1
+#ifdef  T1
+
+ //
+ // MFN - MAKE SURE THE TEST DATA SET DOES NOT EXIST...
+ //
+ alc_ds("TST", DATA_SET_NAME,
+               "SHR", "DELETE", "DELETE",
+               "", 0, 0, 0,
+               "", 0, 0, "");
+ unalc_ds("TST","","");
+
+
+ /*----------------------------------------------------------------+
+  *----------------------------------------------------------------|
+  |          1- Alloc a new dataset, write to it, close & unalloc. |
+  |----------------------------------------------------------------*
+  +----------------------------------------------------------------*/
+ PRINTF("********Test # 1*****************\n");
+ PRINTF("1- Alloc a new dataset, write to it, close & unalloc.\n");
+                              /* allocate the dataset to DD TST   */
+ rc = alc_ds("TST", DATA_SET_NAME,
+               "NEW", "CATLG", "DELETE",
+               "TRK", 5, 2, 0,
+               "FB", 80, 3200, "PS");
+ if (rc!=0)
+   {
+    PRINTF("Error allocating TST\n");
+    EXIT(rc);
+   }
+ else
+    PRINTF("Allocation of DD TST Successful!\n");
+
+                              /* Open the new file -- write       */
+ fptr = FOPEN("DD:TST","w");
+ if (fptr == NULL)
+   {
+     PRINTF("Open on DD TST failed\n");
+     EXIT(12);
+   }
+ else
+    PRINTF("Open of DD TST Successful!\n");
+
+                              /* Write a line to the file         */
+ PRINTF("Writing to DD TST.\n");
+ FPRINTF(fptr, "HELLO WORLD\n");
+
+                               /* Close the new file               */
+ rc = FCLOSE(fptr);
+ if (rc!=0)
+   {
+    PRINTF("Error closing DD TST\n");
+    EXIT(rc);
+   }
+ else
+    PRINTF("Close of DD TST Successful!\n");
+
+                               /* Unallocate DD TST                */
+ rc = unalc_ds("TST","","");
+ if (rc!=0)
+   {
+    PRINTF("Error unallocating TST\n");
+    EXIT(rc);
+   }
+ else
+    PRINTF("Unallocate of DD TST Successful!\n");
+
+#endif
+
+#define T2
+#undef  T2
+#ifdef  T2
+ /*----------------------------------------------------------------+
+  *----------------------------------------------------------------|
+  |          2- Delete the prev dataset with the unalc_ds func.    |
+  |----------------------------------------------------------------*
+  +----------------------------------------------------------------*/
+ PRINTF("********Test # 2*****************\n");
+ PRINTF("2- Delete the prev dataset with the unalc_ds func.\n");
+                              /* allocate the dataset to DD TST   */
+ rc = alc_ds("TST", DATA_SET_NAME,
+               "SHR", "DELETE", "DELETE",
+               "", 0, 0, 0,
+               "", 0, 0, "");
+ if (rc!=0)
+   {
+    PRINTF("Error allocating TST\n");
+    EXIT(rc);
+   }
+ else
+    PRINTF("Allocation of DD TST Successful!\n");
+
+                               /* Unallocate DD TST                */
+ rc = unalc_ds("TST","","");
+ if (rc!=0)
+   {
+    PRINTF("Error unallocating TST\n");
+    EXIT(rc);
+   }
+ else
+    PRINTF("Unallocate of DD TST Successful!\n");
+
+#endif
+
+#define T3
+#undef  T3
+#ifdef  T3
+ /*----------------------------------------------------------------+
+  *----------------------------------------------------------------|
+  |          3- Alloc a new dataset, write to it, close & unalloc. |
+  |----------------------------------------------------------------*
+  +----------------------------------------------------------------*/
+ PRINTF("********Test # 3*****************\n");
+ PRINTF("3- Alloc a new dataset, write to it, close & unalloc.\n");
+                              /* allocate the dataset to DD TST   */
+ rc = alc_ds("TST", DATA_SET_NAME,
+               "NEW", "CATLG", "DELETE",
+               "TRK", 5, 2, 0,
+               "FB", 80, 3200, "PS");
+ if (rc!=0)
+   {
+    PRINTF("Error allocating TST\n");
+    EXIT(rc);
+   }
+ else
+    PRINTF("Allocation of DD TST Successful!\n");
+
+                              /* Open the new file -- write       */
+ fptr = FOPEN("DD:TST","w");
+ if (fptr == NULL)
+   {
+     PRINTF("Open on DD TST failed\n");
+     EXIT(12);
+   }
+ else
+    PRINTF("Open of DD TST Successful!\n");
+
+                              /* Write a line to the file         */
+ PRINTF("Writting to DD TST.\n");
+ FPRINTF(fptr, "HELLO WORLD\n");
+
+                               /* Close the new file               */
+ rc = FCLOSE(fptr);
+ if (rc!=0)
+   {
+    PRINTF("Error closing DD TST\n");
+    EXIT(rc);
+   }
+ else
+    PRINTF("Close of DD TST Successful!\n");
+
+                               /* Unallocate DD TST                */
+ rc = unalc_ds("TST","","");
+ if (rc!=0)
+   {
+    PRINTF("Error unallocating TST\n");
+    EXIT(rc);
+   }
+ else
+    PRINTF("Unallocate of DD TST Successful!\n");
+
+#endif
+
+#define T4
+#undef  T4
+#ifdef  T4
+ /*----------------------------------------------------------------+
+  *----------------------------------------------------------------|
+  |          4- Alloc the prev dataset, write agin, close unalloc. |
+  |----------------------------------------------------------------*
+  +----------------------------------------------------------------*/
+ PRINTF("********Test # 4*****************\n");
+ PRINTF("4- Alloc the prev dataset, write agin, close unalloc.\n");
+                              /* allocate the dataset to DD TST   */
+ rc = alc_ds("TST", DATA_SET_NAME,
+               "SHR", "", "",
+               "", 0, 0, 0,
+               "", 0, 0, "");
+ if (rc!=0)
+   {
+    PRINTF("Error allocating TST\n");
+    EXIT(rc);
+   }
+ else
+    PRINTF("Allocation of DD TST Successful!\n");
+
+                              /* Open the existing file -- append */
+ fptr = FOPEN("DD:TST","a");
+ if (fptr == NULL)
+   {
+     PRINTF("Open on DD TST failed\n");
+     EXIT(12);
+   }
+ else
+    PRINTF("Open of DD TST Successful!\n");
+
+                              /* Write a line to the file         */
+ PRINTF("Writting to DD TST.\n");
+ FPRINTF(fptr, "2nd HELLO WORLD\n");
+
+                               /* Close the new file               */
+ rc = FCLOSE(fptr);
+ if (rc!=0)
+   {
+    PRINTF("Error closing DD TST\n");
+    EXIT(rc);
+   }
+ else
+    PRINTF("Close of DD TST Successful!\n");
+
+                               /* unallocate DD TST                */
+ rc = unalc_ds("TST","","");
+ if (rc!=0)
+   {
+    PRINTF("Error unallocating DD TST\n");
+    EXIT(rc);
+   }
+ else
+    PRINTF("Unallocate of DD TST Successful!\n");
+
+#endif
+
+#define T5
+//#undef  T5
+#ifdef  T5
+ /*----------------------------------------------------------------+
+  *----------------------------------------------------------------|
+  |          5- Allocate the INTRDR and submit a job to it.        |
+  |----------------------------------------------------------------*
+  +----------------------------------------------------------------*/
+ PRINTF("********Test # 5*****************\n");
+ PRINTF("5- Allocate the INTRDR and submit a job to it\n");
+ if (argc > 1)
+    {
+    PRINTF("Job to submit is in %s.\n", argv[1]);
+    /* Submit the job */
+
+    STRCPY(infile, "DD:");    /* Put DSN: on infile name          */
+    STRCAT(infile, argv[1]);  /* Put DSN: on infile name          */
+
+    /* Alloc & open files                                         */
+    inf = FOPEN(infile,"r");  /* Open the INPUT jcl file          */
+    if (inf == NULL)
+      {
+        PRINTF("Open of the INPUT JCL  failed\n");
+        EXIT(12);
+      }
+
+    rc = alc_intr("TST", "A");/* Dynamically alloc INTRDR         */
+    if (rc!=0)
+      {
+       PRINTF("Error allocating INTRDR\n");
+       EXIT(rc);
+      }
+                              /* Open the INTRDR file             */
+    //tr = afopen("TST","wb","","recfm=f,reclen=80");
+    fptr = FOPEN("DD:TST","w");
+    if (fptr == NULL)
+      {
+        PRINTF("Open of the JES Reader failed\n");
+        EXIT(12);
+      }
+
+    /* Read the input JCL and write it to the INTRDR              */
+    //while (fread(buffer, 80, 1, inf) != NULL)
+    // {
+    //  fwrite(buffer, 80, 1, fptr);
+    // }
+    // MFN - DONT KNOW WHY ABOVE fread/fwrite doesn't work...
+    // ---> because fopen for inf and fptr would need to say
+    //      "wb" instead of "w".to get records instead of bytes
+    //
+    while (FGETS(buffer, 80, inf) != NULL) {
+     FPUTS(buffer, fptr);
+    }
+
+    /* Close files and deallocate the INTRDR                      */
+    rc = FCLOSE(fptr);         /* Close the INTRDR file           */
+    if (rc!=0)
+      {
+       PRINTF("Error closing JES reader\n");
+       EXIT(rc);
+      }
+
+    rc = unalc_ds("TST","KEEP",""); /* Deallocate the INTRDR      */
+    if (rc!=0)
+      {
+       PRINTF("Error releasing INTRDR\n");
+       EXIT(rc);
+      }
+    rc = FCLOSE(inf);         /* Close the INPUT JCL file         */
+
+    PRINTF("SVC99C: Job %s has been submitted!\n", argv[1]);
+
+    }
+ else
+    {
+    PRINTF("No job was specified to submit.\n");
+    PRINTF("  USAGE:  svc99c [\'fully.quantified.jobds(job)\']\n");
+    }
+
+#endif
+
+#define T6
+//#undef  T6
+#ifdef  T6
+
+#define STIMER(huns) \
+{  __asm__ (  \
+ "STIMER WAIT,BINTVL=%0"  \
+ : /* no output */ \
+ : "m"(huns) \
+ : "0", "1", "15" \
+ ); \
+}
+
+ /*----------------------------------------------------------------+
+  *----------------------------------------------------------------|
+  |          6- 'spin off' 5 sysouts with 5 seconds between them.  |
+  |----------------------------------------------------------------*
+  +----------------------------------------------------------------*/
+ PRINTF("********Test # 6*****************\n");
+ PRINTF("6- 'spin off' 5 sysouts\n");
+
+ { // enclose for local scope to i, j ...
+ int i, j;
+ for (i=0; i<5; i++) {
+
+  rc = alc_syso("TST", "A", "");/* Dynamically alloc sysout     */
+  if (rc!=0)
+    {
+     PRINTF("Error allocating sysout\n");
+     EXIT(rc);
+    }
+
+  fptr = FOPEN("DD:TST","w"); /* Open the sysout                   */
+  if (fptr == NULL)
+    {
+      PRINTF("Open of the sysout failed\n");
+      EXIT(12);
+    }
+                                  /* send some lines to sysout */
+  for (j=0; j<50; j++)  FPUTS(" 12345678901234567890...\n", fptr);
+
+  /* Close files and deallocate the sysout                      */
+  rc = FCLOSE(fptr);         /* Close the sysout file           */
+  if (rc!=0)
+    {
+     PRINTF("Error closing sysout\n");
+     EXIT(rc);
+    }
+
+  rc = unalc_ds("TST","KEEP",""); /* Deallocate the sysout      */
+  if (rc!=0)
+    {
+     PRINTF("Error releasing sysout\n");
+     EXIT(rc);
+    }
+
+  STIMER(500);                          /* delay a 5 seconds... */
+  }
+ }
+
+#endif
+
+ PRINTF("SVC99C: All test complete.\n");
+}

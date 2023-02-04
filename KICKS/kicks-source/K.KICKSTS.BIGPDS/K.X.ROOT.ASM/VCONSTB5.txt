@@ -1,0 +1,241 @@
+*  ///////////////////////////////////////////////////////////////////
+*// 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+*// in MVS/TSO. Its CICS functionality is delivered at the source code
+*// level, not at the object code level. Applications must be
+*// recompiled and the recompiled programs are not compatible with any
+*// known version of 'real' CICS (the IBM program product),
+*//
+*// © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+*//
+*// Usage of 'KICKS for TSO' is in all cases subject to license. See
+*// http://www.kicksfortso.com
+*// for most current information regarding licensing options..
+*  //////1/////////2/////////3/////////4/////////5/////////6/////////7
+*
+*
+VCONSTB5 CSECT
+*
+*        DC    CL16'VCONSTB5***START'
+*
+*
+          DC    12F'0'
+*         DC    V(@@MMDEF)
+*         DC    V(@@MMINIT)
+*         DC    V(@@MMTERM)
+*         DC    V(@@MMSUPP)
+*         DC    V(@@MMALLO)
+*         DC    V(@@MMFREE)
+*         DC    V(@@MMFID)
+*         DC    V(@@MMMAXS)
+*         DC    V(@@MMDEBU)
+*         DC    V(@@MMDBG2)
+*         DC    V(@@MMREAL)
+*         DC    V(@@MEMMGR)
+          DC    3F'0'
+*         DC    V(STDIN)
+*         DC    V(STDOUT)
+*         DC    V(STDERR)
+         DC    V(PRINTF)
+         DC    V(FPRINTF)
+          DC    F'0'
+*         DC    V(VFPRINTF)
+         DC    V(FOPEN)
+         DC    V(FCLOSE)
+         DC    V(FPUTC)
+*
+         DC    V(FREOPEN)
+         DC    V(EXIT)
+*
+          DC    2F'0'
+*         DC    V(REMOVE)
+*         DC    V(RENAME)
+         DC    V(SPRINTF)
+          DC    3F'0'
+*         DC    V(VSPRINTF)
+*         DC    V(UNGETC)
+*         DC    V(FGETC)
+         DC    V(FSEEK)
+         DC    V(FTELL)
+          DC    7F'0'
+*         DC    V(FSETPOS)
+*         DC    V(FGETPOS)
+*         DC    V(REWIND)
+*         DC    V(CLEARERR)
+*         DC    V(PERROR)
+*         DC    V(SETVBUF)
+*         DC    V(SETBUF)
+          DC    5F'0'
+*         DC    V(FFLUSH)
+*         DC    V(TMPNAM)
+*         DC    V(TMPFILE)
+*         DC    V(FSCANF)
+*         DC    V(SCANF)
+         DC    V(SSCANF)
+         DC    V(GETS)
+          DC    5F'0'
+*         DC    V(PUTS)
+*         DC    V(GETC
+*         DC    V(PUTC)
+*         DC    V(GETCHAR)
+*         DC    V(PUTCHAR)
+         DC    V(FEOF)
+          DC    F'0'
+*         DC    V(FERROR)
+         DC    V(FGETS)
+         DC    V(FPUTS)
+         DC    V(FWRITE)
+         DC    V(FREAD)
+          DC    F'0'
+*         DC    V(@@USERFI)
+         DC    V(MALLOC)
+         DC    V(CALLOC)
+          DC    F'0'
+*         DC    V(REALLOC)
+         DC    V(FREE)
+          DC    F'0'
+*         DC    V(ABORT)
+          DC    F'0'
+*         DC    V(QSORT)
+         DC    V(SRAND)
+         DC    V(RAND)
+          DC    2F'0'
+*         DC    V(ATOF)
+*         DC    V(STRTOD)
+         DC    V(ATOI)
+          DC    16F'0'
+*         DC    V(ATOL)
+*         DC    V(STRTOL)
+*         DC    V(STRTOUL)
+*         DC    V(MBLEN)
+*         DC    V(MBTOWC)
+*         DC    V(WCTOMB)
+*         DC    V(MBSTOWCS)
+*         DC    V(WCSTOMBS)
+*         DC    V(ABS)
+*         DC    V(DIV)
+*         DC    V(LABS)
+*         DC    V(LDIV)
+*         DC    V(ATEXIT)
+*         DC    V(GETENV)
+*         DC    V(SYSTEM)
+*         DC    V(BSEARCH)
+          DC    F'0'
+*         DC    V(@@USEREX)
+          DC    4F'0'
+*         DC    V(@@ASSERT)
+*         DC    V(@@ISBUF)
+*         DC    V(@@TOLOW)
+*         DC    V(@@TOUP)
+          DC    6F'0'
+*         DC    V(ISALNUM)
+*         DC    V(ISALPHA)
+*         DC    V(ISCNTRL)
+*         DC    V(ISDIGIT)
+*         DC    V(ISGRAPH)
+*         DC    V(ISLOWER)
+         DC    V(ISPRINT)
+          DC    F'0'
+*         DC    V(ISPUNCT)
+         DC    V(ISSPACE)
+          DC    2F'0'
+*         DC    V(ISUPPER)
+*         DC    V(ISXDIGIT)
+         DC    V(TOLOWER)
+         DC    V(TOUPPER)
+*
+          DC    26F'0'
+*         DC    V(ERRNO)
+*         DC    V(SETLOCAL)
+*         DC    V(LOCALECO)
+*         DC    V(CEIL)
+*         DC    V(FABS)
+*         DC    V(FLOOR)
+*         DC    V(FMOD)
+*         DC    V(ACOS)
+*         DC    V(ASIN)
+*         DC    V(ATAN)
+*         DC    V(ATAN2)
+*         DC    V(COS)
+*         DC    V(SIN)
+*         DC    V(TAN)
+*         DC    V(COSH)
+*         DC    V(SINH)
+*         DC    V(TANH)
+*         DC    V(EXP)
+*         DC    V(LOG)
+*         DC    V(LOG10)
+*         DC    V(POW)
+*         DC    V(SQRT)
+*         DC    V(FREXP)
+*         DC    V(LDEXP)
+*         DC    V(MODF)
+*         DC    V(MEMMOVE)
+*
+         DC    V(STRCPY)
+         DC    V(STRNCPY)
+         DC    V(STRCAT)
+         DC    V(STRNCAT)
+         DC    V(MEMCMP)
+         DC    V(STRCMP)
+*
+          DC    F'0'
+*         DC    V(STRCOLL)
+         DC    V(STRNCMP)
+          DC    2F'0'
+*         DC    V(STRXFRM)
+*         DC    V(MEMCHR)
+         DC    V(STRCHR)
+          DC    6F'0'
+*         DC    V(STRCSPN)
+*         DC    V(STRPBRK)
+*         DC    V(STRRCHR)
+*         DC    V(STRSPN)
+*         DC    V(STRSTR)
+*         DC    V(STRTOK)
+         DC    V(MEMSET)
+          DC    F'0'
+*         DC    V(STRERROR)
+         DC    V(STRLEN)
+         DC    V(MEMCPY)
+          DC    2F'0'
+*         DC    V(@@CRT0)
+*         DC    V(@@EXITA)
+          DC    13F'0'
+*         DC    V(@@MANSTK)
+*         DC    V(@@MANSTL)
+*         DC    V(@@PGMPRM)
+*         DC    V(@@SYSANC)
+*         DC    V(@@AOPEN)
+*         DC    V(@@AREAD)
+*         DC    V(@@AWRITE)
+*         DC    V(@@ACLOSE)
+*         DC    V(@@GETM)
+*         DC    V(@@FREEM)
+*         DC    V(@@GETCLK)
+*         DC    V(@@SAVER)
+*         DC    V(@@LOADR)
+          DC    4F'0'
+*         DC    V(SETJMP)                not using PDPCLIB's
+*         DC    V(LONGJMP)               not using PDPCLIB's
+*         DC    V(SIGNAL)
+*         DC    V(RAISE)
+          DC    5F'0'
+*         DC    V(@@SIGDFL)
+*         DC    V(@@SIGERR)
+*         DC    V(@@SIGIGN)
+*         DC    V(@@START)
+*         DC    V(@@EXIT)
+         DC    V(TIME)
+          DC    5F'0'
+*         DC    V(CLOCK)
+*         DC    V(DIFFTIME)
+*         DC    V(MKTIME)
+*         DC    V(ASCTIME)
+*         DC    V(CTIME)
+         DC    V(GMTIME)
+         DC    V(LOCALTIM)
+         DC    V(STRFTIME)
+*
+*        DC    CL16'VCONSTB5*****END'
+*
+         END

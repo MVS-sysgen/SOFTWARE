@@ -1,0 +1,122 @@
+         MACRO
+&LABEL   KIKDCT &SUFFIX=00,                                            *
+               &TYPE=EXTRA,                                            *
+               &DESTID=,                                               *
+               &PHYDEST=,                                              *
+               &FILE=,                                                 *
+               &TYPEFIL=INPUT,                                         *
+               &ISTAT=ENABLED,                                         *
+               &OPEN=INITIAL
+.*
+.* MACRO TO GENERATE 'DCT' TABLE FOR KICKS
+.*
+.* HISTORY:
+.*  V1R1M0 - CREATED
+.*  V1R1M1 - 9/1/2010
+.*  V1R1M2 - 11/28/2010
+.*  V1R1M3 - 04/13/2011
+.*  V1R4M0 - 05/01/2011
+.*  V1R4M1 - 07/01/2011
+.*  V1R5M0 - 07/01/2012
+.*
+.* COPYRIGHT MIKE NOEL, 2008-2014. ALL RIGHTS RESERVED.
+.*
+         GBLA  &NUMENTS
+         LCLC  &OLDLBL,&NEWLBL
+         LCLA  &BTYPE,&BTYPEFI,&BISTAT,&BOPEN
+.*
+         AIF   ('&TYPE' EQ 'INDIR').INDIR
+         AIF   ('&TYPE' EQ 'INTRA').INTRA
+         AIF   ('&TYPE' EQ 'EXTRA').EXTRA
+         AIF   ('&TYPE' EQ 'FINAL').FINAL
+         AIF   ('&TYPE' EQ 'INITIAL').INITIAL
+         MNOTE 8,'TYPE VALUE IS INVALID'
+         MEXIT
+.*
+.*
+.INITIAL ANOP
+KIKDCT&SUFFIX CSECT
+         DC    CL2'&SUFFIX'
+         DC    XL4'01050000'    4 BYTE VERSION: (V),(R),(M),(EDIT)
+         DC    H'0'             FILLER
+         DC    A(DCT1)          ADDRESS FIRST ENTRY
+         MEXIT
+.*
+.*
+.INDIR   ANOP
+&BTYPE   SETA  1
+.*
+&OLDLBL  SETC  'DCT&NUMENTS'
+&NUMENTS SETA  &NUMENTS+1
+&NEWLBL  SETC  'DCT&NUMENTS'
+         AIF   (&NUMENTS LT 2).LBLFIX1
+         ORG  &OLDLBL
+         DC    A(&NEWLBL)
+         ORG
+.LBLFIX1 ANOP
+&NEWLBL  DC    F'0'          PLACE HOLDER FOR 'NEXT'
+         DC    CL4'&DESTID'
+         DC    F'&BTYPE'
+         DC    CL4'&PHYDEST'
+.*
+         MEXIT
+.*
+.*
+.INTRA   ANOP
+&BTYPE   SETA  2
+.*
+&OLDLBL  SETC  'DCT&NUMENTS'
+&NUMENTS SETA  &NUMENTS+1
+&NEWLBL  SETC  'DCT&NUMENTS'
+         AIF   (&NUMENTS LT 2).LBLFIX2
+         ORG  &OLDLBL
+         DC    A(&NEWLBL)
+         ORG
+.LBLFIX2 ANOP
+         AIF   ('&ISTAT' EQ 'ENABLED').D10
+&BISTAT  SETA  32
+.D10     ANOP
+&BTYPE   SETA  &BTYPE+&BISTAT
+&NEWLBL  DC    F'0'          PLACE HOLDER FOR 'NEXT'
+         DC    CL4'&DESTID'
+         DC    F'&BTYPE'
+.*
+         MEXIT
+.*
+.*
+.EXTRA   ANOP
+&BTYPE   SETA  4
+.*
+&OLDLBL  SETC  'DCT&NUMENTS'
+&NUMENTS SETA  &NUMENTS+1
+&NEWLBL  SETC  'DCT&NUMENTS'
+         AIF   (&NUMENTS LT 2).LBLFIX3
+         ORG  &OLDLBL
+         DC    A(&NEWLBL)
+         ORG
+.LBLFIX3 ANOP
+&NEWLBL  DC    F'0'          PLACE HOLDER FOR 'NEXT'
+         DC    CL4'&DESTID'
+         AIF   ('&TYPEFIL' EQ 'INPUT').D100
+&BTYPEFI SETA  16
+.D100    ANOP
+         AIF   ('&ISTAT' EQ 'ENABLED').D110
+&BISTAT  SETA  32
+.D110    ANOP
+         AIF   ('&OPEN' EQ 'INITIAL').D120
+&BOPEN   SETA  64
+.D120    ANOP
+&BTYPE   SETA  &BTYPE+&BTYPEFI+&BISTAT+&BOPEN
+         DC    F'&BTYPE'
+         DC    CL8'&FILE'
+         DC    CL44' '       PLACE HOLDER FOR DSNAME
+         DC    F'0'          PLACE HOLDER FOR FILE POINTER
+         DC    F'0'          PLACE HOLDER FOR FILE POSITION
+.*
+         MEXIT
+.*
+.*
+.FINAL   ANOP
+.*
+         LTORG
+         MEND

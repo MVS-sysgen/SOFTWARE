@@ -1,0 +1,21 @@
+#ifndef __IKJRB__
+#define __IKJRB__
+
+ // from SYS1.AMODGEN(IKJRB) on MVS 3.8J 'MVS380' system
+
+ typedef struct __ikjrb__
+ {
+  char  rbexrtnm[8];       // +000 name of error exit
+  short fill1111;          // +008 system dependant?
+  short rbstab;            // +010 status bits
+  int   fill2222;          // +012 system dependant?
+  char  rbopsw[8];         // +016 user old psw
+  int   fill3333;          // +024 system dependant?
+  int  *rblink;            // +028 address prev rb
+  int   rbgrsave[16];      // +032 regs 0-15
+  char  xrbesa[80];        // +096 svc save area
+                           // +176
+ } ikjrb;
+
+#endif
+

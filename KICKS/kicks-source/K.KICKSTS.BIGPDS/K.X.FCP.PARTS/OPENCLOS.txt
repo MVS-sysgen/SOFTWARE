@@ -1,0 +1,413 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+ /////////////////////////////////////////////////////////////
+ //
+ // SUBROUTINE TO CLOSE VSAM ACB
+ //
+ /////////////////////////////////////////////////////////////
+
+ void closeacb(fcte *f) {
+
+ ifgacb *a = &f->acb;
+ int i;
+
+#ifdef __CMS__
+  MTSCAN("CLB");
+#endif
+
+  // close the acb
+  sw2vsam();
+  __asm__ (
+   "L 2,%0\n\t"
+   "CLOSE ((2))"
+   : /* no output */
+   : "m"(a)
+   : "0","1","2","14","15"
+  );
+  sw2kicks();
+
+  f->flag1 &= ~FCTEflag1open;
+  f->flag1 &= ~FCTEflag1pendupdt;
+
+  // free any search keys
+  for (i=0; i<f->numreq ; i++) {
+   f->reqids[i].reqid  = 0;
+   f->reqids[i].lastop = 0;
+   f->reqids[i].flagsb = 0;
+   f->reqids[i].keylen = 0;
+   if (f->reqids[i].keys != NULL) {
+    FREE(f->reqids[i].keys);
+    f->reqids[i].keys = 0;
+    }
+   }
+
+#ifdef __CMS__
+  MTSCAN("CLA");
+#endif
+
+  // set current op as last
+  //f->lastreqid = 0;
+  //f->reqids[0].lastop = FCTElastopclose;
+ }
+
+
+ /////////////////////////////////////////////////////////////
+ //
+ // SUBROUTINE TO FINAL CLOSE VSAM ACB
+ //
+ /////////////////////////////////////////////////////////////
+
+ void finalcloseacb(fcte *f) {
+
+ ifgacb *a = &f->acb;
+ int i;
+
+  // close the acb
+  sw2vsam();
+  __asm__ (
+   "L 2,%0\n\t"
+   "CLOSE ((2))"
+   : /* no output */
+   : "m"(a)
+   : "0","1","2","14","15"
+  );
+  sw2kicks();
+
+  f->flag1 &= ~FCTEflag1open;
+
+  // free any search keys
+  for (i=0; i<f->numreq ; i++) {
+   f->reqids[i].reqid  = 0;
+   f->reqids[i].lastop = 0;
+   f->reqids[i].flagsb = 0;
+   f->reqids[i].keylen = 0;
+   if (f->reqids[i].keys != NULL) {
+    FREE(f->reqids[i].keys);
+    f->reqids[i].keys = 0;
+    }
+  }
+
+  // set current op as last
+  f->lastreqid = 0;
+  f->reqids[0].lastop = FCTElastopclose;
+ }
+
+
+ /////////////////////////////////////////////////////////////
+ //
+ // SUBROUTINE TO OPEN VSAM ACB
+ // PRINTF's, EXIT's OK here 'cause only called from INIT...
+ //
+ /////////////////////////////////////////////////////////////
+
+ int openacb(fcte *f) {
+
+ ifgacb *a = &f->acb;
+ ifgrpl *r = &f->reqids[0].rpl;
+
+ char flags;
+ int i, keylen, lrecl, nlogr, rkp, *akeylen=&keylen;
+
+#ifdef __CMS__
+  MTSCAN("OPB");
+#endif
+
+  // open it
+  sw2vsam();
+  __asm__ (
+   "MVI %1,X'00'\n\t"
+   "L 2,%0\n\t"
+   "OPEN ((2))\n\t"
+   "TESTCB ACB=(2),OFLAGS=OPEN\n\t"
+   "BE *+8\n\t"
+   "OI %1,X'FF'"
+   : /* no output */
+   : "m"(a),"m"(flags)
+   : "0","1","2","14","15"
+  );
+  sw2kicks();
+
+  // set last op
+  f->lastreqid = 0;
+  f->reqids[0].lastop = FCTElastopopen;
+
+  // if testcb says not open...
+  if (flags > 0) return (false);
+
+  // obtain type (ksds, esds, rrds)
+  sw2vsam();
+  __asm__ (
+   "MVI %1,X'00'\n\t"
+   "L 2,%0\n\t"
+   "TESTCB ACB=(2),ATRB=KSDS\n\t"
+   "BNE *+8\n\t"
+   "OI %1,X'04'\n\t"
+   "TESTCB ACB=(2),ATRB=ESDS\n\t"
+   "BNE *+8\n\t"
+   "OI %1,X'08'\n\t"
+   "TESTCB ACB=(2),ATRB=RRDS\n\t"
+   "BNE *+8\n\t"
+   "OI %1,X'10'\n\t"
+   "TESTCB ACB=(2),OPENOBJ=BASE\n\t"
+   "BNE *+8\n\t"
+   "OI %1,X'20'\n\t"
+   "TESTCB ACB=(2),OPENOBJ=PATH\n\t"
+   "BNE *+8\n\t"
+   "OI %1,X'40'\n\t"
+   "TESTCB ACB=(2),OPENOBJ=AIX\n\t"
+   "BNE *+8\n\t"
+   "OI %1,X'80'"
+   : /* no output */
+   : "m"(a),"m"(flags)
+   : "0","1","2","14","15"
+  );
+  sw2kicks();
+  f->flag1 |= flags;
+
+  // obtain some more info
+  sw2vsam();
+  __asm__ (
+   "L 2,%0\n\t"
+   "L 3,%1\n"
+" SHOWCB ACB=(2),AREA=(3),LENGTH=16,FIELDS=(KEYLEN,LRECL,NLOGR,RKP)"
+   : /* no output */
+   : "m"(a),"m"(akeylen)
+   : "0","1","2","3","14","15"
+  );
+  sw2kicks();
+
+  f->keylen = keylen;
+  f->lrecl  = lrecl;
+  f->nlogr  = nlogr;
+  f->rkp    = rkp;
+
+  r->rpldacb = (char*)a;         // set acb address,
+  r->rplbufl = f->lrecl;         // buffer length,
+  r->rplarea = (char*)MALLOC(r->rplbufl); // buffer address
+  if (r->rplarea == NULL) {
+   //PRINTF("%s", firstnl); firstnl[0]=0;
+   FPRINTF(csa->csastderr,
+     "\nFCP init unable to obtain %d char buffer for file %s!\n",
+     f->lrecl, f->ddname);
+   FPRINTF(csa->csastderr,"This is a fatal error! Bye Bye!\n\n");
+   EXIT (999);
+   }
+
+  for (i=1; i<f->numreq; i++) {
+   MEMCPY(&f->reqids[i].rpl, &r[0], sizeof(ifgrpl));
+   }
+
+#ifdef __CMS__
+  MTSCAN("OPA");
+#endif
+
+  // set open flag and return status
+  f->flag1 |= FCTEflag1open;
+  return (true);
+
+ }
+
+
+ /////////////////////////////////////////////////////////////
+ //
+ // SUBROUTINE TO RE-OPEN VSAM ACB
+ //
+ /////////////////////////////////////////////////////////////
+
+ int reopenacb(fcte *f) {
+
+ ifgacb *a = &f->acb;
+ char flags;
+
+#ifdef __CMS__
+  MTSCAN("ORB");
+#endif
+
+  // use VSAM memory
+  sw2vsam();
+
+  // set KEY option based on (base) ESDS/other
+  if(((f->flag1 & FCTEflag1esds) == 0) ||
+     ((f->flag1 & FCTEflag1path) > 0)) {
+   __asm__ (
+    "L 2,%0\n\t"
+    "MODCB ACB=(2),MACRF=(KEY)"
+    : /* no output */
+    : "m"(a)
+    : "0","1","2","14","15"
+   );
+  }
+
+  // set other options for all files
+  __asm__ (
+   "L 2,%0\n\t"
+   "MODCB ACB=(2),MACRF=(ADR)\n\t"
+   "MODCB ACB=(2),MACRF=(SEQ)\n\t"
+   "MODCB ACB=(2),MACRF=(DIR)\n\t"
+   "MODCB ACB=(2),MACRF=(IN) \n\t"
+   "MODCB ACB=(2),MACRF=(OUT)\n\t"
+   "MODCB ACB=(2),MACRF=(DSN)"
+   : /* no output */
+   : "m"(a)
+   : "0","1","2","14","15"
+  );
+
+  // open acb
+  __asm__ (
+   "MVI %1,X'00'\n\t"
+   "L 2,%0\n\t"
+   "OPEN ((2))\n\t"
+   "TESTCB ACB=(2),OFLAGS=OPEN\n\t"
+   "BE *+8\n\t"
+   "OI %1,X'FF'"
+   : /* no output */
+   : "m"(a),"m"(flags)
+   : "0","1","2","14","15"
+  );
+
+  // switch back to KICKS memory
+  sw2kicks();
+
+  // if testcb says not open...
+  if (flags > 0) return (false);
+
+  // set last op
+  //f->lastreqid = 0;
+  //f->reqids[0].lastop = FCTElastopopen;
+
+#ifdef __CMS__
+  MTSCAN("ORA");
+#endif
+
+  // set open flags and return
+  f->flag1 |= FCTEflag1open;
+  return (true);
+
+ }
+
+
+ /////////////////////////////////////////////////////////////
+ //
+ // SUBROUTINE TO FIND FCTE AND OPEN FILE IF NEEDED
+ //
+ /////////////////////////////////////////////////////////////
+
+ fcte *FindAndOpen(char *file) {
+
+ fcte *fctent, *fctbase, *fctpath;
+ fcth *fcthdr;
+ int dodump=0, suppress=1;
+ int i, ii, rc, tim;
+
+ // post file name, rcode in eibds
+ MEMCPY(csa->tca->kikeib.eibds, file, 8);
+ MEMCPY(csa->tca->kikeib.eibrsrce, file, 8);
+ MEMSET(csa->tca->kikeib.eibrcode, 0, 6);
+
+ // scan thru fct for requested file
+ fcthdr = (fcth *)csa->fcp_table_addr;
+ fctbase = NULL;
+ for (fctent = fcthdr->first; fctent != NULL; fctent=fctent->next) {
+  //if((fctent->flag1 & FCTEflag1disabled) > 0) continue;
+  if(!MEMCMP(file, fctent->ddname, 8)) break;
+  }
+ // abend if not found
+ if (fctent == NULL) {
+  KIKPCP(csa, kikpcpABND, "F001", &dodump); // abend, not in fct
+  }
+ // post resp, resp2 in fctent
+ fctent->resp = 0; fctent->resp2 = 0;
+ // abend if disabled
+ if((fctent->flag1 & FCTEflag1disabled) > 0) {
+  KIKPCP(csa, kikpcpABND, "F002", &dodump); // abend, disabled
+  }
+
+ // if file is already open we are done
+ if((fctent->flag1 & FCTEflag1open) > 0) return(fctent);
+
+ // if a path make sure base is not open
+ if((fctent->flag1 & FCTEflag1path) > 0) {
+  fcthdr = (fcth *)csa->fcp_table_addr;
+  for (fctbase = fcthdr->first;
+       fctbase != NULL; fctbase=fctbase->next) {
+   if(!MEMCMP(fctent->ddbase, fctbase->ddname, 8)) break;
+   }
+  // abend if base not found -- can't happen, FCP init checked
+  //if (fctbase == NULL) {
+  // KIKPCP(csa, kikpcpABND, "F001", &dodump);  // abend, not in fct
+  // }
+  // abend if base is itself a path --        FCP init checked
+  //if ((fctbase->flag1 & FCTEflag1path) > 0) {
+  // KIKPCP(csa, kikpcpABND, "F001", &dodump);  // abend, not in fct
+  // }
+  // abend if base already open
+  if((fctbase->flag1 & FCTEflag1open) > 0) {
+   KIKPCP(csa, kikpcpABND, "F001", &dodump);  // abend, not in fct
+   }
+  }
+
+ // if a base make sure no path is open
+ if((fctent->flag1 & FCTEflag1base) > 0) {
+  fcthdr = (fcth *)csa->fcp_table_addr;
+  for (fctpath = fcthdr->first;
+       fctpath != NULL; fctpath=fctpath->next) {
+   if(!MEMCMP(fctent->ddname, fctpath->ddbase, 8)) {
+    if((fctpath->flag1 & FCTEflag1open) > 0) {
+     KIKPCP(csa, kikpcpABND, "F001", &dodump); // abend, not in fct
+     }
+    }
+   }
+  }
+
+ // enqueue against base cluster name
+ if (fctbase == NULL)  fctbase = fctent;
+ ii=0;
+ while(enq(fctbase->dsname) != 0) {
+  STIMER(10);
+  ii++;
+  if (ii>300) { // total of 10*300=3000, or 30 seconds
+   //fctbase->flag1 |= FCTEflag1disabled;
+   KIKPCP(csa, kikpcpABND, "F004", &dodump); // abend, enq fail
+   }
+  }
+
+#ifdef __CMS__
+    if(CMSlinkFLAG == 0) {
+     tim = 30; rc = 105;
+     while ((tim > 0) & (rc == 105)) {
+      tim--;
+      rc = LnkAcc();
+      if (rc == 105) STIMER(100);
+      }
+    if (rc != 0) {
+     //fctent->flag1 |= FCTEflag1disabled;
+     KIKPCP(csa, kikpcpABND, "F004", &dodump); // abend, enq fail
+     }
+    }
+#endif
+
+ // open the file
+ // if open fails release the enqueue
+ if(reopenacb(fctent) == 0) {
+  deq(fctbase->dsname);
+  fctent->flag1 |= FCTEflag1disabled;
+  KIKPCP(csa, kikpcpABND, "F005", &dodump); // abend, open failed
+  }
+
+ // return fct pointer to open file
+ return(fctent);
+ }
+
+

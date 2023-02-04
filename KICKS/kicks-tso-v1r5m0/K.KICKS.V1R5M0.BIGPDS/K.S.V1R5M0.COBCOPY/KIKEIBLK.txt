@@ -1,0 +1,42 @@
+      *///////////////////////////////////////////////////////////////
+      * KICKS is an enhancement for TSO that lets you run your CICS
+      * applications directly in TSO instead of having to 'install'
+      * those apps in CICS.
+      * You don't even need CICS itself installed on your machine!
+      *
+      * KICKS for TSO
+      * © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+      *
+      * Usage of 'KICKS for TSO' is in all cases subject to license.
+      * See http://www.kicksfortso.com
+      * for most current information regarding licensing options.
+      *//1/////////2/////////3/////////4/////////5/////////6/////////7
+
+       01  KIKEIB.
+           05  EIBTASKN PIC S9(8) COMP SYNC.
+           05  EIBCALEN PIC S9(4) COMP SYNC.
+           05  EIBCPOSN PIC S9(4) COMP SYNC.
+           05  EIBDATE PIC S9(7) COMP-3.
+           05  EIBTIME PIC S9(7) COMP-3.
+           05  EIBRESP PIC S9(8) COMP SYNC.
+           05  EIBRESP2 PIC S9(8) COMP SYNC.
+           05  EIBRSRCE PIC X(8).
+           05  EIBDS PIC X(8).
+           05  EIBFN PIC X(2).
+           05  EIBFN-2 REDEFINES EIBFN PIC S9(4) COMP.
+           05  EIBRCODE PIC X(6).
+           05  EIBTRMID PIC X(4).
+           05  EIBTRNID PIC X(4).
+           05  EIBAID PIC X.
+           05  EIBOPID PIC X(3).
+           05  EIBUSRID PIC X(8).
+           05  EIBSYSID PIC X(8).
+           05  EIBNETID PIC X(8).
+           05  EIBPGMID PIC X(8).
+      * following three added to PRO for source trace
+           05  EIBLINE  PIC S9(8) COMP SYNC.
+           05  EIBPROG  PIC X(8).
+           05  EIBWC    PIC X(20).
+      *
+
+

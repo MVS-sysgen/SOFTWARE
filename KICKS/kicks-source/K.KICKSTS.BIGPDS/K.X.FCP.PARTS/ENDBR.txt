@@ -1,0 +1,60 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+ /////////////////////////////////////////////////////////////
+ //
+ // END BROWSE FUNCTION
+ //
+ /////////////////////////////////////////////////////////////
+
+ // ENDBR ends a browse on a file.
+
+ // If STARTBR was not successful, you need not issue ENDBR.
+
+ int endbr(fcte *f, short reqID) {
+
+ //file name = arg1; // (Ir) file
+ //flags     = arg2  // (Ir) flags - NOT USED
+ // - null - = arg3; //
+ // - null - = arg4; //
+ // - null - = arg5; //
+ // - null - = arg6; //
+ //reqid     = arg7; // (Ir) reqid  (+0 if 'missing')
+
+ int i, reqid=0;
+
+ // turn off pending update
+ f->flag1 &= ~FCTEflag1pendupdt;
+
+ // turn user's reqid into subscript for fcte rpl table
+ reqid = mapReqId(f, reqID);
+ if (reqid < 0) {
+  f->resp = KIKRESP$INVREQ;
+  f->resp2= 35;  // this is cics resp2 for reqid nf...
+  return 8; // logical error
+  }
+ f->lastreqid = reqid;
+ f->reqids[reqid].lastop = FCTElastopendbr;
+ if ((f->reqids[reqid].flagsb & FCTEflagsbactive) == 0) {
+   // can't end browse, reqid not active!
+  f->resp = KIKRESP$INVREQ;
+  f->resp2= 35;  // this is cics resp2 for not browsing...
+  return 8; // logical error
+  }
+
+ f->reqids[reqid].flagsb = 0; // found slot, free it
+ f->reqids[reqid].reqid  = 0;
+ return (0);
+ }
+

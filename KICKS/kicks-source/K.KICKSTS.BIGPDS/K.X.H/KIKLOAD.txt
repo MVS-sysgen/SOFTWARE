@@ -1,0 +1,36 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+#ifndef __KIKLOAD__
+#define __KIKLOAD__
+
+typedef struct _LOADCB
+{
+ char loadbase[6];         // first 6 chars of module to load
+ char loadsuffix[2];       // last 2, usually a 'suffix'
+
+ char loadlib[8];          // ddname
+
+ char *loadedwhere;        // where it is
+ char *ep;                 // what to call
+ int  loadlength;          // how big it is
+ char loadflags;           // loader flags
+ int  loaderr1;            // return code
+ int  loaderr15;           // reason code
+
+ char *loader;             // address of loader (for overlays)
+
+} LOADCB;
+
+#endif

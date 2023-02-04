@@ -1,0 +1,85 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+void Do_RELEASE() {
+// free virtual storage acquired via a load command
+// EXEC CICS RELEASE PROGRAM(name) END-EXEC.
+ char op[100], ops[10][100], *ip;
+ char err[100], saveblocks[4000];
+ int  i, numops=0;
+ char pgm[80];
+
+ // break up string my way
+ numops = 0;
+ strcpy(saveblocks, cicsblks);
+ ip = SPCLTOK(saveblocks, " ");   // EXEC
+ while (ip=SPCLTOK(0, " ")) {     // KICKS, verb, ... END-EXEC
+  strcpy(ops[numops], ip);
+  numops++;
+  }
+
+ // march thru the args
+ for (i=0; i<numops; i++) {
+  strcpy(op, ops[i]);
+  if(strlen(op)==0) { continue; }
+  if(MYbegstr(op,".")) { continue; }
+  if(MYbegstr(op,"RESP")) { continue; }
+  if(MYbegstr(op,"RESP2")) { continue; }
+  if(MYbegstr(op,"NOHANDLE")) { continue; }
+  if(MYbegstr(op,"EXEC")) { continue; }
+  if(MYbegstr(op,"KICKS")) { continue; }
+  if(MYbegstr(op,"RELEASE")) { continue; }
+  if(MYbegstr(op,"END-EXEC") || MYbegstr(op,";")) { continue; }
+  if(MYbegstr(op,"PROGRAM")) {
+   ip = strtok(op, "()");   // PROGRAM
+   ip = strtok(0, "()");    // the name of the program
+   if (ip == NULL) {
+    parrensDown(ip);
+    sprintf(err,
+    "malformed argument %s of RELEASE", op);
+    prt_error(err, 8);
+    No_Code();
+    return;
+    }
+   strcpy(pgm, ip);
+   fixXNAME(pgm, 8);
+   continue;
+   }
+  sprintf(err,
+    "unknown/unsupported argument %s of %s", op, blk_op1);
+  prt_error(err, 8);
+  No_Code();
+  return;
+  }
+
+#ifdef PPCOB
+ fprintf(stdout, "           MOVE 3594 TO EIBFN-2\n");
+ fprintf(stdout, "           MOVE %s TO KIK-PROGRAM\n", pgm);
+ fprintf(stdout, "           CALL 'KIKCOBGL' USING KIKEIB,\n");
+ if (!strcmp(respvar, ""))
+  fprintf(stdout, "                 KIK-V1,\n");
+ else
+  fprintf(stdout, "                 KIK-V2,\n");
+ fprintf(stdout, "                 KIK-PROGRAM");
+#endif
+#ifdef PPGCC
+ fprintf(stdout, "\t{ short *eibfn2 = (short*)&__KIKEIB->eibfn;\n");
+ fprintf(stdout, "\t\t*eibfn2 = 3594;\n");
+ if (!strcmp(respvar, ""))
+  fprintf(stdout, "\t  int *v=&KIK_V1;\n");
+ else
+  fprintf(stdout, "\t  int *v=&KIK_V2;\n");
+ fprintf(stdout, "\t kikgccgl(__KIKEIB, v, %s);\n", pgm);
+#endif
+}

@@ -1,0 +1,38 @@
+       IDENTIFICATION DIVISION.
+
+       PROGRAM-ID.  GETINV.
+
+       ENVIRONMENT DIVISION.
+
+       DATA DIVISION.
+
+       WORKING-STORAGE SECTION.
+
+       COPY INVCTL.
+
+       LINKAGE SECTION.
+
+       01  KIKCOMMAREA   PIC 9(06).
+
+       PROCEDURE DIVISION.
+
+       0000-GET-INVOICE-NUMBER.
+
+           MOVE ZERO TO INVCTL-RECORD-KEY.
+           EXEC KICKS
+               READ FILE('INVCTL')
+                    INTO(INVCTL-RECORD)
+                    RIDFLD(INVCTL-RECORD-KEY)
+                    UPDATE
+           END-EXEC.
+           MOVE INVCTL-NEXT-INVOICE-NUMBER TO KIKCOMMAREA.
+           ADD 1 TO INVCTL-NEXT-INVOICE-NUMBER.
+           EXEC KICKS
+               REWRITE FILE('INVCTL')
+                       FROM(INVCTL-RECORD)
+           END-EXEC.
+           EXEC KICKS
+               RETURN
+           END-EXEC.
+
+

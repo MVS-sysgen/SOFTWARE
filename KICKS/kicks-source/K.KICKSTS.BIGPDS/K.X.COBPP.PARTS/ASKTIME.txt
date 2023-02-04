@@ -1,0 +1,81 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+void Do_ASKTIME() {
+// obtain current time and date
+// EXEC CICS ASKTIME [ABSTIME(data-area)] END-EXEC.
+
+ char op[100], op2[100], ops[30][100], *ip;
+ char err[100], saveblocks[4000];
+ int  i, numops=0, flags=0;
+
+ strcpy(op2, kiknull);
+
+ // break up string my way
+ // NOTICE this uses strtok instead of SPCLTOK because
+ //        it goes thru the args two at at time...
+ numops = 0;
+ strcpy(saveblocks, cicsblks);
+ ip = strtok(saveblocks, " ()");   // EXEC
+ while (ip=strtok(0, " ()")) {     // KICKS, verb, ... END-EXEC
+  parrensDown(ip);
+  strcpy(ops[numops], ip);
+  numops++;
+  }
+
+ // march thru the args
+ for (i=0; i<numops; i++) {
+  strcpy(op, ops[i]);
+  if(strlen(op)==0) { continue; }
+  if(MYbegstr(op,".")) { continue; }
+  if(MYbegstr(op,"RESP")) { i++; continue; }
+  if(MYbegstr(op,"RESP2")) { i++; continue; }
+  if(MYbegstr(op,"NOHANDLE")) { continue; }
+  if(MYbegstr(op,"EXEC")) { continue; }
+  if(MYbegstr(op,"KICKS")) { continue; }
+  if(MYbegstr(op,"ASKTIME")) { continue; }
+  if((MYbegstr(op,"END-EXEC")) || (MYbegstr(op,";"))) { continue; }
+  if(MYbegstr(op,"ABSTIME")) {
+   strcpy(op2, ops[i+1]); i++;
+   flags = 1;
+   continue;
+   }
+  sprintf(err,
+    " unknown argument %s of %s", op, blk_op1);
+  prt_error(err, 8);
+  No_Code();
+  return;
+  }
+#ifdef PPCOB
+ if(flags != 1 )
+  fprintf(stdout, "           MOVE 4098 TO EIBFN-2\n");
+ else
+  fprintf(stdout, "           MOVE 18946 TO EIBFN-2\n");
+ fprintf(stdout, "           MOVE %d TO KIK-FLAGS\n", flags);
+ fprintf(stdout, "           CALL 'KIKCOBGL' USING KIKEIB,\n");
+ fprintf(stdout, "                 KIK-V1,\n");
+ fprintf(stdout, "                 KIK-FLAGS,\n");
+ fprintf(stdout, "                 %s", op2);
+#endif
+#ifdef PPGCC
+ fprintf(stdout, "\t{ short *eibfn2 = (short*)&__KIKEIB->eibfn;\n");
+ if(flags != 1 )
+   fprintf(stdout, "\t\t*eibfn2 = 4098;\n");
+ else
+   fprintf(stdout, "\t\t*eibfn2 = 18946;\n");
+ fprintf(stdout, "\t  int *v=&KIK_V1;\n");
+ fprintf(stdout, "\t  int flags=%d, *FLAGS=&flags;\n", flags);
+ fprintf(stdout, "\t kikgccgl(__KIKEIB, v, FLAGS, &%s);\n", op2);
+#endif
+}

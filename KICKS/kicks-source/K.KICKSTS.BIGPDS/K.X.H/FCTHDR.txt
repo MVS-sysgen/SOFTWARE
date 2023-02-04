@@ -1,0 +1,38 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+ ///////////////////////////////////////////////////////////////
+ //
+ //  KICKS FCTH (FILE CONTROL TABLE HEADER)
+ //
+ ///////////////////////////////////////////////////////////////
+
+ typedef struct __fcth__ {
+  char suffix[2]; // table suffix
+  char ver[4];    // 4 byte version: (V),(R),(M),(edit)
+#ifdef __MVS__
+  char filler[28];
+#endif
+#ifdef __CMS__
+  char  catuserid[8]; // userid owning vsam minidisk
+  unsigned short catlnk1;      // address on owners machine
+  unsigned short catlnk2;      // address of kicks users machine
+  char  catpasswd[8]; // write password
+  char  catfm[2];     // fm (aka letter) used for catalog
+  char  catvol[6];    // volser of vsam minidisk
+#endif
+  struct __fcte__ *first;
+ } fcth;
+
+

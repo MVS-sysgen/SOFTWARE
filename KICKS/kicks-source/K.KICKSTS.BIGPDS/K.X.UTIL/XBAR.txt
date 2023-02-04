@@ -1,0 +1,85 @@
+#!/usr/bin/perl -w
+
+# xbar.pl is a perl script to connect the printer of one hercules
+# instance to the reader of another. As configured it listens to
+# an MVS380 printer on localhost port 4510, and when printed output
+# is available opens a connection to the VM370 reader on localhost
+# port 3510 and delivers the card deck, closing the VM370 reader
+# when finished (after waiting 2 seconds to see if anything else
+# is coming) and goes back to waiting for MVS380 to print more.
+# It's terminated by ¬C or kill...
+#
+# It's hercules that thinks the mvs side is using a printer. MVS
+# thinks it's a punch. This charade is necessary because hercules
+# does not support socket punches...
+#
+# This is a one way transfer, although I suppose you could run
+# two copies of xbar, this one MVS->VM, the 2nd one VM->MVS.
+#
+# Since the hercules printer does not support an EBCDIC option
+# this technique can not be used to transfer object decks or
+# other binary content. BINHEX anyone? :)
+#
+# Tested with perl on cygwin 1.7.17 on windows 7 64 bit.
+#
+# Written as part of the effort to publish KICKS source code
+# © Copyright 2014, Michael Noel, All Rights Reserved
+
+use strict;
+use Socket; use Fcntl;
+
+my $punport   = 4510;        #mvs380 'punch'
+my $punserver = "127.0.0.1"; #hercules thinks printer - mvs thinks punch...
+
+my $rdrport   = 3510;        #vm370  'reader'
+my $rdrserver = "127.0.0.1";
+
+my $slptime = 1; my $waitime = 2;
+my $char; my $line=""; my $ropen=0; my $ltime=0;
+
+# create the punch socket, connect to the port
+socket(PUN_SOCKET,PF_INET,SOCK_STREAM,(getprotobyname('tcp'))â2ã)
+   or die "Can't create a socket $!\n";
+connect(PUN_SOCKET, pack_sockaddr_in($punport, inet_aton($punserver)))
+   or die "Can't connect to port $punport! \n";
+fcntl(PUN_SOCKET, F_SETFL(), O_NONBLOCK());
+
+# handle signals
+$SIG{INT}  = "DoneNow";     # traps keyboard ¬C interrupt
+$SIG{TERM} = "DoneNow";     # traps 'kill' interrupt
+
+while (1) {
+ if ( defined($char = PUN_SOCKET->getc) ) {
+  if ($ropen == 0) {
+   # create the reader socket, connect to the port
+   # *** "die" isn't the best choice here, but works for now ***
+   socket(RDR_SOCKET,PF_INET,SOCK_STREAM,(getprotobyname('tcp'))â2ã)
+      or die "Can't create a socket $!\n";
+   connect(RDR_SOCKET, pack_sockaddr_in($rdrport, inet_aton($rdrserver)))
+      or die "Can't connect to port $rdrport! \n";
+   $ropen = 1; #$line = "";
+   }
+  if ($char eq "\r") {
+   #print "$line\n";
+   while (length($line)<80) { $line = $line." "; }
+   print RDR_SOCKET "$line\n";
+   $line = "";
+   }
+  else { $line = $line . $char; }
+   $ltime = time();
+   }
+  else { if ($ropen == 1) {
+   if ((time() - $ltime) > $waitime) {
+    close RDR_SOCKET or die "close: $!";
+    $ropen = 0;
+    }}
+  sleep $slptime;
+ }
+}
+
+sub DoneNow {
+ close PUN_SOCKET or die "close: $!";
+ if ($ropen == 1) { close RDR_SOCKET or die "close: $!"; }
+ exit
+ }
+

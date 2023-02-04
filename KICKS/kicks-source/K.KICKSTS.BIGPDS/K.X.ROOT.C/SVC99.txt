@@ -1,0 +1,982 @@
+ /* see http://ftp.sas.com/techsup/download/SASC/sample/c/SVC99.html   */
+ /*---------------------------------------------------------------------+
+ |                Copyright (c) 1995, SAS Institute Inc.                |
+ |                  Unpublished - All Rights Reserved                   |
+ |                      S A S / C   S A M P L E                         |
+ |                                                                      |
+ |         NAME: SVC99                                                  |
+ |     LANGUAGE: C                                                      |
+ |      PURPOSE: Demonstrate how to call SVC 99 from within a SAS/C     |
+ |               application.                                           |
+ |        NOTES: SVC99 is a collection of sub-rout ines. SVC99C is a    |
+ |               C MAIN function that invokes SVC99 functions.          |
+ |   MVS -                                                              |
+ |      COMPILE, LINK, EXECUTE: SUBMIT prefix.SAMPLE.AUX(SVC99CLG)      |
+ |   TSO -                                                              |
+ |      COMPILE: LC370 CLIST                                            |
+ |         LINK: Refer to SVC99C sample                                 |
+ |      EXECUTE: CALL 'your.load.lib(SVC99C)'                           |
+ |         NOTE: Ensure you compile SVC99 before LINKING or EXECUTING   |
+ |               SVC99C                                                 |
+ |   CMS -  NA                                                          |
+ |   MISC NOTES: Function Descriptions:                                 |
+ |                                                                      |
+ |   These functions provide a simple interface to dynamically          |
+ |   allocate and unallocate data sets and the INTERNAL READER using    |
+ |   SVC 99.  Four external functions are provided.                     |
+ |                                                                      |
+ |   alc_ds    allocates a data set and associates it with a            |
+ |             ddname provided by the caller                            |
+ |                                                                      |
+ |   *-----------alc_ds call construct----------------------------*     |
+ |   int alc_ds (                                                       |
+ |        char * ddname,   The ddname to associate with the             |
+ |                         allocated data set.                          |
+ |        char * dsname,   The data set name to allocate.  An           |
+ |                         optional member name in parentheses          |
+ |                         may follow the dsname.                       |
+ |        char * status,   The initial data set status.  Valid          |
+ |                         values are:                                  |
+ |                             "old"                                    |
+ |                             "mod"                                    |
+ |                             "new"                                    |
+ |                             "shr"                                    |
+ |        char * normdisp,  The data set normal disposition.            |
+ |        char * conddisp,  The data set conditional disposition.       |
+ |        char * spc_unit,  Space Unit (ie. TRK, CYL, xxx)              |
+ |        int    spc_prim,  Space Primary                               |
+ |        int    spc_sec,   Space Secondary                             |
+ |        int    spc_blks,  Directory Blocks                            |
+ |        char * recfm,     DCB RECFM (ie. F, FB, VB, etc)              |
+ |        int    lrecl,     DCB LRECL                                   |
+ |        int    blksize,   DCB BLKSIZE                                 |
+ |        char * dsorg)     DCB DSORG (ie. PS, PO, DA, etc)             |
+ |                                                                      |
+ |                                                                      |
+ |   *-----------unalc_ds call construct----------------------------*   |
+ |   unalc_ds  unallocates a data set associated with a ddname          |
+ |                                                                      |
+ |   int unalc_ds (                                                     |
+ |        char * ddname,    The ddname to unallocate                    |
+ |                                                                      |
+ |        char * normdisp,  The normal disposition for the dataset.     |
+ |                          valid values are:                           |
+ |                             "uncatlg"                                |
+ |                             "catlg"                                  |
+ |                             "delete"                                 |
+ |                             "keep"                                   |
+ |                             ""       (Accept the default action).    |
+ |        char * conddisp)  The conditional disposition for the         |
+ |                          dataset.  Valid valuse are:                 |
+ |                             "uncatlg"                                |
+ |                             "catlg"                                  |
+ |                             "delete"                                 |
+ |                             "keep"                                   |
+ |                             ""       (Accept the default action).    |
+ |                                                                      |
+ |   *-----------alc_intr call construct--------------------------*     |
+ |   alc_intr  allocates the Interal Reader (INTRDR) to a ddname with   |
+ |             the specified class                                      |
+ |                                                                      |
+ |   int alc_intr (                                                     |
+ |        char * ddname,    The ddname to associate with the            |
+ |                          allocated data set.                         |
+ |                                                                      |
+ |        char * class)     The class of the SYSOUT dataset.            |
+ |                                                                      |
+ |   *-----------alc_syso call construct--------------------------*     |
+ |   alc_syso  allocates the a SYSOUT dataset.  Allow a SYSOUT          |
+ |             program to be specified along with a class.              |
+ |                                                                      |
+ |   int alc_syso (                                                     |
+ |        char * ddname,    The ddname to associate with the            |
+ |                          allocated data set.                         |
+ |                                                                      |
+ |        char * class,     The class of the SYSOUT dataset.            |
+ |        char * program)   The SYSOUT program to run.                  |
+ |                                                                      |
+ |                                                                      |
+ |   The returned values from all functions are the same.  A return     |
+ |   value of 20 indicates that one or more of the parameter values     |
+ |   to alc_ds, unalc_ds, alc_intr, or alc_syso is incorrect. All       |
+ |   other values are the actual return codes from the SVC 99 call.     |
+ |                                                                      |
+ |   For all return values other than 20, the external variables        |
+ |   s99error and s99info are set to reflect the action taken by        |
+ |   the SVC 99 call.                                                   |
+ |                                                                      |
+ | SYSTEM NOTES: Written for MVS                                        |
+ |   MISC NOTES: See IBM SVC 99 documentation for complete details      |
+ |               on SVC 99.                                             |
+ |                -- MVS/XA SPL: System Macros and Facilities, Vol 1    |
+ |                   GC28-1150-2                                        |
+ |                                                                      |
+ +---------------------------------------------------------------------*/
+
+#include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+#include <stdio.h>
+
+
+#include "kicks.h"
+
+extern KIKCSA *csa;
+
+
+ /*-------------------------------------------------------------------*/
+ /*                                                                   */
+ /*  The following two variables are externally visible.  After a     */
+ /*  call to alc_ds, unalc_ds, alc_intr, or alc_syso, the contain the */
+ /*  returned error and info codes from SVC 99.                       */
+ /*                                                                   */
+ /*-------------------------------------------------------------------*/
+
+short s99error;                /* Returned error code                */
+short s99info;                 /* Returned info code                 */
+
+#define MAXTU 20               /* Maximum number of text units       */
+                               /* This should be increased if more   */
+                               /* parameters are added               */
+#define MAXTULEN 60            /* Maximum length of the PARM part of */
+                               /* any text unit                      */
+
+static struct s99tu {          /* Array of text units                */
+     short key;                /* Key for type of parameter          */
+     short number;             /* Number of len/parm pairs to follow */
+     short len;                /* Length of the following parm       */
+     char parm[MAXTULEN];      /* Parameter value                    */
+       } tu[MAXTU];
+
+static struct s99tu *tuptr[MAXTU];
+                               /* Array of pointers to text units    */
+
+static struct s99rb {          /* Request block                      */
+     char len;                 /* Length of the request block (20)   */
+     char verb;                /* Action verb                        */
+#define VRBAL 1                /* Allocate verb value                */
+#define VRBUN 2                /* Unallocate verb value              */
+     short flags1;             /* Some flags                         */
+     short errcode;            /* Error code                         */
+     short infocode;           /* Info code                          */
+     struct s99tu ** txtpp;    /* Pointer to text pointer array      */
+     int reserved;             /* Reserved space                     */
+     int flags2;               /* More flags                         */
+       } rb;
+
+static struct s99rb * rbptr;   /* Pointer to the request block       */
+
+static struct s99rb ** ptrptr; /* Pointer to rbptr (loaded into R1)  */
+
+static int s99call (           /* Set up parameters and call SVC 99  */
+     int action,               /* Action verb                        */
+     char * ddname,            /* ddname                             */
+     char * dsname,            /* dsname with optional member        */
+     char * status,            /* Status string                      */
+     char * normdisp,          /* norm disposition string            */
+     char * conddisp,          /* cond disposition string            */
+     char * spc_unit,          /* Space Unit (ie. TRK, CYL, xxx)     */
+     int    spc_prim,          /* Space Primary                      */
+     int    spc_sec,           /* Space Secondary                    */
+     int    spc_blks,          /* Directory Blocks                   */
+     char * recfm,             /* DCB RECFM (ie. F, FB, VB, etc)     */
+     int    lrecl,             /* DCB LRECL                          */
+     int    blksize,           /* DCB BLKSIZE                        */
+     char * dsorg,             /* DCB DSORG (ie. PS, PO, DA, etc)    */
+     char * syso_cls,          /* SYSOUT Class                       */
+     char * syso_pgm           /* SYSOUT Pgm name (ie. INTRDR)       */
+         );
+
+static int s99edit (           /* Edit a parameter string            */
+     char * original,          /* Original (unedited) string         */
+     char * new                /* New (edited) string                */
+         );
+
+ //#eject
+
+ /*-------------------------------------------------------------------*/
+ /*                                                                   */
+ /*  alc_ds - Dynamically allocate a dataset.  Accept space, dcb,     */
+ /*           status, normal and conditional disposition.             */
+ /*                                                                   */
+ /*-------------------------------------------------------------------*/
+
+int alc_ds(
+     char * ddname,            /* ddname to attach                   */
+     char * dsname,            /* dsname with optional member name   */
+     char * status,            /* Initial data set status            */
+     char * normdisp,          /* Data set norm disposition          */
+     char * conddisp,          /* Data set cond disposition          */
+     char * spc_unit,          /* Space Unit (ie. TRK, CYL, xxx)     */
+     int    spc_prim,          /* Space Primary                      */
+     int    spc_sec,           /* Space Secondary                    */
+     int    spc_blks,          /* Directory Blocks                   */
+     char * recfm,             /* DCB RECFM (ie. F, FB, VB, etc)     */
+     int    lrecl,             /* DCB LRECL                          */
+     int    blksize,           /* DCB BLKSIZE                        */
+     char * dsorg)             /* DCB DSORG (ie. PS, PO, DA, etc)    */
+{
+     /* Call s99call with appropriate parms.                         */
+     return ( s99call (VRBAL, ddname, dsname,
+                       status, normdisp, conddisp,
+                       spc_unit, spc_prim, spc_sec, spc_blks,
+                       recfm, lrecl, blksize, dsorg,
+                       "", "") );
+}
+
+ //#eject
+ /*-------------------------------------------------------------------*/
+ /*                                                                   */
+ /*  unalc_ds - Dynamically release any allocated dataset. Accept a   */
+ /*           normal and conditional disposition.                     */
+ /*                                                                   */
+ /*-------------------------------------------------------------------*/
+
+int unalc_ds (
+     char * ddname,            /* ddname to unallocate               */
+     char * normdisp,          /* Data set norm disposition          */
+     char * conddisp)          /* Data set cond disposition          */
+{
+     /* Call s99call with appropriate parms.                         */
+     return ( s99call (VRBUN, ddname, "",
+                       "", normdisp, conddisp,
+                       "", 0, 0, 0,
+                       "", 0, 0, "",
+                       "", "") );
+}
+
+ //#eject
+ /*-------------------------------------------------------------------*/
+ /*                                                                   */
+ /*  alc_intr -- Dynamically allocate the internal reader (INTRDR)    */
+ /*              for the purpose of submitting jobs from a C program. */
+ /*                                                                   */
+ /*-------------------------------------------------------------------*/
+
+int alc_intr (
+     char * ddname,            /* ddname to attach                   */
+     char * class)             /* SYSOUT CLASS                       */
+{
+
+     return ( s99call (VRBAL, ddname, "",
+                       "", "", "",
+                       "", 0, 0, 0,
+                       "FB", 80, 800, "PS",
+                       class, "INTRDR") );
+}
+
+
+ //#eject
+ /*-------------------------------------------------------------------*/
+ /*                                                                   */
+ /*  alc_syso -- Dynamically allocate a SYSOUT dataset.  Allow a      */
+ /*              program to be specified (such as INTRDR).            */
+ /*                                                                   */
+ /*-------------------------------------------------------------------*/
+
+int alc_syso (
+     char * ddname,            /* ddname to attach                   */
+     char * class,             /* SYSOUT CLASS                       */
+     char * program)           /* SYSOUT Program to run              */
+{
+
+     return ( s99call (VRBAL, ddname, "",
+                       "", "", "",
+                       "", 0, 0, 0,
+                       "FB", 133, 1330, "PS",
+                       class, program) );
+}
+
+
+ //#eject
+ /*-------------------------------------------------------------------*/
+ /*                                                                   */
+ /*  s99call - From the parameters given, build a list of "text units"*/
+ /*            and then issue an SVC 99.  This is the real workhorse. */
+ /*                                                                   */
+ /*            REF:  MVS/XA SPL: System Macros and Facilities, Vol 1  */
+ /*                  GC28-1150-2                                      */
+ /*-------------------------------------------------------------------*/
+
+static int s99call (
+     int action,                  /* Action verb                     */
+     char * ddname,               /* ddname                          */
+     char * dsname,               /* dsname with optional member     */
+     char * status,               /* Status string                   */
+     char * normdisp,             /* norm disposition string         */
+     char * conddisp,             /* cond disposition string         */
+     char * spc_unit,             /* Space Unit (ie. TRK, CYL, xxx)  */
+     int    spc_prim,             /* Space Primary                   */
+     int    spc_sec,              /* Space Secondary                 */
+     int    spc_blks,             /* Directory Blocks                */
+     char * recfm,                /* DCB RECFM (ie. F, FB, VB, etc)  */
+     int    lrecl,                /* DCB LRECL                       */
+     int    blksize,              /* DCB BLKSIZE                     */
+     char * dsorg,                /* DCB DSORG (ie. PS, PO, DA, etc) */
+     char * syso_cls,             /* SYSOUT Class                    */
+     char * syso_pgm)             /* SYSOUT Pgm name (ie. INTRDR)    */
+{
+     char str[256];               /* Working copy of strings         */
+     int stlen;                   /* Length of string in str         */
+     char *p;                     /* Work char pointer               */
+     int rc;                      /* Return code from SVC 99         */
+     int ntu;                     /* Number of text units created    */
+     int i;                       /* Counter for loops               */
+     union                        /* Data area for mapping ints      */
+        {                         /*   to 1, 2, & 3 byte areas       */
+       int ival;                  /* The integer */
+       struct                     /* Struct to overlay a 1 byte area */
+           {
+           char t1[3];
+           char val1;
+           } c1;
+       struct                     /* Struct to overlay a 2 byte area */
+           {
+           char t2[2];
+           char val2[2];
+           } c2;
+       struct                     /* Struct to overlay a 3 byte area */
+           {
+           char t3;
+           char val3[3];
+           } c3;
+        } data;
+
+
+     /***********************************************************
+               Initialize all of the data structures
+     ***********************************************************/
+
+     MEMSET ((char *)tu, '\0', sizeof(tu));
+     MEMSET ((char *)tuptr, '\0', sizeof(tuptr));
+     MEMSET ((char *)&rb, '\0', sizeof(rb));
+
+     ptrptr = &rbptr;
+     rbptr = (struct s99rb *) ( (int)&rb | 0x80000000);
+
+     rb.len = 20;
+     rb.verb = action;
+     rb.txtpp = &tuptr[0];
+
+     s99error = 0;
+     s99info = 0;
+
+     ntu = 0;
+
+     /***********************************************************
+               Each parm maps to a text unit.  If the parm is
+               Not NULL or not ZERO, then create a text unit
+               for it.
+     ***********************************************************/
+
+     /***********************************************************
+              DDNAME Text unit
+            -----------------------------------------------
+                  Ex: For ddname of DD1, code
+                     KEY   #    LEN    PARM
+                     0001  0001 0003   C4 C4 F1
+     ***********************************************************/
+
+     if (s99edit(ddname,str))
+          return (20);
+
+     stlen = STRLEN (str);
+     if ( (stlen == 0) || (stlen > 8) )
+          return (20);
+
+     tu[ntu].key = 0x0001;
+     tu[ntu].number = 1;
+     tu[ntu].len = stlen;
+     MEMCPY (tu[ntu].parm, str, stlen);
+     tuptr[ntu] = &tu[ntu];
+     ntu++;
+
+     /***********************************************************
+              DSNAME Text unit
+            -----------------------------------------------
+                  Ex: For dsname of MYDATA, code
+                     KEY   #    LEN    PARM
+                     0002  0001 0006   D4 E8 C4 C1 E3 C1
+     ***********************************************************/
+
+     if (s99edit(dsname,str))
+          return (20);
+
+     p = STRCHR (str, '(');
+     if (p != NULL)
+          *p = '\0';
+
+     stlen = STRLEN (str);
+     if (stlen > 44)
+          return (20);
+
+     if (stlen > 0)
+     {
+          tu[ntu].key = 0x0002;
+          tu[ntu].number = 1;
+          tu[ntu].len = stlen;
+          MEMCPY (tu[ntu].parm, str, stlen);
+          tuptr[ntu] = &tu[ntu];
+          ntu++;
+     }
+
+     /***********************************************************
+              MEMBER_NAME text unit
+            -----------------------------------------------
+                  Ex: To specify the member name MEM1, code
+                     KEY   #    LEN    PARM
+                     0003  0001 0004   D4 C5 D4 F1
+     ***********************************************************/
+
+     p = STRCHR (dsname, '(');
+     if (p != NULL)
+     {
+          p++;
+          if (s99edit(p,str))
+               return (20);
+          p = STRCHR (str, ')');
+          if (p == NULL)
+               return (20);
+          *p = '\0';
+
+          stlen = STRLEN (str);
+          if (stlen > 8)
+               return (20);
+          if (stlen > 0)
+          {
+               tu[ntu].key = 0x0003;
+               tu[ntu].number = 1;
+               tu[ntu].len = stlen;
+               MEMCPY (tu[ntu].parm, str, stlen);
+               tuptr[ntu] = &tu[ntu];
+               ntu++;
+          }
+     }
+
+     /***********************************************************
+     DISPOSITION NOTES:
+        In JCL:
+           ...,disp=(status,normdisp,conddisp)
+
+        status is the current status before executing the job.
+        normdisp is the way the dataset is to be left if everything
+                 works.
+        conddisp is the way the dataset is to be left if a failure
+                 occurs.
+     ***********************************************************/
+     /***********************************************************
+              STATUS text unit
+            -----------------------------------------------
+                  Ex: To specify a status of new, code
+                     KEY   #    LEN    PARM
+                     0004  0001 0001   04
+
+              NOTE: This text unit is mutually exclusive with
+                    the SYSOUT text units.  So, higher level
+                    functions must assure that they are not
+                    specified together.
+     ***********************************************************/
+
+     if (s99edit(status,str))
+          return (20);
+
+     stlen = STRLEN(str);
+     if (stlen > 0)
+     {
+          if (STRCMP(str, "OLD") == 0)
+               data.ival = 1;
+          else if (STRCMP(str, "MOD") == 0)
+               data.ival = 2;
+          else if (STRCMP(str, "NEW") == 0)
+               data.ival = 4;
+          else if (STRCMP(str, "SHR") == 0)
+               data.ival = 8;
+          else
+               return (20);
+
+          tu[ntu].key = 0x0004;
+          tu[ntu].number = 1;
+          tu[ntu].len = 1;
+          tu[ntu].parm[0] = data.c1.val1;
+          tuptr[ntu] = &tu[ntu];
+          ntu++;
+     }
+
+     /***********************************************************
+              NORMAL DISPOSITION text unit
+            -----------------------------------------------
+                  Ex: To specify a normdisp of DELETE, code
+                     KEY   #    LEN    PARM
+                     0005  0001 0001   04
+
+              NOTE: This text unit is mutually exclusive with
+                    the SYSOUT text units.  So, higher level
+                    functions must assure that they are not
+                    specified together.
+     ***********************************************************/
+
+     if (s99edit(normdisp,str))
+          return (20);
+
+     stlen = STRLEN(str);
+     if (stlen > 0)
+     {
+          if (STRCMP(str, "UNCATLG") == 0)
+               data.ival = 1;
+          else if (STRCMP(str, "CATLG") == 0)
+               data.ival = 2;
+          else if (STRCMP(str, "DELETE") == 0)
+               data.ival = 4;
+          else if (STRCMP(str, "KEEP") == 0)
+               data.ival = 8;
+          else
+               return (20);
+
+          tu[ntu].key = 0x0005;
+          tu[ntu].number = 1;
+          tu[ntu].len = 1;
+          tu[ntu].parm[0] = data.c1.val1;
+          tuptr[ntu] = &tu[ntu];
+          ntu++;
+     }
+
+     /***********************************************************
+              CONDITIONAL DISPOSITION text unit
+            -----------------------------------------------
+                  Ex: To specify a conddisp of DELETE, code
+                     KEY   #    LEN    PARM
+                     0006  0001 0001   04
+
+              NOTE: This text unit is mutually exclusive with
+                    the SYSOUT text units.  So, higher level
+                    functions must assure that they are not
+                    specified together.
+     ***********************************************************/
+
+     if (s99edit(conddisp,str))
+          return (20);
+
+     stlen = STRLEN(str);
+     if (stlen > 0)
+     {
+          if (STRCMP(str, "UNCATLG") == 0)
+               data.ival = 1;
+          else if (STRCMP(str, "CATLG") == 0)
+               data.ival = 2;
+          else if (STRCMP(str, "DELETE") == 0)
+               data.ival = 4;
+          else if (STRCMP(str, "KEEP") == 0)
+               data.ival = 8;
+          else
+               return (20);
+
+          tu[ntu].key = 0x0006;
+          tu[ntu].number = 1;
+          tu[ntu].len = 1;
+          tu[ntu].parm[0] = data.c1.val1;
+          tuptr[ntu] = &tu[ntu];
+          ntu++;
+     }
+
+     /***********************************************************
+              DCB DSORG text unit
+              Create the text unit for the dsorg
+            -----------------------------------------------
+                  Ex: To specify a dsorg of PO, code
+                     KEY   #    LEN    PARM
+                     003C  0001 0002   02 00
+     ***********************************************************/
+
+     if (s99edit(dsorg,str))
+          return (20);
+
+     stlen = STRLEN(str);
+     if (stlen > 0)
+     {
+          if (STRCMP(str, "TCAM") == 0)
+               data.ival =0x0004;
+          else if (STRCMP(str, "VSAM") == 0)
+               data.ival =0x0008;
+          else if (STRCMP(str, "TCAMTQ") == 0)
+               data.ival =0x0020;
+          else if (STRCMP(str, "TCAMTX") == 0)
+               data.ival =0x0040;
+          else if (STRCMP(str, "GS") == 0)
+               data.ival =0x0080;
+          else if (STRCMP(str, "PO") == 0)
+               data.ival =0x0200;
+          else if (STRCMP(str, "POU") == 0)
+               data.ival =0x0300;
+          else if (STRCMP(str, "MQ") == 0)
+               data.ival =0x0400;
+          else if (STRCMP(str, "CQ") == 0)
+               data.ival =0x0800;
+          else if (STRCMP(str, "CX") == 0)
+               data.ival =0x1000;
+          else if (STRCMP(str, "DA") == 0)
+               data.ival =0x2000;
+          else if (STRCMP(str, "DAU") == 0)
+               data.ival =0x2100;
+          else if (STRCMP(str, "PS") == 0)
+               data.ival =0x4000;
+          else if (STRCMP(str, "PSU") == 0)
+               data.ival =0x4100;
+          else
+               return (20);
+
+          tu[ntu].key = 0x003C;
+          tu[ntu].number = 1;
+          tu[ntu].len = 2;
+          MEMCPY(tu[ntu].parm, data.c2.val2, 2);
+
+          tuptr[ntu] = &tu[ntu];
+          ntu++;
+     }
+
+     /***********************************************************
+              DCB RECFM   text unit
+            -----------------------------------------------
+                  Ex: To specify a RECFM of F, code
+                     KEY   #    LEN    PARM
+                     0049  0001 0001   80
+     ***********************************************************/
+
+     if (s99edit(recfm,str))
+          return (20);
+
+     stlen = STRLEN(str);
+     if (stlen > 0)
+     {
+        data.ival = 0;
+        for (i=0; i< stlen; i++)
+        {
+             if ((str[i] == 'M') || (str[i] == 'R'))
+                  data.ival += 0x02;
+             else if ((str[i] == 'A') || (str[i] == 'G'))
+                  data.ival += 0x04;
+             else if (str[i] == 'S')
+                  data.ival += 0x08;
+             else if (str[i] == 'B')
+                  data.ival += 0x10;
+             else if ((str[i] == 'D') || (str[i] == 'T'))
+                  data.ival += 0x20;
+             else if (str[i] == 'V')
+                  data.ival += 0x40;
+             else if (str[i] == 'F')
+                  data.ival += 0x80;
+             else if (str[i] == 'U')
+                  data.ival += 0xC0;
+             else
+                   return (20);
+          }
+
+          tu[ntu].key = 0x0049;
+          tu[ntu].number = 1;
+          tu[ntu].len = 1;
+          tu[ntu].parm[0] = data.c1.val1;
+          tuptr[ntu] = &tu[ntu];
+          ntu++;
+     }
+
+
+     /***********************************************************
+              DCB LRECL   text unit
+            -----------------------------------------------
+                  Ex: To specify an LRECL of 80, code
+                     KEY   #    LEN    PARM
+                     0042  0001 0002   00 50
+
+           NOTE: for variable len spanned recoreds processed
+                 under QSAM and BSAM, the logical records exceed
+                 32,756.  SO, the parm should be coded as
+                 0x8000 for these types of files.  This function
+                 does not account for this type of file.
+     ***********************************************************/
+
+     if ((lrecl > 0) && (lrecl <= 32760))
+     {
+
+          tu[ntu].key = 0x0042;
+          tu[ntu].number = 1;
+          tu[ntu].len = 2;
+          data.ival = lrecl;
+          MEMCPY(tu[ntu].parm, data.c2.val2, 2);
+          tuptr[ntu] = &tu[ntu];
+          ntu++;
+     }
+
+
+     /***********************************************************
+              DCB BLKSIZE text unit
+            -----------------------------------------------
+                  Ex: To specify an BLKSIZE of 80, code
+                     KEY   #    LEN    PARM
+                     0030  0001 0002   00 50
+
+     ***********************************************************/
+
+     if ((blksize > 0) && (blksize <= 32760))
+     {
+
+          tu[ntu].key = 0x0030;
+          tu[ntu].number = 1;
+          tu[ntu].len = 2;
+          data.ival = blksize;
+          MEMCPY(tu[ntu].parm, data.c2.val2, 2);
+          tuptr[ntu] = &tu[ntu];
+          ntu++;
+     }
+
+     /***********************************************************
+              SPACE UNIT SIZE text unit
+            -----------------------------------------------
+                  Ex: To specify an Unit of TRK, code
+                     KEY   #    LEN    PARM
+                     0007  0000  -      -
+
+                  Ex: To specify an Unit of CYL, code
+                     KEY   #    LEN    PARM
+                     0008  0000  -      -
+
+                  Ex: To specify an Unit in blks of size 80, code
+                     KEY   #    LEN    PARM
+                     0009  0001 0003   00 00 50
+
+     ***********************************************************/
+
+     if (s99edit(spc_unit,str))
+          return (20);
+
+     stlen = STRLEN(str);
+     if (stlen > 0)
+     {
+        if (STRCMP(str, "TRK") == 0)
+           {
+           tu[ntu].key = 0x0007;
+           tu[ntu].number = 0;
+           }
+        else if (STRCMP(str, "CYL") == 0)
+           {
+           tu[ntu].key = 0x0008;
+           tu[ntu].number = 0;
+           }
+        else
+           {
+           data.ival = ATOI(str);
+           if ((data.ival > 0) && (data.ival <= 32760))
+              {
+              tu[ntu].key = 0x0009;
+              tu[ntu].number = 1;
+              tu[ntu].len = 3;
+              MEMCPY(tu[ntu].parm, data.c3.val3, 3);
+              }
+           else
+              return (20);
+           }
+
+       tuptr[ntu] = &tu[ntu];
+       ntu++;
+     }
+
+
+     /***********************************************************
+              SPACE PRIMARY Text unit
+            -----------------------------------------------
+                  Ex: To specify a primary space of 20, code
+                     KEY   #    LEN    PARM
+                     000A  0001 0003   00 00 14
+
+     ***********************************************************/
+
+     if (spc_prim > 0)
+     {
+       tu[ntu].key = 0x000A;
+       tu[ntu].number = 1;
+       tu[ntu].len = 3;
+       data.ival = spc_prim;
+       MEMCPY(tu[ntu].parm, data.c3.val3, 3);
+       tuptr[ntu] = &tu[ntu];
+       ntu++;
+     }
+
+
+
+
+     /***********************************************************
+              SPACE SECONDARY Text Unit
+            -----------------------------------------------
+                  Ex: To specify a secondary space of 10, code
+                     KEY   #    LEN    PARM
+                     000B  0001 0003   00 00 0A
+
+     ***********************************************************/
+
+     if (spc_sec > 0)
+     {
+       tu[ntu].key = 0x000B;
+       tu[ntu].number = 1;
+       tu[ntu].len = 3;
+       data.ival = spc_sec;
+       MEMCPY(tu[ntu].parm, data.c3.val3, 3);
+       tuptr[ntu] = &tu[ntu];
+       ntu++;
+     }
+
+
+
+     /***********************************************************
+              SPACE DIR BLKS  Text Unit
+            -----------------------------------------------
+                  Ex: To specify two dir blks in a PDS, code
+                     KEY   #    LEN    PARM
+                     000C  0001 0003   00 00 02
+
+     ***********************************************************/
+
+     if (spc_blks > 0)
+     {
+       tu[ntu].key = 0x000C;
+       tu[ntu].number = 1;
+       tu[ntu].len = 3;
+       data.ival = spc_blks;
+       MEMCPY(tu[ntu].parm, data.c3.val3, 3);
+       tuptr[ntu] = &tu[ntu];
+       ntu++;
+     }
+
+
+     /***********************************************************
+              SYSOUT CLASS text unit
+            -----------------------------------------------
+                  Ex: To specify a SYSOUT data set with class A, code
+                     KEY   #    LEN    PARM
+                     0018  0001 0001   C1
+     ***********************************************************/
+
+     if (s99edit(syso_cls, str))
+          return (20);
+
+     stlen = STRLEN (str);
+     if (stlen == 1)
+     {
+          /* Text unit for the SYSOUT Class */
+          tu[ntu].key = 0x0018;
+          tu[ntu].number = 1;
+          tu[ntu].len = stlen;
+          MEMCPY (tu[ntu].parm, str, stlen);
+          tuptr[ntu] = &tu[ntu];
+          ntu++;
+     }
+     else if (stlen > 1)          /* Invalid Class            */
+          return (20);
+
+
+     /***********************************************************
+              SYSOUT PROGRAM NAME text unit
+            -----------------------------------------------
+                  Ex: To specify the pgm name MYWRITER, code
+                     KEY   #    LEN    PARM
+                     0019  0001 0008   D4 E8 E6 D9 C9 E3 C5 D9
+     ***********************************************************/
+
+     if (s99edit(syso_pgm,str))
+          return (20);
+
+     stlen = STRLEN (str);
+     if (stlen > 0)
+     {
+          stlen = 6;
+          tu[ntu].key = 0x0019;
+          tu[ntu].number = 1;
+          tu[ntu].len = stlen;
+          MEMCPY (tu[ntu].parm, str, stlen);
+          tuptr[ntu] = &tu[ntu];
+          ntu++;
+     }
+
+     /***********************************************************
+                        Issue the SVC 99
+     ***********************************************************/
+
+     ntu--;
+     tuptr[ntu] = (struct s99tu *) ( (int)tuptr[ntu] | 0x80000000);
+
+     //_ldregs(R1, ptrptr);
+     //_ossvc(99);
+     //rc = _stregs(R15);
+     __asm__ ( \
+      "L    1,%1\n\t" \
+      "SVC  99\n\t" \
+      "ST   15,%0" \
+       : "=m"(rc) \
+       : "m"(ptrptr) \
+       : "0", "1", "15" \
+      );
+
+     s99error = rb.errcode;
+     s99info = rb.infocode;
+
+     return (rc);
+
+}
+
+ //#eject
+ /*-------------------------------------------------------------------*/
+ /*                                                                   */
+ /*  s99edit                                                          */
+ /*                                                                   */
+ /*  This function edits a string passed as a parameter to one of     */
+ /*  the external functions.  It copies the string from the first     */
+ /*  argument (original) to the second argument (new), removes all    */
+ /*  leading and trailing white space, and converts the string to     */
+ /*  upper case.                                                      */
+ /*                                                                   */
+ /*  Return value is 0 if the string was edited, or 1 if the string   */
+ /*  was too long (>255 bytes).                                       */
+ /*                                                                   */
+ /*-------------------------------------------------------------------*/
+
+static int s99edit (           /* Edit a parameter string            */
+     char * original,             /* Original (unedited) string      */
+     char * new)                  /* New (edited) string             */
+{
+     int n;                    /* Length of string */
+
+     /* Find the first non-white-space character in the string */
+
+     while (ISSPACE(*original))
+          original++;
+
+     /* If the whole string is white space, just set the new string
+        to null and return ok.  */
+
+     if (*original == '\0')
+     {
+          *new = '\0';
+          return (0);
+     }
+
+     /* Check the length of the string to see if we can copy it */
+
+     n = STRLEN (original);
+     if (n > 255)
+          return (1);
+
+     /* Copy the string and trim trailing white space */
+
+     STRCPY (new, original);
+
+     for (--n; n > 0 && ISSPACE(*(new+n)); n--)
+          ;
+     *(new+(++n)) = '\0';
+
+     /* Convert string to upper case */
+
+     //strupr (new);
+     n = STRLEN(new);
+     for (--n; n>0; n--) new[n] = TOUPPER(new[n]);
+
+     return (0);
+
+}

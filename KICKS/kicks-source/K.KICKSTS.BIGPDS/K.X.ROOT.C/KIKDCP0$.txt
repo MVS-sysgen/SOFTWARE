@@ -1,0 +1,264 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+#include <stdio.h>
+
+#include "kicks.h"
+
+#include "dcthdr.h"
+
+KIKCSA *csa = (KIKCSA*)&csa;
+
+ ///////////////////////////////////////////////////////////////
+ //
+ //  function prototypes
+ //
+ ///////////////////////////////////////////////////////////////
+
+void ETRACE(int type_of, char *more, int intense);
+void XTRACE(int retcode, int intense);
+
+
+ ///////////////////////////////////////////////////////////////
+ //
+ //  kikdcp mainline
+ //
+ ///////////////////////////////////////////////////////////////
+
+
+
+int kikdcp (KIKCSA *kikcsa, int type_of,
+   char *arg1, char *arg2, char *arg3, char *arg4) {
+
+ int dodump=0, suppress=1;
+#define firstnl arg1
+
+ dcth *dcthdr;
+ int i;
+ char *p;
+
+ switch (type_of)
+  {
+
+  case kikdcpINIT:     // startup
+      // first dcp call in normal startup
+      csa = kikcsa;
+      ETRACE(type_of, "", 0);
+      //
+      //no arguments
+
+      // check table version matches csa version
+      //  -- ALL 4 bytes of it...
+      //  -- at some point we may be able to relax that some
+      dcthdr = (dcth *)csa->dcp_table_addr;
+      if (MEMCMP((char *)&csa->version, &dcthdr->ver[0], 4)) {
+       FPRINTF(csa->csastderr,"%s", firstnl); firstnl[0]=0;
+       FPRINTF(csa->csastderr,"DCT version does not match CSA!\n");
+       FPRINTF(csa->csastderr,"This is a fatal error! Bye Bye!\n\n");
+       EXIT (999);
+       }
+
+      XTRACE(0, 0);
+      return(0);
+      //break;
+
+  case kikdcpTERM:     // shutdown
+      // last dcp call before normal shut
+      ETRACE(type_of, "", 0);
+      //
+      //no arguments
+
+      XTRACE(0, 0);
+      return(0);
+      //break;
+
+  case kikdcpTRANEND:
+  case kikdcpTRANSTRT:     // Called by attach to clean up dct
+    {                      // Some of this cant be done in
+                           // kikdcptranend 'cause that gets
+                           // called in the middle of conversational
+                           // transactactions as well as at the
+                           // end of pseudo-conversational ones...
+    ETRACE(type_of, "", 1); // 'intense'
+    //
+    //no arguments
+
+    XTRACE(0, 1);           // 'intense'
+    return(0);
+    }
+    //break;
+
+  case kikdcpDELETEQ:   // delete queue
+
+      {
+      KIKTCA *tca=csa->tca;
+
+      ETRACE(type_of, arg1, 0);
+      //
+      //queue name = arg1; // (Ir) queue
+
+      KIKPCP(csa, kikpcpABND, "D006", &dodump); // abend, open failed
+
+      XTRACE(0, 0);
+      return(0);
+      }
+      //break;
+
+  case kikdcpREADQ:     // read queue
+
+      {
+      KIKTCA *tca=csa->tca;
+
+      ETRACE(type_of, arg1, 0);
+      //
+      //queue name = arg1; // (Ir) queue
+      //into       = arg2; // (Or) into
+      //length     = arg3; // (Ir) length
+
+      KIKPCP(csa, kikpcpABND, "D006", &dodump); // abend, open failed
+
+      XTRACE(0, 0);
+      return(0);
+      }
+      //break;
+
+  case kikdcpWRITEQ:    // write queue
+
+      {
+      KIKTCA *tca=csa->tca;
+
+      ETRACE(type_of, arg1, 0);
+      //
+      //queue name = arg1; // (Ir) queue
+      //from       = arg2; // (Or) from
+      //length     = arg3; // (Ir) length
+
+      KIKPCP(csa, kikpcpABND, "D006", &dodump); // abend, open failed
+
+      XTRACE(0, 0);
+      return(0);
+      }
+      //break;
+
+  case kikdcpSPOOLOPEN: // open JES i/o
+      {                 // input not supportted!!!
+      KIKTCA *tca=csa->tca;
+      KIKEIB *eib;
+
+      eib = &csa->tca->kikeib;
+
+      ETRACE(type_of, arg1, 0);
+      //
+      //token  = arg1; // (Or) 8 char token
+      //writer = arg2; // (Ir) 8 char writer/userid
+      //node   = arg3; // (Ir) 8 char node
+      //class  = arg4; // (Ir) 1 char class
+
+      eib->eibresp = 19; eib->eibresp2 = 8; // notopen
+      KIKPCP(csa, kikpcpABND, "AEIS", &dodump);
+
+      XTRACE(0, 0);
+      return(0);
+      }
+      //break;
+
+  case kikdcpSPOOLCLOSE: // close JES i/o
+      {
+      KIKEIB *eib;
+
+      eib = &csa->tca->kikeib;
+
+      ETRACE(type_of, "", 0);
+      //
+      //token = arg1; // (Ir) 8 char token
+
+      eib->eibresp = 19; eib->eibresp2 = 8; // notopen
+      KIKPCP(csa, kikpcpABND, "AEIS", &dodump);
+
+      XTRACE(0, 0);
+      return(0);
+     }
+      //break;
+
+  case kikdcpSPOOLREAD: // read JES input (another job's output)
+      {                 // not supportted!!!
+      KIKEIB *eib;
+
+      eib = &csa->tca->kikeib;
+
+      ETRACE(type_of, "", 0);
+      //
+
+      eib->eibresp = 19; eib->eibresp2 = 8; // notopen
+      KIKPCP(csa, kikpcpABND, "AEIS", &dodump);
+
+      XTRACE(0, 0);
+      return(0);
+      }
+      //break;
+
+  case kikdcpSPOOLWRITE: // write JES output (sysout or intrdr)
+      {
+      KIKEIB *eib;
+
+      eib = &csa->tca->kikeib;
+
+      ETRACE(type_of, "", 0);
+      //
+      //token      = arg1; // (Ir) 8 char token
+      //from       = arg2; // (Or) from
+      //flength    = arg3; // (Ir) flength
+
+      eib->eibresp = 19; eib->eibresp2 = 8; // notopen
+      KIKPCP(csa, kikpcpABND, "AEIS", &dodump);
+
+      XTRACE(0, 0);
+      return(0);
+      }
+      //break;
+
+  default:    // bad calls get here
+      ETRACE(type_of, "", 0);
+      {
+      if ((csa->trc.trcflags & 4) > 0) {
+        FCLOSE((FILE*)kikcsa->auxtrc);
+        csa->trc.trcflags &= ~4; // show closed
+       }
+      ABEND(kikdcpTYPE, type_of);
+      }
+  }
+
+}
+
+void ETRACE(int type_of, char *more, int intense)
+{ char tmsg[20]; int t; t = csa->tca->tasknum;
+  csa->AICAtime = -1;
+  csa->tca->kikeib.eibresp = csa->tca->kikeib.eibresp2 = 0;
+  if (more == NULL)
+  SPRINTF(tmsg, "D%2.2X%4.4s     %4.4X", type_of, "", t);
+  else
+  SPRINTF(tmsg, "D%2.2X%4.4s     %4.4X", type_of, more, t);
+  ((SubPtr)csa->trc_addr)(tmsg, intense);
+}
+
+void XTRACE(int retcode, int intense)
+{ char tmsg[20]; int t; t = csa->tca->tasknum;
+  SPRINTF(tmsg, "DX%03.3d       %4.4X", retcode, t);
+  ((SubPtr)csa->trc_addr)(tmsg, intense);
+  //return(retcode);
+  csa->AICAtime = csa->AICAmax;
+}
+
+
+

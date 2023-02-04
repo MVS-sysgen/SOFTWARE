@@ -1,0 +1,88 @@
+//*///////////////////////////////////////////////////////////////////
+//* Routine to (nicely) report step name and return code
+//*
+//* KRPTRTN rcode tcode 1stcol 2ndcol txt1 txt2 txt3 ...
+//*
+//* © Copyright 2008-2012, Michael Noel, All Rights Reserved.
+//*
+//* Usage of 'KICKS for CMS' is in all cases subject to license. See
+//* http://www.kicksfortso.com
+//* for most current information regarding licensing options..
+//*//////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+//*
+//* gcce krptrtn
+//* term chardel off
+//* load krptrtn (clear
+//* include @@kstrt (reset @@kstrt
+//* genmod krptrtn
+//*
+
+#include <stdio.h>
+#include <string.h>
+
+extern int __KSR1;
+
+int main (int argc, char *argv[]) {
+
+int   ARGC=0;
+char *ARGV[20];
+
+int i, rc, tc, col1, col2;
+char txtbuf[80], *ip;
+char prtbuf[80];
+
+// regenerate ARGC, ARGV as the input parms may
+// be fouled up by a failed gcc compile step...
+
+ip = __KSR1; // recover pre-CMSSTART r1
+
+while (*ip != 0xff) {
+ if (ARGC > 19) break;
+ ARGV[ARGC++] = ip;
+ ip += 8;
+ }
+
+// now use ARGC/ARGV instead of argc/argv...
+
+memset(txtbuf, 0, 80);
+memset(prtbuf, 0, 80);
+
+rc   = strtol(ARGV[1], NULL, 10);
+if (rc == -2)  exit (0);   // unused step...
+if (rc <  -1)  exit (rc);  // let them figure it...
+tc   = strtol(ARGV[2], NULL, 10);
+if (tc <   0)  exit (997);
+col1 = strtol(ARGV[3], NULL, 10);
+if (col1 > 20) exit (998);
+col2 = strtol(ARGV[4], NULL, 10);
+if (col2 > 60) exit (999);
+
+for (i=5; i<ARGC; i++) {
+ if(strlen(txtbuf) > 75) break;
+ if(strlen(txtbuf)>0) strcat(txtbuf, " ");
+ strncpy(prtbuf, ARGV[i], 8); prtbuf[8]=0;
+ strncat(txtbuf, prtbuf, 75-strlen(txtbuf));
+ while (txtbuf[strlen(txtbuf)-1] == ' ')
+        txtbuf[strlen(txtbuf)-1] =  0;
+ }
+
+memset(prtbuf, 0, 80);
+for (i=0; i<col1; i++) strcat(prtbuf, " ");
+strcat(prtbuf, "STEP: ");
+strncat(prtbuf, txtbuf, 75-strlen(prtbuf));
+while(strlen(prtbuf) < col2) strcat(prtbuf, " ");
+if (rc == -1)
+ strncat(prtbuf, "skipped", 75-strlen(prtbuf));
+else {
+ sprintf(txtbuf, "RC: %d", rc);
+ strncat(prtbuf, txtbuf, 75-strlen(prtbuf));
+ }
+
+fprintf(stderr, "%s\n", prtbuf);
+
+if (rc == -1) exit(1);   // warning for skipped
+if (rc >  tc) exit(1);   // warning for bad rc
+
+exit (0);              // no warning
+}

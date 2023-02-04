@@ -1,0 +1,687 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+#include <stdio.h>
+
+#include "kicks.h"
+
+
+KIKCSA *csa = (KIKCSA*)&csa;
+
+
+ // TS queues (aux and main) are implemented on VSAM ksds KIKTEMP.
+ // NOTE (aux and main) - means what it says. "aux" and "main" are
+ // accepted as part of the api, but there is no difference
+ // internally. To provide "shared" TS *all* access is "aux"...
+
+ // KICKS always warm starts the queues, meaning it does an FCP write
+ // followed by an FCP delete on startup, intended to ensure that if
+ // the cluster has been newly del/def'd it will operate OK. Besides
+ // that it does nothing at all other than open them each time access
+ // is needed, just like any other vsam file. A standalone job
+ // provides for queue maintenance (delete/define) to "cold start".
+
+ // KSDS keys are the first 18 bytes of the record: 16 bytes of
+ // qname followed by two bytes of binary itemnum.
+ // Following the key are 1 to 32749 bytes of actual user data
+ // User data length is obtained from read length minus 18.
+
+ // Itemnum's are assigned by 'WRITEQ TS' and start with 1 ranging
+ // up to 32767. Items LE zero are invalid.
+
+ // Item 0, invalid for user, is a queue control record. 'User' data
+ // length is 4. First 2 are high used item (ie, NumItems). This is
+ // set by WriteQ. Last 2 bytes are the 'NEXT' item to be read. This
+ // is initially set by WriteQ to 1, and reset by each ReadQ (any
+ // KICKS user) to the currently read item (number) plus 1.
+
+ // Numitems can be recovered by startbr for high-values itemnum
+ // (invalid since it is a *negative* number) and backing up to get
+ // the key of the highest.
+
+ typedef struct __tspkey__ {
+  char   qname[16];
+  short  item;
+ } tspkey;
+
+ typedef struct __tsprec__ {
+  tspkey key;
+  union {
+   struct {
+    char rest[32749];
+   } usrrec;
+   struct {
+    short numitems;
+    short next;
+   } reczero;
+  };
+ } tsprec;
+
+
+ ///////////////////////////////////////////////////////////////
+ //
+ //  function prototypes
+ //
+ ///////////////////////////////////////////////////////////////
+
+void ETRACE(int type_of, char *more, int intense);
+void XTRACE(int retcode, int intense);
+void TRACEstring(char *sometxt);
+void TRACEint(int someint);
+
+int deleteq(char *queue);
+int readq (char *queue, int flags, short *item,
+           char *into, short *length, short *numitems);
+int writeq(char *queue, int flags, short *item,
+           char *from, short *length, short *numitems);
+
+
+ ///////////////////////////////////////////////////////////////
+ //
+ //  kiktsp mainline
+ //
+ ///////////////////////////////////////////////////////////////
+
+int kiktsp (KIKCSA *kikcsa, int type_of,
+   char *arg1, char *arg2, char *arg3, char *arg4,
+   char *arg5, char *arg6, char *arg7, char *arg8, char *arg9
+   ) {
+
+ int dodump=0, suppress=1;
+#define firstnl arg1
+
+ switch (type_of)
+  {
+  case kiktspINIT:    // startup
+
+      csa = kikcsa;
+      ETRACE(type_of, "", 0);
+      //
+      //no arguments
+
+
+#ifdef DEBUGIT
+      // message if debugging version
+     FPRINTF(csa->csastderr,"%s", firstnl); firstnl[0]=0;
+     FPRINTF(csa->csastderr,"*** DEBUGGING version of TSP *** *** ***\n");
+#endif
+
+    {   // following will warm start KIKTEMP
+    int sixteen=16, eighteen=18, recl=22, flags=0, numrec;
+    tsprec *rec;
+    rec = (tsprec*)MALLOC(32768);
+    if (rec != NULL) {
+     MEMSET(rec, 0, 32768);
+     WRITE("KIKTEMP ",flags,rec,recl,rec,eighteen);
+     flags=1; // generic
+     DELETE("KIKTEMP ", flags, rec, sixteen, numrec);
+     FREE(rec);
+     }
+    }
+
+      XTRACE(0, 0);
+      return (0);
+      //break;
+
+  case kiktspTERM:    // shutdown
+
+      ETRACE(type_of, "", 0);
+      //
+      //no arguments
+
+      // tsp TERM does nothing, 'cause queue closes done by FCP
+
+      XTRACE(0, 0);
+      return (0);
+      //break;
+
+
+  case kikscpTRANSTRT:   // transaction start
+
+      ETRACE(type_of, "", 1); // 'intense'
+      //
+      //no arguments
+
+      // tsp TRANSTRT does nothing, 'cause queue closes done by FCP
+
+      XTRACE(0, 1);           // 'intense'
+      return(0);
+      //break;
+
+
+  case kikscpTRANEND:    // transaction end
+
+      ETRACE(type_of, "", 1); // 'intense'
+      //
+      //no arguments
+
+      // tsp TRANEND does nothing, 'cause queue closes done by FCP
+
+      XTRACE(0, 1);           // 'intense'
+      return(0);
+      //break;
+
+
+  case kiktspDELETEQ:    // delete queue
+
+      {
+      KIKTCA *tca=csa->tca;
+      KIKEIB *eib;
+      eib = &tca->kikeib;
+      int zero=0;
+
+      ETRACE(type_of, arg1, 0);
+      //
+      //queue name = arg1; // (Ir) queue
+
+      char  *queue;
+
+      queue = arg1;
+
+      // check for queue/qname binary zeros
+      if((!MEMCMP(queue,   &zero, 4)) &&
+         (!MEMCMP(queue+4, &zero, 4))) {
+       eib->eibresp  = 16; // invreq
+       eib->eibresp2 = 0;  // not used
+       KIKPCP(csa, kikpcpABND, "X001", &dodump);
+       }
+
+      // do the delete
+      deleteq(queue);
+
+      XTRACE(0, 0);
+      return(0);
+      }
+      //break;
+
+
+  case kiktspREADQ:    // read queue
+
+      {
+      KIKTCA *tca=csa->tca;
+      KIKEIB *eib;
+      eib = &tca->kikeib;
+      int zero=0;
+
+      ETRACE(type_of, arg1, 0);
+      //
+      //queue name = arg1; // (Ir) queue
+      //flags      = arg2  // (Ir) flags
+                           // nosuspend
+                           // next
+                           // main
+                           // aux
+                           // rewrite
+      //into       = arg3; // (Or) into
+      //length     = arg4; // (Ir) length
+      //item       = arg5; // (Ir) item
+      //numitems   = arg6; // (Or) numitems
+
+      char  *queue, *into;
+      int   flags;
+      short *length, *item, *numitems;
+
+      queue = arg1;
+      flags = *(int*)arg2;
+      into = arg3; length = (short*)arg4;
+      item = (short*)arg5; numitems = (short*)arg6;
+
+      // check for queue/qname binary zeros
+      if((!MEMCMP(queue,   &zero, 4)) &&
+         (!MEMCMP(queue+4, &zero, 4))) {
+       eib->eibresp  = 16; // invreq
+       eib->eibresp2 = 0;  // not used
+       KIKPCP(csa, kikpcpABND, "X001", &dodump);
+       }
+
+      // do the read
+      readq(queue, flags, item, into, length, numitems);
+
+      XTRACE(0, 0);
+      return(0);
+      }
+      //break;
+
+
+  case kiktspWRITEQ:    // write queue
+
+      {
+      KIKTCA *tca=csa->tca;
+      KIKEIB *eib;
+      eib = &tca->kikeib;
+      int zero=0;
+
+      ETRACE(type_of, arg1, 0);
+      //
+      //queue name = arg1; // (Ir) queue
+      //flags      = arg2  // (Ir) flags
+                           // nosuspend
+                           // next
+                           // main
+                           // aux
+                           // rewrite
+      //from       = arg3; // (Or) from
+      //length     = arg4; // (Ir) length
+      //item       = arg5; // (Or) item
+      //numitems   = arg6; // (Or) numitems
+
+      char  *queue, *from;
+      int   flags;
+      short *length, *item, *numitems;
+
+      queue = arg1;
+      flags = *(int*)arg2;
+      from = arg3; length = (short*)arg4;
+      item = (short*)arg5; numitems = (short*)arg6;
+
+      // check for queue/qname binary zeros
+      if((!MEMCMP(queue,   &zero, 4)) &&
+         (!MEMCMP(queue+4, &zero, 4))) {
+       eib->eibresp  = 16; // invreq
+       eib->eibresp2 = 0;  // not used
+       KIKPCP(csa, kikpcpABND, "X001", &dodump);
+       }
+
+      // check for wlr
+      if((*length <= 0) || (*length > 32749)) {
+       eib->eibresp = 16; // lengerr
+       KIKPCP(csa, kikpcpABND, "X002", &dodump);
+       }
+
+      // do the write
+      writeq(queue, flags, item, from, length, numitems);
+
+      XTRACE(0, 0);
+      return(0);
+      }
+      //break;
+
+
+  default:    // bad calls get here
+
+      ETRACE(type_of, "", 0);
+      {
+      if ((csa->trc.trcflags & 4) > 0) {
+        FCLOSE((FILE*)kikcsa->auxtrc);
+        csa->trc.trcflags &= ~4; // show closed
+       }
+      ABEND(kikscpTYPE, type_of);
+      }
+  }
+}
+
+
+void ETRACE(int type_of, char *more, int intense)
+{ char tmsg[20]; int t; t = csa->tca->tasknum;
+  csa->AICAtime = -1;
+  csa->tca->kikeib.eibresp = csa->tca->kikeib.eibresp2 = 0;
+  if (more == NULL)
+  SPRINTF(tmsg, "X%2.2X%8.8s %4.4X", type_of, "", t);
+  else
+  SPRINTF(tmsg, "X%2.2X%8.8s %4.4X", type_of, more, t);
+  ((SubPtr)csa->trc_addr)(tmsg, intense);
+}
+
+
+void XTRACE(int retcode, int intense)
+{ char tmsg[20]; int t; t = csa->tca->tasknum;
+  SPRINTF(tmsg, "XX%03.3d       %4.4X", retcode, t);
+  ((SubPtr)csa->trc_addr)(tmsg, intense);
+  //return(retcode);
+  csa->AICAtime = csa->AICAmax;
+}
+
+
+void TRACEstring(char *sometxt)
+{
+  FPRINTF((FILE*)csa->auxtrc, "%80s\n", sometxt);
+}
+
+
+void TRACEint(int someint)
+{
+  FPRINTF((FILE*)csa->auxtrc, "%x\n", someint);
+}
+
+
+ /////////////////////////////////////////////////////////////
+ //
+ // SUBROUTINE TO DELETE Q
+ //
+ /////////////////////////////////////////////////////////////
+
+ // DELETEQ TS deletes a temporary storage queue (& all data)
+
+ int deleteq(char *queue) {
+  int dodump=0, suppress=1;
+  int flags=1; // generic
+  short sixteen=16, numrec=0;
+  KIKEIB *eib;
+
+  eib = &csa->tca->kikeib;
+  eib->eibresp = 0; eib->eibresp2 = 0;
+
+  // do the (generic) delete
+  DELETE("KIKTEMP ", flags, queue, sixteen, numrec);
+
+  // return if all is well
+  if (eib->eibresp == 0) return(0);
+
+  // map some other returns to qiderr
+  // note - should be able to recover underlying
+  //        fcp issues by looking at eibrcode...
+  if((eib->eibresp == 12) ||   // fnf
+     (eib->eibresp == 13) ||   // rnf
+     (eib->eibresp == 19) ||   // notopen
+     (eib->eibresp == 84)) {   // disabled
+   eib->eibresp = 44;       // --> qiderr
+   KIKPCP(csa, kikpcpABND, "X004", &dodump);
+   }
+
+  // anything else is ioerr...
+  eib->eibresp = 17; // ioerr
+  KIKPCP(csa, kikpcpABND, "X003", &dodump);
+ }
+
+
+ /////////////////////////////////////////////////////////////
+ //
+ // SUBROUTINE TO READ Q
+ //
+ // (careful use of flags vrs fflags)
+ /////////////////////////////////////////////////////////////
+
+ // READQ TS retrieves data from a temporary storage queue
+
+ int readq(char *queue, int fflags,   short *item,
+           char *into,  short *length, short *numitems) {
+  int dodump=0, suppress=1;
+  short eighteen=18, recl;
+  int flags, Len, Len2;
+  int savr, savr2;
+  short next, last;
+  tsprec *rec;
+  KIKEIB *eib;
+
+  eib = &csa->tca->kikeib;
+  eib->eibresp = 0; eib->eibresp2 = 0;
+
+  // check for null qname already done (above)
+
+  // direct or sequential read?
+  if((fflags & 2) == 0) { // direct via 'item'
+   if(*item <= 0) { // short, so can't be > 32767...
+    eib->eibresp = 26; // itemerr
+    KIKPCP(csa, kikpcpABND, "X005", &dodump);
+    }
+   }
+
+  // get a buffer
+  rec = (tsprec*)MALLOC(32768);
+  if (rec == NULL) {
+   eib->eibresp = 17; // call it ioerr
+    KIKPCP(csa, kikpcpABND, "X006", &dodump);
+   }
+
+  // read queue record 0 into buffer
+
+  MEMSET(rec, 0, 32768);
+  MEMCPY(rec->key.qname, queue, 16);
+  //rec->key.item = 0; // implied by above MEMSET...
+  recl = 22;  // key 18 + user data 4
+  flags = 48; // equal + update
+  READ("KIKTEMP ",flags,rec,recl,rec,eighteen);
+  if (eib->eibresp != 0) {
+   savr=eib->eibresp; savr2=eib->eibresp2;
+   UNLOCK("KIKTEMP ", flags);
+   FREE(rec); // release buffer
+   eib->eibresp=savr; eib->eibresp2=savr2;
+   if((eib->eibresp == 12) ||   // fnf
+      (eib->eibresp == 13) ||   // rnf
+      (eib->eibresp == 19) ||   // notopen
+      (eib->eibresp == 84)) {   // disabled
+    eib->eibresp = 44;   // --> qiderr
+    } else eib->eibresp = 17;   // --> ioerr
+   KIKPCP(csa, kikpcpABND, "X007", &dodump);
+   }
+  next = rec->reczero.next;
+  last = rec->reczero.numitems;
+  *numitems = last;
+
+  // alter 'next' for direct
+  if((fflags & 2) == 0) next = *item;
+
+  // check for next > last
+  if (next > last) {
+   UNLOCK("KIKTEMP ", flags);
+   FREE(rec); // release buffer
+   eib->eibresp = 26; // itemerr
+   KIKPCP(csa, kikpcpABND, "X008", &dodump);
+   }
+
+  // rewrite record 0
+  rec->reczero.next = next + 1;
+  recl = 22;  // key 18 + user data 4
+  flags = 0;  // not actually used by rewrite...
+  REWRITE("KIKTEMP ",flags,rec,recl);
+  if (eib->eibresp != 0) {
+   UNLOCK("KIKTEMP ", flags);
+   FREE(rec); // release buffer
+   eib->eibresp = 17; // ioerr
+   KIKPCP(csa, kikpcpABND, "X009", &dodump);
+   }
+
+  // read user record into buffer
+  Len = *length;
+  MEMSET(into, 0, *length);
+  MEMSET(rec, 0, 32768);
+  MEMCPY(rec->key.qname, queue, 16);
+  rec->key.item = next;
+  recl = *length + 18;
+  *length = 0;
+  flags = 16; // equal
+  READ("KIKTEMP ",flags,rec,recl,rec,eighteen);
+  if((eib->eibresp == 0) ||
+     (eib->eibresp == 22)) { // lengerr
+   if (recl > 18) {
+    *length = Len2 = (recl-18);
+    if (Len2 > Len) Len2 = Len;
+    MEMCPY(into, &rec->usrrec.rest[0], Len2);
+    }
+   }
+  FREE(rec); // release buffer
+
+  // goback
+  if (eib->eibresp == 0) return (0);
+  // if not lengerr make it itemerr
+  if (eib->eibresp != 22)
+    eib->eibresp = 26;
+  KIKPCP(csa, kikpcpABND, "X010", &dodump);
+ }
+
+
+ /////////////////////////////////////////////////////////////
+ //
+ // SUBROUTINE TO WRITE Q
+ //
+ // (careful use of flags vrs fflags)
+ /////////////////////////////////////////////////////////////
+
+ // WRITEQ TS stores data into a temporary storage queue
+
+ int writeq(char *queue, int fflags,   short *item,
+            char *from,  short *length, short *numitems) {
+  int dodump=0, suppress=1;
+  short eighteen=18, recl;
+  int flags, savr, savr2;
+  short next, last;
+  tsprec *rec;
+  KIKEIB *eib;
+
+  eib = &csa->tca->kikeib;
+  eib->eibresp = 0; eib->eibresp2 = 0;
+
+  // check for null qname already done (above)
+
+  // validate length already done (above)
+
+  // get a buffer
+  rec = (tsprec*)MALLOC(32768);
+  if (rec == NULL) {
+   eib->eibresp = 17; // call it ioerr
+    KIKPCP(csa, kikpcpABND, "X006", &dodump);
+   }
+
+  // rewrite or normal write?
+  if((fflags & 16) != 0) {
+   // rewrite case
+   // validate itemnum
+   if(*item <= 0) { // short, so can't be > 32767...
+    FREE(rec);
+    eib->eibresp = 26;
+    KIKPCP(csa, kikpcpABND, "X005", &dodump);
+    }
+   next = *item;
+
+   // read queue record into buffer
+   MEMSET(rec, 0, 32768);
+   MEMCPY(rec->key.qname, queue, 16);
+   rec->key.item = next;
+   recl = 32767;  // key 18 + user data
+   flags = 48; // equal + update
+   READ("KIKTEMP ",flags,rec,recl,rec,eighteen);
+   if((eib->eibresp != 0) && (eib->eibresp != 22)) {
+    savr=eib->eibresp; savr2=eib->eibresp2;
+    UNLOCK("KIKTEMP ", flags);
+    FREE(rec); // release buffer
+    eib->eibresp=savr; eib->eibresp2=savr2;
+    if((eib->eibresp == 12) ||   // fnf
+       (eib->eibresp == 13) ||   // rnf
+       (eib->eibresp == 19) ||   // notopen
+       (eib->eibresp == 84)) {   // disabled
+     eib->eibresp = 44;   // --> qiderr
+     } else eib->eibresp = 17;   // --> ioerr
+    KIKPCP(csa, kikpcpABND, "X007", &dodump);
+    }
+   // rewrite the record
+   recl = 18 + *length;  // key 18 + user data
+   MEMCPY(&rec->usrrec.rest[0], from, *length);
+   flags = 0;  // not actually used by rewrite...
+   REWRITE("KIKTEMP ",flags,rec,recl);
+   if (eib->eibresp != 0) {
+    UNLOCK("KIKTEMP ", flags);
+    FREE(rec); // release buffer
+    eib->eibresp = 17;
+    KIKPCP(csa, kikpcpABND, "X011", &dodump);
+    }
+
+   }
+  else {
+   // normal write case
+   // read queue record 0 into buffer
+   MEMSET(rec, 0, 32768);
+   MEMCPY(rec->key.qname, queue, 16);
+   //rec->key.item = 0; // implied by above MEMSET...
+   recl = 22;  // key 18 + user data 4
+   flags = 16; // equal
+   READ("KIKTEMP ",flags,rec,recl,rec,eighteen);
+   if((eib->eibresp != 0) && (eib->eibresp != 13)) {
+    FREE(rec); // release buffer
+         // --> ioerr
+    if((eib->eibresp == 12) ||   // fnf
+       (eib->eibresp == 19) ||   // notopen
+       (eib->eibresp == 84)) {   // disabled
+     eib->eibresp = 18;   // --> NOSPACE
+     // could be ioerr or qiderr, but I think nospace is best...
+     } else eib->eibresp = 17;
+    KIKPCP(csa, kikpcpABND, "X007", &dodump);
+    }
+   if (eib->eibresp == 13) { // rnf for 1st read
+    MEMSET(rec, 0, 32768);
+    MEMCPY(rec->key.qname, queue, 16);
+    //rec->key.item = 0; // implied by above MEMSET...
+    recl = 22;  // key 18 + user data 4
+    flags = 0;
+    WRITE("KIKTEMP ",flags,rec,recl,rec,eighteen);
+    if (eib->eibresp != 0) {
+     FREE(rec); // release buffer
+     eib->eibresp = 18;   // --> NOSPACE
+     KIKPCP(csa, kikpcpABND, "X012", &dodump);
+     }
+    // read (again)
+    MEMSET(rec, 0, 32768);
+    MEMCPY(rec->key.qname, queue, 16);
+    //rec->key.item = 0; // implied by above MEMSET...
+    recl = 22;  // key 18 + user data 4
+    flags = 16; // equal
+    READ("KIKTEMP ",flags,rec,recl,rec,eighteen);
+    if (eib->eibresp != 0) {
+     FREE(rec); // release buffer
+     eib->eibresp = 17;
+     KIKPCP(csa, kikpcpABND, "X013", &dodump);
+     }
+    }
+   // write new record at the end
+   next = rec->reczero.next;
+   last = rec->reczero.numitems;
+   last++;
+   MEMSET(rec, 0, 32768);
+   MEMCPY(rec->key.qname, queue, 16);
+   rec->key.item = last;
+   MEMCPY(&rec->usrrec.rest[0], from, *length);
+   recl = *length + 18;
+   flags = 0;
+   WRITE("KIKTEMP ",flags,rec,recl,rec,eighteen);
+   if (eib->eibresp != 0) {
+    FREE(rec); // release buffer
+    eib->eibresp = 18;   // --> NOSPACE
+    KIKPCP(csa, kikpcpABND, "X014", &dodump);
+    }
+   // update record zero
+   MEMSET(rec, 0, 32768);
+   MEMCPY(rec->key.qname, queue, 16);
+   //rec->key.item = 0; // implied by above MEMSET...
+   recl = 22;  // key 18 + user data 4
+   flags = 48; // equal + update
+   READ("KIKTEMP ",flags,rec,recl,rec,eighteen);
+   if (eib->eibresp != 0) {
+    UNLOCK("KIKTEMP ", flags);
+    FREE(rec); // release buffer
+    eib->eibresp = 17;
+    KIKPCP(csa, kikpcpABND, "X013", &dodump);
+    }
+   rec->reczero.numitems = last;
+   // set 'next', but only on first write...
+   if (last == 1) rec->reczero.next = last;
+   recl = 22;  // key 18 + user data 4
+   flags = 0;  // not actually used by rewrite...
+   REWRITE("KIKTEMP ",flags,rec,recl);
+   if (eib->eibresp != 0) {
+    UNLOCK("KIKTEMP ", flags);
+    FREE(rec); // release buffer
+    eib->eibresp = 17;
+    KIKPCP(csa, kikpcpABND, "X013", &dodump);
+    }
+   // copy numitems back to user
+   *numitems = last;
+   }
+
+   // free the buffer
+   FREE(rec);
+ }
+
+
+
+
+

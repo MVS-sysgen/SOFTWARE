@@ -1,0 +1,33 @@
+#ifndef __IHACDE__
+#define __IHACDE__
+
+ // from SYS1.MACLIB(IHACDE) on MVS 3.8J 'MVS380' system
+
+ typedef struct __ihacde__
+ {
+  char *cdchain;           // +000 address of next cde in queue
+  int   cdrrbp;            // +004
+  char  cdname[8];         // +008 module name
+  char *cdentpt;           // +012 entry point address
+  char *cdxlmjp;           // +016 extent list (or major cde) address
+  short cduse;             // +020 use count
+  char  cdattrb;           // +022 attributes
+  char  cdresv1;           // +023 reserved?
+  char  cdattr;            // +024 attributes
+  char  cdattr2;           // +025 attributes
+  short cdattr3;           // +026 attributes
+ } ihacde, cdentry;
+
+ // some flags for cdattr
+#define cdmin    0x04      // minor cde
+#define cdjpa    0x02      // in jpa
+
+ // some flags for cdattr2
+#define cdxle    0x20      // extent list built
+#define cdrlc    0x10      // minor entry point
+#define cdsyslib 0x02      // loaded from auth library
+#define cdauth   0x01      // pgm auth flag
+
+#endif
+
+

@@ -1,0 +1,266 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+ /////////////////////////////////////////////////////////////
+ //
+ // START BROWSE FUNCTION
+ //
+ /////////////////////////////////////////////////////////////
+
+ // http://publib.boulder.ibm.com/infocenter/cicsts/v3r1/topic/
+ //      com.ibm.cics.ts31.doc/dfhp4/topics/dfhp4_commands.htm
+
+ // STARTBR specifies the record in a file where you want the browse to start.
+ // No records are read until a READNEXT command (or a READPREV command) is
+ // executed.
+
+ // A browse operation, where direct means browse of the base data set
+ // (using the primary key), may be:
+
+ //  * A direct browse of a key sequenced data set (KSDS) by record key.
+ //  * A direct browse of an entry sequenced data set (ESDS) by
+ //    relative byte address (RBA).
+ //  * A direct browse of a relative record data set (RRDS) by
+ //    relative record number (RRN).
+ //  * A browse of a key sequenced data set (KSDS) using an
+ //    alternate index path.
+ //  * A browse of an entry sequenced data set (ESDS) using an alternate
+ //    index path. In this case, an ESDS is browsed by key in the same way as
+ //    a KSDS. Some of the options that are not valid for a direct ESDS
+ //    browse are valid for an alternate index browse.
+ //  * A browse of a KSDS by RBA.
+
+ // The options specified on the STARTBR command define the characteristics
+ // that apply throughout the subsequent browse operation. Specifically, if
+ // GENERIC or GTEQ are specified, they are used not only when determining the
+ // starting point of the browse, but also whenever the value of RIDFLD is
+ // changed before issuing a READNEXT command.
+
+ // If you specify the RBA option, it applies to every READNEXT or READPREV
+ // command in the browse, and causes CICS to return the relative byte address
+ // of each retrieved record.
+
+ // None of these options can be changed during a browse, except by means of
+ // the RESETBR command.
+
+
+ int startbr(fcte *f, short reqID, int flags,
+             char *ridfld, short keylen) {
+
+ //file name = arg1; // (Ir) file
+ //flags     = arg2  // (Ir) flags
+                        // generic
+                        // rba
+                        // rrn
+                        // gteq
+                        // equal
+ // - null - = arg3; //
+ // - null - = arg4; //
+ //ridfld    = arg5; // (Io) ridfld (null if missing)
+ //keylen    = arg6; // (Io) keylen (-1 if missing)
+ //reqid     = arg7; // (Ir) reqid  (+0 if 'missing')
+
+ ifgrpl *r = &f->reqids[0].rpl;
+ int i, reqid=0;
+ char *aRfld;
+
+ // turn off pending update
+ f->flag1 &= ~FCTEflag1pendupdt;
+
+ // turn user's reqid into subscript for fcte rpl table
+ reqid = mapReqId(f, reqID);
+ if (reqid < 0) {
+  for (i=1, reqid=0; i<f->numreq; i++) {
+   if (f->reqids[i].reqid != 0) continue;
+   f->reqids[i].reqid  = reqID;
+   reqid = i; // found free slot, use
+   break;
+   }
+  if (reqid == 0) { // no slots!
+   f->resp = KIKRESP$ILLOGIC;
+   // happpens in several places. Should be KIKRESP$ILLOGIC, with
+   //                           resp2 I define for 'no reqid slots' - 901
+   //                           FYI -- 999 will be 'not implemented'
+   f->resp2= 901; // ****************************************************
+   return 8; // logical error
+   }
+  }
+ else {
+  if ((f->reqids[reqid].flagsb & FCTEflagsbactive) != 0) {
+   // can't start browse, reqid already active!
+   f->lastreqid = reqid;
+   f->reqids[reqid].lastop = FCTElastopstartbr;
+   f->resp = KIKRESP$INVREQ;
+   f->resp2= 33;  // this is cics resp2 for already browsing...
+   return 8; //
+   }
+  }
+ f->lastreqid = reqid;
+ f->reqids[reqid].lastop = FCTElastopstartbr;
+ f->reqids[reqid].flagsb = FCTEflagsbactive | flags;
+ r = &f->reqids[reqid].rpl;
+
+ // check for contradictory things
+ if(((flags & FCTEflagsbrrn) > 0) && ((flags & FCTEflagsbrba) > 0)) {
+   f->resp = KIKRESP$INVREQ;
+   // happpens in several places. Should be KIKRESP$INVREQ, with
+   //                    resp2 I define for 'contradictory options' - 902
+   f->resp2= 902; // ****************************************************
+   return 8; //
+  }
+ if(((flags & FCTEflagsbequal) > 0) && ((flags & FCTEflagsbgteq) > 0)) {
+   f->resp = KIKRESP$INVREQ;
+   f->resp2= 902;
+   return 8; //
+  }
+
+ // if 'rba' then rrds not allowed
+ if ((flags & FCTEflagsbrba) > 0)
+  if ((f->flag1 & FCTEflag1rrds) > 0) {
+   f->resp = KIKRESP$INVREQ;
+   // happpens in several places. Should be KIKRESP$INVREQ, with
+   //                             resp2 I define for 'rba for rrds' - 903
+   f->resp2= 903; // ****************************************************
+   return 8; // logical error
+   }
+
+ // if 'rrn' then ksds & esds not allowed
+ if ((flags & FCTEflagsbrrn) > 0)
+  if(((f->flag1 & FCTEflag1ksds) > 0) ||
+     ((f->flag1 & FCTEflag1esds) > 0)) {
+   f->resp = KIKRESP$INVREQ;
+   // happpens in several places. Should be KIKRESP$INVREQ, with
+   //                         resp2 I define for 'rrn for not-rrds' - 904
+   f->resp2= 904; // ****************************************************
+   return 8; // logical error
+   }
+
+ // make sure keylength not given with rba or rrn
+ if((((flags & FCTEflagsbrrn) > 0) || ((flags & FCTEflagsbrba) > 0)) &&
+  (keylen == 4)) keylen = -1; // but tolerate keylen=4
+ if((((flags & FCTEflagsbrrn) > 0) || ((flags & FCTEflagsbrba) > 0)) &&
+  (keylen != -1)) {
+   f->resp = KIKRESP$INVREQ;
+   //                      resp2 I define for 'keylen w/rrn or rba' - 905
+   f->resp2= 905; // ****************************************************
+   return 8; // logical error
+  }
+
+ // check some keylength/generic conditions
+ if (keylen != -1) // these are real cic resp/resp2 's
+  if((flags & FCTEflagsbgeneric) > 0) {
+   if (keylen >= f->keylen) {
+    // 'generic' and keylen given, but
+    // given keylen is greater than real keylen!
+    f->resp = KIKRESP$INVREQ;
+    f->resp2= 25;
+    return 8; // logical error
+    }
+   if (keylen < 0) {
+    // 'generic' and keylen given, but keylen < 0
+    f->resp = KIKRESP$INVREQ;
+    f->resp2= 42;
+    return 8; // logical error
+    }
+   if(((keylen == 0) && (flags & FCTEflagsbequal) > 0)) {
+    // 'generic' and keylen=0 and 'equal'
+    f->resp = KIKRESP$NOTFND;
+    f->resp2= 80;
+    return 8; // logical error
+    }
+   } else { // not generic
+   if (keylen != f->keylen) {
+    // 'generic' not given, keylen given, but
+    // given keylen <> real keylen!
+    f->resp = KIKRESP$INVREQ;
+    f->resp2= 26;
+    return 8; // logical error
+    }
+   }
+
+ // select default gteq/equal if necessary
+ if(((flags & FCTEflagsbequal) == 0) &&
+    ((flags & FCTEflagsbgteq) == 0)) {
+  if(((f->flag1 & FCTEflag1esds) > 0) &&
+     ((f->flag1 & FCTEflag1path) ==0)) {
+   // it's base esds
+   flags |= FCTEflagsbequal;
+  } else {
+   // ksds or rrds or path (maybe over esds)
+   flags |= FCTEflagsbgteq;
+  }
+ }
+
+ // qualify keylen
+ if (keylen == -1) keylen = f->keylen;
+
+ // set final keylen in reqid entry
+ if((flags & (FCTEflagsbrba | FCTEflagsbrrn)) > 0) keylen = 4;
+ f->reqids[reqid].keylen = keylen;
+
+ // copy search key to reqid based hold area
+ if (f->reqids[reqid].keys == NULL) {
+  // get area at least 4 (for rba/rrn)
+  f->reqids[reqid].keys = (char*)MALLOC(4+(f->keylen));
+  if (f->reqids[reqid].keys == NULL) {
+   f->resp = KIKRESP$ILLOGIC;
+   // happpens in several places. Should be KIKRESP$ILLOGIC, with
+   //                            resp2 I define for 'malloc failed' - 906
+   f->resp2= 906; // ****************************************************
+   return 8; // logical error
+   }
+  }
+ MEMSET(f->reqids[reqid].keys, 0, 4+(f->keylen));
+ if (ridfld != NULL) {
+  MEMCPY(f->reqids[reqid].keys, ridfld, keylen);
+  }
+
+ // make sure rpl points to the key
+ //MEMCPY((char*)&r->rplarg, (char*)&f->reqids[reqid].keys, 4);
+ //r->rplkeyle = keylen;
+ aRfld = (char*)f->reqids[reqid].keys;
+ sw2vsam();
+ __asm__ (
+  "L  2,%0\n\t"
+  "L  3,%1\n\t"
+  "MODCB RPL=(2),ARG=(3)\n\t"
+  "L  2,%0\n\t"
+  "XR 3,3\n\t"
+  "LH 3,%2\n\t"
+  "MODCB RPL=(2),KEYLEN=(3)"
+  : /* no output */
+  : "m"(r),"m"(aRfld),"m"(keylen)
+  : "0","1","2","3","14","15"
+ );
+ sw2kicks();
+
+ // do the job...
+ flags &= ~FCTEflagsnextprev; // turn off BWD
+ point(f, reqid, flags);
+
+ // map return code
+ maprtn(f, reqID);
+
+ // clear slot if bad point...
+ if (f->rcode[2] != 0) {
+  f->reqids[reqid].flagsb = 0; // found slot, free it
+  f->reqids[reqid].reqid  = 0;
+  }
+
+ // goback
+ if (f->resp == KIKRESP$NOTFND) f->resp2 = 80;
+ return (f->rcode[2]);
+ }
+
+

@@ -1,0 +1,154 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+ //#include <setjmp.h>
+
+#ifndef __MYSETJMP__
+#define __MYSETJMP__
+
+typedef struct {
+ int val; // set=0, long<>0
+ int regs[16];      // 0-15
+ } MYjmp_buf;
+
+#define MYsetjmp(e)        \
+ ({ e.val=0;               \
+  __asm__(                 \
+ "BALR 14,0\n\t"           \
+ "LA 14,8(,14)\n\t"        \
+ "STM 0,15,%0"             \
+ : /* no output */         \
+ : "m"(e.regs[0])          \
+ : "14"                    \
+ );                        \
+ e.val;                    \
+ })
+
+#define MYlongjmp(e, v)    \
+  e.val=v;                 \
+  if (v==0) e.val=1;       \
+  __asm__(                 \
+ "LM 0,15,%0\n\t"          \
+ "BR 14"                   \
+ : /* no output */         \
+ : "m"(e.regs[0])          \
+ );
+
+#endif
+
+
+#ifndef __KIKTCA__
+#define __KIKTCA__
+
+
+#ifndef _GottenStorage_
+#define _GottenStorage_
+typedef struct _GottenStorage  // in tca & csa - be sure the same!!!
+{                              // chain of gotten storage
+  struct _GottenStorage *next; // malloc/free used for these...
+  int size;                    // how big it is
+  char where[0];               // allocated storage
+} GottenStorage;
+#endif
+
+
+typedef struct _EnqueuedResouce
+{                                // chain of enqueued resources
+  struct _EnqueuedResouce *next; // malloc/free used for these...
+  int size;                      // size=-1 means no MVS enqueue used
+  int count;                     // # times enqueued
+  int life;                      // 242=uow, 233=task
+  char what[0];                  // 255 char enq name, or
+                                 //  4 char resource addr if size=-1
+} EnqueuedResouce;
+
+
+typedef struct _FiniAbend
+{                           // chain of normal/abend exits
+  struct _FiniAbend *next;  // each is static storage in a glue routine
+  int *fini_gotovars, fini_pgmmask;
+  MYjmp_buf fini_rtntos;
+  int *abend_gotovars, abend_pgmmask;
+  MYjmp_buf abend_rtntos;
+} FiniAbend;
+
+
+ // standard 18 full word register save area
+ typedef struct __savearea__
+ {
+  int rc;
+  struct __savearea__ *bp, *fp;
+  int gr14, gr15;
+  int gr0, gr1, gr2, gr3, gr4, gr5, gr6;
+  int gr7, gr8, gr9, gr10, gr11, gr12;
+ } savearea;
+
+
+typedef struct _KIKTCA
+{
+
+ int tasknum;              // task number
+
+ char tranid[4];           // transaction id
+ char abcode[4];           // abend code
+
+ char *twaa;               // address of TWA
+ int  twal;                // length  of TWA
+
+ int  absys;               // system abend code
+ int  abusr;               // user   abend code
+
+ // only for mvs (and z/os) -- no such in vm
+ int  rbpsw[2];            // rb abend psw
+ int  rbregs[16];          // rb abend regs
+
+ // captured for le, z/vm
+ int  spiepsw[2];          // spie psw
+ int  spieregs[16];        // spie regs
+
+ // captured for geneal debugging, gets pc stuff for vm/370
+ int sdwactl1[2];          // sdwa bc mode psw at time of error
+ int sdwactl2[2];          // sdwa bc mode psw from last prb
+ int sdwagrsv[16];         // sdwa gr's at time of error (0-15)
+
+ GottenStorage   *next_GS; // gotten storage chain (task)
+ EnqueuedResouce *next_EQ; // enqueued resource chain
+
+ int jmpbufhi;
+#define jmpbufmax 10
+ MYjmp_buf env[jmpbufmax]; // setjmp/longjmp envs for pcp rtn/abend
+
+ FiniAbend *next_FA;       // glue fini/abend chain
+
+ int abendflags;           // flags for use of abend
+                           //  0 - normal
+                           //  1 - set by pcp abend
+                           //  2 - set by pcp abend2
+
+ MYjmp_buf abenv1;         // env for return to glue from abend
+
+ char *xctlpgm;            // addr of pgm for xctl
+ char *xctlca;             // addr of ca for xctl
+ int  xctlcal;             // length of ca for xctl
+
+ char *savecomm;           // used to maintain link save chain
+
+ savearea lastglueregs;    // registers at last glue call
+
+ KIKEIBP kikeibp;          // eib prefix;
+ KIKEIB  kikeib;           // eib
+
+} KIKTCA;
+
+#endif

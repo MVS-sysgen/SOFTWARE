@@ -1,0 +1,42 @@
+//*///////////////////////////////////////////////////////////////////
+//* In VM370 you can use EXECUTIL to make a file with blanks in col 1
+//* In Z/VM  you can use REXX     to make a file with blanks in col 1
+//*
+//* However I haven't found an easy way to do this that works in both
+//* VM370 & Z/VM (although I suspect EDIT can). So this program, setup
+//* just like MOVEFILE, will do so. &STACK the lines you want (with a
+//* final blank &STACK) and run it.
+//*
+//* © Copyright 2008-2012, Michael Noel, All Rights Reserved.
+//*
+//* Usage of 'KICKS for CMS' is in all cases subject to license. See
+//* http://www.kicksfortso.com
+//* for most current information regarding licensing options..
+//*//////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+#include <stdio.h>
+
+int main (int argc, char *argv[]) { // args ignored...
+
+FILE *inmove, *outmove;
+char ibuf[84], obuf[84];
+int i,j,k;
+
+inmove  = fopen("DD:INMOVE",  "r");
+outmove = fopen("DD:OUTMOVE", "w");
+
+while (!feof(inmove)) {
+ fgets(ibuf, 78, inmove);
+ if (feof(inmove)) break;
+ j = strlen(ibuf); if (j>78) j=78;
+ memset(obuf, ' ', 84);
+ for (i=0,k=1; i<j; i++,k++) {
+  obuf[k] = ibuf[i];
+  }
+ obuf[j+1]=0;
+ fputs(obuf, outmove);
+ }
+
+fclose(inmove);
+fclose(outmove);
+}

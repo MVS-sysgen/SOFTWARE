@@ -1,0 +1,253 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+ /////////////////////////////////////////////////////////////
+ //
+ // WRITE RECORD FUNCTION
+ //
+ /////////////////////////////////////////////////////////////
+
+ // WRITE writes a new record to a file on a local or a remote system.
+
+ // For a VSAM ESDS, the record is always added at the end of the data set.
+ // CICS does not use the identification field specified in RIDFLD when
+ // calculating the RBA of the new record, but the new RBA is returned to
+ // the application in the record identification field specified in the
+ // RIDFLD option.
+
+ // For a VSAM KSDS, the record is added in the location specified by the
+ // associated key; this location may be anywhere in the data set. For VSAM
+ // data sets, the key in the record and the key in the RIDFLD identification
+ // field must be the same.
+
+ // For a VSAM ESDS or KSDS, records can be either fixed-length or
+ // variable-length.MASSINSERT operations must proceed with ascending keys,
+ // and must be terminated by an UNLOCK before any other request to the
+ // same data set.
+
+
+ int write(fcte *f, int flags,
+              char *from, short *length,
+              char *ridfld, short keylen) {
+
+ //file name = arg1; // (Ir) file
+ //flags     = arg2  // (Ir) flags
+                        // 2 rba
+                        // 4 rrn
+                        // 64 massinsert
+ //from      = arg3; // (Ir) into/from
+ //length    = arg4; // (Io) length (-1 if missing)
+ //ridfld    = arg5; // (Io) ridfld (null if missing)
+ //keylen    = arg6; // (Io) keylen (-1 if missing)
+
+
+ ifgrpl *r = &f->reqids[0].rpl;
+#ifdef __CMS__
+ ikqrpl *d = (ikqrpl*)r; // DOS version of rpl...
+#endif
+ int i, Len, Len2, rba, saveret;
+ char *aArea, *aArg;
+
+ // reset some stuff...
+ f->lastreqid = 0;
+ f->reqids[0].lastop = FCTElastopwrite;
+
+ // ignore massinsert
+ //if ((flags & FCTEflagsbmassins) > 0) {
+ // f->resp = KIKRESP$ILLOGIC;
+ // f->resp2= 999;
+ // return 8; // logical error
+ // }
+
+ // check for contradictory things
+ if(((flags & FCTEflagsbrrn) > 0) && ((flags & FCTEflagsbrba) > 0)) {
+  // don't like rrn + rba...
+  f->resp = KIKRESP$INVREQ;
+  f->resp2= 902;
+  return 8; //
+  }
+
+ // if 'rba' then rrds not allowed
+ if ((flags & FCTEflagsbrba) > 0)
+  if ((f->flag1 & FCTEflag1rrds) > 0) {
+   f->resp = KIKRESP$INVREQ;
+   f->resp2= 903;
+   return 8; // logical error
+   }
+
+ // if 'rrn' then ksds & esds not allowed
+ if ((flags & FCTEflagsbrrn) > 0)
+  if(((f->flag1 & FCTEflag1ksds) > 0) ||
+     ((f->flag1 & FCTEflag1esds) > 0)) {
+   f->resp = KIKRESP$INVREQ;
+   f->resp2= 904;
+   return 8; // logical error
+   }
+
+ // make sure keylength not given with rba or rrn
+ if((((flags & FCTEflagsbrrn) > 0) || ((flags & FCTEflagsbrba) > 0)) &&
+  (keylen == 4)) keylen = -1; // but tolerate keylen=4
+ if((((flags & FCTEflagsbrrn) > 0) || ((flags & FCTEflagsbrba) > 0)) &&
+  (keylen != -1)) {
+   f->resp = KIKRESP$INVREQ;
+   f->resp2= 905;
+   return 8; // logical error
+  }
+
+ // check keylength
+ if (keylen != -1) // these are real cic resp/resp2 's
+   if (keylen != f->keylen) {
+    // given keylen <> real keylen!
+    f->resp = KIKRESP$INVREQ;
+    f->resp2= 26;
+    return 8; // logical error
+    }
+
+ // qualify length
+ Len = *length;
+ if (Len == -1) Len = f->lrecl;
+ if (Len > f->lrecl) Len = f->lrecl;
+ if (Len < 0) Len = 0;
+
+ // check embedded key matches ridfld
+ if((f->flag1 & FCTEflag1ksds) > 0)
+  if((MEMCMP(ridfld, from + f->rkp, f->keylen)) ||
+    (Len < (f->rkp + f->keylen))){
+   f->resp = KIKRESP$INVREQ;
+   f->resp2= 23;
+   return 8; // logical error
+   }
+
+ // turn off pending update (if any)
+ f->flag1 &= ~FCTEflag1pendupdt;
+
+ // qualify keylen
+ if (keylen == -1) keylen = f->keylen;
+ if((flags & (FCTEflagsbrba | FCTEflagsbrrn)) > 0) keylen = 4;
+
+ // setup RPL
+ // -- for ksds, rrds, esds w/aix
+ sw2vsam();
+ __asm__ (
+  "L 2,%0\n\t"
+  "MODCB RPL=(2),OPTCD=(KEY)\n\t"
+  "MODCB RPL=(2),OPTCD=(DIR)\n\t"
+  "MODCB RPL=(2),OPTCD=(SYN)\n\t"
+  "MODCB RPL=(2),OPTCD=(NUP)\n\t"
+  "MODCB RPL=(2),OPTCD=(MVE)\n\t"
+  "MODCB RPL=(2),OPTCD=(FKS)\n\t"
+  "MODCB RPL=(2),OPTCD=(KEQ)\n\t"
+  "MODCB RPL=(2),OPTCD=(FWD)"
+  : /* no output */
+  : "m"(r)
+  : "0","1","2","14","15"
+ );
+ // -- for plain esds or (rba specified)
+ if((((f->flag1 & FCTEflag1esds) > 0) &&
+    ((f->flag1 & FCTEflag1path) ==0)) ||
+   ((flags & FCTEflagsbrba) > 0))
+   __asm__ (
+    "L 2,%0\n\t"
+    "MODCB RPL=(2),OPTCD=(ADR)"
+    : /* no output */
+    : "m"(r)
+    : "0","1","2","14","15"
+   );
+
+ // -- for all cluster types
+ __asm__ (
+  "L 2,%0\n\t"
+  "L 3,%1\n"
+ "*MODCB RPL=(2),RECLEN=(3)\n\t"
+  "XR 3,3\n\t"
+  "LH 3,%2\n\t"
+  "MODCB RPL=(2),KEYLEN=(3)\n\t"
+  "L 3,%3\n\t"
+  "MODCB RPL=(2),ARG=(3)"
+  : /* no output */
+  : "m"(r),"m"(Len),"m"(keylen),"m"(ridfld)
+  : "0","1","2","3","14","15"
+ );
+ sw2kicks();
+
+
+#ifdef __MVS__
+   r->rplrlen = Len;
+#endif
+#ifdef __CMS__
+ // modcb reclen doesn't seem to work; do it with direct move...
+ if((csa->systype == csasystype$vm6pk) ||
+    (csa->systype == csasystype$vmsp))
+   d->rplrlen = Len;
+ else
+   r->rplrlen = Len;
+#endif
+
+
+ // move 'from' into rpl buffer for 'length'
+ //MCPY(r->rplarea, from, Len);
+ aArea = (char*)showcb((char*)r, showcb_rpl, showcb_field_area);
+ MEMCPY(aArea, from, Len);
+
+ // put the record
+ sw2vsam();
+ __asm__ (
+  "L 2,%0\n\t"
+  "PUT RPL=(2)"
+  : /* no output */
+  : "m"(r)
+  : "0","1","2","14","15"
+ );
+ sw2kicks();
+
+ // map return code
+ maprtn(f, 0);
+ saveret = f->rcode[2];
+
+ // detect special case for failed write to empty ksds
+ // and attempt fix-up
+ if((f->flag1 & FCTEflag1ksds) > 0) {
+  if((f->resp     == KIKRESP$ILLOGIC) &&
+     (f->resp2    == 110)             &&
+     (f->rcode[3] == 0x74)) {
+   // change RPL to sequential
+   sw2vsam();
+   __asm__ (
+    "L 2,%0\n\t"
+    "MODCB RPL=(2),OPTCD=(SEQ)"
+    : /* no output */
+    : "m"(r)
+    : "0","1","2","14","15"
+   );
+   // redrive the PUT
+   __asm__ (
+    "L 2,%0\n\t"
+    "PUT RPL=(2)"
+    : /* no output */
+    : "m"(r)
+    : "0","1","2","14","15"
+   );
+   sw2kicks();
+   // remap return code
+   maprtn(f, 0);
+   saveret = f->rcode[2];
+   // close & reopen
+   closeacb(f); reopenacb(f);
+   }
+  }
+
+ // goback
+ return (saveret);
+ }
+

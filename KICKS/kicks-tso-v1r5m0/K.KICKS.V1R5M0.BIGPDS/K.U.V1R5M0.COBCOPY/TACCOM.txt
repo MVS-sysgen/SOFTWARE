@@ -1,0 +1,18 @@
+       01  COMM-AREA.
+      *01  COMM-AREA.
+           05  CA-PGM                  PIC X(8).
+           05  CA-ENTRY                PIC 99.
+           05  CA-ENTRY-2              PIC 99.
+           05  CA-OPER-ID              PIC X(3).
+           05  CA-PFKEY                PIC 99.
+               88  VALID-MASTER-MENU   VALUES 1, 2, 3, 4, 5, 6, 7, 12.
+           05  CA-MENU-LEVEL           PIC 99.
+           05  CA-ERR-MSG.
+               10  CA-EM1              PIC X(8).
+               10  CA-EM2              PIC X(42).
+               10  CA-EM3              PIC X(29).
+           05  CA-RBA                  PIC S9(8) COMP.
+           05  CA-CC-WORK.
+               10  CA-CC-WORK-1        PIC 9(5).
+               10  CA-CC-WORK-2        PIC 9(5).
+               10  CA-CC-WORK-3        PIC 9(5).

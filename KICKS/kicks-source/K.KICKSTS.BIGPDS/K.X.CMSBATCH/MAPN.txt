@@ -1,0 +1,42 @@
+* note - not an exec; a cmsbatch fragment to create an exec...
+*
+* MAPN  EXEC to connect to user's disk as CMSBATCH 199 (N) R/W
+*
+FILEDEF  INMOVE  TERM ( RECFM F BLOCK 80 LRECL 80
+FILEDEF  OUTMOVE DISK MAPN EXEC A  ( RECFM F BLOCK 80 LRECL 80
+MOVEFILE
+&CONTROL MSG
+* default is CMSUSER 195 'K' disk
+* recommend change to desired default rather than changing callers...
+&USER = CMSUSER
+&DISK = 195
+&IF &INDEX EQ 0 &GOTO -LNKLOOP
+&USER = &1
+&IF &INDEX EQ 1 &GOTO -LNKLOOP
+&DISK = &2
+-LNKLOOP
+&N = 0
+CP LINK &USER &DISK 199 W WRITE
+&IF &RETCODE EQ 0 &GOTO -GOODLNK
+CP MSG &USER PLEASE LOGOFF SO CMSBATCH CAN USE YOUR &DISK DISK
+*P SLEEP 5 SEC
+* SLEEP isn't allowed in CMSBATCH, so just loop...
+-JSTLOOP
+&N = &N + 1
+&IF &N LT 3500 &GOTO -JSTLOOP
+&GOTO -LNKLOOP
+*P SLEEP 5 SEC
+&GOTO -LNKLOOP
+-GOODLNK
+ACCESS   199 N
+* make sure to use right cobol & GCC parms...
+COPY IKFCBL01 TEXT N = = A
+*OPY GCC PARM N = = A    **** DON'T DO IT ****
+* make sure the gcc/pdpclib we need is available...
+STATE GCCCMS VMARC N
+&IF &RETCODE EQ  0 &GOTO -GCCOK
+KBLOCK BAD
+&EXIT 999
+-GCCOK
+&EXIT
+/*

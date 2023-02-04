@@ -1,0 +1,1218 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+#include <stdio.h>
+
+#include "kicks.h"
+
+extern KIKCSA *csa;
+
+
+#ifdef __MVS__
+#include "svc99.h"
+#include "iefjfcb.h"
+iefjfcb *rdjfcb(char *ddname);
+#endif
+
+#define ABM0FIX
+
+#include "ppthdr.h"
+#include "pptent.h"
+
+
+ ///////////////////////////////////////////////////////////////
+ //
+ //  function prototypes
+ //
+ ///////////////////////////////////////////////////////////////
+
+ void DumpHex(FILE *D, char *begin, int size, int flag);
+ void DumpPgm(FILE *D, char *begin, int size, int ret, int ret2);
+ void DoTranDump (int option, char *from, int length);
+ void CloseTranDump (void);
+ void MapAbendCode(char *old, char *new, int *resp, int *resp2);
+
+int  Get2Hex(int b);
+void FmtTrace(char *trc, char *fmt);
+
+void DumpHex(FILE *D, char *begin, int size, int flag) {
+int b, b2, bx, e, e2, i, ic, tx;
+char c, s[50];
+
+ // b2 is begin for dumping, b is begin of 'line'
+ b2 = (int)begin; b = b2;
+ if (flag == 0) b &= 0x0fffff0; // align dump unless flagging...
+ // e2 is end of dumping
+ e2 = b2 + size - 1;
+
+ for (e=b2; e<(e2 | 0x0f); e=e+16, b=b+16) {
+  if (b <= e2) {
+   FPRINTF(D, "%06X: ", b);
+   for (i=0, bx=b; i<16; i++, bx++) {
+    if (bx < b2) { FPRINTF(D, "  "); }
+    else if (bx > e2) { FPRINTF(D, "  "); }
+    else {
+     c = *(char *)bx;
+     ic = c;
+     FPRINTF(D, "%02X", ic);
+     }
+    if ((i%4)==3) { FPRINTF(D, " "); }
+    }
+   FPRINTF(D, " ");
+   for (i=0, bx=b; i<16; i++, bx++) {
+    if (bx < b2) { FPRINTF(D, " "); }
+    else if (bx > e2) { FPRINTF(D, " "); }
+    else {
+     c = *(char *)bx;
+     if (!ISPRINT(c)) { c='.'; }
+     FPRINTF(D, "%c", c);
+     }
+    //if ((i%4)==3) { FPRINTF(D, " "); }
+    }
+   if (flag != 0) {
+    if((flag>=b) && (flag<(b+16)))
+     FPRINTF(D, " <<<<");
+    else
+     FPRINTF(D, "     ");
+
+    bx = b;
+    FmtTrace((char *)bx, &s[0]); s[36] = 0;
+    FPRINTF(D, "%s", &s[0]);
+    }
+
+   FPRINTF(D, "\n");
+   }
+  }
+}
+
+
+void DumpPgm(FILE *D, char *begin, int size, int flag, int flag2) {
+int b, b2, bx, e, e2, i, ic;
+char c;
+
+ // b2 is begin for dumping, b is begin of 'line'
+ b2 = (int)begin; b = b2;
+ if (flag == 0) b &= 0x0fffff0; // align dump unless flagging...
+ // e2 is end of dumping
+ e2 = b2 + size - 1;
+
+ for (e=b2; e<(e2 | 0x0f); e=e+16, b=b+16) {
+  if (b <= e2) {
+   FPRINTF(D, "%06X: ", b-(int)begin);
+   FPRINTF(D, "%06X: ", b);
+   for (i=0, bx=b; i<16; i++, bx++) {
+    if (bx < b2) { FPRINTF(D, "  "); }
+    else if (bx > e2) { FPRINTF(D, "  "); }
+    else {
+     c = *(char *)bx;
+     ic = c;
+     FPRINTF(D, "%02X", ic);
+     }
+    if ((i%4)==3) { FPRINTF(D, " "); }
+    }
+   FPRINTF(D, " ");
+   for (i=0, bx=b; i<16; i++, bx++) {
+    if (bx < b2) { FPRINTF(D, " "); }
+    else if (bx > e2) { FPRINTF(D, " "); }
+    else {
+     c = *(char *)bx;
+     if (!ISPRINT(c)) { c='.'; }
+     FPRINTF(D, "%c", c);
+     }
+    //if ((i%4)==3) { FPRINTF(D, " "); }
+    }
+   if (flag > 0) {
+    if((flag>=b) && (flag<(b+16)))
+     FPRINTF(D, " <<<<");
+    else
+     FPRINTF(D, "     ");
+    }
+   if (flag2 > 0) {
+    if((flag2>=b) && (flag2<(b+16)))
+     FPRINTF(D, " <ab>");
+    else
+     FPRINTF(D, "     ");
+    }
+
+   FPRINTF(D, "\n");
+   }
+  }
+}
+
+
+ // make DUMP file a global so CMS can keep it open...
+ FILE *DUMP;
+
+#ifdef __CMS__
+ int dumpopen=0;
+#endif
+
+void DoTranDump (int option, char *from, int length) {
+ // option = 1 means suppress the dump
+ // option = 2 means print "DUMP" instead of "ABEND"
+ // option = 4 means dump FROM/LENGTH instead of TRANSACTION
+
+ // future options
+
+ // options should follow dump api 'flags', not some separate thing...
+
+ //        =    means DCT
+ //        =    means FCT
+ //        =    means PCT
+ //        =    means PPT
+ //        =    means SIT
+ //        =    means TCT (TCTTEUA)
+ //        =    means TABLES (DCT, FCT, PCT, PPT, SIT, TCT)
+ //        =    means TERMINAL (TIOA; assign default, alt, current
+ //                             rows, cols; term type, etc)
+ //        =    means STORAGE (gotten storage chains) (cwa, twa
+ //                            already in default TRANSACTION
+
+ KIKTCA *tca;
+ KIKEIB *eib;
+ KIKTCTTE *tctte;
+ char *tioa;
+
+ ppte *pptent;
+ ppth *ppthdr;
+
+ int dp[2], db, ddd, yy;
+ int tp[2], tb, hh, mm, ss;
+ char dd[10], dt[10];
+
+ int doDyn=false, x, y;
+ char *DumpDD="TRANDUMP", withdd[16];
+ char *doDynClass="Z";
+
+ #ifdef __MVS__
+ iefjfcb *j;
+ #endif
+
+ savearea *sa;
+
+ int i, p0, p[3], ret, reta[4];
+
+ tca   = csa->tca;
+ eib   = &tca->kikeib;
+ tctte = csa->tctte;
+ tioa  = csa->tctte->tioa;
+
+ // check for TRANDUMP dd card, if not present
+ // use dynmaic allocation/free of sysout
+ // -- of course this only for MVS, no dynalloc in CMS...
+#ifdef __MVS__
+ j = rdjfcb(DumpDD);
+ if (j->jfcbind2 == 0) { // no DD, so use dyn alloc
+  int rc;
+  if((option & 1) > 0) { // suppress dump
+   return; // don't even do 2 line header if it's
+   }       // just gonna spin off ...
+  *doDynClass = csa->dmpclass;
+  rc = alc_syso(DumpDD, doDynClass, "");
+  if (rc!=0) {
+   SPRINTF(tioa,
+   "%s Dump suppressed because %s did not allocate, rc=%d ",
+   "\x27\xf1\xc3", DumpDD, rc);
+   csa->tctte->tioaused = STRLEN(tioa);
+   KIKTCP(csa, kiktcpSEND);
+   return;
+   }
+  doDyn=true;
+  }
+ else {                  // DD present, use it
+  doDyn=false;
+  }
+#endif
+
+#ifdef __CMS__
+ if (dumpopen == 0) {
+#endif
+  // open dump file
+  STRCPY(withdd, "DD:"); STRNCAT(withdd, DumpDD, 8);
+  DUMP   = (FILE *)FOPEN(withdd, "w");
+  if (DUMP == NULL) {
+    SPRINTF(tioa,
+      "%s Dump suppressed because %s did not open ",
+      "\x27\xf1\xc3", DumpDD);
+    csa->tctte->tioaused = STRLEN(tioa);
+    KIKTCP(csa, kiktcpSEND);
+    return;
+   }
+#ifdef __CMS__
+  dumpopen = 1;
+  }
+#endif
+
+ // write the header
+ // --- trnid, abend code, task number, trmid, usrid, date, time
+
+ { char abend[6] = "ABEND";
+ if ((option & 2) > 0) STRCPY(abend, "DUMP");
+ FPRINTF(DUMP, "KICKS ");
+ FPRINTF(DUMP, "TRANSACTION %4.4s %s %4.4s ",
+        (char*)tca->tranid,
+        abend,
+        (char*)tca->abcode);
+ }
+
+ // obtain date/time directly - eib may not exist
+ // -- considerable hassle since C does not support packed data...
+ dp[0]=0; tp[0]=0; TIMEMAC(dp[1], tp[1]);
+ tp[1] = tp[1] >> 4; tp[1] |= 15;  // at this point both tp
+                                   // and dp are as in eib...
+ //dp[0]=0; dp[1]=eib->eibdate;
+ CVB(dp[0], db);
+ ddd = db % 1000;
+ yy = (db / 1000) % 100;
+ FPRINTF(DUMP, " AT %02d.%03d ", yy, ddd);
+
+ //tp[0]=0; tp[1]=eib->eibtime;
+ CVB(tp[0], tb);
+ ss = tb  % 100;
+ mm = (tb / 100) % 100;
+ hh = (tb / 10000) % 100;
+ FPRINTF(DUMP, "%02d:%02d:%02d\n", hh, mm, ss);
+
+ FPRINTF(DUMP, "TASK NUMBER %04X ", tca->tasknum);
+ FPRINTF(DUMP, "AT TERMINAL %8.8s ", (char*)tctte->trmid);
+
+ #ifdef __CMS__
+ FPRINTF(DUMP, "CMS USER %8.8s", (char*)tctte->usrid);
+ #endif
+ #ifdef __MVS__
+ FPRINTF(DUMP, "TSO USER %8.8s", (char*)tctte->usrid);
+ #endif
+
+ if((option & 1) > 0) { // suppress dump
+  FPRINTF(DUMP, "    ** DUMP SUPPRESSED **\n\n");
+  }
+ else
+ if((option & 4) > 0) { // FROM/LENGTH dump
+  FPRINTF(DUMP, "\n\nFROM %06X, LENGTH %d\n", (int)from, length);
+  DumpHex(DUMP, from, length, 0);
+  }
+ else {               // normal transaction dump
+
+  // write control block addresses
+  // --- csa, tca(w/eib), tctte,
+  //     tioa (& used/size),
+  //     commarea, comareaL,
+  //     trace table header, auxtrc info
+  FPRINTF(DUMP, "\n\nCONTROL BLOCKS\n");
+  FPRINTF(DUMP, "CSA     IS LOCATED AT %06X\n", (int)csa);
+  FPRINTF(DUMP, "CWA     IS LOCATED AT %06X\n", (int)csa->cwaa);
+  FPRINTF(DUMP, "        IS %d CHARACTERS LONG\n", csa->cwal);
+  FPRINTF(DUMP, "TCA/EIB IS LOCATED AT %06X\n", (int)tca);
+  FPRINTF(DUMP, "TWA     IS LOCATED AT %06X\n", (int)csa->tca->twaa);
+  FPRINTF(DUMP, "        IS %d CHARACTERS LONG\n", csa->tca->twal);
+  FPRINTF(DUMP, "TCTTE   IS LOCATED AT %06X\n", (int)tctte);
+  FPRINTF(DUMP, "TCTTEUA IS LOCATED AT %06X\n", (int)csa->tctte->tctteuaa);
+  FPRINTF(DUMP, "        IS %d CHARACTERS LONG\n", csa->tctte->tctteual);
+  FPRINTF(DUMP, "TIOA    IS LOCATED AT %06X\n", (int)tctte->tioa);
+  FPRINTF(DUMP, "        IS %d CHARACTERS LONG\n", tctte->tioasize);
+  FPRINTF(DUMP, "        FIRST %d CURRENTLY USED\n", tctte->tioaused);
+  FPRINTF(DUMP, "SYSTEM COMM AREA IS LOCATED AT %06X\n", (int)csa->usrcommarea);
+  FPRINTF(DUMP, "        IS %d CHARACTERS LONG\n", tctte->calen);
+  FPRINTF(DUMP, "TRACE TABLE IS LOCATED AT %06X\n", (int)csa->trc.trctbl);
+  FPRINTF(DUMP, "        ENTRIES ARE EACH %d CHARACTERS LONG\n",
+        csa->trc.trcsize);
+  FPRINTF(DUMP, "        THERE ARE %d ENTRIES\n", csa->trc.trcnum);
+  FPRINTF(DUMP, "        THE 'CURRENT' ENTRY IS %d\n", csa->trc.trccur);
+  FPRINTF(DUMP, "        THE TRACE FLAGS ARE %X\n", csa->trc.trcflags);
+  if((csa->trc.trcflags&1) > 0 )
+    FPRINTF(DUMP, "            - INTERNAL TRACE ENABLED\n");
+  if((csa->trc.trcflags&2) > 0 )
+    FPRINTF(DUMP, "            - AUXILIARY TRACE ENABLED\n");
+  if((csa->trc.trcflags&4) > 0 )
+    FPRINTF(DUMP, "            - AUXILIARY TRACE FILE OPENED\n");
+  if((csa->trc.trcflags&8) > 0 )
+    FPRINTF(DUMP, "            - INTENSE TRACE ENABLED\n");
+  if((csa->trc.trcflags&16) > 0 )
+    FPRINTF(DUMP, "            - EDF TRACE DISABLEMENT\n");
+
+  // write formated control blocks
+  // --- csa, tca/eib, tctte
+  FPRINTF(DUMP, "\n(UN)FORMATTED CONTROL BLOCKS\n");
+
+  FPRINTF(DUMP, "\n  CSA\n");
+  DumpHex(DUMP, 16+(char*)csa, sizeof(KIKCSA)-32, 0);
+
+  if (csa->cwal > 0) {
+   FPRINTF(DUMP, "\n  CWA\n");
+   DumpHex(DUMP, csa->cwaa, csa->cwal, 0);
+   }
+  else {
+   FPRINTF(DUMP, "\n  CWA EMPTY\n");
+   }
+
+  FPRINTF(DUMP, "\n  TCA/EIB\n");
+  DumpHex(DUMP, (char*)tca, sizeof(KIKTCA), 0);
+
+  if (eib->eibtaskn > 0) {
+   FPRINTF(DUMP, "\n");
+   FPRINTF(DUMP, "%06X: EIBTASKN  %04X\n", &eib->eibtaskn, eib->eibtaskn);
+   FPRINTF(DUMP, "%06X: EIBCALEN  %hd\n", &eib->eibcalen, eib->eibcalen);
+   //decode_sba ((char*)&eib->eibcposn, &x, &y); // turn 3270 sba into x,y
+   if((csa->tctte->flags & tctteflag$usingalt) > 0) {
+    x = eib->eibcposn / csa->tctte->ALTcols;
+    y = eib->eibcposn - (x * csa->tctte->ALTcols);
+    }
+   else {
+    x = eib->eibcposn / csa->tctte->PRMcols;
+    y = eib->eibcposn - (x * csa->tctte->PRMcols);
+    }
+   x++; y++;
+   FPRINTF(DUMP, "%06X: EIBCPOSN  %04X (%d,%d)\n",
+           &eib->eibcposn, eib->eibcposn, x, y);
+   dp[0]=0; dp[1]=eib->eibdate; // turn comp-3 into binary
+   CVB(dp[0], db);
+   ddd = db % 1000;
+   yy = (db / 1000) % 100;
+   FPRINTF(DUMP, "%06X: EIBDATE   %08X (%02d.%03d)\n",
+           &eib->eibdate, eib->eibdate, yy, ddd);
+   tp[0]=0; tp[1]=eib->eibtime; // turn comp-3 into binary
+   CVB(tp[0], tb);
+   ss = tb  % 100;
+   mm = (tb / 100) % 100;
+   hh = (tb / 10000) % 100;
+   FPRINTF(DUMP, "%06X: EIBTIME   %08X (%02d:%02d:%02d)\n",
+           &eib->eibtime, eib->eibtime, hh, mm, ss);
+   FPRINTF(DUMP, "%06X: EIBRESP   %d\n", &eib->eibresp, eib->eibresp);
+   // -- should explain/format eibresp
+   FPRINTF(DUMP, "%06X: EIBRESP2  %d\n", &eib->eibresp2, eib->eibresp2);
+   // -- should explain/format eibresp2
+   FPRINTF(DUMP, "%06X: EIBRSRCE  %8.8s\n", &eib->eibrsrce, eib->eibrsrce);
+   FPRINTF(DUMP, "%06X: EIBDS     %8.8s\n", &eib->eibds, eib->eibds);
+   FPRINTF(DUMP, "%06X: EIBFN     %02X%02X\n",
+           &eib->eibfn, eib->eibfn[0], eib->eibfn[1]);
+   // -- should explain/format eibfn
+   FPRINTF(DUMP, "%06X: EIBRCODE  %02X %02X %02X %02X %02X %02X \n",
+           &eib->eibrcode, eib->eibrcode[0], eib->eibrcode[1],
+           eib->eibrcode[2], eib->eibrcode[3], eib->eibrcode[4],
+           eib->eibrcode[5]);
+   // -- should explain/format eibrcode
+   FPRINTF(DUMP, "%06X: EIBTRMID  %4.4s\n", &eib->eibtrmid, eib->eibtrmid);
+   FPRINTF(DUMP, "%06X: EIBTRNID  %4.4s\n", &eib->eibtrnid, eib->eibtrnid);
+   FPRINTF(DUMP, "%06X: EIBAID    %02X\n", &eib->eibaid, eib->eibaid);
+   // -- should explain/format eibaid
+   FPRINTF(DUMP, "%06X: EIBOPID   %3.3s\n", &eib->eibopid, eib->eibopid);
+   FPRINTF(DUMP, "%06X: EIBUSRID  %8.8s\n", &eib->eibusrid, eib->eibusrid);
+   FPRINTF(DUMP, "%06X: EIBSYSID  %8.8s\n", &eib->eibsysid, eib->eibsysid);
+   FPRINTF(DUMP, "%06X: EIBNETID  %8.8s\n", &eib->eibnetid, eib->eibnetid);
+   FPRINTF(DUMP, "%06X: EIBPGMID  %8.8s\n", &eib->eibpgmid, eib->eibpgmid);
+   FPRINTF(DUMP, "%06X: EIBPROG   %8.8s\n", &eib->eibprog, eib->eibprog);
+   { // decode eibline
+   unsigned int line, numlines;
+   line =     ((unsigned int)eib->eibline) & 0xffffff;
+   numlines = ((unsigned int)eib->eibline) >> 24;
+   if (numlines == 0) numlines++;
+   FPRINTF(DUMP, "%06X: EIBLINE   %6d\n", &eib->eibline, line);
+   }
+   FPRINTF(DUMP, "%06X: EIBWC     %20.20s\n", &eib->eibwc, eib->eibwc);
+   }
+  else {
+   FPRINTF(DUMP, "\nNO TASK (TASK NUMBER = 0), SO NO EIB...\n");
+   }
+
+  if (csa->tca->twal > 0) {
+   FPRINTF(DUMP, "\n  TWA\n");
+   DumpHex(DUMP, csa->tca->twaa, csa->tca->twal, 0);
+   }
+  else {
+   FPRINTF(DUMP, "\n  TWA EMPTY\n");
+   }
+
+  FPRINTF(DUMP, "\n  TCTTE\n");
+  DumpHex(DUMP, (char*)tctte, sizeof(KIKTCTTE), 0);
+
+  if (csa->tctte->tctteual > 0) {
+   FPRINTF(DUMP, "\n  TCTTEUA\n");
+   DumpHex(DUMP, csa->tctte->tctteuaa, csa->tctte->tctteual, 0);
+   }
+  else {
+   FPRINTF(DUMP, "\n  TCTTEUA EMPTY\n");
+   }
+
+  if (tctte->tioaused > 0) {
+   FPRINTF(DUMP, "\n  TIOA (USED - %d)\n", tctte->tioaused);
+   DumpHex(DUMP, tctte->tioa, tctte->tioaused, 0);
+   }
+  else {
+   FPRINTF(DUMP, "\n  TIOA EMPTY\n");
+   }
+
+  if (tctte->calen > 0) {
+   FPRINTF(DUMP, "\n  SYSTEM COMM-AREA (USED - %d)\n", tctte->calen);
+   DumpHex(DUMP, csa->usrcommarea, tctte->calen, 0);
+   }
+  else {
+   FPRINTF(DUMP, "\n  SYSTEM COMM-AREA EMPTY\n");
+   }
+
+  if (tca->tasknum != 0) {
+   if (tca->kikeibp.eibpca != csa->usrcommarea) {
+    if (tca->kikeibp.eibpcalen > 0) {
+     FPRINTF(DUMP, "\n  CURRENT USER COMM-AREA (USED - %d)\n",
+       tca->kikeibp.eibpcalen);
+     DumpHex(DUMP, tca->kikeibp.eibpca, tca->kikeibp.eibpcalen, 0);
+     }
+    }
+  }
+
+  // dump trace table and arrow current entry
+  FPRINTF(DUMP, "\n  TRACE TABLE\n");
+  {
+  int last;
+  last = csa->trc.trccur;
+  last = (--last) * csa->trc.trcsize;
+  last += (int)csa->trc.trctbl;
+  DumpHex(DUMP, csa->trc.trctbl,
+       (csa->trc.trcnum)*(csa->trc.trcsize), last);
+  }
+
+  reta[0] = reta[1] = reta[2] = -1; // preset abend addrs
+  p[0]    = p[1]    = p[2]    = 0;  // preset abend modules
+
+  // if AICA, ASRA, ASRB...
+  if((csa->runphase == 3)  ||   // aica
+     (csa->runphase == 4)  ||   // asra
+     (csa->runphase == 5)) {    // asrb
+
+   if (csa->runphase == 3)  {
+    FPRINTF(DUMP, "\n 'Runaway' Task!\n");
+    }
+   else {
+    FPRINTF(DUMP, "\nabend codes  S%03X U%03x\n", tca->absys, tca->abusr);
+    }
+
+#ifdef __MVS__
+ // ** NOTE: RB not avail in CMS **
+   FPRINTF(DUMP, "\n");
+   FPRINTF(DUMP, "  RB  psw %08X %08X\n\n",  tca->rbpsw[0], tca->rbpsw[1]);
+   FPRINTF(DUMP, "  RB  regs  0/8      1/9     2/10     ");
+   FPRINTF(DUMP, "3/11      4/12     5/13     6/14     7/15\n");
+   FPRINTF(DUMP, "       %08X %08X %08X %08X  ",
+     tca->rbregs[0], tca->rbregs[1], tca->rbregs[2], tca->rbregs[3]);
+   FPRINTF(DUMP, "%08X %08X %08X %08X\n",
+     tca->rbregs[4], tca->rbregs[5], tca->rbregs[6], tca->rbregs[7]);
+   FPRINTF(DUMP, "       %08X %08X %08X %08X  ",
+     tca->rbregs[8], tca->rbregs[9], tca->rbregs[10],
+     tca->rbregs[11]);
+   FPRINTF(DUMP, "%08X %08X %08X %08X\n",
+     tca->rbregs[12], tca->rbregs[13], tca->rbregs[14],
+     tca->rbregs[15]);
+#endif
+
+#ifdef __CMS__
+   if (csa->runphase == 3) { // aica
+    // CMS has no RB, so try to use aica psw/regs gotten
+    // from **undocumented** stimer exit reg contents...
+    FPRINTF(DUMP, "\n");
+    FPRINTF(DUMP,  "TIMER psw %08X %08X\n\n",  tca->sdwactl2[0],
+                                               tca->sdwactl2[1]);
+    FPRINTF(DUMP, "TIMER regs  0/8      1/9     2/10     ");
+    FPRINTF(DUMP, "3/11      4/12     5/13     6/14     7/15\n");
+    FPRINTF(DUMP, "       %08X %08X %08X %08X  ",
+      tca->sdwagrsv[0], tca->sdwagrsv[1], tca->sdwagrsv[2],
+      tca->sdwagrsv[3]);
+    FPRINTF(DUMP, "%08X %08X %08X %08X\n",
+      tca->sdwagrsv[4], tca->sdwagrsv[5], tca->sdwagrsv[6],
+      tca->sdwagrsv[7]);
+    FPRINTF(DUMP, "       %08X %08X %08X %08X  ",
+      tca->sdwagrsv[8], tca->sdwagrsv[9], tca->sdwagrsv[10],
+      tca->sdwagrsv[11]);
+    FPRINTF(DUMP, "%08X %08X %08X %08X\n",
+      tca->sdwagrsv[12], tca->sdwagrsv[13], tca->sdwagrsv[14],
+      tca->sdwagrsv[15]);
+    }
+#endif
+
+   if (csa->runphase == 4) { // asra
+    FPRINTF(DUMP, "\n");
+    FPRINTF(DUMP,  " PIE  psw %08X %08X\n\n",  tca->sdwactl2[0],
+                                               tca->sdwactl2[1]);
+    FPRINTF(DUMP,  " PIE  regs  0/8      1/9     2/10     ");
+    FPRINTF(DUMP, "3/11      4/12     5/13     6/14     7/15\n");
+    FPRINTF(DUMP, "       %08X %08X %08X %08X  ",
+      tca->sdwagrsv[0], tca->sdwagrsv[1], tca->sdwagrsv[2],
+      tca->sdwagrsv[3]);
+    FPRINTF(DUMP, "%08X %08X %08X %08X\n",
+      tca->sdwagrsv[4], tca->sdwagrsv[5], tca->sdwagrsv[6],
+      tca->sdwagrsv[7]);
+    FPRINTF(DUMP, "       %08X %08X %08X %08X  ",
+      tca->sdwagrsv[8], tca->sdwagrsv[9], tca->sdwagrsv[10],
+      tca->sdwagrsv[11]);
+    FPRINTF(DUMP, "%08X %08X %08X %08X\n",
+      tca->sdwagrsv[12], tca->sdwagrsv[13], tca->sdwagrsv[14],
+      tca->sdwagrsv[15]);
+    }
+
+   if (csa->runphase == 5) { // asrb
+    FPRINTF(DUMP, "\n");
+    FPRINTF(DUMP,  "SDWA1 psw %08X %08X\n",    tca->sdwactl1[0],
+                                               tca->sdwactl1[1]);
+    FPRINTF(DUMP,  "SDWA2 psw %08X %08X\n\n",  tca->sdwactl2[0],
+                                               tca->sdwactl2[1]);
+    FPRINTF(DUMP, " SDWA regs  0/8      1/9     2/10     ");
+    FPRINTF(DUMP, "3/11      4/12     5/13     6/14     7/15\n");
+    FPRINTF(DUMP, "       %08X %08X %08X %08X  ",
+      tca->sdwagrsv[0], tca->sdwagrsv[1], tca->sdwagrsv[2],
+      tca->sdwagrsv[3]);
+    FPRINTF(DUMP, "%08X %08X %08X %08X\n",
+      tca->sdwagrsv[4], tca->sdwagrsv[5], tca->sdwagrsv[6],
+      tca->sdwagrsv[7]);
+    FPRINTF(DUMP, "       %08X %08X %08X %08X  ",
+      tca->sdwagrsv[8], tca->sdwagrsv[9], tca->sdwagrsv[10],
+      tca->sdwagrsv[11]);
+    FPRINTF(DUMP, "%08X %08X %08X %08X\n",
+      tca->sdwagrsv[12], tca->sdwagrsv[13], tca->sdwagrsv[14],
+      tca->sdwagrsv[15]);
+    }
+
+   reta[0] = (0x0ffffff & tca->rbpsw[1]); // will be zero in CMS...
+   reta[1] = (0x0ffffff & tca->sdwactl1[1]);
+   reta[2] = (0x0ffffff & tca->sdwactl2[1]);
+   }
+
+   // following is only when tca shows task
+   if (tca->tasknum != 0) {
+    FPRINTF(DUMP, "\n Task regs  0/8      1/9     2/10     ");
+    FPRINTF(DUMP, "3/11      4/12     5/13     6/14     7/15\n");
+
+    // write r14, r13 from eib, then use r14 to dump saved regs
+    //(char*)sa = tca->kikeibp.gluR13;
+    //(char*)sa = sa->bp;
+    sa = &tca->lastglueregs;
+
+    FPRINTF(DUMP, "       %08X %08X %08X %08X  ",
+      sa->gr0, sa->gr1, sa->gr2, sa->gr3);
+    FPRINTF(DUMP, "%08X %08X %08X %08X\n",
+      sa->gr4, sa->gr5, sa->gr6, sa->gr7);
+    FPRINTF(DUMP, "       %08X %08X %08X %08X  ",
+      sa->gr8, sa->gr9, sa->gr10, sa->gr11);
+    FPRINTF(DUMP, "%08X %08X %08X %08X\n",
+      sa->gr12, (int)sa, sa->gr14, sa->gr15);
+    // scan ppt to find pgm, show name, show offset
+    // first look for addr in kick save area
+    ret = (0x0ffffff & sa->gr14); p0 = 0;
+    ppthdr = (ppth *)csa->pcp_table_addr;
+    for (pptent = ppthdr->first;
+         pptent != NULL; pptent=pptent->next) {
+     if (pptent->pgmload == NULL) { continue; }
+     //DumpHex(DUMP, (char*)pptent, sizeof(ppte), 0);
+     if (ret < (int)pptent->pgmload) { continue; }
+     if (ret > (int)pptent->pgmload+pptent->pgmsize)
+       { continue; }
+     p0 = (int)pptent;                    // 1st dump's pgm
+     // select abend mark (pref order rb, sdwa2, sdwa1)
+     reta[3] = 0; // preset none found
+     if((reta[1] >= (int)pptent->pgmload) &&
+        (reta[1] <= (int)pptent->pgmload+pptent->pgmsize))
+      reta[3] = reta[1];
+     if((reta[2] >= (int)pptent->pgmload) &&
+        (reta[2] <= (int)pptent->pgmload+pptent->pgmsize))
+      reta[3] = reta[2];
+     if((reta[0] >= (int)pptent->pgmload) &&
+        (reta[0] <= (int)pptent->pgmload+pptent->pgmsize))
+      reta[3] = reta[0];
+     FPRINTF(DUMP, "\nTask R14 points within %8.8s at offset %06X\n",
+       &pptent->pgmname, (ret - (int)pptent->pgmload));
+     DumpPgm(DUMP, pptent->pgmload, pptent->pgmsize, ret, reta[3]);
+     break;
+     }
+
+    if ((reta[0]>0) || (reta[1]>0) || (reta[2]>0)) {
+     // this is abend, check rb
+     ppthdr = (ppth *)csa->pcp_table_addr;
+     for (i=0; i<3; i++) {
+      for (pptent = ppthdr->first;
+           pptent != NULL; pptent=pptent->next) {
+       if (pptent->pgmload == NULL) continue;
+       if((reta[i] >= (int)pptent->pgmload) &&
+          (reta[i] <= (int)pptent->pgmload+pptent->pgmsize)) {
+        p[i] = (int)pptent;
+        break; // out of pp scan
+        }
+       } // out of pp scan
+      }  // out of 'for(i=' loop
+     if((p[0] > 0) && (p[0] != p0)) {
+      pptent = (ppte*)p[0];
+      FPRINTF(DUMP, "\nab  psw points within %8.8s at offset %06X\n",
+       &pptent->pgmname, (reta[0] - (int)pptent->pgmload));
+      DumpPgm(DUMP, pptent->pgmload, pptent->pgmsize, 0, reta[0]);
+      }
+     if((p[1] > 0) && (p[1] != p[0]) && (p[1] != p0)) {
+      pptent = (ppte*)p[1];
+      FPRINTF(DUMP, "\nab  psw points within %8.8s at offset %06X\n",
+       &pptent->pgmname, (reta[1] - (int)pptent->pgmload));
+      DumpPgm(DUMP, pptent->pgmload, pptent->pgmsize, 0, reta[1]);
+      }
+     if((p[2] > 0) && (p[2] != p[1]) && (p[2] != p[0]) && (p[2] != p0)) {
+      pptent = (ppte*)p[2];
+      FPRINTF(DUMP, "\nab  psw points within %8.8s at offset %06X\n",
+       &pptent->pgmname, (reta[2] - (int)pptent->pgmload));
+      DumpPgm(DUMP, pptent->pgmload, pptent->pgmsize, 0, reta[2]);
+      }
+     }
+
+    if (p == 0) {
+     FPRINTF(DUMP, "\nTask R14 does not point into any loaded program,\n");
+
+ // here check for management modules (TCP, FCP, ...)
+
+     }
+    }
+   else {
+    FPRINTF(DUMP, "\n  NO TCA SO NO PROGRAM, REGISTERS, ETC.\n");
+
+ // if ACIA, ASRB, or ASRA print psw & regs from rb and see if
+ // there's any match to management modules...
+
+    }
+
+  if((!MEMCMP((char*)tca->abcode, "AICA", 4)) |
+     (!MEMCMP((char*)tca->abcode, "ASRA", 4)) |
+     (!MEMCMP((char*)tca->abcode, "ASRB", 4))) {
+
+    FPRINTF(DUMP, "\nEND OF KICKS DUMP - see SYSUDUMP following\n\n");
+   }
+  }
+
+#ifndef __CMS__
+ FCLOSE(DUMP);
+ if (doDyn) { // using dyn alloc so release alloc now
+  int rc;
+  rc = unalc_ds(DumpDD,"KEEP","");
+  if (rc!=0) {
+   SPRINTF(tioa,
+   "%s Dynamic de-allocation of %s failed, rc=%d ",
+   "\x27\xf1\xc3", DumpDD, rc);
+   csa->tctte->tioaused = STRLEN(tioa);
+   KIKTCP(csa, kiktcpSEND);
+   }
+  }
+#endif
+
+}
+
+
+#ifdef __CMS__
+void CloseTranDump () {
+ if (dumpopen != 0) {
+  FCLOSE(DUMP);
+  dumpopen == 0;
+  }
+ }
+#endif
+
+
+void MapAbendCode(char *old, char *new, int *resp, int *resp2) {
+
+ KIKTCA *tca=csa->tca;
+ KIKEIB *eib;
+ eib   = &tca->kikeib;
+
+ *resp  = tca->kikeib.eibresp;
+ *resp2 = tca->kikeib.eibresp2;
+ STRNCPY(new, old, 4);
+
+ // KCP, ATTACH, already attached
+ if (!STRNCMP(old, "K001", 4)) {
+  // resp/resp2 don't matter, no user to catch them...
+  return;
+  }
+ // KCP, ATTACH, transid not in pct
+ if (!STRNCMP(old, "K002", 4)) {
+  STRCPY(new, "APCT");
+  // resp/resp2 don't matter, no user to catch them...
+  return;
+  }
+ // KCP, ATTACH, transid disabled
+ if (!STRNCMP(old, "K003", 4)) {
+  STRCPY(new, "APCT");
+  // resp/resp2 don't matter, no user to catch them...
+  return;
+  }
+ // KCP, ADDRESS, bad arg
+ if (!STRNCMP(old, "K004", 4)) {
+  *resp = 888; // dual 888 -> resp/resp2 not defined yet
+  *resp2 =888;
+  return;
+  }
+ // KCP, ASSIGN, bad arg
+ if (!STRNCMP(old, "K005", 4)) {
+  *resp = 888; // dual 888 -> resp/resp2 not defined yet
+  *resp2 =888;
+  return;
+  }
+ // KCP, DELAY, too long
+ if (!STRNCMP(old, "K006", 4)) {
+  STRCPY(new, "AEIP");  // ** invreq
+  *resp = 16;
+  *resp2 =0;
+  return;
+  }
+ // KCP, DELAY, rel delay expired
+ if (!STRNCMP(old, "K007", 4)) {
+  STRCPY(new, "AEI4");  // ** expired
+  *resp = 31;
+  *resp2 =0;
+  return;
+  }
+ // KCP, FORMATTIME, abstime not positive numeric
+ if (!STRNCMP(old, "K008", 4)) {
+  STRCPY(new, "AEIP");  // invreq
+  *resp = 16; //
+  *resp2 = 1;
+  return;
+  }
+ // KCP, FORMATTIME, bad format code
+ if (!STRNCMP(old, "K009", 4)) {
+  STRCPY(new, "AEIP");  // invreq
+  *resp = 16; //
+  *resp2 = 999;
+  return;
+  }
+
+ // KCP, eqn, busy
+ if (!STRNCMP(old, "K010", 4)) {
+  STRCPY(new, "AEIU");  // illogic..
+  *resp = 55; //
+  *resp2 = 999;
+  return;
+  }
+
+ // KCP, enq, invreq, bad cvda
+ if (!STRNCMP(old, "K011", 4)) {
+  STRCPY(new, "AEIP");  // invreq
+  *resp = 16;
+  *resp2 = 2;
+  return;
+  }
+
+ // KCP, enq, lengerr
+ if (!STRNCMP(old, "K012", 4)) {
+  STRCPY(new, "AEIV");  // lengerr
+  *resp = 22;
+  *resp2 = 1;
+  return;
+  }
+
+ // KCP, enq, lengerr
+ if (!STRNCMP(old, "K013", 4)) {
+  STRCPY(new, "AEIU");  // illogic
+  *resp = 21;
+  *resp2 = 999; // no memory for enqueue control block
+  return;
+  }
+
+ // PCP, LOAD, pgm not in ppt
+ if (!STRNCMP(old, "P001", 4)) {
+  STRCPY(new, "AEI0");
+  *resp = 27; // pgmiderr
+  *resp2 = 1;
+  return;
+  }
+ // PCP, LOAD, pgm disabled
+ if (!STRNCMP(old, "P002", 4)) {
+  STRCPY(new, "AEI0");
+  *resp = 27; // pgmiderr
+  *resp2 = 2;
+  return;
+  }
+ // PCP, LOAD, pgm bad bldl
+ if (!STRNCMP(old, "P003", 4)) {
+  STRCPY(new, "AEI0");
+  *resp = 27; // pgmiderr
+  *resp2 = 3;
+  return;
+  }
+ // PCP, LOAD, pgm bad load
+ if (!STRNCMP(old, "P004", 4)) {
+  STRCPY(new, "AEI0");
+  *resp = 27; // pgmiderr
+  *resp2 = 3;
+  return;
+  }
+ // PCP, DELETE, pgm not in ppt
+ if (!STRNCMP(old, "P005", 4)) {
+  STRCPY(new, "AEI0");
+  *resp = 27; // pgmiderr
+  *resp2 = 1;
+  return;
+  }
+ // PCP, LOAD or DELETE, bad delete
+ if (!STRNCMP(old, "P006", 4)) {
+  STRCPY(new, "AEI0");
+  *resp = 27; // pgmiderr
+  *resp2 = 3;
+  return;
+  }
+
+ // re-map AEIO to ABM0 if this was SENDMAP or RECVMAP
+ if (!STRNCMP(new, "AEIO", 4)) {
+#ifdef ABM0FIX
+  if((*((short*)eib->eibfn) == 6146) ||
+     (*((short*)eib->eibfn) == 6148)) {
+   STRCPY(new, "ABM0");
+   *resp = 27; // pgmiderr
+   *resp2 = 3;
+   }
+#endif
+  return;
+  }
+
+ // PCP, RETURN, comm-area, not at top
+ if (!STRNCMP(old, "P007", 4)) {
+  STRCPY(new, "AEIP");  // invreq
+  *resp = 16; //
+  *resp2 = 2; // return not at top
+  return;
+  }
+
+ // BMS, map fails sanity
+ if (!STRNCMP(old, "B001", 4)) {
+  STRCPY(new, "AEI9");
+  *resp = 36; // MAPFAIL
+  *resp2 =-1; // neg resp2 means map's bad
+  return;
+  }
+ // BMS, map not in mapset
+ if (!STRNCMP(old, "B002", 4)) {
+  STRCPY(new, "ABM0");
+  *resp = 888; // dual 888 -> resp/resp2 not defined yet
+  *resp2 =888;
+  // ******** fix, need resp/resp2 set here... **********
+  return;
+  }
+ // BMS, 'TRUE' mapfail
+ if (!STRNCMP(old, "B003", 4)) {
+  STRCPY(new, "AEI9");
+  *resp = 36; // MAPFAIL
+  *resp2 =36; // pos resp2 means its a 'normal' mapfail
+  return;
+  }
+ //
+ // BMS, LENGERR.
+ if (!STRNCMP(old, "B004", 4)) {
+  STRCPY(new, "AEIV");
+  *resp = 22; // LENGERR
+  *resp2 =22; // ??
+  return;
+  }
+ //
+ // BMS, SENDMAP, tioa full
+ if (!STRNCMP(old, "B005", 4)) {
+  *resp = 888; // dual 888 -> resp/resp2 not defined yet
+  *resp2 =888;
+  // ******** fix, need resp/resp2 set here... **********
+  return;
+  }
+ //
+ // BMS, Brtx no longer used
+ //
+ // BMS, more than 13 attr pairs
+ if (!STRNCMP(old, "B006", 4)) {
+  *resp = 888; // dual 888 -> resp/resp2 not defined yet
+  *resp2 =888;
+  // ******** fix, need resp/resp2 set here... **********
+  return;
+  }
+
+ // BMS, map does not 'match' physical screen
+ if (!STRNCMP(old, "B008", 4)) {
+  *resp = 888; // dual 888 -> resp/resp2 not defined yet
+  *resp2 =888;
+  // ******** fix, need resp/resp2 set here... **********
+  return;
+  }
+
+ // TCP, bad chars in output tioa
+ if (!STRNCMP(old, "ATCP", 4)) {
+  //*resp  = 222; // already mapped
+  //*resp2 = ??;  // tioa offset of bad char
+  return;
+  }
+
+ // TCP, wto, wtor issue
+ if (!STRNCMP(old, "ATC2", 4)) {
+  STRCPY(new, "AEIP");  // ** INVREQ
+  return;
+  }
+
+ // TCP, wto, wtor issue
+ if (!STRNCMP(old, "ATC3", 4)) {
+  STRCPY(new, "AEIP");  // ** INVREQ
+  return;
+  }
+
+ // TCP, wto, wtor issue
+ if (!STRNCMP(old, "ATC4", 4)) {
+  STRCPY(new, "AEIP");  // ** INVREQ
+  return;
+  }
+
+ // TCP, wto, wtor issue
+ if (!STRNCMP(old, "ATC5", 4)) {
+  STRCPY(new, "AEI4");  // ** EXPIRED
+  return;
+  }
+
+ // FCP, not implemented yet
+ if (!STRNCMP(old, "F999", 4)) {
+  *resp = 999; // dual 999 -> not implemented
+  *resp2 =999;
+  return;
+  }
+ // FCP, file not in fct
+ if (!STRNCMP(old, "F001", 4)) {
+  STRCPY(new, "AEIL");
+  *resp  = 12; // aka KIKRESP$DSIDERR
+  *resp2 = 1;
+  return;
+  }
+ // FCP, file disabled
+ if (!STRNCMP(old, "F002", 4)) {
+  STRCPY(new, "AEXL");
+  *resp  = 84; // aka KIKRESP$DISABLED
+  *resp2 = 50;
+  return;
+  }
+ // FCP, general, resp/resp2 already done
+ if (!STRNCMP(old, "F003", 4)) {
+  // different from most in that resp/resp2 already
+  // set and valid abend code needs to come from those...
+  // (really just needs resp)
+  if (*resp == 12) STRCPY(new, "AEIL");  // ** FILENOTFOUND aka DSIDERR
+  if (*resp == 13) STRCPY(new, "AEIM");  // ** NOTFND
+  if (*resp == 14) STRCPY(new, "AEIN");  // ** DUPREC
+  if (*resp == 15) STRCPY(new, "AEIO");  // ** DUPKEY
+  if (*resp == 16) STRCPY(new, "AEIP");  // ** INVREQ
+  if (*resp == 17) STRCPY(new, "AEIQ");  // ** IOERR
+  if (*resp == 18) STRCPY(new, "AEIR");  // ** NOSPACE
+  if (*resp == 19) STRCPY(new, "AEIS");  // ** NOTOPEN
+  if (*resp == 20) STRCPY(new, "AEIT");  // ** ENDFILE
+  if (*resp == 21) STRCPY(new, "AEIU");  // ** ILLOGIC
+  if (*resp == 22) STRCPY(new, "AEIV");  // ** LENGERR
+  if (*resp == 84) STRCPY(new, "AEXL");  // ** DISABLED
+  return;
+  }
+ // FCP, enq failed
+ if (!STRNCMP(old, "F004", 4)) {
+  STRCPY(new, "AFCT");
+  *resp  = 19; // aka KIKRESP$NOTOPEN
+  *resp2 = 99; // fake resp2 to show it's really enq problem
+  return;
+  }
+ // FCP, open failed
+ if (!STRNCMP(old, "F005", 4)) {
+  STRCPY(new, "AEIS");
+  *resp  = 19; // aka KIKRESP$NOTOPEN
+  *resp2 = 60; // 'normal' notopen resp2 value
+  return;
+  }
+
+ // FCP, not implemented yet
+ if (!STRNCMP(old, "F999", 4)) {
+  *resp = 999; // dual 999 -> not implemented
+  *resp2 =999;
+  return;
+  }
+
+ // ****** need to check into 'correct' dcp resp2 values *********
+
+ // DCP, queue not in dct
+ if (!STRNCMP(old, "D001", 4)) {
+  STRCPY(new, "AEYH");
+  *resp  = 44; // aka KIKRESP$QIDERR
+  *resp2 = 1;
+  return;
+  }
+ // DCP, queue disabled
+ if (!STRNCMP(old, "D002", 4)) {
+  STRCPY(new, "AEXL");
+  *resp  = 84; // aka KIKRESP$DISABLED
+  *resp2 = 50;
+  return;
+  }
+
+ // DCP, queue disabled
+ if (!STRNCMP(old, "D002", 4)) {
+  STRCPY(new, "AEXL");
+  *resp  = 84; // aka KIKRESP$DISABLED
+  *resp2 = 50;
+  return;
+  }
+
+ // DCP, general, resp/resp2 already done
+ if (!STRNCMP(old, "D003", 4)) {
+  // different from most in that resp/resp2 already
+  // set and valid abend code needs to come from those...
+  // (really just needs resp)
+  if (*resp == 12) STRCPY(new, "AEIL");  // ** FILENOTFOUND aka DSIDERR
+  if (*resp == 13) STRCPY(new, "AEIM");  // ** NOTFND
+  if (*resp == 14) STRCPY(new, "AEIN");  // ** DUPREC
+  if (*resp == 15) STRCPY(new, "AEIO");  // ** DUPKEY
+  if (*resp == 16) STRCPY(new, "AEIP");  // ** INVREQ
+  if (*resp == 17) STRCPY(new, "AEIQ");  // ** IOERR
+  if (*resp == 18) STRCPY(new, "AEIR");  // ** NOSPACE
+  if (*resp == 19) STRCPY(new, "AEIS");  // ** NOTOPEN
+  if (*resp == 20) STRCPY(new, "AEIT");  // ** ENDFILE
+  if (*resp == 21) STRCPY(new, "AEIU");  // ** ILLOGIC
+  if (*resp == 22) STRCPY(new, "AEIV");  // ** LENGERR
+  if (*resp == 23) STRCPY(new, "AEIW");  // ** QZERO
+  if (*resp == 44) STRCPY(new, "AEYH");  // ** QIDERR
+  if (*resp == 84) STRCPY(new, "AEXL");  // ** DISABLED
+  return;
+  }
+
+ // DCP, indir posints to another indir!
+ if (!STRNCMP(old, "D004", 4)) {
+  STRCPY(new, "ADCT");
+  *resp  = 19; // aka KIKRESP$NOTOPEN
+  *resp2 = 98; // fake resp2 to show it's really indir problem
+  return;
+  }
+ // DCP, enq failed
+ if (!STRNCMP(old, "D005", 4)) {
+  STRCPY(new, "ADCT");
+  *resp  = 19; // aka KIKRESP$NOTOPEN
+  *resp2 = 99; // fake resp2 to show it's really enq problem
+  return;
+  }
+ // DCP, open failed
+ if (!STRNCMP(old, "D006", 4)) {
+  STRCPY(new, "AEIS");
+  *resp  = 19; // aka KIKRESP$NOTOPEN
+  *resp2 = 60; // 'normal' notopen resp2 value
+  return;
+  }
+
+ // DCP also posts some abends that don't need anything!
+ if (!STRNCMP(old, "AEIS", 4)) return;
+ if (!STRNCMP(old, "AEIV", 4)) return;
+
+ // DCP, not implemented yet
+ if (!STRNCMP(old, "D999", 4)) {
+  *resp = 999; // dual 999 -> not implemented
+  *resp2 =999;
+  return;
+  }
+
+ // SCP invalid getmain length
+ if (!STRNCMP(old, "S001", 4)) {
+  STRCPY(new, "AEIV");
+  *resp = 22; // lengerr
+  *resp2 =1;
+  return;
+  }
+
+ // SCP can't get storage -- a non-abend --
+ //if (!STRNCMP(old, "S002", 4)) {
+ // STRCPY(new, "AEIV");
+ // *resp = 42; // nostg
+ // *resp2 =2;
+ // return;
+ // }
+
+ // SCP freemain storage not getmained
+ if (!STRNCMP(old, "S003", 4)) {
+  STRCPY(new, "AEIP");
+  *resp = 16; // invreq
+  *resp2 =1;
+  return;
+  }
+
+ // TSP, resp already done, set resp2=5 for all
+ *resp2 = 5; // actually only appicable for IORERR...
+ // (!STRNCMP(old, "X001", 4))  invalid qname
+ // (!STRNCMP(old, "X002", 4))  length < 0 or > 32749
+ // (!STRNCMP(old, "X003", 4))  general ioerr in resp to fcp err
+ // (!STRNCMP(old, "X004", 4))  qiderr in resp to specific fcp err
+ // (!STRNCMP(old, "X005", 4))  itemerr <0 or > 32767
+ // (!STRNCMP(old, "X006", 4))  malloc of buffer failed
+ // (!STRNCMP(old, "X007", 4))  read r0 (rd) or usr (wt) problem
+ // (!STRNCMP(old, "X008", 4))  itemerr next > last
+ // (!STRNCMP(old, "X009", 4))  error rewriting r0
+ // (!STRNCMP(old, "X010", 4))  read usr rec problem
+ // (!STRNCMP(old, "X011", 4))  rewrite usr rec problem
+ // (!STRNCMP(old, "X012", 4))  write r0 problem
+ // (!STRNCMP(old, "X013", 4))  reread r0 problem
+ // (!STRNCMP(old, "X014", 4))  write usr problem
+ if (!STRNCMP(old, "X0", 2)) {
+  // different from most in that resp/resp2 already
+  // set and valid abend code needs to come from those...
+  // (really just needs resp)
+  if (*resp == 16) STRCPY(new, "AEIP");  // ** INVREQ
+  if (*resp == 17) STRCPY(new, "AEIQ");  // ** IOERR
+  if (*resp == 18) STRCPY(new, "AEIR");  // ** NOSPACE
+  if (*resp == 21) STRCPY(new, "AEIU");  // ** ILLOGIC
+  if (*resp == 22) STRCPY(new, "AEIV");  // ** LENGERR
+  if (*resp == 23) STRCPY(new, "AEIW");  // ** QZERO
+  if (*resp == 26) STRCPY(new, "AEIZ");  // ** ITEMERR
+  if (*resp == 44) STRCPY(new, "AEYH");  // ** QIDERR
+  return;
+  }
+
+ // COBOL GLUE - csa version does not match pp version
+ // - should not happen (ABND2)
+ if (!STRNCMP(old, "VERS", 4)) {
+  // resp/resp2 don't matter, non catchable...
+  return;
+  }
+ // COBOL GLUE - handle aid table overflow
+ // - should not happen (ABND2)
+ if (!STRNCMP(old, "KCG1", 4)) {
+  // resp/resp2 don't matter, no catchable...
+  return;
+  }
+ // COBOL GLUE - handle condition table overflow in handle
+ // - should not happen (ABND2)
+ if (!STRNCMP(old, "KCG2", 4)) {
+  // resp/resp2 don't matter, non catchable...
+  return;
+  }
+ // COBOL GLUE - handle condition table overflow in ignore
+ // - should not happen (ABND2)
+ if (!STRNCMP(old, "KCG3", 4)) {
+  // resp/resp2 don't matter, non catchable...
+  return;
+  }
+ // COBOL GLUE - bad call - hit 'default' case
+ // - should not happen (ABND2)
+ if (!STRNCMP(old, "KCG4", 4)) {
+  // resp/resp2 don't matter, non catchable...
+  return;
+  }
+
+ // PP - unimplemented
+ // - should not happen (ABND2)
+ if (!STRNCMP(old, "PPER", 4)) {
+  // resp/resp2 don't matter, non catchable...
+  return;
+  }
+
+ // should never get here - should have returned above...
+ {
+ char msg[20]; int msgsize; int id;
+ SPRINTF(msg, "abend code map failed"); msgsize=STRLEN(msg); id=1;
+ KIKPCP(csa, kikpcpENTR, &id, 0, msg, &msgsize);
+ SPRINTF(msg, " old %4.4s", old); msgsize=STRLEN(msg); id=1;
+ KIKPCP(csa, kikpcpENTR, &id, 0, msg, &msgsize);
+ SPRINTF(msg, " new %4.4s", new); msgsize=STRLEN(msg); id=1;
+ KIKPCP(csa, kikpcpENTR, &id, 0, msg, &msgsize);
+ }
+ ABEND(kikpcpTYPE, 0x777);
+
+}

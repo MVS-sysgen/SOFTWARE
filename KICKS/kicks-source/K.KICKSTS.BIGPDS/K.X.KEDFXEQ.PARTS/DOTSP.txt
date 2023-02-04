@@ -1,0 +1,111 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+#include "kedfxeq.h"
+
+ ////////////////////// TSP api calls //////////////////////
+
+ // unlike other api's, a TS queue/qname is not table based,
+ // rather its name is entirely at the discretion of the
+ // programmer and it can legally contain unprintable chars
+
+#define API_DELETEQ_TS API_RTSDQ_TS
+#define API_WRITEQ_TS API_RTSDQ_TS
+#define API_READQ_TS API_RTSDQ_TS
+void API_RTSDQ_TS(KIKEIB *eib, DEBUGGERCA *comm) { // eibfn = 2564
+ char *tioa = csa->tctte->tioa;
+ short sbuf, *eibfn2 = (short*)&eibSave.eibfn;
+ int col, topline, botline, lines;
+
+ char qbuf[34], *qb;
+ int i, qhex=0;
+
+ if (*eibfn2 == 2564)
+  { APPEND_MSG("READQ TS  "); }
+ else
+ if (*eibfn2 == 2562)
+  { APPEND_MSG("WRITEQ TS  "); }
+ else
+ if (*eibfn2 == 2566)
+  { APPEND_MSG("DELETEQ TS  "); }
+  /* */
+ char  *queue, *into, buffer[200];
+ int   flags, item, numitems, length, row=3;
+  /* */
+ qb = queue = (char*)cobarg[1];
+ flags = *(int*)cobarg[2];
+ into = (char*)cobarg[3]; length = *(short*)cobarg[4];
+ item = *(short*)cobarg[5]; numitems = *(short*)cobarg[6];
+  /* */
+ for (i=0; i<16; i++) if(!ISPRINT(queue[i])) { qhex=1; }
+ if (qhex == 0)
+  SPRINTF(buffer, "QUEUE(%16.16s) ", queue);
+ else {
+  SPRINTF(qbuf,
+    "%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X",
+    *qb++,*qb++,*qb++,*qb++,*qb++,*qb++,*qb++,*qb++,
+    *qb++,*qb++,*qb++,*qb++,*qb++,*qb++,*qb++,*qb++),
+  SPRINTF(buffer, "QUEUE(X'%32.32s') ", qbuf);
+  }
+  /* */
+ APPEND_MSG(buffer);
+ if (*eibfn2 != 2566) {
+  PUT_SBA(++row,1)
+  //SPRINTF(buffer, "  FLAGS(%d) ", flags);
+  //APPEND_MSG(buffer);
+  STRCPY(buffer, "  ");
+  if ((flags & 4 ) != 0)  STRCAT(buffer, "MAIN ");
+  if ((flags & 8 ) != 0)  STRCAT(buffer, "AUX ");
+  if ((flags & 2 ) != 0)  STRCAT(buffer, "NEXT ");
+  if ((flags & 16) != 0)  STRCAT(buffer, "REWRITE ");
+  if ((flags & 1 ) != 0)  STRCAT(buffer, "NOSUSPND ");
+  APPEND_MSG(buffer);
+  PUT_SBA(++row,1)
+  SPRINTF(buffer, "  ITEM(%d) ", item);
+  APPEND_MSG(buffer);
+  SPRINTF(buffer,  " NUMITEMS(%d) ", numitems);
+  APPEND_MSG(buffer);
+  PUT_SBA(++row,1)
+  if(*eibfn2 == 2564)
+   SPRINTF(buffer, "  INTO(X'%06X') ", into);
+  else
+   SPRINTF(buffer, "  FROM(X'%06X') ", into);
+  APPEND_MSG(buffer);
+  SPRINTF(buffer, " LENGTH(%d) ", length);
+  APPEND_MSG(buffer);
+  //DoDump(into, length, 0, ++row, -1);
+  row++; row++; // skip 2 lines
+  topline = row;
+  botline = bot - helpv - 1;
+  lines = botline - topline + 1;
+  if (eib->eibaid == 0) offset = 0;        // initial entry
+  if (eib->eibaid == KIKPF7) {             // scroll back
+   offset -= lines*sba_1632;
+   if (offset < 0) offset = 0;
+   }
+  if (eib->eibaid == KIKPF8) {             // scroll fwd
+   col = offset + lines*sba_1632;
+   if (col < length) offset = col;
+   }
+  if (eib->eibaid == KIKPF19) offset = 0;  // scroll top
+  if (eib->eibaid == KIKPF20) {            // scroll bottom
+   offset = length / sba_1632;             // num lines in area
+   if (length % sba_1632 > 0) offset++;
+   offset -= lines;              // less num lines on screen
+   offset *= sba_1632;           // times chars / line
+   if (offset < 0) offset = 0;   // zero if negative...
+   }
+  DoDump(into, length, offset, topline, lines);
+  }
+ }

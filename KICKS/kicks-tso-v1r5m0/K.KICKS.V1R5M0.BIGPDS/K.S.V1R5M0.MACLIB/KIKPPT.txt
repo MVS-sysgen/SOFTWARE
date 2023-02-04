@@ -1,0 +1,127 @@
+         MACRO
+&LABEL   KIKPPT &SUFFIX=00,                                            *
+               &TYPE=ENTRY,                                            *
+               &PROGRAM=,                                              *
+               &MAPSET=,                                               *
+               &USAGE=,                                                *
+               &PGMLANG=CMDLVL,                                        *
+               &LOAD=DEFERRED,                                         *
+               &PGMSTAT=ENABLED
+.*
+.* MACRO TO GENERATE 'PPT' TABLE FOR KICKS
+.*
+.* HISTORY:
+.*  V0R9M0 -
+.*  V1R0M0 - UNCHANGED (EXCEPT FOR VERSION STAMP)
+.*  V1R1M0 - ADDED EP FIELD
+.*  V1R1M1 - NEW VALUES FOR PGMLANG (CMDLVL & ALIASES)
+.*  V1R1M2 - 11/28/2010
+.*  V1R1M3 - 04/13/2011
+.*  V1R4M0 - 05/01/2011
+.*  V1R4M1 - 07/01/2012
+.*  V1R5M0 - 07/01/2013
+.*
+.* COPYRIGHT MIKE NOEL, 2008-2014. ALL RIGHTS RESERVED.
+.*
+         GBLA  &NUMENTS
+         LCLC  &OLDLBL,&NEWLBL
+.*
+         AIF   ('&TYPE' EQ 'ENTRY').PRGM
+         AIF   ('&TYPE' EQ 'FINAL').FINAL
+         AIF   ('&TYPE' EQ 'INITIAL').INITIAL
+         MNOTE 8,'TYPE VALUE IS INVALID'
+         MEXIT
+.*
+.*
+.INITIAL ANOP
+KIKPPT&SUFFIX CSECT
+         DC    CL2'&SUFFIX'
+         DC    XL4'01050000'    4 BYTE VERSION: (V),(R),(M),(EDIT)
+         DC    H'0'             FILLER
+         DC    A(PPT1)          ADDRESS FIRST ENTRY
+         MEXIT
+.*
+.*
+.PRGM    ANOP
+&OLDLBL  SETC  'PPT&NUMENTS'
+&NUMENTS SETA  &NUMENTS+1
+&NEWLBL  SETC  'PPT&NUMENTS'
+         AIF   (&NUMENTS LT 2).LBLFIX
+         ORG  &OLDLBL
+         DC    A(&NEWLBL)
+         ORG
+.LBLFIX  ANOP
+&NEWLBL  DC    F'0'          PLACE HOLDER FOR 'NEXT'
+         AIF   ('&LABEL' GT '').USELBL
+         AIF   ('&PROGRAM' GT '').USEPGM
+         AIF   ('&MAPSET' GT '').USEMAP
+         MNOTE 8,'LABEL,PROGRAM,MAPSET DO NOT REVEAL NAME!'
+.*       MEXIT
+.USELBL  ANOP
+         DC    CL8'&LABEL'
+         AGO   .SETMEM
+.USEPGM  ANOP
+         DC    CL8'&PROGRAM'
+         AGO   .SETMEM
+.USEMAP  ANOP
+         DC    CL8'&MAPSET'
+.*       AGO   .SETMEM
+.SETMEM  DC    A(0)       WHERE PGM IS LOADED
+         DC    F'0'       PGM SIZE
+         DC    A(0)       PGM ENTRY POINT
+.SETLANG ANOP
+         AIF   ('&USAGE' EQ 'MAP').LMAP
+         AIF   ('&PGMLANG' EQ 'COBOL').LCOBOL
+         AIF   ('&PGMLANG' EQ 'MVTCOB').LCOBOL
+         AIF   ('&PGMLANG' EQ 'CMDLVL').LCOBOL
+         AIF   ('&PGMLANG' EQ 'LECOB').LCOBOL
+         AIF   ('&PGMLANG' EQ 'COB').LCOBOL
+         AIF   ('&PGMLANG' EQ 'GCC').LCOBOL
+         AIF   ('&PGMLANG' EQ 'MACC').LMACC
+         AIF   ('&PGMLANG' EQ 'C').LC
+         AIF   ('&PGMLANG' EQ 'ASSEMBLER').LASM
+         AIF   ('&PGMLANG' EQ 'ASM').LASM
+         AIF   ('&PGMLANG' EQ 'MAP').LMAP
+         MNOTE 8,'LANG VALUE IS INVALID'
+.*       MEXIT
+.LC      MNOTE 8,'PGMLANG=C NO LONGER SUPPORTED.'
+         MNOTE 8,'  FOR COMMAND LEVEL GCC USE PGMLANG=CMDLVL'
+         MNOTE 8,'  FOR KICKS INTERNAL PGMS   PGMLANG=MACC'
+         MEXIT
+.*
+.* THE LOW ORDER BYTE OF THE FOLLOWING HALF WORD IS FOR THE
+.* PROGRAM TYPE. THE HIGH ORDER BYTE IS USED TO INDICATE AT
+.* EXECUTION TIME THAT SOURCE DOES/DOES NOT EXIST FOR THIS
+.* OBJECT.
+.*
+.LCOBOL  DC    H'0'       CMD LEVEL PGM (COBOL, GCC)
+         AGO   .SETLOD
+.LASM    DC    H'2'       ASM PGM/TABLE
+         AGO   .SETLOD
+.LMAP    DC    H'3'       BMS MAP
+         AGO   .SETLOD
+.LMACC   DC    H'4'       'MACRO LEVEL' C PGM
+.*       AGO   .SETLOD
+.SETLOD  AIF   ('&LOAD' EQ 'INITIAL').LODINIT
+         AIF   ('&LOAD' EQ 'DEFERRED').LODDEF
+         MNOTE 8,'LOAD VALUE IS INVALID'
+.*       MEXIT
+.LODINIT DC    H'1'       LOAD INITIAL
+         AGO   .SETSTA
+.LODDEF  DC    H'0'       LOAD DEFERRED
+.*       AGO   .SETSTA
+.SETSTA  AIF   ('&PGMSTAT' EQ 'ENABLED').PGMENA
+         AIF   ('&PGMSTAT' EQ 'DISABLED').PGMDIS
+         MNOTE 8,'PGMSTAT VALUE IS INVALID'
+.*       MEXIT
+.PGMENA  DC    H'1'       ENABLED
+         DC    H'0'
+         MEXIT
+.PGMDIS  DC    H'0'       DISABLED
+         DC    H'0'
+         MEXIT
+.*
+.*
+.FINAL   ANOP
+         LTORG
+         MEND

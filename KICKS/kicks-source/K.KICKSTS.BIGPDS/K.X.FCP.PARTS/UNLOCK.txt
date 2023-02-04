@@ -1,0 +1,73 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+ /////////////////////////////////////////////////////////////
+ //
+ // UNLOCK FUNCTION
+ //
+ /////////////////////////////////////////////////////////////
+
+ // UNLOCK releases the exclusive control established in response to a read
+ // command with the UPDATE option. You use it if you retrieve a record for
+ // update, and then decide that you do not want to update the record after all.
+
+ // an attempt is made to match it to either a read with the UPDATE option
+ // or to a WRITE MASSINSERT. If neither of these is found, no action is taken
+ // and a NORMAL response is returned.
+
+ // Use this command to terminate a VSAM WRITE MASSINSERT.
+
+
+ int unlock(fcte *f, int flags) {
+
+ //file name = arg1; // (Ir) file
+ //flags     = arg2  // (Ir) flags - NOT USED
+
+ ifgrpl *r = &f->reqids[0].rpl;
+
+ // reset some stuff...
+ f->lastreqid = 0;
+ f->reqids[0].lastop = FCTElastopunlock;
+
+ // make sure an update is pending
+ if ((f->flag1 & FCTEflag1pendupdt) > 0) {
+
+  // turn off pending update
+  f->flag1 &= ~FCTEflag1pendupdt;
+
+  // abandon the update
+  sw2vsam();
+  __asm__ (
+   "L 2,%0\n\t"
+   "ENDREQ RPL=(2)"
+   : /* no output */
+   : "m"(r)
+   : "0","1","2","14","15"
+  );
+  sw2kicks();
+
+  // note current op as last, map return, goback
+  maprtn(f, 0);
+  return (f->rcode[2]);
+
+  } else {
+
+  // if no update pending it's a logic error - BUT
+  // cics api says a normal return is expected, so
+  f->resp = 0; f->resp2= 0;
+  return 0;
+  }
+ }
+
+

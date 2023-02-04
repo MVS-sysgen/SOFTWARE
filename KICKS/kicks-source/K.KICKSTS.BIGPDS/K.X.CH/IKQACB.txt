@@ -1,0 +1,66 @@
+#ifndef __IKQACB__
+#define __IKQACB__
+
+ // from MAINT 393 on VM/370 6pk 1.2 system, 10/30/2011
+
+ // for VSAM usage in KICKS -
+
+ // * VSAM - IKQACB - 5745-SC-VSM - REL. 31.0  INTERNAL VERSION 2.26
+
+ typedef struct __ikqacb__
+ {
+   char  acbid;       // +000
+   char  acbstyp;     // +001
+   short acblen;      // +002 CLI 3(ACBREG),OSACBLEN, BNE alreadydos
+   //ort acgleng;     // +002               =76 (decimal)
+   char *acbambl;     // +004 address of amb list
+   char *acbamo;      // +008 address of am/o code
+   char  acbact;      // +012 active test & set byte
+   char  acbinflg;    // +013 cat recovery flag byte
+
+
+   char *acbinrtn;    // +008
+   short acbmacrf;    // +012
+   char  acbbstno;    // +014
+   char  acbstrno;    // +015
+   short acbbufnd;    // +016 data buffers
+   short acbbufni;    // +018 index buffers
+   int   acbbufpl;    // +020
+   char  acbrecfm;    // +024 recfm
+   char  acboctyp;    // +025
+   short acbopt;      // +026
+   char *acbmsgar;    // +028
+   char *acbpassw;    // +032
+   char *acbexlst;    // +036
+   union {
+    struct {
+     char acbddnm[8]; // +040
+    } acbpreopen;
+    struct {
+     short acbtiot;   // +040
+     char  acbinfl;   // +042
+     char  acbameth;  // +043
+     char *acbdeb;    // +044 actually acberfl(1), acbdeb(3)
+    } acbpostopn;
+   } acboff40;        // +040
+   char  acboflgs;    // +048
+   char  acberflg;    // +049
+   short acbinflg;    // +050
+   char *acbujfcb;    // +052
+   int   acbbufsp;    // +056 bufsp
+   short acbblksz;    // +060 blksize (aka acbmsgln - message len)
+   short acblrecl;    // +062 lrecl
+   char *acbuaptr;    // +064
+   char *acbcbmwa;    // +068
+   char *acbapid;     // +072
+
+ } ikqacb;
+
+ // flags for acboflgs
+#define acbeov   0x20
+#define acbopen  0x10
+#define acbdserr 0x08
+#define acblock  0x02
+#define acbbusy  0x01
+
+#endif

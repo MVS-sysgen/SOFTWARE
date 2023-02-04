@@ -1,0 +1,154 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+void Do_GETMAIN() {
+// acquire virtual storage
+// EXEC CICS GETMAIN SET(pointer-ref) { LENGTH(data-value) |
+//       FLENGTH(data-value) [BELOW] } [INITIMG(data-value)]
+//       [NOSUSPEND] [SHARED] {USERKEY | CICSKEY] END-EXEC.
+
+ char err[100], saveblocks[4000];
+
+ char op[100], ops[30][100], *ip;
+ int  i, numops=0;
+
+ char set[100]="-1", length[100]="-1", initimg[100];
+ int opt=0;
+
+ strcpy(initimg, kiknull);
+
+ // break up string my way
+ numops = 0;
+ strcpy(saveblocks, cicsblks);
+ ip = SPCLTOK(saveblocks, " ");   // EXEC
+ while (ip=SPCLTOK(0, " ")) {     // KICKS, verb, ... END-EXEC
+  strcpy(ops[numops], ip);
+  numops++;
+  }
+
+ // march thru the args
+ for (i=0; i<numops; i++) {
+  strcpy(op, ops[i]);
+  if(strlen(op)==0) { continue; }
+  if(MYbegstr(op,".")) { continue; }
+  if(MYbegstr(op,"RESP")) { continue; }
+  if(MYbegstr(op,"RESP2")) { continue; }
+  if(MYbegstr(op,"NOHANDLE")) { continue; }
+  if(MYbegstr(op,"EXEC")) { continue; }
+  if(MYbegstr(op,"KICKS")) { continue; }
+  if(MYbegstr(op,"GETMAIN")) { continue; }
+  if(MYbegstr(op,"END-EXEC") || MYbegstr(op,";")) { continue; }
+  if(MYbegstr(op,"SET")) {
+   ip = strtok(op, "()");   // SET
+   ip = strtok(0, "()");    // the name of the pointer
+   if (ip == NULL) {
+    sprintf(err,
+    "malformed argument %s of GETMAIN", op);
+    prt_error(err, 8);
+    No_Code();
+    return;
+    }
+   parrensDown(ip);
+   strcpy(set, ip);
+   continue;
+   }
+  //
+  // NOTE that omitted length can't be derived, because there
+  //      is nothing to derive it from!
+  //      LENGTH(LENGTH OF xxx) would be ok
+  //
+  if(MYbegstr(op,"LENGTH") || MYbegstr(op,"FLENGTH")) {
+   ip = strtok(op, "()");   // LENGTH
+   ip = strtok(0, "()");    // the name of the var holding the length
+   if (ip == NULL) {
+    sprintf(err,
+    "malformed argument %s of GETMAIN", op);
+    prt_error(err, 8);
+    No_Code();
+    return;
+    }
+   parrensDown(ip);
+   strcpy(length, ip);
+   continue;
+   }
+  if(MYbegstr(op,"INITIMG")) {
+   ip = strtok(op, "()");   // INITIMG
+   ip = strtok(0, "()");    // the name of the var holding
+   if (ip == NULL) {        //          the initial value
+    sprintf(err,
+    "malformed argument %s of GETMAIN", op);
+    prt_error(err, 8);
+    No_Code();
+    return;
+    }
+   parrensDown(ip);
+   strcpy(initimg, ip);
+   opt |= 32;
+   continue;
+   }
+
+  if(MYbegstr(op,"BELOW"))      { opt |= 1;  continue; }
+  if(MYbegstr(op,"SHARED"))     { opt |= 2;  continue; }
+  if(MYbegstr(op,"USERKEY"))    { opt |= 4;  continue; }
+  if(MYbegstr(op,"CICSKEY"))    { opt |= 8;  continue; }
+  if(MYbegstr(op,"NOSUSPEND"))  { opt |= 16; continue; }
+
+  sprintf(err,
+  "unknown/unsupported argument %s of GETMAIN", op);
+  prt_error(err, 8);
+  No_Code();
+  return;
+  }
+
+ if (set[0] == '-') {
+  prt_error("SET required for GETMAIN", 8);
+  No_Code();
+  return;
+  }
+
+ if (length[0] == '-') {
+  prt_error("LENGTH (or FLENGTH) required for GETMAIN", 8);
+  No_Code();
+  return;
+  }
+
+#ifdef PPCOB
+ fprintf(stdout, "           MOVE 3074 TO EIBFN-2\n");
+ fprintf(stdout, "           MOVE %s TO KIK-FLEN\n", length);
+ fprintf(stdout, "           MOVE %s TO KIK-ABND\n", initimg);
+ fprintf(stdout, "           MOVE %d TO KIK-FLAGS\n", opt);
+ fprintf(stdout, "           CALL 'KIKCOBGL' USING KIKEIB,\n");
+ if (!strcmp(respvar, ""))
+  fprintf(stdout, "                 KIK-V1,\n");
+ else
+  fprintf(stdout, "                 KIK-V2,\n");
+ fprintf(stdout, "                 %s,\n", set);
+ fprintf(stdout, "                 KIK-FLEN,\n");
+ fprintf(stdout, "                 KIK-ABND,\n");
+ fprintf(stdout, "                 KIK-FLAGS");
+#endif
+#ifdef PPGCC
+ fprintf(stdout, "\t{ short *eibfn2 = (short*)&__KIKEIB->eibfn;\n");
+ fprintf(stdout, "\t\t*eibfn2 = 3074;\n");
+ if (!strcmp(respvar, ""))
+  fprintf(stdout, "\t  int *v=&KIK_V1;\n");
+ else
+  fprintf(stdout, "\t  int *v=&KIK_V2;\n");
+ fprintf(stdout, "\t  int length=%s, *LENGTH=&length;\n", length);
+ fprintf(stdout, "\t  char abnd=%s, *ABND=&abnd;\n", initimg);
+ fprintf(stdout, "\t  int flags=%d, *FLAGS=&flags;\n", opt);
+ fprintf(stdout, "\t kikgccgl(__KIKEIB, v, &%s, LENGTH,\n", set);
+ fprintf(stdout, "\t\tABND, FLAGS);\n");
+#endif
+}

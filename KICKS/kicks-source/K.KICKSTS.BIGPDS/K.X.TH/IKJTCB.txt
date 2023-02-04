@@ -1,0 +1,37 @@
+#ifndef __IKJTCB__
+#define __IKJTCB__
+
+ // from SYS1.AMODGEN(IKJTCB) on MVS 3.8J 'MVS380' system
+
+ typedef struct __ikjtcb__
+ {
+  char *tcbrbp;            // +000 rb   address for executing pgm
+  char *tcbpie;            // +004 pie  address
+  char *tcbdeb;            // +008 deb  address
+  char *tcbtio;            // +012 tiot address
+  char  tcbcmpf;           // +016 completion code flags
+  char  tcbcmpc[3];        // +017 completion code (12bits of sys/usr each)
+  char *tcbtrn;            // +020 test tran control table address (?)
+  char *tcbmss;            // +024 gqe  address
+  char  tcbpkf;            // +028 storage protect key
+  char  tcbflgs[5];        // +029 more flags
+  char  tcblmp;            // +034 limit priority
+  char  tcbdsp;            // +035 dispatch priority
+  char *tcblls;            // +036 last lle
+  char *tcbjlb;            // +040 address joblib dcb
+  char *tcbjpq;            // +044 address last cde for jpa
+  int   tcbgrs[16];        // +048 gr save area
+  char *tcbfsa;            // +112 address first user save area
+  char *tcbtcb;            // +116 address of next ready tcb
+  char *tcbtme;            // +120 tqe address
+  char *tcbjstcb;          // +124 address 1st job step tcb
+  char *tcbntc;            // +128 tcb of previously attached task
+                           //      by the task that attached this task
+  char *tcbotc;            // +132 tcb of task that attached this task
+  char *tcbltc;            // +136 tcb of last task this task attached
+   /* quite a bit more that   +140 is presently of no interest... */
+
+ } ikjtcb;
+
+#endif
+

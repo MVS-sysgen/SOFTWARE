@@ -1,0 +1,1869 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+// KICKS bms map generator
+
+// Ideas for improvements/fixes (below from PERL version)
+//
+//  -- do dup label check here, not in map assembly
+//  -- check for missing MSD's, MDI's
+//  -- check for color/hilight when extatt=no
+//  -- check that pic's match length
+//  -- replace 'aif' check for 2nd map with code here, not map gen
+//  -- add ASM, PL1 support
+//  ++ add LANG= input argument to override MSD spec
+//       Generalize: make sysparm sub whereever, and use LANG= & TYPE=
+//       input arguments to override MSD LANG & TYPE
+//  -- add generalized sysparm support
+//
+//  ++ code to support 2nd (3,4,5,...) maps
+//  ++   this is easy! just treat mdi (except first) as "msd type=final"
+//  ++   also treat msd type=initial (except first) as "msd type=final"
+//  --   NOT QUITE SO EASY - must make sure first dsect 'I' is longest
+//  **   also note only supportting multiple mdi's, not multiple msd's
+//
+//  -- would like to check for field overlap, particularly fields
+//     that overflow lines, and fields that overflow screen (wrapping
+//     around to top of screen).
+
+#include <stdio.h>
+#include <string.h>
+#include <time.h>
+
+#define  KIKMG01FLAG
+#include "kikmg01.h"
+
+ // generic 'usage' routine
+ void usage () {
+   fprintf (stderr, "Syntax:\tKIKMG <infile >outfile\n");
+   fprintf (stderr, "KICKS map generator for COBOL, arguments are\n");
+   fprintf (stderr, "   -list    list stdin to stderr\n");
+   fprintf (stderr, " * -nolist  do not list stdin to stderr\n");
+   //rintf (stderr, "   -mixin   show (regenerated) input with assembler\n");
+   //rintf (stderr, " * -nomix   do not do 'mixin' listing\n");
+   fprintf (stderr, "   -g=dsect override source msd type with 'dsect'\n");
+   fprintf (stderr, "   -g=map   override source msd type with 'map'\n");
+   fprintf (stderr, "   -l=cobol override source msd lang with 'cobol'\n");
+   fprintf (stderr, "   -l=c     override source msd lang with 'c'\n");
+   //rintf (stderr, "   -s=dsect set 'sysparm=dsect'\n");
+   //rintf (stderr, "   -s=map   set 'sysparm=map'\n");
+   fprintf (stderr, " * -t       translate DFH macros to KIK macros\n");
+   fprintf (stderr, "   -nt      do not translate DFH macros to KIK macros\n");
+   fprintf (stderr, "   -v       show version\n");
+   fprintf (stderr, "   -?       list help\n");
+ }
+
+ // generic 'version' routine
+ void version () {
+   fprintf (stderr, "%s Map Generator version %s\n", __KFT__, mkv1);
+ }
+
+ // mainline
+ int main(int argc, char *argv[])
+ {
+  int  i;
+
+  // setup compile date, current date/time, sysparm & version(s)
+  strcpy(wcdate, currentwcdate());
+  strcpy(sysdate, currentdate());
+  strcpy(systime, currenttime());
+  strcpy(sysparm, "        ");
+  msdtype[0] ='\0'; msdlang[0] ='\0';
+  mkversion();
+
+  // get command line argument(s) (if any)
+  for (i=1; i<argc; i++) {
+   if (!strcmp(argv[i], "-list")) {
+    dolist = true;
+    continue;
+    }
+   if (!strcmp(argv[i], "-nolist")) {
+    dolist = false;
+    continue;
+    }
+   if (!strcmp(argv[i], "-mixin")) {
+    //mixin = true;
+    //continue;
+    }
+   if (!strcmp(argv[i], "-nomixin")) {
+    //mixin = false;
+    //continue;
+    }
+   if (!strcmp(argv[i], "-g=map")) {
+    strcpy(msdtype, "MAP");
+    continue;
+    }
+   if (!strcmp(argv[i], "-g=dsect")) {
+    strcpy(msdtype, "DSECT");
+    continue;
+    }
+   if (!strcmp(argv[i], "-l=cobol")) {
+    strcpy(msdlang, "COBOL");
+    continue;
+    }
+   if (!strcmp(argv[i], "-l=c")) {
+    strcpy(msdlang, "C");
+    continue;
+    }
+   if (!strcmp(argv[i], "-s=map")) {
+    //strcpy(sysparm, "MAP");
+    //continue;
+    }
+   if (!strcmp(argv[i], "-s=dsect")) {
+    //strcpy(sysparm, "DSECT");
+    //continue;
+    }
+   if (!strcmp(argv[i], "-t")) {
+    DFHmap = true;
+    continue;
+    }
+   if (!strcmp(argv[i], "-nt")) {
+    DFHmap = false;
+    continue;
+    }
+   if (!strcmp(argv[i], "-v")) {
+    version();
+    continue;
+    }
+   if (!strcmp(argv[i], "-?")) {
+    usage();
+    continue;
+    }
+   fprintf(stderr, "?command line argument %d (%s) is unknown\n",
+                 i, argv[i]);
+   usage();
+   exit (99);
+   }
+
+  // setup any other globals as necessary
+  mdi_1_lbl[0] = '\0'; MSD_Vars();
+
+
+
+  // following allows testing with gdb and/or ddd under cygwin,
+  // necessary because gdb under cygwin can't handle redirects
+  // -> use -D DDDredirect -g for gdb/ddd compiles
+  // -> then 'startx &' to get DDD going
+#ifdef DDDredirect
+  unlink("kikmg.out");
+  unlink("kikmg.err");
+  close(2); close(1); close(0);
+  open("kikmg.map", "r");
+  open("kikmg.out", "w");
+  open("kikmg.err", "w");
+#endif
+
+
+  // open the work file (used for dsect generation)
+  sysut1 = fopen("DD:SYSUT1", "w");
+  if (sysut1 == NULL) prt_error("SYSUT1 failed to open", 16);
+
+
+  // execute multiple passes as needed
+  while (passno < MAXPASSES) {
+   // pass 1 - error check & count fields
+   // pass 2 - gen binary map
+   // pass 3 - gen in  (including inout) dsect
+   // pass 4 - gen out (including inout) dsect
+   //        - also 'finals' all dsects...
+   currline=0; numlines=0; passno++;
+   rewind(stdin);
+   Do_MultiPass();
+   if (maxerror>7) {
+    fprintf (stderr, "!stopping due to above errors\n");
+    exit (maxerror);
+    }
+   }
+
+  // done now!!!
+  exit(maxerror);
+
+ } // end of 'main'
+
+
+ // ===== subroutine to execute a single pass over the source
+ void Do_MultiPass() {
+  char line[200];
+  int i, itsacomment=0, continuecommand = 0;
+
+  // main loop - read source, spit out 'fixed' source
+  while (!feof(stdin)) {
+
+   // get a line
+   fgets (line, 90, stdin);
+   if (feof(stdin)) break;
+
+   // increment line number
+   currline++;
+
+   // trim trailing CRs and LF's
+   chop(line);
+   if (dolist && (passno == 1)) prt_normal(line);
+
+   // make sure no tabs to mess up positioning
+   if(tabchk(line)) { prt_error("file contains tabs", 12); }
+
+   // pad with spaces so can reliably check entire line
+   rpad(line, 80);
+   if (strlen(line)>80)
+    { prt_error("lines > 80 chars long", 12); }
+
+   // blank 73-80
+   for (i=72; i<80; i++) line[i] = ' ';
+
+   // check for comment
+   itsacomment = 0;
+   if (continuecommand > 0) {
+    continuecommand = 0;
+    itsacomment = 1;
+    }
+   if (line[0] == '*') { itsacomment = 1; }
+   if((line[0] == '.') && (line[1] == '*')) {
+    itsacomment = 1;
+    }
+   if (itsacomment > 0) {
+    if (line[71] != ' ') { continuecommand = 1; }
+    continue;
+    }
+
+   // check for blank line
+   for (i=0; i<80; i++) { if (line[i] != ' ') break; }
+   if (i == 80) continue;
+
+   // accumulate info
+   if (numlines > maxlines) { prt_error("numlines > maxlines", 12); }
+   if (strlen(line) > 80) line[80] = 0;
+   strcpy(lines[numlines++], line);
+   if (line[71] != ' ') continue;
+
+   // process acculated info
+   blockline = currline - numlines + 1;
+   Do_MapBlock(numlines);
+   numlines = 0;
+
+  } // end of 'while' getting STDIN lines
+
+ if (numlines > 0) { prt_error("continuation followed by EOF", 12); }
+ }
+
+ // ===== subroutine to process line(s) of input (in 'lines')
+ void Do_MapBlock(int numlines) {
+
+  char line[1000], err[100];
+  int li=0, ll=0; // line, line index, line length
+  char *ip, oneline[100];
+  int oli, oll; // oneline, oneline index, oneline length
+  int label=-1, labell=0, op=-1, opl=0, args[30], argl[30];
+  int one; // boolean for capture of only one space
+  int numidx=0; // indexes numlines
+  int state[10], statelv=0;
+  int i, ii;
+
+  // init vars
+  line[0]='\0';
+  state[statelv]=0;
+  for (numargs=0; numargs<30; numargs++) {
+   args[numargs] = 0;
+   argl[numargs] = 0;
+   }
+  numargs=0;
+
+  // capture (optional) label
+  strncpy(oneline, lines[numidx], 100);
+  oneline[71] = '\0';
+  oli = 0; oll = strlen(oneline);
+  if((oneline[oli] != '\0') && (oneline[oli] != ' ')) {
+   label = li;
+   while ((oneline[oli] != '\0') && (oneline[oli] != ' ')) {
+    line[li] = oneline[oli]; line[li+1] = '\0';
+    oli++; li++;
+    labell++;
+    }
+   }
+
+  // capture (one) space after label
+  one = true;
+  while (oneline[oli] == ' ') {
+   line[li] = ' '; line[li+1] = '\0';
+   oli++;
+   if (one) { li++; one = false; }
+   }
+
+  // capture op
+  if (oneline[oli] != '\0') {
+   op = li;
+   while ((oneline[oli] != '\0') && (oneline[oli] != ' ')) {
+    line[li] = oneline[oli]; line[li+1] = '\0';
+    oli++; li++;
+    opl++;
+    }
+   }
+
+  // capture (one) space after op
+  one = true;
+  while (oneline[oli] == ' ') {
+   line[li] = ' '; line[li+1] = '\0';
+   oli++;
+   if (one) { li++; one = false; }
+   }
+
+  // capture arguments,
+  //  'reading' additional lines as needed
+  while (numidx < numlines) {
+   if (oneline[oli] == '\0') {
+    numidx++;
+    if (numidx >= numlines) {
+     // resolve any remaining state engine issue
+     // - happens if last line completely full
+     // - handled like finding space in the line
+     if (statelv == 0) state[statelv] = STATE$OUT;
+     if((statelv == 0) &&
+        (state[statelv] == STATE$OUT) &&
+        (argl[numargs] > 0)) {
+      numargs++;
+      }
+     if(state[0] == STATE$IN) {
+      if (argl[numargs] == 0) args[numargs] = li;
+      argl[numargs]++;
+      }
+     break;
+     }
+    strcpy(oneline, lines[numidx]);
+    oneline[71] = '\0';
+    oli = 0; oll = strlen(oneline);
+    if (state[statelv] == STATE$QUOTE) oli = 15;
+    if (oli > oll) oli = 0;
+    }
+
+ //#define QUOTE 0x7f
+ //#define APOST 0x7d
+ //#define QUOTEorAPOST QUOTE
+
+   switch (oneline[oli]) {
+    case QUOTE: // quote opens/closes quoted string
+     if (statelv == 0) state[statelv] = STATE$IN;
+     if (state[statelv] == STATE$QUOTE) {
+      statelv--;
+      }
+     else {
+      statelv++;
+      state[statelv] = STATE$QUOTE;
+      }
+     break;
+    case ')':    // close paren closes sub args
+     if (statelv == 0) state[statelv] = STATE$IN;
+     if (state[statelv] != STATE$QUOTE) {
+      if (state[statelv] == STATE$PAREN) {
+       statelv--;
+       }
+      // else - nothing - close ignored if not open!
+      }
+     break;
+    case '(':   // open paren opens sub args
+     if (statelv == 0) state[statelv] = STATE$IN;
+     if (state[statelv] != STATE$QUOTE) {
+      statelv++;
+      state[statelv] = STATE$PAREN;
+      }
+     break;
+    case ',':   // comma ends arg - unless in string or sub arg
+     if (statelv == 0) state[statelv] = STATE$OUT;
+     break;
+    case ' ':   // space might signal end of line if not in quote
+     if (statelv == 0) state[statelv] = STATE$OUT;
+     break;
+    default:    // anything else is just ordinary...
+     if (statelv == 0) state[statelv] = STATE$IN;
+    }
+
+   if((statelv == 0) &&
+      (state[statelv] == STATE$OUT) &&
+      (argl[numargs] > 0)) {
+    numargs++;
+    }
+
+   if(state[0] == STATE$IN) {
+    if (argl[numargs] == 0) args[numargs] = li;
+    argl[numargs]++;
+    }
+
+   line[li] = oneline[oli]; line[li+1] = '\0';
+   oli++; li++;
+
+   } // end of while (numidx < numlines)
+
+  // copy label and op from line to separate storage
+  memset(lbl, 0, 10);
+  if (labell > 0) {
+   if (labell > 8) labell = 8;
+   strncpy(lbl, &line[label], labell);
+   }
+  memset(opcode, 0, 10);
+  if (opl > 0) {
+   if (opl > 8) opl = 8;
+   strncpy(opcode, &line[op], opl);
+   }
+
+  // copy args from line to separate storage
+  for (i=0; i<numargs; i++) {
+   memset(arg[i], 0, 300);
+   strncpy(arg[i], &line[args[i]], argl[i]);
+
+   }
+
+  // apply SYSPARM, SYSDATE, SYSDATE to arg
+  // (the separate ones, not the ones in line!)
+  // all 3 (date, time, parm) always exactly 8 chars
+  for (i=0; i<numargs; i++) {
+   while (ip = MYstrstr(arg[i], "&SYSDATE"))
+    { memcpy(ip, sysdate, 8); }
+   while (ip = MYstrstr(arg[i], "&SYSTIME"))
+    { memcpy(ip, systime, 8); }
+   while (ip = MYstrstr(arg[i], "&SYSPARM"))
+    {
+    memcpy(ip, sysparm, 8);
+    rtrim(ip);
+    //UP(ip);  ??? why force sysparm to upper case?
+    }
+   }
+
+  // finally call opcode processing routines
+  if (!strcmp(opcode,  "KIKMSD")) { Do_MSD(); return; }
+  if (!strcmp(opcode,  "KIKMDI")) { Do_MDI(); return; }
+  if (!strcmp(opcode,  "KIKMDF")) { Do_MDF(); return; }
+  if (!strcmp(opcode,  "KIKPDI")) { Do_PDI(); return; }
+  if (!strcmp(opcode,  "KIKPSD")) { Do_PSD(); return; }
+  if (DFHmap) {
+   if (!strcmp(opcode, "DFHMSD")) {
+    strcpy(opcode, "KIKMSD"); Do_MSD(); return;
+    }
+   if (!strcmp(opcode, "DFHMDI")) {
+    strcpy(opcode, "KIKMDI"); Do_MDI(); return;
+    }
+   if (!strcmp(opcode, "DFHMDF")) {
+    strcpy(opcode, "KIKMDF"); Do_MDF(); return;
+    }
+   if (!strcmp(opcode, "DFHPDI")) {
+    strcpy(opcode, "KIKPDI"); Do_PDI(); return;
+    }
+   if (!strcmp(opcode, "DFHPSD")) {
+    strcpy(opcode, "KIKPSD"); Do_PSD(); return;
+    }
+   }
+  if (!strcmp(opcode, "END"))     { return; }
+  if (!strcmp(opcode, "SPACE"))   { return; }
+  if (!strcmp(opcode, "PRINT"))   { return; }
+  if (!strcmp(opcode, "TITLE"))   { return; }
+  sprintf(err, "? opcode %s not recognized!", opcode);
+  prt_error(err, 8);
+  }
+
+
+ void MSD_Vars() {
+  memset(msd_label, 0, 10);
+  memset(msd_type, 0, 10);
+  strcpy(msd_type, msdtype);
+  memset(msd_lang, 0, 10);
+  strcpy(msd_lang, msdlang);
+  memset(msd_mode, 0, 10);
+  memset(msd_tioapfx, 0, 10);
+  memset(msd_ctrl, 0, 100);
+  memset(msd_extatt, 0, 10);
+  memset(msd_dsatts, 0, 80);
+  memset(msd_mapatts, 0, 80);
+  memset(msd_color, 0, 10);
+  memset(msd_hilight, 0, 10);
+  memset(msd_storageauto, 0, 10);
+  memset(msd_fold, 0, 10);
+  strcpy(msd_fold, "LOWER");
+  memset(msd_bmsmapbr, 0, 100);
+  strcpy(msd_bmsmapbr, "bmsmapbr");
+  // msd_occurs=0; msd_groupname=0; // msd flags                        .
+  MDI_Vars();
+  }
+
+ void MDI_Vars() {
+  memset(mdi_label, 0, 10);
+  memset(mdi_siz1, 0, 10);
+  memset(mdi_siz2, 0, 10);
+  memset(mdi_extatt, 0, 10);
+  memset(mdi_dsatts, 0, 80);
+  memset(mdi_mapatts, 0, 80);
+  memset(mdi_color, 0, 10);
+  memset(mdi_hilight, 0, 10);
+  //mdi_1_lbl   mdi_label of first...
+  //mdi_1s      dsect size of first
+  //mdi_maxs    largest dsect size.
+  //mdi_ebits   aka 'ii'
+  //mdi_elong   aka 'iii'
+  mdi_curr=0;   // curr dsect size
+  mdi_ic1pos=0;
+  mdi_ic2pos=0;
+  MDF_Vars();
+  }
+
+ void MDF_Vars() {
+  memset(mdf_label, 0, 10);
+  memset(mdf_picin, 0, 30);
+  memset(mdf_picout, 0, 30);
+  memset(mdf_initial, 0, 1000);
+  memset(mdf_pos1, 0, 10);
+  memset(mdf_pos2, 0, 10);
+  memset(mdf_length, 0, 10);
+  memset(mdf_occurs, 0, 10);
+  memset(mdf_color, 0, 10);
+  memset(mdf_hilight, 0, 10);
+  memset(mdf_attrb, 0, 200);
+  }
+
+
+ void Do_MSD() { // map set definition
+   int i;
+   char err[100];
+
+  // check for type=final
+  for (i=0; i<numargs; i++) {
+   if (!strcmp(arg[i], "TYPE=FINAL")) {
+    // get last mdi's high water mark
+    if (mdi_1s == 0) mdi_1s = mdi_curr;
+    if (mdi_curr > mdi_maxs) mdi_maxs = mdi_curr;
+    // do final processing for preceeding mdi
+    strcpy(opcode,"KIKMDI"); // temp set to mdi for final...
+    if(!strcmp(msd_type, "MAP")) BinaryMap(true);
+    if(!strcmp(msd_type, "DSECT")) {
+     if(!strcmp(msd_lang, "C")) GCC_Dsect(true);
+     if(!strcmp(msd_lang, "COBOL")) COB_Dsect(true);
+     }
+    strcpy(opcode,"KIKMSD"); // fix temp set to mdi...
+    // do the gen routines for type=final
+    if(!strcmp(msd_type, "MAP")) BinaryMap(true);
+    if(!strcmp(msd_type, "DSECT")) {
+     if(!strcmp(msd_lang, "C")) GCC_Dsect(true);
+     if(!strcmp(msd_lang, "COBOL")) COB_Dsect(true);
+     }
+    return;
+    }
+   }
+
+  // init for this new MSD
+  MSD_Vars();
+  // capture label
+  strncpy(msd_label, lbl, 8);
+  // capture arguments
+  for (i=0; i<numargs; i++) {
+   if (MYbegstr(arg[i], "TYPE=")) {
+    if (msdtype[0] != '\0') {
+     char lc[10];
+     strcpy(lc, msdtype);
+     strcpy(msd_type, msdtype);
+     sprintf(err, "?TYPE= overriden by -g=%s", DN(lc));
+     prt_error(err, 0);
+     continue;
+     }
+    }
+   if (!strcmp(arg[i], "TYPE=DSECT")) {
+    strcpy(msd_type, "DSECT");
+    continue;
+    }
+   if (!strcmp(arg[i], "TYPE=MAP")) {
+    strcpy(msd_type, "MAP");
+    continue;
+    }
+   if (MYbegstr(arg[i], "LANG=")) {
+    if (msdlang[0] != '\0') {
+     char lc[10];
+     strcpy(lc, msdlang);
+     strcpy(msd_lang, msdlang);
+     sprintf(err, "?LANG= overriden by -l=%s", DN(lc));
+     prt_error(err, 0);
+     continue;
+     }
+    }
+   if (!strcmp(arg[i], "LANG=COBOL")) {
+    strcpy(msd_lang, "COBOL");
+    continue;
+    }
+   if (!strcmp(arg[i], "LANG=C")) {
+    strcpy(msd_lang, "C");
+    continue;
+    }
+   if (!strcmp(arg[i], "LANG=ASM")) {
+    prt_error("?LANG=ASM not currently supported", 8);
+    //strcpy(msd_lang, "ASM");
+    continue;
+    }
+   if (!strcmp(arg[i], "LANG=PLI")) {
+    prt_error("?LANG=PLI not currently supported", 8);
+    //strcpy(msd_lang, "PLI");
+    continue;
+    }
+   if (!strcmp(arg[i], "MODE=INOUT")) {
+    strcpy(msd_mode, "INOUT");
+    continue;
+    }
+   if (!strcmp(arg[i], "MODE=IN")) {
+    strcpy(msd_mode, "IN");
+    continue;
+    }
+   if (!strcmp(arg[i], "MODE=OUT")) {
+    strcpy(msd_mode, "OUT");
+    continue;
+    }
+   if (!strcmp(arg[i], "TIOAPFX=YES")) {
+    prt_error("?TIOAPFX=YES default and taken as comments", 0);
+    //strcpy(msd_tioapfx, "YES");
+    continue;
+    }
+   if (!strcmp(arg[i], "TIOAPFX=NO")) {
+    //strcpy(msd_tioapfx, "NO");
+    //continue;
+    }
+   if (MYbegstr(arg[i], "CTRL=")) {
+    // CTRL has sub args...
+    {
+    char *ip2; int ii=0;
+    ip2 =      strtok(arg[i], "=(,) ");   // bypass CTRL=
+    while (ip2 = strtok(NULL, "=(,) ")) {
+     if (!strcmp(ip2, "ALARM")) {
+      strcpy(msd_ctrl[ii], "ALARM");
+      ii++;
+      continue;
+      }
+     if (!strcmp(ip2, "FREEKB")) {
+      strcpy(msd_ctrl[ii], "FREEKB");
+      ii++;
+      continue;
+      }
+     if (!strcmp(ip2, "FRSET")) {
+      strcpy(msd_ctrl[ii], "FRSET");
+      ii++;
+      continue;
+      }
+     if (!strcmp(ip2, "PRINT")) {
+      strcpy(msd_ctrl[ii], "PRINT");
+      ii++;
+      continue;
+      }
+     sprintf(err, "?unknown subargument %s of CTRL in KIKMSD", ip2);
+     prt_error(err, 8);
+     }
+    }
+    continue;
+    }
+   if (!strcmp(arg[i], "EXTATT=YES")) {
+    strcpy(msd_extatt, "YES");
+    continue;
+    }
+   if (!strcmp(arg[i], "EXTATT=NO")) {
+    strcpy(msd_extatt, "NO");
+    continue;
+    }
+   if (!strcmp(arg[i], "COLOR=DEFAULT")) {
+    strcpy(msd_color, "DEFAULT");
+    continue;
+    }
+   if (!strcmp(arg[i], "COLOR=BLUE")) {
+    strcpy(msd_color, "BLUE");
+    continue;
+    }
+   if (!strcmp(arg[i], "COLOR=GREEN")) {
+    strcpy(msd_color, "GREEN");
+    continue;
+    }
+   if (!strcmp(arg[i], "COLOR=NEUTRAL")) {
+    strcpy(msd_color, "NEUTRAL");
+    continue;
+    }
+   if (!strcmp(arg[i], "COLOR=WHITE")) {
+    strcpy(msd_color, "NEUTRAL");
+    continue;
+    }
+   if (!strcmp(arg[i], "COLOR=PINK")) {
+    strcpy(msd_color, "PINK");
+    continue;
+    }
+   if (!strcmp(arg[i], "COLOR=RED")) {
+    strcpy(msd_color, "RED");
+    continue;
+    }
+   if (!strcmp(arg[i], "COLOR=TURQUOISE")) {
+    strcpy(msd_color, "TURQUOISE");
+    continue;
+    }
+   if (!strcmp(arg[i], "COLOR=YELLOW")) {
+    strcpy(msd_color, "YELLOW");
+    continue;
+    }
+   if (!strcmp(arg[i], "HILIGHT=OFF")) {
+    strcpy(msd_hilight, "OFF");
+    continue;
+    }
+   if (!strcmp(arg[i], "HILIGHT=BLINK")) {
+    strcpy(msd_hilight, "BLINK");
+    continue;
+    }
+   if (!strcmp(arg[i], "HILIGHT=REVERSE")) {
+    strcpy(msd_hilight, "REVERSE");
+    continue;
+    }
+   if (!strcmp(arg[i], "HILIGHT=UNDERLINE")) {
+    strcpy(msd_hilight, "UNDERLINE");
+    continue;
+    }
+   if (MYbegstr(arg[i], "TERM=")) {
+    prt_error("?TERM= taken as comments", 4);
+    continue;
+    }
+   if (MYbegstr(arg[i], "DSATTS=")) {
+    // DSATTS has sub args...
+    {
+    char *ip2; int ii=0;
+    ip2 =      strtok(arg[i], "=(,) ");   // bypass DSATTS=
+    while (ip2 = strtok(NULL, "=(,) ")) {
+     if (!strcmp(ip2, "COLOR")) {
+      strcpy(msd_dsatts[ii], "COLOR");
+      ii++;
+      continue;
+      }
+     if (!strcmp(ip2, "HILIGHT")) {
+      strcpy(msd_dsatts[ii], "HILIGHT");
+      ii++;
+      continue;
+      }
+     if (!strcmp(ip2, "PS")) {
+      strcpy(msd_dsatts[ii], "PS");
+      ii++;
+      continue;
+      }
+     if (!strcmp(ip2, "VALIDN")) {
+      strcpy(msd_dsatts[ii], "VALIDN");
+      ii++;
+      continue;
+      }
+     if (!strcmp(ip2, "OUTLINE")) {
+      strcpy(msd_dsatts[ii], "OUTLINE");
+      ii++;
+      continue;
+      }
+     if (!strcmp(ip2, "SOSI")) {
+      strcpy(msd_dsatts[ii], "SOSI");
+      ii++;
+      continue;
+      }
+     if (!strcmp(ip2, "TRANSP")) {
+      strcpy(msd_dsatts[ii], "TRANSP");
+      ii++;
+      continue;
+      }
+     sprintf(err, "?unknown subargument %s of DSATTS in KIKMSD", ip2);
+     prt_error(err, 8);
+     }
+    }
+    continue;
+    }
+   if (MYbegstr(arg[i], "MAPATTS=")) {
+    // MAPATTS has sub args...
+    {
+    char *ip2; int ii=0;
+    ip2 =      strtok(arg[i], "=(,) ");   // bypass MAPATTS=
+    while (ip2 = strtok(NULL, "=(,) ")) {
+     if (!strcmp(ip2, "COLOR")) {
+      strcpy(msd_mapatts[ii], "COLOR");
+      ii++;
+      continue;
+      }
+     if (!strcmp(ip2, "HILIGHT")) {
+      strcpy(msd_mapatts[ii], "HILIGHT");
+      ii++;
+      continue;
+      }
+     if (!strcmp(ip2, "PS")) {
+      strcpy(msd_mapatts[ii], "PS");
+      ii++;
+      continue;
+      }
+     if (!strcmp(ip2, "VALIDN")) {
+      strcpy(msd_mapatts[ii], "VALIDN");
+      ii++;
+      continue;
+      }
+     if (!strcmp(ip2, "OUTLINE")) {
+      strcpy(msd_mapatts[ii], "OUTLINE");
+      ii++;
+      continue;
+      }
+     if (!strcmp(ip2, "SOSI")) {
+      strcpy(msd_mapatts[ii], "SOSI");
+      ii++;
+      continue;
+      }
+     if (!strcmp(ip2, "TRANSP")) {
+      strcpy(msd_mapatts[ii], "TRANSP");
+      ii++;
+      continue;
+      }
+     sprintf(err, "?unknown subargument %s of MAPATTS in KIKMSD", ip2);
+     prt_error(err, 8);
+     }
+    }
+    continue;
+    }
+   //if (MYbegstr(arg[i], "DSATTS=")) {
+   // prt_error("?DSATTS= taken as EXTATT=YES", 4);
+   // strcpy(msd_extatt, "YES");
+   // continue;
+   // }
+   //if (MYbegstr(arg[i], "MAPATTS=")) {
+   // prt_error("?MAPATTS= taken as EXTATT=YES", 4);
+   // strcpy(msd_extatt, "YES");
+   // continue;
+   // }
+   if (!strcmp(arg[i], "FOLD=UPPER")) {
+    strcpy(msd_fold, "UPPER");
+    continue;
+    }
+   if (!strcmp(arg[i], "FOLD=LOWER")) {
+    strcpy(msd_fold, "LOWER");
+    continue;
+    }
+   if (!strcmp(arg[i], "STORAGE=AUTO")) {
+    strcpy(msd_storageauto, "YES");
+    continue;
+    }
+   if (MYbegstr(arg[i], "BASE=")) {
+    // BASE has single unquoted argument
+    {
+    char *ip2;
+    ip2 = &arg[i][0] + 5; // past =
+    if (strlen(arg[i]) > 5) {
+     memset(msd_bmsmapbr, 0, 100);
+     strncpy(msd_bmsmapbr, ip2, strlen(arg[i])-5);
+     }
+    else
+     prt_error("?unable to find argument of BASE in KIKMSD", 8);
+    }
+    continue;
+    }
+   sprintf(err, "?unknown argument %s in KIKMSD", arg[i]);
+   prt_error(err, 8);
+   }
+
+  // do initial processing for this MSD
+  if(!strcmp(msd_type, "MAP")) BinaryMap(false);
+  if( strcmp(msd_type, "DSECT")) return;
+  if(!strcmp(msd_lang, "C")) GCC_Dsect(false);
+  if(!strcmp(msd_lang, "COBOL")) COB_Dsect(false);
+  }
+
+ void Do_MDI() { // map definition
+   int i;
+   char err[100];
+
+  // do end processing for prior MDI
+  if (mdi_1s == 0) mdi_1s = mdi_curr;
+  if (mdi_curr > mdi_maxs) mdi_maxs = mdi_curr;
+  if (mdi_label[0] != '\0') {
+   // if label <> "" there is prior and it needs wrap up
+   if(!strcmp(msd_type, "MAP")) BinaryMap(true);
+   if(!strcmp(msd_type, "DSECT")) {
+    if(!strcmp(msd_lang, "C")) GCC_Dsect(true);
+    if(!strcmp(msd_lang, "COBOL")) COB_Dsect(true);
+    }
+   }
+
+  // init for this new MDI
+  MDI_Vars();
+  // capture label
+  strncpy(mdi_label, lbl, 8);
+  if (mdi_1_lbl[0] == '\0') {
+   strcpy(mdi_1_lbl, mdi_label);
+   }
+  // propagate color/hilight attributes
+  strcpy(mdi_extatt, msd_extatt);
+  memcpy(mdi_dsatts, msd_dsatts, 40);
+  memcpy(mdi_mapatts, msd_mapatts, 40);
+  strcpy(mdi_color, msd_color);
+  strcpy(mdi_hilight, msd_hilight);
+  // capture arguments
+  for (i=0; i<numargs; i++) {
+   if (!strcmp(arg[i], "EXTATT=YES")) {
+    strcpy(mdi_extatt, "YES");
+    continue;
+    }
+   if (!strcmp(arg[i], "EXTATT=NO")) {
+    strcpy(mdi_extatt, "NO");
+    continue;
+    }
+   if (!strcmp(arg[i], "COLOR=DEFAULT")) {
+    strcpy(mdi_color, "DEFAULT");
+    continue;
+    }
+   if (!strcmp(arg[i], "COLOR=BLUE")) {
+    strcpy(mdi_color, "BLUE");
+    continue;
+    }
+   if (!strcmp(arg[i], "COLOR=GREEN")) {
+    strcpy(mdi_color, "GREEN");
+    continue;
+    }
+   if (!strcmp(arg[i], "COLOR=NEUTRAL")) {
+    strcpy(mdi_color, "NEUTRAL");
+    continue;
+    }
+   if (!strcmp(arg[i], "COLOR=WHITE")) {
+    strcpy(mdi_color, "NEUTRAL");
+    continue;
+    }
+   if (!strcmp(arg[i], "COLOR=PINK")) {
+    strcpy(mdi_color, "PINK");
+    continue;
+    }
+   if (!strcmp(arg[i], "COLOR=RED")) {
+    strcpy(mdi_color, "RED");
+    continue;
+    }
+   if (!strcmp(arg[i], "COLOR=TURQUOISE")) {
+    strcpy(mdi_color, "TURQUOISE");
+    continue;
+    }
+   if (!strcmp(arg[i], "COLOR=YELLOW")) {
+    strcpy(mdi_color, "YELLOW");
+    continue;
+    }
+   if (!strcmp(arg[i], "HILIGHT=OFF")) {
+    strcpy(mdi_hilight, "OFF");
+    continue;
+    }
+   if (!strcmp(arg[i], "HILIGHT=BLINK")) {
+    strcpy(mdi_hilight, "BLINK");
+    continue;
+    }
+   if (!strcmp(arg[i], "HILIGHT=REVERSE")) {
+    strcpy(mdi_hilight, "REVERSE");
+    continue;
+    }
+   if (!strcmp(arg[i], "HILIGHT=UNDERLINE")) {
+    strcpy(mdi_hilight, "UNDERLINE");
+    continue;
+    }
+   if (MYbegstr(arg[i], "DSATTS=")) {
+    // DSATTS has sub args...
+    {
+    char *ip2; int ii=0;
+    ip2 =      strtok(arg[i], "=(,) ");   // bypass DSATTS=
+    memset(mdi_dsatts, 0, 40);
+    while (ip2 = strtok(NULL, "=(,) ")) {
+     if (!strcmp(ip2, "COLOR")) {
+      strcpy(mdi_dsatts[ii], "COLOR");
+      ii++;
+      continue;
+      }
+     if (!strcmp(ip2, "HILIGHT")) {
+      strcpy(mdi_dsatts[ii], "HILIGHT");
+      ii++;
+      continue;
+      }
+     if (!strcmp(ip2, "PS")) {
+      strcpy(mdi_dsatts[ii], "PS");
+      ii++;
+      continue;
+      }
+     if (!strcmp(ip2, "VALIDN")) {
+      strcpy(mdi_dsatts[ii], "VALIDN");
+      ii++;
+      continue;
+      }
+     if (!strcmp(ip2, "OUTLINE")) {
+      strcpy(mdi_dsatts[ii], "OUTLINE");
+      ii++;
+      continue;
+      }
+     if (!strcmp(ip2, "SOSI")) {
+      strcpy(mdi_dsatts[ii], "SOSI");
+      ii++;
+      continue;
+      }
+     if (!strcmp(ip2, "TRANSP")) {
+      strcpy(mdi_dsatts[ii], "TRANSP");
+      ii++;
+      continue;
+      }
+     sprintf(err, "?unknown subargument %s of DSATTS in KIKMDI", ip2);
+     prt_error(err, 8);
+     }
+    }
+    continue;
+    }
+   if (MYbegstr(arg[i], "MAPATTS=")) {
+    // MAPATTS has sub args...
+    {
+    char *ip2; int ii=0;
+    ip2 =      strtok(arg[i], "=(,) ");   // bypass MAPATTS=
+    memset(mdi_mapatts, 0, 40);
+    while (ip2 = strtok(NULL, "=(,) ")) {
+     if (!strcmp(ip2, "COLOR")) {
+      strcpy(mdi_mapatts[ii], "COLOR");
+      ii++;
+      continue;
+      }
+     if (!strcmp(ip2, "HILIGHT")) {
+      strcpy(mdi_mapatts[ii], "HILIGHT");
+      ii++;
+      continue;
+      }
+     if (!strcmp(ip2, "PS")) {
+      strcpy(mdi_mapatts[ii], "PS");
+      ii++;
+      continue;
+      }
+     if (!strcmp(ip2, "VALIDN")) {
+      strcpy(mdi_mapatts[ii], "VALIDN");
+      ii++;
+      continue;
+      }
+     if (!strcmp(ip2, "OUTLINE")) {
+      strcpy(mdi_mapatts[ii], "OUTLINE");
+      ii++;
+      continue;
+      }
+     if (!strcmp(ip2, "SOSI")) {
+      strcpy(mdi_mapatts[ii], "SOSI");
+      ii++;
+      continue;
+      }
+     if (!strcmp(ip2, "TRANSP")) {
+      strcpy(mdi_mapatts[ii], "TRANSP");
+      ii++;
+      continue;
+      }
+     sprintf(err, "?unknown subargument %s of MAPATTS in KIKMDI", ip2);
+     prt_error(err, 8);
+     }
+    }
+    continue;
+    }
+   //if (MYbegstr(arg[i], "DSATTS=")) {
+   // prt_error("?DSATTS= taken as EXTATT=YES", 4);
+   // strcpy(mdi_extatt, "YES");
+   // continue;
+   // }
+   //if (MYbegstr(arg[i], "MAPATTS=")) {
+   // prt_error("?MAPATTS= taken as EXTATT=YES", 4);
+   // strcpy(mdi_extatt, "YES");
+   // continue;
+   // }
+   if (MYbegstr(arg[i], "SIZE=")) {
+    // SIZE has exactly two numeric sub args...
+    {
+    char *ip2; int ii=1, jj;
+    ip2 =      strtok(arg[i], "=(,) ");   // bypass SIZE=
+    while (ip2 = strtok(NULL, "=(,) ")) {
+     if (ii == 1) {
+      strcpy(mdi_siz1, ip2);
+      jj=strtol(mdi_siz1, NULL, 10);
+      if(jj==0) { prt_error("?SIZE1 in KIKMDI not numeric", 8); }
+      ii++;
+      continue;
+      }
+     if (ii == 2) {
+      strcpy(mdi_siz2, ip2);
+      jj=strtol(mdi_siz2, NULL, 10);
+      if(jj==0) { prt_error("?SIZE2 in KIKMDI not numeric", 8); }
+      ii++;
+      continue;
+      }
+     sprintf(err, "?unknown subargument number %d of SIZE in KIKMDI", ii);
+     prt_error(err, 8);
+     ii++;
+     }
+     if(ii != 3) {
+      prt_error("?wrong number of subarguments to SIZE in KIKMDI", 8);
+      }
+    }
+    continue;
+    }
+   if (MYbegstr(arg[i], "LINE=1")) {
+    prt_error("?LINE=1 default and taken as comments", 0);
+    continue;
+    }
+   if (MYbegstr(arg[i], "COLUMN=1")) {
+    prt_error("?COLUMN=1 default and taken as comments", 0);
+    continue;
+    }
+   sprintf(err, "?unknown argument %s in KIKMDI", arg[i]);
+   prt_error(err, 8);
+   }
+
+  // check SIZE= present
+  if((mdi_siz1[0] == '\0') || (mdi_siz2[0] == '\0')) {
+   prt_error("?SIZE= in KIKMDI missing/invalid", 8);
+   }
+
+  { // set extatt/dsatts (mapatts) bits
+  int ii, iii;
+  // set extatt bits
+  ii = 0; if (!strcmp(mdi_extatt, "YES")) ii |= 0x0F;
+  // set dsatts bits (note mapatts does nothing at this time)
+  for (i=0; i<8; i++) {
+   if (!strcmp(mdi_dsatts[i],  "COLOR"))   ii |= 0x01; // C
+   if (!strcmp(mdi_dsatts[i],  "PS"))      ii |= 0x02; // P
+   if (!strcmp(mdi_dsatts[i],  "HILIGHT")) ii |= 0x04; // H
+   if (!strcmp(mdi_dsatts[i],  "VALIDN"))  ii |= 0x08; // V
+   if (!strcmp(mdi_dsatts[i],  "OUTLINE")) ii |= 0x10; // U
+   if (!strcmp(mdi_dsatts[i],  "SOSI"))    ii |= 0x20; // M
+   if (!strcmp(mdi_dsatts[i],  "TRANSP"))  ii |= 0x40; // T
+   }
+  // count bits set
+  for (i=0, iii=0; i<8; i++) if (((ii>>i) & 1) > 0) iii++;
+  mdi_ebits  = ii;
+  mdi_elong = iii;
+  }
+
+  // do initial processing for this MDI
+  if(!strcmp(msd_type, "MAP")) BinaryMap(false);
+  if( strcmp(msd_type, "DSECT")) return;
+  if(!strcmp(msd_lang, "C")) GCC_Dsect(false);
+  if(!strcmp(msd_lang, "COBOL")) COB_Dsect(false);
+  }
+
+ void Do_MDF() { // field definition
+   int i, LL=0, OO=0;
+   char err[100];
+  // handle final processing for prior MDF
+
+  // init for this new MDF
+  MDF_Vars();
+  // capture label
+  strncpy(mdf_label, lbl, 8);
+  // propagate color/hilight attributes
+  strcpy(mdf_color, mdi_color);
+  strcpy(mdf_hilight, mdi_hilight);
+  // capture arguments
+  for (i=0; i<numargs; i++) {
+   if (!strcmp(arg[i], "COLOR=DEFAULT")) {
+    strcpy(mdf_color, "DEFAULT");
+    continue;
+    }
+   if (!strcmp(arg[i], "COLOR=BLUE")) {
+    strcpy(mdf_color, "BLUE");
+    continue;
+    }
+   if (!strcmp(arg[i], "COLOR=GREEN")) {
+    strcpy(mdf_color, "GREEN");
+    continue;
+    }
+   if (!strcmp(arg[i], "COLOR=NEUTRAL")) {
+    strcpy(mdf_color, "NEUTRAL");
+    continue;
+    }
+   if (!strcmp(arg[i], "COLOR=WHITE")) {
+    strcpy(mdf_color, "NEUTRAL");
+    continue;
+    }
+   if (!strcmp(arg[i], "COLOR=PINK")) {
+    strcpy(mdf_color, "PINK");
+    continue;
+    }
+   if (!strcmp(arg[i], "COLOR=RED")) {
+    strcpy(mdf_color, "RED");
+    continue;
+    }
+   if (!strcmp(arg[i], "COLOR=TURQUOISE")) {
+    strcpy(mdf_color, "TURQUOISE");
+    continue;
+    }
+   if (!strcmp(arg[i], "COLOR=YELLOW")) {
+    strcpy(mdf_color, "YELLOW");
+    continue;
+    }
+   if (!strcmp(arg[i], "HILIGHT=OFF")) {
+    strcpy(mdf_hilight, "OFF");
+    continue;
+    }
+   if (!strcmp(arg[i], "HILIGHT=BLINK")) {
+    strcpy(mdf_hilight, "BLINK");
+    continue;
+    }
+   if (!strcmp(arg[i], "HILIGHT=REVERSE")) {
+    strcpy(mdf_hilight, "REVERSE");
+    continue;
+    }
+   if (!strcmp(arg[i], "HILIGHT=UNDERLINE")) {
+    strcpy(mdf_hilight, "UNDERLINE");
+    continue;
+    }
+
+   if (MYbegstr(arg[i], "POS=")) {
+    // POS has exactly two numeric sub args...
+    {
+    char *ip2; int ii=1, jj;
+    ip2 =      strtok(arg[i], "=(,) ");   // bypass POS=
+    while (ip2 = strtok(NULL, "=(,) ")) {
+     if (ii == 1) {
+      strcpy(mdf_pos1, ip2);
+      jj=strtol(mdf_pos1, NULL, 10);
+      if(jj==0) { prt_error("?POS1 in KIKMDF not numeric", 8); }
+      ii++;
+      continue;
+      }
+     if (ii == 2) {
+      strcpy(mdf_pos2, ip2);
+      jj=strtol(mdf_pos2, NULL, 10);
+      if(jj==0) { prt_error("?POS2 in KIKMDF not numeric", 8); }
+      ii++;
+      continue;
+      }
+     sprintf(err, "?unknown subargument number %d of POS in KIKMDF", ii);
+     prt_error(err, 8);
+     ii++;
+     }
+     if(ii != 3) {
+      prt_error("?wrong number of subarguments to POS in KIKMDF", 8);
+      }
+    }
+    continue;
+    }
+
+   if (MYbegstr(arg[i], "LENGTH=")) {
+    // LENGTH has exactly one numeric sub args...
+    {
+    char *ip2; int ii=1, jj;
+    ip2 =      strtok(arg[i], "=(,) ");   // bypass LENGTH=
+    while (ip2 = strtok(NULL, "=(,) ")) {
+     if (ii == 1) {
+      strcpy(mdf_length, ip2);
+      LL=strtol(mdf_length, NULL, 10);
+      if(LL==0) {
+       prt_error("?LENGTH in KIKMDF not numeric", 8);
+       }
+      else { // length good, accum size iff field labeled...
+       if (mdf_label[0] != '\0') {
+        mdi_curr += LL + 3 + mdi_elong;
+        }
+       }
+      ii++;
+      continue;
+      }
+     sprintf(err, "?unknown subargument number %d of LENGTH in KIKMDF", ii);
+     prt_error(err, 8);
+     ii++;
+     }
+     if(ii != 2) {
+      prt_error("?wrong number of subarguments to LENGTH in KIKMDF", 8);
+      }
+    }
+    continue;
+    }
+
+   if (MYbegstr(arg[i], "OCCURS=")) {
+    // OCCURS has exactly one numeric sub args...
+    {
+    char *ip2; int ii=1, jj;
+    ip2 =      strtok(arg[i], "=(,) ");   // bypass OCCURS=
+    while (ip2 = strtok(NULL, "=(,) ")) {
+     if (ii == 1) {
+      strcpy(mdf_occurs, ip2);
+      OO=strtol(mdf_occurs, NULL, 10);
+      if(OO==0) {
+       prt_error("?OCCURS in KIKMDF not numeric", 8);
+       }
+      else { // OCCURS good
+       msd_occurs=2; // mapset feature bit for occurs in some field(s)
+       }
+      ii++;
+      continue;
+      }
+     sprintf(err, "?unknown subargument number %d of OCCURS in KIKMDF", ii);
+     prt_error(err, 8);
+     ii++;
+     }
+     if(ii != 2) {
+      prt_error("?wrong number of subarguments to OCCURS in KIKMDF", 8);
+      }
+    }
+    continue;
+    }
+   if (MYbegstr(arg[i], "PICIN=")) {
+    // PICIN has single quoted argument
+    {
+    char *ip2;
+    ip2 = &arg[i][0] + 7; // past first apost...
+    if (strlen(arg[i]) > 7) {
+     strncpy(mdf_picin, ip2, strlen(arg[i])-8);
+     }
+    else
+     prt_error("?unable to find argument to PICIN in KIKMDF", 8);
+    }
+    continue;
+    }
+
+   if (MYbegstr(arg[i], "PICOUT=")) {
+    // PICOUT has single quoted argument
+    {
+    char *ip2;
+    ip2 = &arg[i][0]  + 8; // past first apost...
+    if (strlen(arg[i]) > 8) {
+     strncpy(mdf_picout, ip2, strlen(arg[i])-9);
+     }
+    else
+     prt_error("?unable to find argument to PICOUT in KIKMDF", 8);
+    }
+    continue;
+    }
+
+   if (MYbegstr(arg[i], "INITIAL=")) {
+    // INITIAL has single quoted argument
+    {
+    char *ip2;
+    ip2 = &arg[i][0]  + 9; // past first apost...
+    if (strlen(arg[i]) > 9) {
+     mdf_initial[0]=0xff; // signal supplied as null...
+     if(strlen(arg[i]) > 10)
+      strncpy(mdf_initial, ip2, strlen(arg[i])-10);
+     }
+    else
+     prt_error("?unable to find argument to INITIAL in KIKMDF", 8);
+    }
+    continue;
+    }
+
+   if (MYbegstr(arg[i], "ATTRB=")) {
+    // ATTRB has sub args...
+    {
+    char *ip2; int ii=0;
+    ip2 =      strtok(arg[i], "=(,) ");   // bypass ATTRB=
+    while (ip2 = strtok(NULL, "=(,) ")) {
+     if (!strcmp(ip2, "ASKIP")) {
+      strcpy(mdf_attrb[ii], "ASKIP");
+      ii++;
+      continue;
+      }
+     if (!strcmp(ip2, "IC")) {
+      strcpy(mdf_attrb[ii], "IC");
+      ii++;
+      continue;
+      }
+     if (!strcmp(ip2, "PROT")) {
+      strcpy(mdf_attrb[ii], "PROT");
+      ii++;
+      continue;
+      }
+     if (!strcmp(ip2, "UNPROT")) {
+      strcpy(mdf_attrb[ii], "UNPROT");
+      ii++;
+      continue;
+      }
+     if (!strcmp(ip2, "BRT")) {
+      strcpy(mdf_attrb[ii], "BRT");
+      ii++;
+      continue;
+      }
+     if (!strcmp(ip2, "DRK")) {
+      strcpy(mdf_attrb[ii], "DRK");
+      ii++;
+      continue;
+      }
+     if (!strcmp(ip2, "NORM")) {
+      strcpy(mdf_attrb[ii], "NORM");
+      ii++;
+      continue;
+      }
+     if (!strcmp(ip2, "FSET")) {
+      strcpy(mdf_attrb[ii], "FSET");
+      ii++;
+      continue;
+      }
+     if (!strcmp(ip2, "NUM")) {
+      strcpy(mdf_attrb[ii], "NUM");
+      ii++;
+      continue;
+      }
+     sprintf(err, "?unknown subargument %s of ATTRB in KIKMDF", ip2);
+     prt_error(err, 8);
+     }
+    }
+    continue;
+    }
+
+   sprintf(err, "?unknown argument %s in KIKMDF", arg[i]);
+   prt_error(err, 8);
+   }
+
+  // check POS= & LENGTH= present
+  if((mdf_pos1[0] == '\0') || (mdf_pos2[0] == '\0')) {
+   prt_error("?POS= in KIKMDF missing/invalid", 8);
+   }
+  else {
+   if((mdi_siz1[0] != '\0') && (mdi_siz2[0] != '\0')) {
+    long p1=0, p2=0, s1=0, s2=0;
+    p1=strtol(mdf_pos1, NULL, 10);
+    p2=strtol(mdf_pos2, NULL, 10);
+    s1=strtol(mdi_siz1, NULL, 10);
+    s2=strtol(mdi_siz2, NULL, 10);
+    if((p1>0) && (s1>0))
+     if (p1 > s1)
+      prt_error("?KIKMDF POS not within KIKMDI SIZE", 8);
+    if((p2>0) && (s2>0))
+     if (p2 > s2)
+      prt_error("?KIKMDF POS not within KIKMDI SIZE", 8);
+    }
+  }
+
+  // deal with INITIAL & LENGTH...
+  // if both specified pad INITIAL with spaces to match LENGTH
+  //    and error on strlen(INIIAL) > LENGTH
+  // if INITIAL specified but LENGTH not,
+  //    set LENGTH to strlen(INITIAL)
+  //    and error if strlen(INITIAL)=0
+  // if neither specified then error for LENGTH missing
+  if((mdf_length[0] != 0) && (mdf_initial[0] != 0)) {
+   // both specified
+   int i, ii, jj;
+   char err[100];
+   if (mdf_initial[0] == 0xff) mdf_initial[0] = 0;
+   ii=strlen(mdf_initial);
+   jj=strtol(mdf_length, NULL, 10);
+   if (ii > jj) {
+    sprintf(err,
+ "?LENGTH=(%d) in KIKMDF < strlen(INITIAL)(%d) - using LENGHT=", jj, ii);
+    prt_error(err, 2);
+    //sprintf(mdf_length, "%d", ii); // fixing not CICS-like...
+    }
+   for (i=ii; i<jj; i++) strcat(mdf_initial, " ");
+   }
+  else
+  if(mdf_initial[0] != 0) {
+   // INITIAL specified but no LENGTH
+   int i, ii, jj;
+   char err[100];
+   if (mdf_initial[0] == 0xff) mdf_initial[0] = 0;
+   ii=strlen(mdf_initial);
+   if (ii == 0) {
+    prt_error("?LENGTH missing in KIKMDF & length(INITIAL) = 0", 8);
+    }
+   else {
+    sprintf(err,
+     "?missing LENGTH in KIKMDF derived from INITIAL(%d)", ii);
+    prt_error(err, 2);
+    sprintf(mdf_length, "%d", ii); // not CICS-like either...
+    LL = ii;
+    if (mdf_label[0] != '\0') {
+     mdi_curr += LL + 3 + mdi_elong;
+     }
+    }
+   }
+  else
+  if (mdf_length[0] == 0) {
+   prt_error("?LENGTH= in KIKMDF missing/invalid", 8);
+   }
+
+  // adjust mdi_curr for OCCURS if present in lbl'd field
+  if (mdf_label[0] != '\0') {
+   if (OO > 0) {
+    mdi_curr += (OO-1) * (LL + 3 + mdi_elong);
+    }
+   }
+
+  // check PICIN/PICOUT for lang=cobol & match length
+  if(!strcmp(msd_type, "DSECT")) {
+   if ((mdf_picin[0] != '\0') || (mdf_picout[0] != '\0')) {
+    if (strcmp(msd_lang,"COBOL")) {
+      prt_error("?PICIN/PICOUT ignored when LANG != COBOL", 4);
+     } else {
+     // does not work; for example 'x(9)' ok instead of 'xxxxxxxxx'
+     // still need the check, but MUCH more involved...
+     //int pl;
+     //pl = strlen(mdf_picin);
+     //if ((pl > 0) && (pl != mdf_length))
+     // prt_error("?PICIN length does not match LENGTH=", 8);
+     //pl = strlen(mdf_picout);
+     //if ((pl > 0) && (pl != mdf_length))
+     // prt_error("?PICOUT length does not match LENGTH=", 8);
+     }
+    }
+   }
+
+  // do initial processing for this MDF
+  if(!strcmp(msd_type, "MAP")) BinaryMap(false);
+  if( strcmp(msd_type, "DSECT")) return;
+  if(!strcmp(msd_lang, "C")) GCC_Dsect(false);
+  if(!strcmp(msd_lang, "COBOL")) COB_Dsect(false);
+
+  }
+
+
+ void Do_PDI() { // partition definition
+  prt_error("? KIKPDI opcode not currently supported!", 8);
+  }
+
+ void Do_PSD() { // partition set definition
+  prt_error("? KIKPSD opcode not currently supported!", 8);
+  }
+
+
+ // ===== subroutine to print an error line
+ void prt_error(char *line, int errr)
+ {
+  if((passno != 1) && (errr<8)) return;
+  if (errr < 4)
+   { fprintf(stderr, "Remark(%d) ", errr); }
+  if ((errr > 3) && (errr < 8))
+   { fprintf(stderr, "Warning(%d) ", errr); }
+  if ((errr > 7) && (errr < 12))
+   { fprintf(stderr, "Error(%d) ", errr); }
+  if (errr > 11)
+   { fprintf(stderr, "Fatal Error(%d) ", errr); }
+  fprintf(stderr, "at line %d, %s\n", currline, rtrim(line));
+  if (errr > maxerror)
+   { maxerror = errr; }
+  if (errr > 11 )
+   { exit (errr); }
+ }
+
+ // ===== subroutine to print a normal line
+ void prt_normal(char *line)
+ {
+  rtrim(line);
+  fprintf(stderr, "%s\n", rtrim(line));
+ }
+
+ // a local copy of strstr
+ // here because mvsgcc version (was once) broken...
+ char *MYstrstr(char *big, char *little) {
+
+  int diffl, i, lb=strlen(big), ll=strlen(little);
+
+  diffl=lb-ll;
+  if (diffl < 0 ) return(NULL);
+  if (ll    == 0) return(big);
+  for (i=0; i<=diffl; i++) {
+   if (!memcmp(little, &big[i], ll)) return(&big[i]);
+  }
+  return(NULL);
+ }
+
+ // like strstr but returning index instead of ptr
+ int INDEX(char *str1, char *str2)
+ {
+  char *ip; int i;
+  ip = MYstrstr(str1, str2);
+  if(ip == NULL) return 0;
+  return ip-str1;
+ }
+
+ // like strstr but finds only at the beginning of string
+ char *MYbegstr(char *big, char *little) {
+  char *c; // find only at string beginning...
+  if((c = MYstrstr(big, little)) == NULL) return(NULL);
+  if( c != big) return(NULL);
+  return (c);
+ }
+
+ // set stdin just after line number 'linenum'
+ // so 'PNT_stdin(3)' positions to read 'line 4' next
+ void PNT_stdin(int linenum) {
+  int cl=currline; char line[85];
+  if (cl > linenum) {
+   rewind(stdin);
+   cl = 0;
+   }
+  while (cl<linenum) {
+   fgets (line, 80, stdin);
+   if (feof(stdin)) break;
+   cl++;
+   }
+  }
+
+ // remove trailing CR's and LF's
+ void chop(char *string)
+ {
+  int i;
+  for (i=strlen(string)-1; i>=0; i--) {
+   if (string[i] == '\n') string[i] = 0;
+   else if (string[i] == '\r') string[i] = 0;
+   else break;
+  }
+ }
+
+ // check for tabs
+ int tabchk(char *string)
+ {
+  int i;
+  for (i=strlen(string); i>0; i--) {
+   if (string[i-1] == '\t') return true;
+   }
+  return false;
+ }
+
+ // add trailing spaces (left justify)
+ char *rpad(char *string, int slong)
+ {
+  int i;
+  for (i=strlen(string); i<slong; i++) {
+   string[i] = ' ';
+   string[i+1] = 0;
+   }
+  return string;
+ }
+
+ // remove trailing spaces
+ char *rtrim(char *string)
+ {
+  int i;
+  for (i=strlen(string)-1; i>=0; i--) {
+   if (string[i] == ' ') string[i] = 0;
+   else break;
+  }
+  return string;
+ }
+
+ // make a string uppercase
+ char *UP(char *string)
+ {
+  int i;
+  for (i=strlen(string); i>=0; i--) {
+   string[i] = toupper(string[i]);
+   }
+  return string;
+ }
+
+ // make a string lowercase
+ char *DN(char *string)
+ {
+  int i;
+  for (i=strlen(string); i>=0; i--) {
+   string[i] = tolower(string[i]);
+   }
+  return string;
+ }
+
+#ifdef __CMS__
+#define TIMEMAC(date, time) \
+{  __asm__ (  \
+ "TIME DEC\n\t"  \
+ "ST 0,%0\n\t" \
+ "ST 1,%1" \
+ : "=m"(time), "=m"(date) \
+ : /* no input */ \
+ : "0", "1", "15" \
+ ); \
+}
+#define CVB(packed, binary) \
+{  __asm__ (  \
+ "CVB 0,%1\n\t"  \
+ "ST 0,%0"  \
+ : "=m"(binary) \
+ : "m"(packed) \
+ : "0" \
+ ); \
+}
+
+ // get HH, MM via OS 'TIME' macro
+ void useTMAC (int *HH, int *MM) {
+  int dp[2];
+  int tp[2], tb;
+
+  // obtain date/time using MVS TIME macro
+  // would normally be localtime; in CMS that's the only choice
+  // ** always LOCAL ** same as shown with 'q time' **
+  dp[0]=0; tp[0]=0; TIMEMAC(dp[1], tp[1]);
+  tp[1] = tp[1] >> 4; tp[1] |= 15;
+
+  CVB(tp[0], tb);
+  *MM = (tb / 100) % 100;
+  *HH = (tb / 10000) % 100;
+ }
+
+ // get HH, MM via STCK
+ void useSTCK (int *HH, int *MM) {
+  int workarea[12]; char *where;
+  int i, secs;
+  struct tm *tm;
+
+  // do STCK and get result into the desired format (packed)
+  __asm__ (
+   "L     4,%1\n\t"
+   "STCK  0(4)\n\t"
+   "LM    2,3,0(4)\n\t"
+   "N     2,A%=\n\t"
+   "CVD   2,8(4)\n\t"
+   "TM    0(4),X'80'\n\t"
+   "BNO   *+10\n\t"
+   "AP    8(8,4),B%=\n\t"
+   "N     3,A%=\n\t"
+   "CVD   3,16(4)\n\t"
+   "TM    4(4),X'80'\n\t"
+   "BNO   *+10\n\t"
+   "AP    16(8,4),B%=\n\t"
+   "ZAP   24(16,4),8(8,4)\n\t"
+   "MP    24(16,4),C%=\n\t"
+   "AP    24(16,4),16(8,4)\n\t"
+   "DP    24(16,4),D%=\n\t"
+   "ZAP   40(8,4),24(10,4)\n\t"
+   "LA    1,40(4)\n\t"
+   "ST    1,%0\n\t"
+   "B     D%=+6\n\t"
+   "CNOP  0,4\n"
+  "A%=   DC    XL4'7FFFFFFF'\n"
+  "B%=   DC    PL6'2147483648'\n"
+  "C%=   DC    PL6'4294967296'\n"
+  "D%=   DC    PL6'4096000'"
+   : "=m"(where)
+   : "m"(workarea)
+   : "0", "1", "2", "3", "4", "15"
+   );
+
+  // workarea is PD milliseconds since 00:00 01/01/1900 (GMT)
+  // make it into binary seconds since 00:00 01/01/1970 -- for PDPCLIB
+  __asm__ (
+   "XR   1,1\n\t"
+   "ST   1,%0\n\t"
+   "L    1,%2\n\t"
+   "ZAP  A%=,0(8,1)\n\t"
+   "MVO  A%=(8),A%=(7)\n\t"
+   "MVO  A%=(8),A%=(7)\n\t"
+   "MVO  A%=(8),A%=(7)\n\t"
+   "SP   A%=,B%=\n\t"
+   "CP   A%=,D%=\n\t"
+   "BC   2,X%=\n\t"
+   "CP   A%=,C%=\n\t"
+   "BC   4,X%=\n\t"
+   "CVB  1,A%=\n\t"
+   "ST   1,%1\n\t"
+   "B    D%=+6\n"
+  "X%=   LA   1,A%=\n\t"
+   "ST   1,%0\n\t"
+   "B    D%=+6\n\t"
+   "CNOP 0,8\n"
+  "A%=  DS PL8\n"
+  "B%=  DC PL8'2208988800'\n"
+  "C%=  DC PL6'-2147483648'\n"
+  "D%=  DC PL6'2147483647'"
+   : "=m"(i),"=m"(secs)
+   : "m"(where)
+   : "1"
+   );
+  if (i > 0) exit (999); // result not in PCPCLIB date range!!
+
+  // get broken down time
+  // use gmtime, **not** localtime -- we **don't** want
+  // it to use any TZ adjusts it thinks it knows about!!
+  tm = (struct tm *)gmtime((time_t*)&secs);
+
+  // return HH, MM
+  *HH = tm->tm_hour;
+  *MM = tm->tm_min;
+ }
+
+ // get time zone offset
+ int GetTZ () {
+ int i, TM_MM, TM_HH, ST_MM, ST_HH, secs, tz = -100;
+ int abuf[12]; char *where = (char*)&abuf[0];
+
+ while (tz < -99) {
+  useSTCK(&ST_HH, &ST_MM);
+  useTMAC(&TM_HH, &TM_MM);
+  if (ST_MM != TM_MM) {
+   tz--;
+   if (tz > -105) continue;
+   exit(998); // can't get MM's to agree...
+   }
+  // now calculate the differnce (in hours) as TZ offset
+  tz = TM_HH - ST_HH; // local - gmt
+  if (tz < -12) tz += 24;
+  else
+  if (tz >  12) tz -= 24;
+  } // end while
+ return tz; // return TZ adjustment in hours
+ }
+
+ // return mm/dd/yy for today
+ char *currentdate()
+ {
+ static char s[20]; struct tm tim; time_t now; size_t i; int tz;
+ now = time(NULL);
+ tz = GetTZ(); now += tz * 3600;
+ tim = *(gmtime(&now));
+ i=strftime(s,30,"%m/%d/%y",&tim);
+ return s;
+ }
+
+ // return 22 char 'hh.mm.ssMMM DD, YYYY' (22 including aposte)
+ // to match os/vs cobol 'when-compiled' special register.
+ char *currentwcdate()
+ {
+ static char s[20]; struct tm tim; time_t now; size_t i; int tz;
+ now = time(NULL);
+ tz = GetTZ(); now += tz * 3600;
+ tim = *(gmtime(&now));
+ i=strftime(s,30,"'%H:%M:%S%b %d, %Y'",&tim);
+ return UP(s);
+ }
+
+ // return hh:mm:ss for now
+ char *currenttime()
+ {
+ static char s[20]; struct tm tim; time_t now; size_t i; int tz;
+ now = time(NULL);
+ tz = GetTZ(); now += tz * 3600;
+ tim = *(gmtime(&now));
+ i=strftime(s,30,"%H:%M:%S",&tim);
+ return s;
+ }
+ #endif
+
+ #ifdef __MVS__
+  // return mm/dd/yy for today
+ char *currentdate()
+ {
+ static char s[20]; struct tm tim; time_t now; size_t i;
+ now = time(NULL);
+ tim = *(localtime(&now));
+ i=strftime(s,30,"%m/%d/%y",&tim);
+ return s;
+ }
+
+ // return 22 char 'hh.mm.ssMMM DD, YYYY' (22 including aposte)
+ // to match os/vs cobol 'when-compiled' special register.
+ char *currentwcdate()
+ {
+ static char s[20]; struct tm tim; time_t now; size_t i;
+ now = time(NULL);
+ tim = *(localtime(&now));
+ i=strftime(s,30,"'%H:%M:%S%b %d, %Y'",&tim);
+ return UP(s);
+ }
+
+ // return hh:mm:ss for now
+ char *currenttime()
+ {
+ static char s[20]; struct tm tim; time_t now; size_t i;
+ now = time(NULL);
+ tim = *(localtime(&now));
+ i=strftime(s,30,"%H:%M:%S",&tim);
+ return s;
+ }
+#endif
+
+ // make version striings (etal)
+ int mkversion()
+ { int v=1, r=5, m=0, e=0;
+  union { int i; char c[4]; } mkv3;
+  sprintf(mkv1, "V%dR%dM%d(%d)", v, r, m, e);
+  sprintf(mkv2, "%02X%02X%02X%02X", v, r, m, e);
+  mkv3.c[0]=v; mkv3.c[1]=r; mkv3.c[2]=m; mkv3.c[3]=e;
+  return mkv3.i;
+ }
+
+

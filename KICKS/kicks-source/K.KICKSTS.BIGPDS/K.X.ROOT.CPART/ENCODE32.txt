@@ -1,0 +1,121 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+ // >>>>>> table used to translate binary <<<<<<<<<<<
+ // >>>>>> values into 3270 data stream values <<<<<<
+ static char xlt3270[64] = {
+ '\x40', '\xC1', '\xC2', '\xC3', '\xC4', '\xC5', '\xC6', '\xC7',
+ '\xC8', '\xC9', '\x4A', '\x4B', '\x4C', '\x4D', '\x4E', '\x4F',
+ '\x50', '\xD1', '\xD2', '\xD3', '\xD4', '\xD5', '\xD6', '\xD7',
+ '\xD8', '\xD9', '\x5A', '\x5B', '\x5C', '\x5D', '\x5E', '\x5F',
+ '\x60', '\x61', '\xE2', '\xE3', '\xE4', '\xE5', '\xE6', '\xE7',
+ '\xE8', '\xE9', '\x6A', '\x6B', '\x6C', '\x6D', '\x6E', '\x6F',
+ '\xF0', '\xF1', '\xF2', '\xF3', '\xF4', '\xF5', '\xF6', '\xF7',
+ '\xF8', '\xF9', '\x7A', '\x7B', '\x7C', '\x7D', '\x7E', '\x7F'
+ };
+
+ // >>>>>> globals for screen geometry used to <<<<<<
+ // >>>>>> convert sba's to/from row/columns.  <<<<<<
+
+ // 'static, for a global, means it's not known outside
+ // the compile unit, ie, it's not a named extern...
+ //static int sba_maxcol=80, sba_maxrow=24, sba_use14=0;
+          int sba_maxcol=80, sba_maxrow=24, sba_use14=0;
+
+ // macro to set useingalt based on cmd in tioa
+#define SetUsingAlt                         \
+ {                                          \
+ if (csa->tctte->tioa[1] == 0xf5)           \
+  csa->tctte->flags &= ~tctteflag$usingalt; \
+ if (csa->tctte->tioa[1] == 0x7e)           \
+  csa->tctte->flags |=  tctteflag$usingalt; \
+ }
+
+ // macro to set sba_maxrow & sba_maxcol based on useingalt
+ // this, the PRO version, also sets sba_use14...
+#define SetMaxRowCol                                  \
+ {                                                    \
+ sba_maxcol = csa->tctte->PRMcols;                    \
+ sba_maxrow = csa->tctte->PRMlines;                   \
+ sba_use14  = 0;                                      \
+ if((csa->tctte->flags & tctteflag$usingalt) > 0) {   \
+  sba_maxcol = csa->tctte->ALTcols;                   \
+  sba_maxrow = csa->tctte->ALTlines;                  \
+  }                                                   \
+ if((sba_maxcol * sba_maxrow) > 4095) sba_use14  = 1; \
+ }
+
+ // >>>>>> function to decode sba into row, col <<<<<<
+ void decode_sba (unsigned char *sba, int *row, int *col) {
+  int disp, fndc=-1, fndr=-1;
+
+  // handles 12 & 14 bit sba's.
+  // an sba can also be 16 bits, but only when
+  // a 'create partition' requests it, and KICKS does not...
+
+  // first translate into screen displacement
+  *row = sba[0]; *col = sba[1];
+  if((*row & 0x40) > 0) {
+   // 12 bit, lookup code
+   for (disp=0; disp<64; disp++) {
+    if (*col == xlt3270[disp]) fndc = disp;
+    if (*row == xlt3270[disp]) fndr = disp;
+    }
+   if((fndc < 0) || (fndr < 0)) { *row=-1; return; }
+   disp = (64 * fndr) + fndc;
+   }
+  else {
+   // 14 bit, simple displacement
+   // -- even thou I might not send them, it's possbile
+   // -- that the terminal will, so handle here...
+   fndc = *col; fndr = *row;
+   //if((fndc < 0) || (fndr < 0)) { *row=-2; return; }
+   disp = (256 * fndr) + fndc;
+   if (disp > (sba_maxcol*sba_maxrow))  { *row=-3; return; }
+   }
+
+  // then convert displacement to row/col
+  *col = disp % sba_maxcol;
+  *row = (disp - *col) / sba_maxcol;
+  *row=*row+1; *col=*col+1;
+  return;
+  }
+
+ // >>>>>> function to encode row, col into sba <<<<<<
+ short encode_sba (int row, int col) {
+  short disp;
+
+  // first convert row,col to screen displacement
+  disp  = row - 1;
+  disp *= sba_maxcol;
+  disp += col - 1;
+
+  // 'wrap' displacement
+  disp = disp % (sba_maxrow*sba_maxcol);
+
+  // then translate displacement into 12/14 bit code, ignoring
+  // 16 bit since we know we can't be talking to a partition...
+  if (sba_use14 > 0) {
+   // make a 14 bit encoded sba
+   if (disp != (disp & 0x3fff)) return -1;
+   return disp;
+   }
+  else {
+   // make a 12 bit encoded sba
+   if (disp != (disp & 0x0fff)) return -2;
+   row = disp % 64;   // low 6 bits
+   col = disp / 64;   // hi  6 bits
+   return(256*xlt3270[col]+ xlt3270[row]);
+   }
+  }

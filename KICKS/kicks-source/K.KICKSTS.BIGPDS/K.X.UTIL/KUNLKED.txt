@@ -1,0 +1,974 @@
+ /////////////////////////////////////////////////////////////////////
+ //
+ // KUNLKED libname modname entrypoint
+ //
+ // Looks for module named 'modname' in 'libname' LOADLIB.
+ // Checks that 'entrypoint' is indeed some defined symbol, and that
+ // there are no ER's. Punches the module as a TEXT deck.
+ //
+ // If 'entrypoint' omitted it's assumed equal 'modname'.
+ // If 'modname'    omitted it's assumed equal 'libname'.
+ //
+ // BACKGROUND:
+ // see   Y28-6667 MVT Linkage Editor PLM on bitsavers.org
+ // also SA22-7644 MVS Program Management: Advanced Facilities
+ // also DELINK0 and DELINKI programs on the CBT tape
+ // also RLD2TEXT in "Alternate method of packaging the CMS nucleus"
+ //
+ // Written as part of 'KICKS for TSO' port to VM/370
+ // © Copyright 2011-2014, Michael Noel, All Rights Reserved.
+ //
+ /////////////////////////////////////////////////////////////////////
+ //
+ //  Expected return is ZERO; other possibilites include
+ //
+ //  date/time routines
+ //   999  date/time not in PCPCLIB date range
+ //   998  error trying to obtain timezone
+ //  mainline
+ //   990  wrongs # args ( < 2)
+ //   980  wrongs # args ( > 4)
+ //   970  loadlib not found
+ //   960  loadlib blksize > 4096
+ //   950  unexpected eof reading loadlib directory
+ //   940  wlr on loadlib directory
+ //   930  no loadlib directory magic word
+ //   920  loadlib member not found
+ //  PunchIt pass 1
+ //   890  illegal seek address in loadlib
+ //   880  eof reading member
+ //   870  esd table overflow
+ //   860  bad record in loadlib
+ //   850  entry point not found
+ //   840  unresolved external refs found
+ //   830  overlays found
+ //   820  scatter/tran entries found
+ //   810  malloc for text records failed
+ //   800  malloc for rld records failed
+ //  PunchIt pass 2
+ //   790  illegal seek address - should not happen, see 890...
+ //   780  eof reading member - should not happen, see 880
+ //   770  only allow BR, NB type rld entries
+ //   760  only allow plus rld displacements
+ //   750  only allow length 3, 4 entries
+ //   740  rld address not in module
+ //  *730  730/740/750 were error returns from failure to find
+ //  *720  valid KIKENTRY rld. Now these situations do not cause
+ //  *710  error return, but simply bypass KIKENTRY processing.
+ //
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+#include <stdlib.h>
+#include <stdio.h>
+
+
+#include <time.h>
+char *currentwcdate(void);
+
+
+ // make version striing
+ char *mkversion()
+ { static char ppv1[20]; int v=1, r=5, m=0, e=0;
+  sprintf(ppv1, "V%dR%dM%d(%d)", v, r, m, e);
+  return ppv1;
+ }
+
+ // very simple routines to read
+ // one CMS file (at a time)
+ // use for LOADLIB to allow skipping 61FFFF61 records...
+
+typedef struct {
+ char  fscbcomm[8]; // +0    file system command (rdbuf, wrbuf, etc)
+ char  fscbfn[8];   // +8    file name
+ char  fscbft[8];   // +16   file type
+ char  fscbfm[2];   // +24   file mode
+ short fscbitno;    // +26   relative record number to be read/written
+ char *fscbbuff;    // +28   address of r/w buffer or of statefst
+ int   fscbsize;    // +32   lenght of buffer
+ char  fscbfv;      // +36   recfm - c'F' or c'V'
+ char  fscbflg;     // +37   flag byte
+ short fscbnoit;    // +38   number of records to be read/written
+ int   fscbnord;    // +40   number of bytes actually read
+ } fscb;
+
+int   CMSr15;      // global holds last retcde
+char  CMSeofmk[4]; // global holds EOF value after first open
+
+fscb *CMSopen (char *name) { // NULL open failed, else OK
+ int r1=0,r15=0;
+      if (CMSeofmk[0] == 0) {         // doing this funny to keep
+       CMSeofmk[0]=CMSeofmk[3]=0x61;  // actual 61ffff61 out of
+       CMSeofmk[1]=CMSeofmk[2]=0xff;  // the code...
+       }
+      __asm__ (
+        "L 2,%2\n\t"
+        "FSOPEN (2)\n\t"
+        "ST 1,%1\n\t"
+        "ST 15,%0"
+       : "=m"(r15),"=m"(r1)
+       : "m"(name)
+       : "1","2","15"
+      );
+ CMSr15 = r15;
+ if (r15 == 0) return (fscb*)r1;
+ return 0;
+ }
+int   CMSread (char *buffer, fscb *fscb) {
+ int r15=0;
+ fscb->fscbnoit = 1;
+ fscb->fscbbuff = buffer;
+      __asm__ (
+        "L 2,%1\n\t"
+        "FSREAD FSCB=(2)\n\t"
+        "ST 15,%0"
+       : "=m"(r15)
+       : "m"(fscb)
+       : "1","2","3","15"
+      );
+
+ fscb->fscbitno = 0; // reset incase SEEK preceeded...
+ CMSr15 = r15;
+ return fscb->fscbnord;
+ }
+int   CMSeof  (fscb *fscb) {  // 0 ok, 12 eof, else othr error...
+ if (CMSr15 != 0) printf("CMSeof = %d\n", CMSr15);
+ return CMSr15;
+ }
+int   CMSseek (fscb *fscb, short recno) {
+ if (fscb  <= 0) return -1;
+ if (recno <= 0) return -1;
+ fscb->fscbitno = recno;
+ return 0;
+ }
+void  CMSclose(fscb *fscb) {  // close (if open)
+ int r15=0;
+      __asm__ (
+        "L 2,%1\n\t"
+        "FSCLOSE FSCB=(2)\n\t"
+        "ST 15,%0"
+       : "=m"(r15)
+       : "m"(fscb)
+       : "1","2","15"
+      );
+ CMSr15 = r15;
+ }
+
+
+char *UP(char *string) { // make string uppercase
+ int i=strlen(string);
+ for (; i>=0; i--) string[i] = toupper(string[i]);
+ return string;
+ }
+
+
+ // - problematic in that since the CMS version of STOW doesn't
+ //   support userdata, there is no module attributes or EP !!!
+
+ // for directory layouts, DMSLIB, MACLIB, LIBPDS, see
+ //  http://www.vm.ibm.com/pubs/cp520/PDSBK.HTML#PDSBK
+
+ // loadlib directory entry - old fmt (vm370)
+typedef struct {
+  char  member[8];
+  short firstblock;
+  short unknown;
+ } DMSLIBdirent;
+
+ // loadlib directory record - old
+typedef struct {
+ char  magic[6];  // s.b. 'DMSLIB'
+ short unknown[5];
+ DMSLIBdirent mems[20];
+ } DMSLIBdir;
+
+ // loadlib directory entry - new fmt (zVM)
+typedef struct {
+  char member[8];
+  int  unknown;
+  int  firstblock;
+  int  unkn[8];
+ } LIBPDSdirent;
+
+ // loadlib directory record - new
+typedef struct {
+ char  magic[6];  // s.b. 'LIBPDS'
+ short unknown[15];
+ LIBPDSdirent mems[4];
+ } LIBPDSdir;
+
+
+ // loadlib record types
+#define rec_ID   0x80
+#define rec_SYM  0x40
+#define rec_CESD 0x20
+#define rec_SCAT 0x10
+#define rec_TXT  0x01
+#define rec_TXTO 0x05
+#define rec_TXTM 0x0D
+#define rec_RLD  0x02
+#define rec_RLDO 0x06
+#define rec_RLDM 0x0E
+#define rec_COM  0x03
+#define rec_COMO 0x07
+#define rec_COMM 0x0F
+
+ // loadlib CESD record
+typedef struct {
+  char  symbol[8];      // external name, zero when type is typNULL
+  char  type;
+#define CESD_esd_type_SD 0x00
+#define CESD_esd_type_LR 0x03
+#define CESD_esd_type_PC 0x04
+#define CESD_esd_deleted 0x14
+#define CESD_esd_type_CM 0x05
+#define CESD_esd_typNULL 0x07
+#define CESD_esd_type_ER 0x02
+#define CESD_esd_type_WX 0x0A
+#define CESD_esd_type_PR 0x06
+  char  address[3];     // zero when type is ER or typNULL
+  char  segment;        // zero when type is ER or typNULL
+                        // amode/rmode info if options flag set
+  char  id_length[3];   // length (3) for SD, PC, CM, or PR
+                        // id (2) for LR
+                        // zero (3) when type is ER or typNULL
+ } CESD_esd_data;
+
+typedef struct {
+  char  id;             // 0x20
+  char  flag;           // flag for amode/rmode in 'segment' data
+#define CSED_rec_opts 0x80
+  char  spare[2];       // binary zeros
+  short esd_id;         // id of 1st item
+  short count;          // bytes of eds data following
+  CESD_esd_data data[15];
+ } CESD_rec;
+
+ // loadlib TXT/TXTO/TXTM records
+typedef struct {
+  char  id;             // 0x01, 0x05 (end overlay), 0x0D (end module)
+  char  spare[3];
+  short count;          // control info following ccw
+  short spare2;
+  char  CCW_code;
+  char  CCW_addr[3];    // address where following card text goes
+  char  CCW_flags[2];
+  short CCW_length;     // how many bytes of following card text
+  short esdid;          // of csect associated with text
+  short length;         // of csect or text (??)
+ } TXT_rec;
+
+ // loadlib RLD/RLDO/RLDM records
+typedef union {
+ struct {
+  short r;              // relocation pointer - esdid of symbol
+  short p;              // position pointer - esdid containing address
+  char  f;              // flag TTTTLLSTn
+#define RLD_f_next_partial 1
+  char  a[3];           // address
+  } full;
+ struct {
+  char  f;              // flag TTTTLLSTn
+  char  a[3];           // address
+  } partial;
+ }RLD_data;
+
+typedef struct {
+  char  id;             // 0x02, 0x06 (end overlay), 0x0E (end module)
+  char  spare[3];
+  short spare2;
+  short count;          // of rld bytes following spare3
+  char  spare3[8];
+  // following '240' is for lrecl 260, consider as comments only...
+  char  data[240];      // will use to set full/partial pointers...
+ } RLD_rec;
+
+ // loadlib COM/COMO/COMM records
+typedef struct {
+  char  id;             // 0x03, 0x07 (end overlay), 0x0F (end module)
+  char  spare[3];
+  short count;          // bytes control info following rld info
+  short count2;         // bytes rld info following CCW
+  char  CCW_code;
+  char  CCW_addr[3];    // address where following card text goes
+  char  CCW_flags[2];
+  short CCW_length;     // how many bytes of following card text
+  // following '240' is for lrecl 260, consider as comments only...
+  char  data[240];      // will use to set full/partial pointers...
+  // following 'floats' behind RLD data info,
+  // but that's OK, I don't need it in UNLKED...
+  //ort esdid;          // of csect associated with text
+  //ort length;         // of csect or text (??)
+ } COM_rec;
+
+ //
+ // object deck ESD record
+typedef struct {
+  char  name[8];
+  char  type;           // 00-SD,01-LD,02-ER,03-LR,04-PC,05-CM,06-PR
+  char  address[3];
+  char  filler;
+  char  length[3];      // how long is it? 0 means from .END card
+ } ESD_data;
+
+typedef struct {
+  char  dot;            // 12-9-2 punch ( 0x02 )
+  char  type[3];        // ESD
+  char  space1[6];
+  short esdsize;        // bytes of esd data
+  char  space2[2];
+  short esdid;          // id of first non-ld item (or spaces)
+  ESD_data data[3];     // we will only use at most 2
+  char  spaces[8];
+  char  seqnum[8];      // sequence numbers
+ } ESD_card;
+
+ // object deck TXT record
+typedef struct {
+  char  dot;            // 12-9-2 punch ( 0x02 )
+  char  type[3];        // TXT
+  char  space1[1];
+  char  address[3];     // address of 1st byte
+  char  space2[2];
+  short numbytes;       // number of bytes text data
+  char  space3[2];
+  short esdid;          // esdid of sd of this text
+  char  text[56];       // the text...
+  char  seqnum[8];      // sequence numbers
+ } TXT_card;
+
+ // object deck RLD record
+typedef struct {
+  char  dot;            // 12-9-2 punch ( 0x02 )
+  char  type[3];        // RLD
+  char  space1[6];
+  short rldsize;        // bytes of rld data
+  char  space2[4];
+  char  data[56];
+  char  seqnum[8];      // sequence numbers
+ } RLD_card;
+
+ // object deck END record
+ //  'type 1' - uses EP address
+typedef struct {
+  char  dot;            // 12-9-2 punch ( 0x02 )
+  char  type[3];        // END
+  char  space1[1];
+  char  epaddr[3];      // address of entry point
+  char  space2[6];
+  short esdid;          // esdid of sd of the ep
+  char  space3[12];
+  int   length;         // length of csect of ep
+  char  space4[40];
+  char  seqnum[8];      // sequence numbers
+ } END_card_type1;
+ //  'type 2' - uses EP name
+typedef struct {
+  char  dot;            // 12-9-2 punch ( 0x02 )
+  char  type[3];        // END
+  char  space1[12];
+  char  epname[8];      // name of entry point
+  char  space2[4];
+  int   length;         // length of csect of ep
+  char  space4[40];
+  char  seqnum[8];      // sequence numbers
+ } END_card_type2;
+
+
+
+void PunchIt (fscb *lod, DMSLIBdirent *thent, char *epname, int first) {
+
+ int SEQNUM=0;
+ FILE *punch;
+
+ char buffer[4096], *buf=&buffer[0], *cp;
+ char *textstor, *rldstore;
+ int  i, j, jjj, k, kkk, bufl=0, eploc=-1, modsize=-1;
+ int  numERs=0, numOs=0, numSCATs=0;
+ int  oldf, oldr, oldp, RLDsize;
+ int  esdaddrs[512], numesdids=0;
+ int  numrlds, rldindex;
+
+ CESD_rec *crec;
+ TXT_rec  *trec;
+ RLD_rec  *rrec;
+ COM_rec  *comr;
+
+ ESD_data *ESDdata;
+ ESD_card  ESDcard;
+ TXT_card  TXTcard;
+ RLD_data *RLDcarddata, *RLDloaddata;
+ RLD_card  RLDcard;
+ END_card_type1 ENDcard;
+
+ // pass 1 - validate EP, collect EP address, mod length,
+ //          make sure no ER's (external references)
+ //          get esd addresses
+ //          get number of rld entries
+ CMSseek(lod, first);
+ if(CMSeof(lod))              { exit(890); } // illegal seek address
+ rldindex = 0;
+ while (1) {
+  bufl = CMSread(buf, lod);
+  if(CMSeof(lod))             { exit(880); } // eof reading member
+  if(!memcmp(buf, CMSeofmk, 4)) break;
+  switch ( *buf ) {
+   case rec_ID:
+        break;
+   case rec_SYM:
+        break;
+   case rec_CESD:
+        crec = (CESD_rec*)buf;
+        for (i=0; i<(crec->count/16); i++) {
+         j  = crec->data[i].address[0]; j = j<<8;
+         j += crec->data[i].address[1]; j = j<<8;
+         j += crec->data[i].address[2];
+         esdaddrs[numesdids] = j;
+         numesdids++;
+         if(numesdids > 511)  { exit(870); } // esd table overflow
+         if(!memcmp(crec->data[i].symbol, epname, 8)) eploc = j;
+         if(crec->data[i].type == CESD_esd_type_ER) numERs++;
+         if(crec->data[i].type != CESD_esd_type_LR) {
+          k  = crec->data[i].id_length[0]; k = k<<8;
+          k += crec->data[i].id_length[1]; k = k<<8;
+          k += crec->data[i].id_length[2]; j += k;
+          if (j > modsize) modsize = j;
+          }
+         }
+        break;
+   case rec_SCAT:
+        numSCATs++;
+        break;
+   case rec_TXT:
+   case rec_TXTO:
+   case rec_TXTM:
+        trec = (TXT_rec*)buf;
+        if (trec->id == rec_TXTO) numOs++;
+        bufl = CMSread(buf, lod);
+        break;
+   case rec_RLD:
+   case rec_RLDO:
+   case rec_RLDM:
+        rrec = (RLD_rec*)buf;
+        j=0; oldf=0;
+        while (j<rrec->count) {
+         RLDloaddata = (RLD_data*)&rrec->data[j];
+         RLDsize = 4;   // aka sizeof(partial)
+         if((oldf & RLD_f_next_partial) == 0) {
+          RLDsize = 8;  // aka sizeof(full)
+          oldf =  RLDloaddata->full.f;
+          } else oldf = RLDloaddata->partial.f;
+         rldindex++;
+         j += RLDsize;
+         }
+        if (rrec->id == rec_RLDO) numOs++;
+        break;
+   case rec_COM:
+   case rec_COMO:
+   case rec_COMM:
+        comr = (COM_rec*)buf;
+        j=0; oldf = 0;
+        while (j<comr->count2) {
+         RLDloaddata = (RLD_data*)&comr->data[j];
+         RLDsize = 4;   // aka sizeof(partial)
+         if((oldf & RLD_f_next_partial) == 0) {
+          RLDsize = 8;  // aka sizeof(full)
+          oldf =  RLDloaddata->full.f;
+          } else oldf = RLDloaddata->partial.f;
+         rldindex++;
+         j += RLDsize;
+         }
+        if (comr->id == rec_COMO) numOs++;
+        bufl = CMSread(buf, lod);
+        break;
+   default:
+    printf("unknown record type 0x%X(%d)\n", *buf,bufl);
+    exit(860);                                // bad record in loadlib
+   }
+  }
+ if(eploc  < 0)               { exit(850); } // entry point not found
+ if(numERs > 0)               { exit(840); } // external refs found
+ if(numOs  > 0)               { exit(830); } // overlays      found
+ if(numSCATs > 0)             { exit(820); } // scatter/tran  found
+
+ modsize +=7; modsize &= 0xfffff8;  // round up to double word
+ numrlds  =   rldindex;
+
+ // get storage for text and for rld table
+ textstor = malloc(modsize);
+ if(textstor == NULL)         { exit(810); } // text malloc failed
+ memset(textstor, 0, modsize);
+ rldstore = malloc(numrlds*8);
+ if(rldstore == NULL)         { exit(800); } // rld  malloc failed
+ memset(rldstore, 0, numrlds*8);
+
+ // pass 2 - load text and rld table
+ CMSseek(lod, first);
+ if(CMSeof(lod))              { exit(790); } // illegal seek address
+ rldindex = 0;
+ while (1) {
+  bufl = CMSread(buf, lod);
+  if(CMSeof(lod))             { exit(780); } // eof reading member
+  if(!memcmp(buf, CMSeofmk, 4)) break;
+  switch ( *buf ) {
+   case rec_TXT:
+   case rec_TXTO:
+   case rec_TXTM:
+        trec = (TXT_rec*)buf;
+        kkk  = trec->CCW_addr[0]; kkk = kkk<<8;
+        kkk += trec->CCW_addr[1]; kkk = kkk<<8;
+        kkk += trec->CCW_addr[2];
+        jjj  = trec->CCW_length;
+        bufl = CMSread(buf, lod);
+        for (j=0; j<jjj; j++) {
+         textstor[kkk] = buf[j]; kkk++;
+         }
+        break;
+   case rec_RLD:
+   case rec_RLDO:
+   case rec_RLDM:
+        rrec = (RLD_rec*)buf;
+        j=0; oldf = 0;
+        while (j<rrec->count) {
+         RLDloaddata = (RLD_data*)&rrec->data[j];
+         RLDsize = 4;   // aka sizeof(partial)
+         if((oldf & RLD_f_next_partial) == 0) {
+          RLDsize = 8;  // aka sizeof(full)
+          oldp = RLDloaddata->full.p;
+          oldr = RLDloaddata->full.r;
+          oldf = RLDloaddata->full.f;
+          memcpy(&rldstore[rldindex], RLDloaddata, 8);
+          } else {
+          oldf = RLDloaddata->partial.f;
+          memcpy(&rldstore[rldindex], oldr, 2);
+          memcpy(&rldstore[rldindex+2], oldp, 2);
+          memcpy(&rldstore[rldindex+4], RLDloaddata, 4);
+          }
+         rldindex += 8;
+         j += RLDsize;
+         }
+        break;
+   case rec_COM:
+   case rec_COMO:
+   case rec_COMM:
+        comr = (COM_rec*)buf;
+        j=0; oldf = 0;
+        while (j<comr->count2) {
+         RLDloaddata = (RLD_data*)&comr->data[j];
+         RLDsize = 4;   // aka sizeof(partial)
+         if((oldf & RLD_f_next_partial) == 0) {
+          RLDsize = 8;  // aka sizeof(full)
+          oldp = RLDloaddata->full.p;
+          oldr = RLDloaddata->full.r;
+          oldf = RLDloaddata->full.f;
+          memcpy(&rldstore[rldindex], RLDloaddata, 8);
+          } else {
+          oldf = RLDloaddata->partial.f;
+          memcpy(&rldstore[rldindex], oldr, 2);
+          memcpy(&rldstore[rldindex+2], oldp, 2);
+          memcpy(&rldstore[rldindex+4], RLDloaddata, 4);
+          }
+         rldindex += 8;
+         j += RLDsize;
+         }
+        kkk  = comr->CCW_addr[0]; kkk = kkk<<8;
+        kkk += comr->CCW_addr[1]; kkk = kkk<<8;
+        kkk += comr->CCW_addr[2];
+        jjj  = comr->CCW_length;
+        bufl = CMSread(buf, lod);
+        for (j=0; j<jjj; j++) {
+         textstor[kkk] = buf[j]; kkk++;
+         }
+        break;
+   }
+  }
+
+
+ // audit the rlds to make sure they stitch together OK
+ for (j=0, k=0; j<rldindex; j+=8) {
+  oldr = oldp = oldf = kkk = 0;
+  cp = (char*)&oldr; memcpy(cp+2, &rldstore[j],   2);
+  cp = (char*)&oldp; memcpy(cp+2, &rldstore[j+2], 2);
+  cp = (char*)&oldf; memcpy(cp+3, &rldstore[j+4], 1);
+  cp = (char*)&kkk;  memcpy(cp+1, &rldstore[j+5], 3);
+                                // 1st t of tttt is 'unresolved'
+                                // so its OK here...
+                                // 3rd t of tttt is 'pseudo reg'
+                                // bit so its OK here...
+  i = (oldf & 0x50) >> 4;       // isolate the xtxt
+  if((i != 0) & (i != 1))     { exit(770); } // only allow BR, NB
+  i = (oldf & 0x02);            // isolate the s
+  if (i != 0)                 { exit(760); } // only allow plus
+  i = (oldf & 0x0C) >> 2; i++;  // isolate the ll
+  if((i != 3) & (i != 4))     { exit(750); } // only allow 3, 4
+  if (kkk > modsize)          { exit(740); } // address not in module
+  if (kkk == 8) k = 1;  // note KIKENTRY rld present
+  }
+
+ // if there is an rld for loc 8
+ //  make sure it's for KIKENTRY and that it points to itself
+ //  then update the KIKENTRY info
+ // if no rld for loc 8 it must be a table or something, also OK...
+ if (k == 1) {          // old exit 730 was for no KIKENTRY rld
+  // now make sure KIKENTRY (txt) points to itself (=8)
+  k =          textstor[8];
+  k = (k<<8) + textstor[9];
+  k = (k<<8) + textstor[10];
+  k = (k<<8) + textstor[11];
+  if (k == 8) {         // old exit 720 was for bad KIKENTRY rld
+   // last KIKENTRY check - does it SAY KIKENTRY?
+   if (!strncmp(&textstor[12], "KIKENTRY", 8)) {
+                        // old exit 710 was for no KIKENTRY name
+    // now punch the real entry point into KIKENTRY
+    textstor[9]  = (eploc>>16) & 0xFF;
+    textstor[10] = (eploc>>8)  & 0xFF;
+    textstor[11] =  eploc      & 0xFF;
+    // also punch in the VRM
+    memcpy(&textstor[21], mkversion(), 6);
+    // also punch in compile date/time
+    memcpy(&textstor[28], currentwcdate(), 17);
+    }
+   }
+  }
+
+ // generate the object deck
+ punch = fopen("dd:syspunch", "wb");
+
+ // - first generate the .ESD card with the module names
+ memset(&ESDcard, ' ', 80);
+ ESDcard.dot = 0x02;
+ memcpy(ESDcard.type, "ESD", 3);
+ ESDcard.esdsize = 16;
+ ESDcard.esdid   = 1;
+   // esddata for the module
+ ESDdata = ESDcard.data;
+ memcpy(ESDdata->name, thent->member, 8);
+ ESDdata->type = CESD_esd_type_SD;
+ ESDdata->address[0] = 0;
+ ESDdata->address[1] = 0;
+ ESDdata->address[2] = 0;
+ ESDdata->length[0]  = (modsize>>16) & 0xFF;
+ ESDdata->length[1]  = (modsize>>8)  & 0xFF;
+ ESDdata->length[2]  =  modsize      & 0xFF;
+
+ SEQNUM++; sprintf(ESDcard.seqnum, "%08d", SEQNUM);
+ fwrite(&ESDcard, 80, 1, punch);
+
+ // - then  generate the .TXT cards
+ memset(&TXTcard, ' ', 80);
+ TXTcard.dot = 0x02;
+ memcpy(TXTcard.type, "TXT", 3);
+ TXTcard.esdid = 1;
+ TXTcard.address[0] = 0;
+ TXTcard.address[1] = 0;
+ TXTcard.address[2] = 0;
+ for (i=0, j=0; j<modsize; j++) {
+  TXTcard.text[i] = textstor[j]; i++;
+  if (i > 55) {
+   TXTcard.numbytes = i;
+   SEQNUM++;
+   sprintf(TXTcard.seqnum, "%08d", SEQNUM);
+   fwrite(&TXTcard, 80, 1, punch);
+   i = 0;
+   memset(&TXTcard.text[0], ' ', 56);
+   TXTcard.address[0] = ((j+1)>>16) & 0xFF;
+   TXTcard.address[1] = ((j+1)>>8)  & 0xFF;
+   TXTcard.address[2] =  (j+1)      & 0xFF;
+   } // end if i > 55 ...
+  }  // end for (i=0, j=0; ...
+  if (i > 0) { // deal with leftovers...
+   TXTcard.numbytes = i;
+   SEQNUM++;
+   sprintf(TXTcard.seqnum, "%08d", SEQNUM);
+   fwrite(&TXTcard, 80, 1, punch);
+   }
+
+ // - then  generate the .RLD cards
+ memset(&RLDcard, ' ', 80);
+ RLDcard.dot = 0x02;
+ memcpy(RLDcard.type, "RLD", 3);
+ for (i=0, j=0; j<rldindex; j+=8) {
+  oldr = oldp = oldf = jjj = kkk = 0;
+  cp = (char*)&oldr; memcpy(cp+2, &rldstore[j],   2);
+  cp = (char*)&oldp; memcpy(cp+2, &rldstore[j+2], 2);
+  cp = (char*)&oldf; memcpy(cp+3, &rldstore[j+4], 1);
+
+                                // 1st t of tttt is 'unresolved'
+                                // so don't copy to deck
+                                // 3rd t of tttt is 'pseudo reg'
+                                // bit so don't copy
+  k = (oldf & 0xA0) >> 4;       // isolate the txtx
+  if(k != 0) continue;
+
+  oldf |= 0x01; // turn on 'following partial'
+  oldf &= 0xEF; // turn vcons into acons
+  cp = (char*)&kkk;  memcpy(cp+1, &rldstore[j+5], 3);
+  if (i > 52) {
+   RLDcard.rldsize = i;
+   SEQNUM++;
+   sprintf(RLDcard.seqnum, "%08d", SEQNUM);
+   fwrite(&RLDcard, 80, 1, punch);
+   i = 0;
+   memset(&RLDcard.data[0], ' ', 56);
+   }
+  if (i == 0) {
+   RLDcard.data[i] = 0; i++;
+   RLDcard.data[i] = 1; i++;
+   RLDcard.data[i] = 0; i++;
+   RLDcard.data[i] = 1; i++;
+   }
+  RLDcard.data[i] = oldf; i++;
+  RLDcard.data[i] = (kkk>>16) & 0xFF; i++;
+  RLDcard.data[i] = (kkk>>8)  & 0xFF; i++;
+  RLDcard.data[i] =  kkk      & 0xFF; i++;
+  }  // end for (i=0, j=0; ...
+ if (i > 0) { // deal with leftovers...
+  RLDcard.rldsize = i;
+  SEQNUM++;
+  sprintf(RLDcard.seqnum, "%08d", SEQNUM);
+  fwrite(&RLDcard, 80, 1, punch);
+  }
+
+ // - then generate the .END card (type 1)
+ memset(&ENDcard, ' ', 80);
+ ENDcard.dot = 0x02;
+ memcpy(ENDcard.type, "END", 3);
+ ENDcard.esdid = 1;
+ //Dcard.length = modsize; // not both here *and* in ESD ...
+ ENDcard.epaddr[0] = (eploc>>16) & 0xFF;
+ ENDcard.epaddr[1] = (eploc>>8)  & 0xFF;
+ ENDcard.epaddr[2] =  eploc      & 0xFF;
+ SEQNUM++;
+ sprintf(ENDcard.seqnum, "%08d", SEQNUM);
+ fwrite(&ENDcard, 80, 1, punch);
+
+ fclose(punch);
+ }
+
+
+int main (int argc, char *argv[]) {
+
+ char buffer[4096], *buf=&buffer[0], mem[10], epn[10];
+ fscb *lod;
+ int bufl, i, ii;
+ DMSLIBdir    *thedir=(DMSLIBdir*)&buf[0];
+ DMSLIBdirent *thent;
+
+ LIBPDSdir    *thedi2=(LIBPDSdir*)&buf[0];
+ LIBPDSdirent *then2;
+
+ if(argc < 2)                 { exit(990); } // wrongs # args
+
+ memset (buf,    0,         20);
+ strncpy(buf,    argv[1],    8);
+ while (strlen(buf) < 8) { strcat(buf, " "); }
+ UP(buf); // ensure library is upper case for compare...
+
+ memset (mem,    0,         10);
+ if (argc > 2) strncpy(mem,    argv[2],    8);
+          else  memcpy(mem,    buf,        8);
+ if (mem[0] == '*')  memcpy(mem,  buf, 8);
+ while (strlen(mem) < 8) { strcat(mem, " "); }
+ UP(mem); // ensure member is upper case for compare...
+
+ memset (epn,    0,         10);
+ if (argc > 3) strncpy(epn,    argv[3],    8);
+          else  memcpy(epn,    mem,        8);
+ if (epn[0] == '*')  memcpy(epn,  mem, 8);
+ while (strlen(epn) < 8) { strcat(epn, " "); }
+ UP(epn); // ensure ep name is upper case for compare...
+
+ // no options at this time...
+ if(argc > 4)                 { exit(980); } // wrongs # args
+
+ strcpy (buf+8,  "LOADLIB ", 8);
+ strcpy (buf+16, "  ", 2);
+ lod = CMSopen(buf);
+ if(lod == 0)                 { exit(970); } // loadlib not found
+
+ if(lod->fscbsize > 4096)     { exit(960); } // blksize > 4096
+
+ bufl = CMSread(buf, lod);
+ if(CMSeof(lod))              { exit(950); } // eof reading directory
+
+ if(bufl != lod->fscbsize)    { exit(940); } // wlr on directory
+
+ for(i=0, ii=0; i<20; i++) {
+  if (!memcmp(buf, "DMSLIB", 6)) {
+   thent = &thedir->mems[i];
+   if (thent->member[0] == 0) continue;
+   //intf("\nmember %8.8s", thent->member);
+   if (memcmp(mem, thent->member, 8)) continue;
+   ii++;
+   //intf(" ***\n");
+   PunchIt(lod, thent, epn, thent->firstblock);
+   }
+  else
+  if (!memcmp(buf, "LIBPDS", 6)) {
+   if (i > 3) continue;
+   then2 = &thedi2->mems[i];
+   if (then2->member[0] == 0) continue;
+   //intf("\nmember %8.8s", then2->member);
+   if (memcmp(mem, then2->member, 8)) continue;
+   ii++;
+   //intf(" ***\n");
+   PunchIt(lod, (DMSLIBdirent *)then2, epn, then2->firstblock);
+   }
+  else {
+                                exit(930);   // no directory magic word
+   }
+  }
+ if(ii == 0)                  { exit(920); } // didn't find member
+ CMSclose(lod);
+ }
+
+
+#define TIMEMAC(date, time) \
+{  __asm__ (  \
+ "TIME DEC\n\t"  \
+ "ST 0,%0\n\t" \
+ "ST 1,%1" \
+ : "=m"(time), "=m"(date) \
+ : /* no input */ \
+ : "0", "1", "15" \
+ ); \
+}
+#define CVB(packed, binary) \
+{  __asm__ (  \
+ "CVB 0,%1\n\t"  \
+ "ST 0,%0"  \
+ : "=m"(binary) \
+ : "m"(packed) \
+ : "0" \
+ ); \
+}
+
+ // get HH, MM via OS 'TIME' macro
+ void useTMAC (int *HH, int *MM) {
+  int dp[2];
+  int tp[2], tb;
+
+  // obtain date/time using MVS TIME macro
+  // would normally be localtime; in CMS that's the only choice
+  // ** always LOCAL ** same as shown with 'q time' **
+  dp[0]=0; tp[0]=0; TIMEMAC(dp[1], tp[1]);
+  tp[1] = tp[1] >> 4; tp[1] |= 15;
+
+  CVB(tp[0], tb);
+  *MM = (tb / 100) % 100;
+  *HH = (tb / 10000) % 100;
+ }
+
+ // get HH, MM via STCK
+ void useSTCK (int *HH, int *MM) {
+  int workarea[12]; char *where;
+  int i, secs;
+  struct tm *tm;
+
+  // do STCK and get result into the desired format (packed)
+  __asm__ (
+   "L     4,%1\n\t"
+   "STCK  0(4)\n\t"
+   "LM    2,3,0(4)\n\t"
+   "N     2,A%=\n\t"
+   "CVD   2,8(4)\n\t"
+   "TM    0(4),X'80'\n\t"
+   "BNO   *+10\n\t"
+   "AP    8(8,4),B%=\n\t"
+   "N     3,A%=\n\t"
+   "CVD   3,16(4)\n\t"
+   "TM    4(4),X'80'\n\t"
+   "BNO   *+10\n\t"
+   "AP    16(8,4),B%=\n\t"
+   "ZAP   24(16,4),8(8,4)\n\t"
+   "MP    24(16,4),C%=\n\t"
+   "AP    24(16,4),16(8,4)\n\t"
+   "DP    24(16,4),D%=\n\t"
+   "ZAP   40(8,4),24(10,4)\n\t"
+   "LA    1,40(4)\n\t"
+   "ST    1,%0\n\t"
+   "B     D%=+6\n\t"
+   "CNOP  0,4\n"
+  "A%=   DC    XL4'7FFFFFFF'\n"
+  "B%=   DC    PL6'2147483648'\n"
+  "C%=   DC    PL6'4294967296'\n"
+  "D%=   DC    PL6'4096000'"
+   : "=m"(where)
+   : "m"(workarea)
+   : "0", "1", "2", "3", "4", "15"
+   );
+
+  // workarea is PD milliseconds since 00:00 01/01/1900 (GMT)
+  // make it into binary seconds since 00:00 01/01/1970 -- for PDPCLIB
+  __asm__ (
+   "XR   1,1\n\t"
+   "ST   1,%0\n\t"
+   "L    1,%2\n\t"
+   "ZAP  A%=,0(8,1)\n\t"
+   "MVO  A%=(8),A%=(7)\n\t"
+   "MVO  A%=(8),A%=(7)\n\t"
+   "MVO  A%=(8),A%=(7)\n\t"
+   "SP   A%=,B%=\n\t"
+   "CP   A%=,D%=\n\t"
+   "BC   2,X%=\n\t"
+   "CP   A%=,C%=\n\t"
+   "BC   4,X%=\n\t"
+   "CVB  1,A%=\n\t"
+   "ST   1,%1\n\t"
+   "B    D%=+6\n"
+  "X%=   LA   1,A%=\n\t"
+   "ST   1,%0\n\t"
+   "B    D%=+6\n\t"
+   "CNOP 0,8\n"
+  "A%=  DS PL8\n"
+  "B%=  DC PL8'2208988800'\n"
+  "C%=  DC PL6'-2147483648'\n"
+  "D%=  DC PL6'2147483647'"
+   : "=m"(i),"=m"(secs)
+   : "m"(where)
+   : "1"
+   );
+  if (i > 0) exit(999); // result not in PCPCLIB date range!!
+
+  // get broken down time
+  // use gmtime, **not** localtime -- we **don't** want
+  // it to use any TZ adjusts it thinks it knows about!!
+  tm = (struct tm *)gmtime((time_t*)&secs);
+
+  // return HH, MM
+  *HH = tm->tm_hour;
+  *MM = tm->tm_min;
+ }
+
+ // get time zone offset
+ int GetTZ () {
+ int i, TM_MM, TM_HH, ST_MM, ST_HH, secs, tz = -100;
+ int abuf[12]; char *where = (char*)&abuf[0];
+
+ while (tz < -99) {
+  useSTCK(&ST_HH, &ST_MM);
+  useTMAC(&TM_HH, &TM_MM);
+  if (ST_MM != TM_MM) {
+   tz--;
+   if (tz > -105) continue;
+   exit(998); // can't get MM's to agree...
+   }
+  // now calculate the differnce (in hours) as TZ offset
+  tz = TM_HH - ST_HH; // local - gmt
+  if (tz < -12) tz += 24;
+  else
+  if (tz >  12) tz -= 24;
+  } // end while
+ return tz; // return TZ adjustment in hours
+ }
+
+ // return 17 char date/time for KIKENTRY timestamp
+ char *currentwcdate()
+ {
+ static char s[20]; struct tm tim; time_t now; size_t i; int tz;
+ now = time(NULL);
+ tz = GetTZ(); now += tz * 3600;
+ tim = *(gmtime(&now));
+ i=strftime(s,30,"%m/%d/%y %H:%M:%S",&tim);
+ return UP(s);
+ }
+

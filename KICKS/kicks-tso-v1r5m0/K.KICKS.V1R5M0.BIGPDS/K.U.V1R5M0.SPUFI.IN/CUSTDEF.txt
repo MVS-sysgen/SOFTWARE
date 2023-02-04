@@ -1,0 +1,19 @@
+--DROP TABLE CUST
+--DROP INDEX XCUST
+  CREATE TABLE CUST
+   (
+    CUSTNO          CHAR(6)  NOT NULL,
+    FNAME           CHAR(20) NOT NULL,
+    LNAME           CHAR(30) NOT NULL,
+    ADDR            CHAR(30) NOT NULL,
+    CITY            CHAR(20) NOT NULL,
+    STATE           CHAR(2)  NOT NULL,
+    ZIPCODE         CHAR(10) NOT NULL,
+   PRIMARY KEY (CUSTNO)
+   )
+    IN DB020.TABSP020;
+--
+  CREATE UNIQUE INDEX XCUST
+   ON CUST
+    (CUSTNO)
+   CLOSE YES;

@@ -1,0 +1,1385 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+ // following define tells kicks.h not to extern the globals
+#define KIKSIP
+
+#include <stdio.h>
+#include <time.h>
+
+#include "kicks.h"
+
+
+#include "kikaid.h"
+
+#include "ikjrb.h"
+#include "ihasdwa.h"
+#include "ihapie.h"
+
+#ifdef __CMS__
+#include "extid.h"
+#endif
+
+#ifdef __MVS__
+ // routine to simulate SWAREQ macro, from REXX by
+ // Gilbert Saint-lour, obtained from
+ // http://home.comcast.net/~gsf/tools/swareq.txt
+
+ int SWAREQ (int sva) {
+  int tcb, jscb, qmpl, qmat;
+
+  if ((sva & 15) != 15) return sva + 16;
+  tcb   = *(int*)540;         // tcb  from psatold
+  jscb  = *(int*)(tcb+180);   // jscb from tcbjscb
+  qmpl  = *(int*)(jscb+244);  // qmpl from jscbqmpi
+  qmat  = *(int*)(qmpl+24);   // qmat from qmadd
+  while (sva > 65536) {
+   qmat = *(int*)(qmat+12);
+   sva -= 65536;
+   }
+  // following '+1' not to be there in 'older' OS's ???
+  return *(int*)(qmat+sva+1) + 16;
+  }
+#endif
+
+void AXXXaction() {
+ KIKCSA *csa = &kikcsa;
+
+ // do NOT try to run PLTSD...
+
+ // run the shutdown programs
+ KIKBMS (csa, kikbmsTERM); // BMS - ??
+ KIKTCP (csa, kiktcpTERM); // TCP - exit FS mode
+ KIKDCP (csa, kikdcpTERM); // DCP - close all the queues
+ KIKTSP (csa, kiktspTERM); // TSP - close all the queues
+ KIKFCP (csa, kikfcpTERM); // FCP - close all the files
+ KIKPCP (csa, kikpcpTERM); // PCP - close loader, trandump
+ KIKSCP (csa, kikscpTERM); // SCP - free gotten storage
+ KIKKCP (csa, kikkcpTERM); // KCP - ??
+
+ // shutdown trace
+ if ((kikcsa.trc.trcflags & 4) > 0) {
+  fclose((FILE*)kikcsa.auxtrc);
+  }
+}
+
+void AICAroutine(char *undoc) {
+ KIKCSA *csa = &kikcsa;
+ KIKTCA *tca = csa->tca;
+ ikjrb  *rb  = (ikjrb*)csa->kikrb;
+ int dodump=0, suppress=1, four=4;
+
+#ifdef __MVS__
+ // stash rb psw/regs.
+ MEMCPY(tca->rbpsw,  &rb->rbopsw, 8);
+ MEMCPY(tca->rbregs, &rb->rbgrsave, 64);
+#endif
+
+#ifdef __CMS__
+ // there's no RB in cms, but maybe we can get what we need
+ // (the pws & regs) from the **undocuemented** EXTUAREA
+ // the STIMER exit inbound R1 will point to,
+ // See DMSITE on the MAINT 393 disk...
+ // use sdwa psw save area(2) in tca for time psw
+ MEMCPY(tca->sdwactl2, undoc+96, 8);
+ // use sdwa reg save area in tca for timer regs
+ MEMCPY(tca->sdwagrsv, undoc, 64);
+#endif
+
+ MEMCPY(tca->abcode, "AICA", 4);
+ KIKPCP(csa, kikpcpDUMP, tca->abcode, &four);
+ AXXXaction();
+}
+
+void ASRAroutine(ihapie *pie,  savearea *sa) {
+ KIKCSA *csa = &kikcsa;
+ KIKTCA *tca = csa->tca;
+ ikjrb  *rb  = (ikjrb*)csa->kikrb;
+ int dodump=0, suppress=1, four=4;
+
+ tca->abusr = 0;
+ tca->absys = 0xC0 + pie->piepsw[3];
+
+#ifdef __MVS__
+ // stash rb psw/regs.
+ MEMCPY(tca->rbpsw,  &rb->rbopsw, 8);
+ MEMCPY(tca->rbregs, &rb->rbgrsave, 64);
+#endif
+
+ // use sdwa psw save area(2) in tca for pie psw
+ MEMCPY(tca->sdwactl2, &pie->piepsw, 8);
+
+ // use sdwa reg save area in tca for pie regs
+ MEMCPY(tca->sdwagrsv,    &sa->gr0, 52);  // 0-12
+ // REMEMBER the following '+'s are integers, not bytes...
+ MEMCPY(tca->sdwagrsv+13, &sa->bp,   4);  // 13
+ MEMCPY(tca->sdwagrsv+14, &sa->gr14, 8);  // 14-15
+
+ MEMCPY(tca->abcode, "ASRA", 4);
+ KIKPCP(csa, kikpcpDUMP, tca->abcode, &four);
+ AXXXaction();
+}
+
+int ASRBroutine(ihasdwa *sdwa) {
+ KIKCSA *csa = &kikcsa;
+ KIKTCA *tca = csa->tca;
+ ikjrb  *rb  = (ikjrb*)csa->kikrb;
+ int cod, usr, sys;
+ int dodump=0, suppress=1, four=4;
+ int rtn=0; // 0=dodump, 1=suppress - trandump AND ** SYSUDUMP **
+
+ // determine os abend code
+ cod = *(int*)&sdwa->sdwacmpc[-1];
+ usr = cod & 0xfff;
+ tca->abusr = usr;
+ sys = (cod>>12) & 0xfff;
+ tca->absys = sys;
+
+#ifdef __MVS__
+ // stash rb psw/regs.
+ MEMCPY(tca->rbpsw,  &rb->rbopsw, 8);
+ MEMCPY(tca->rbregs, &rb->rbgrsave, 64);
+#endif
+
+ // stash sdwa psw(s)/regs
+ MEMCPY(tca->sdwactl1, &sdwa->sdwactl1, 8);
+ MEMCPY(tca->sdwactl2, &sdwa->sdwactl2, 8);
+ MEMCPY(tca->sdwagrsv, &sdwa->sdwagrsv, 64);
+
+ // suppress dumps if tran not running & s222, s522, or s622
+ if (tca->tasknum == 0)
+   if ((sys == 0x222) ||                  // 222 is oper cancel
+       (sys == 0x522) ||                  // 522 is wait exceeded
+       (sys == 0x622)) rtn = suppress;    // 622 is reconnect exceeded
+
+ // do formated dump
+ MEMCPY(tca->abcode, "ASRB", 4);
+ if (rtn == dodump)
+   KIKPCP(csa, kikpcpDUMP, tca->abcode, &four);
+
+ // do KICKS shutdown stuff
+ AXXXaction();
+
+ // do (or not) the SYSUDUMP
+ return rtn;
+}
+
+void tracewtr(char *tracemsg, int intense) {
+ char *ent;
+ int L;
+
+ // check for 'intense' trace unit
+ if (intense != 0) {
+  // quit if not tracing 'intense' units
+  if ((kikcsa.trc.trcflags & 8) == 0) return;
+ }
+
+ // check for EDF special disablement
+ if ((kikcsa.trc.trcflags & 16) > 0) {
+  // quit if not tracing 'intense' units
+  if ((kikcsa.trc.trcflags & 8) == 0) return;
+ }
+
+ // put msg in table if internal trace active
+ if ((kikcsa.trc.trcflags & 1) > 0) {
+   // null pad msg if < trcsize in length
+   L=strlen(tracemsg);
+   if (L<kikcsa.trc.trcsize)
+    memset(tracemsg+L, 0, kikcsa.trc.trcsize-L);
+
+   // write entry
+   ent = kikcsa.trc.trctbl +
+         (kikcsa.trc.trccur * kikcsa.trc.trcsize);
+   memcpy(ent, tracemsg, kikcsa.trc.trcsize);
+
+   // increment trace pointer and clear next entry
+   kikcsa.trc.trccur++;
+   if (kikcsa.trc.trccur >= kikcsa.trc.trcnum) {
+    kikcsa.trc.trccur = 0;
+    }
+   ent = kikcsa.trc.trctbl +
+         (kikcsa.trc.trccur * kikcsa.trc.trcsize);
+   memset(ent, 0, kikcsa.trc.trcsize);
+   }
+
+ // put msg in file if external trace active
+ if ((kikcsa.trc.trcflags & 2) > 0) {  // enabled
+  if ((kikcsa.trc.trcflags & 4) > 0) { // open
+   // only write if file open
+   int fchk;
+   char dd[10], dt[10];
+
+
+#if defined(__MVS__) || defined(__CMS__)
+   int dp[2], db, ddd, yy;
+   int tp[2], tb, hh, mm, ss;
+
+
+   // obtain date/time (not from EIB, might be clobbered)
+   dp[0]=0; tp[0]=0; TIMEMAC(dp[1], tp[1]);
+   tp[1] = tp[1] >> 4; tp[1] |= 15;  // at this point both tp
+                                     // and dp are as in eib...
+   CVB(tp[0], tb);
+   ss = tb  % 100;
+   mm = (tb / 100) % 100;
+   hh = (tb / 10000) % 100;
+   sprintf(dt, "%02d:%02d:%02d", hh, mm, ss);
+
+   CVB(dp[0], db);
+   ddd = db % 1000;
+   yy = (db / 1000) % 100;
+   sprintf(dd, "%02d.%03d", yy, ddd);
+
+#else
+ // get dt, dd from STRFTIME
+#endif
+
+
+   // use of fopen/fprintf/fflush/fclose for auxtrc is
+   // problematic because it may fail and abend kicks
+   // example - b37-04 when auxtrc fills
+   // which abends kicks, does NOT come back with fchk < 0
+   // and the fflush is probably useless also; from what
+   // I can tell pdpclib does not implement it for MVS
+   //
+   // that's why auxtrc is double spaced.
+
+   fchk=fprintf((FILE*)kikcsa.auxtrc, "%s %s %s\n\n",
+     &dd, &dt, tracemsg);
+
+   if (fchk<0) { // if write fails close file
+    fclose((FILE*)kikcsa.auxtrc);
+    kikcsa.trc.trcflags &= ~4; // show closed
+    }
+   fflush((FILE*)kikcsa.auxtrc);
+
+   }  // end ..& 4) > 0
+  }   // end ..& 2) > 0
+
+ }    // end tracewtr
+
+
+ // add trailing spaces (left justify)
+ char *rpad(char *string, int slong)
+ {
+  int i;
+  for (i=strlen(string); i<slong; i++) {
+   string[i] = ' ';
+   string[i+1] = 0;
+   }
+  return string;
+ }
+
+ // for globals that are NOT effected by SIT processing
+void gbl_i1(KIKCSA *csa) {
+
+ // CSA itself ------------------------------------------------
+ // clear csa
+ memset(csa, 0, sizeof(*csa));
+
+ // eye catchers
+ memcpy(&csa->csastrt, "KIKCSA-----START",16);
+ memcpy(&csa->siteye, "SIT", 3);
+ memcpy(&csa->pcpeye, "PCP", 3);
+ memcpy(&csa->ppteye, "PPT", 3);
+ memcpy(&csa->kcpeye, "KCP", 3);
+ memcpy(&csa->pcteye, "PCT", 3);
+ memcpy(&csa->fcpeye, "FCP", 3);
+ memcpy(&csa->fcteye, "FCT", 3);
+ memcpy(&csa->dcpeye, "DCP", 3);
+ memcpy(&csa->dcteye, "DCT", 3);
+ memcpy(&csa->bmseye, "BMS", 3);
+ memcpy(&csa->tcpeye, "TCP", 3);
+ memcpy(&csa->scpeye, "SCP", 3);
+ memcpy(&csa->tspeye, "TSP", 3);
+ memcpy(&csa->csaend,  "KIKCSA-------END",16);
+
+ // wipe the eye catcher literals...
+ memset("KIKCSA-----START", 0, 16);
+ memset("SIT", 0, 3);
+ memset("PCP", 0, 3);
+ memset("PPT", 0, 3);
+ memset("KCP", 0, 3);
+ memset("PCT", 0, 3);
+ memset("FCP", 0, 3);
+ memset("FCT", 0, 3);
+ memset("DCP", 0, 3);
+ memset("DCT", 0, 3);
+ memset("BMS", 0, 3);
+ memset("TCP", 0, 3);
+ memset("SCP", 0, 3);
+ memset("TSP", 0, 3);
+ memset("KIKCSA-------END", 0, 16);
+
+ // set version
+ csa->version = MKVER(V, R, M, E);
+
+ // set file handles
+ csa->csastdin = stdin;
+ csa->csastdout = stdout;
+ csa->csastderr = stderr;
+
+ // set lastcc, maxcc
+ // csa->lastcc = 0; csa->maxcc = 0;          ...above memset does it...
+
+ // set default maxdelay
+ csa->maxdelay = 180; // 3 minutes
+
+ // set default allow stuff
+ // csa->allowlast = 0; csa->allowmax = 0;    ...above memset does it...
+ // memset(csa->allowdsn, 0, 44);
+
+ // set running to 'not yet'
+ // csa->runphase = 0;                        ...above memset does it...
+
+ // set AICA, ASRA, ASRB stuff
+ csa->AICAmax  = 5000; /* 5 seconds */
+ csa->AICAinst = (char*)&kikaica;
+ csa->AICArtn  = (char*)&AICAroutine;
+ csa->ASRArtn  = (char*)&ASRAroutine;
+ csa->ASRBrtn  = (char*)&ASRBroutine;
+
+ // set vcons pointer
+ csa->vcons = (VCONS *)&vconstb5;
+
+ // preset csa pgm default suffixes
+ memcpy(&csa->pcp_suffix, "00",2);
+ memcpy(&csa->kcp_suffix, "00",2);
+ memcpy(&csa->fcp_suffix, "00",2);
+ memcpy(&csa->dcp_suffix, "00",2);
+ memcpy(&csa->tcp_suffix, "00",2);
+ memcpy(&csa->bms_suffix, "00",2);
+ memcpy(&csa->scp_suffix, "00",2);
+ memcpy(&csa->tsp_suffix, "00",2);
+
+ // preset csa table default suffixes
+ memcpy(&csa->sit_table_suffix, "00",2);
+ memcpy(&csa->pcp_table_suffix, "00",2);
+ memcpy(&csa->kcp_table_suffix, "00",2);
+ memcpy(&csa->fcp_table_suffix, "00",2);
+ memcpy(&csa->dcp_table_suffix, "00",2);
+
+ // TCA --- ( and EIB, which is part of the TCA ) -------------
+ // set the tca pointer and clear it
+ memset((char*)&kiktca, 0, sizeof(kiktca));
+ csa->tca = &kiktca;
+ csa->nexttasknum = 1;
+
+ // TCTTE -----------------------------------------------------
+ // set the tctte pointer and clear it
+ memset((char*)&kiktctte, 0, sizeof(kiktctte));
+ csa->tctte = &kiktctte;
+
+#ifdef __MVS__
+ { int cvtprod, tiot, tsoflag; char *tcb;
+
+  // first get systype
+  cvtprod = *(int*)10;            // cvt
+  cvtprod -= 0x28;                // prefix
+  cvtprod += 2;                   // to part of sysid
+  if (*(char*)cvtprod >= '2')
+   // 31 bit capable system we call z/os
+   csa->systype = csasystype$zos;
+  else
+   // not 31 bit capable...
+   csa->systype = csasystype$mvs38;
+
+ // then get rb address (mostly for AICA routine)
+ tcb = (char*)*(int*)540;         // psatold
+ csa->kikrb  = (char*)*(int*)tcb; // tcbrbp
+
+  // also capture userid, batch flag
+ // -- userid / jobname / racfid
+ memset(csa->tctte->usrid, ' ', 8);
+
+ __asm__ (
+ "EXTRACT E%=,'S',FIELDS=(TIOT,TJID)\n\t"
+ "B P%=\n"
+"E%= DS 2F\n"
+"P%= L 1,E%=\n\t"
+ "ST 1,%0\n\t"
+ "L 1,E%=+4\n\t"
+ "ST 1,%1"
+  : "=m"(tiot),"=m"(tsoflag)
+  : /* no input */
+  : "1"
+ );
+ memcpy(csa->tctte->usrid, tiot, 8);
+ if (tsoflag == 0) csa->systype |= csasystype$batch;
+
+ if ((csa->systype & csasystype$batch) != 0)
+  {
+
+  int cvt, jscb, jct, jctuser, tcb;
+
+  #define CVTPTR   0x0010
+  #define CVTTCBP  0x0000
+  #define TCBJSCB  0x00B4
+  #define JSCBJCTA 0x0104
+  #define JCTUSER  0x00A0
+
+  // may need to be 31 bit for this...
+  CLEAN12;
+  BE31;
+
+  // follow the chain to the jscb
+  cvt  = *(int*)CVTPTR;
+  tcb  = *(int*)(cvt+CVTTCBP);       // prefix
+  tcb  = *(int*)(tcb+4);             // tcb proper
+  jscb = *(int*)(tcb+TCBJSCB);
+
+  // continue chaining to jctuser
+  jct     = *(int*)(jscb+JSCBJCTA);
+  jct     = SWAREQ(jct);
+  jctuser = jct + JCTUSER;
+
+  // use JCTUSER if it is non-blank
+  if ((*(char*)jctuser != ' ') && (*(char*)jctuser != 0)) {
+   memset(csa->tctte->usrid, ' ', 8);
+   memcpy(csa->tctte->usrid, (char*)jctuser, 7);
+   }
+
+  BE24;
+  }
+ }
+#endif
+
+#ifdef __CMS__
+ { extid *extbuf;
+
+  // use DIAG 0 to obtain version flag
+  __asm__ (
+   "LA 2,B%=\n\t"
+   "ST 2,%0\n\t"
+   "LA 3,40\n\t"
+   "DC X'83',X'23',XL1'0000'\n\t"
+   "B P%=\n"
+  "B%= DS 5D inline storage to ensure dw alignment\n"
+  "P%= EQU *"
+   : "=m"(extbuf)
+   : /* no input */
+   : "2", "3"
+  );
+
+  if (!strncmp(extbuf->vm370.system, "VM/370", 6)) {
+   // vm/370 24 bit system
+   csa->systype = csasystype$vm6pk;
+   }
+  else
+  if (!strncmp(extbuf->vm370.system, "VM/SP", 5)) {
+   // vm/sp 24 bit system
+   csa->systype = csasystype$vmsp;
+   }
+  else {
+   // 31 bit capable...
+   csa->systype = csasystype$zvm;
+   }
+
+  // rb not available on CMS...
+
+  // also capture userid from extbuf
+  // user id in same place for either system...
+  memcpy(csa->tctte->usrid, extbuf->vm370.userid, 8);
+
+  // assume interactive (not batch) until TCP examines
+  // the terminal type (ie, is CRLP defined).
+ }
+#endif
+
+ // TIOA ------------------------------------------------------
+ // set tioa pointer & clear it
+ csa->tctte->tioa = (char*)&tioabuf;
+ csa->tctte->lotioa = (char*)&lotioabuf;
+ csa->tctte->tioasize = sizeof(tioabuf);
+ csa->tctte->tioaused = 0;
+ csa->tctte->lotioaused = 0;
+ memset((char*)csa->tctte->tioa, 0, csa->tctte->tioasize);
+ memset((char*)csa->tctte->lotioa, 0, csa->tctte->tioasize);
+
+ // LOADCB ----------------------------------------------------
+ // set loadcb pointer, clear it, point to loader pgm
+ csa->loadcb = &loadcb;
+ memset(csa->loadcb, 0, sizeof(loadcb));
+ csa->loadcb->loader = (char*)&kikload;
+
+ // preset SKIKLOAD for system pgm & table loads
+ memcpy(&csa->loadcb->loadlib, "SKIKLOAD", 8);
+ kikload(csa, 0); // might as well open too
+
+ // COMM-AREA -------------------------------------------------
+ // set the comm-area pointer and clear it
+ memset((char*)&commarea, 0, COMASIZE);
+ csa->usrcommarea = (char*)&commarea;
+ csa->maxcommsize = COMASIZE;
+
+}
+
+
+ // for globals that ARE effected by SIT processing
+void gbl_i2(KIKCSA *csa) {
+char *buf; int bufsize;
+
+ // allocate, clear CWA and set pointer in CSA
+ if (csa->cwal > 0) {
+  bufsize = csa->cwal;
+  buf = (char*)malloc(bufsize);
+  if (buf == NULL) {
+   fprintf (stderr, "CWA allocation failed!\n");
+   fprintf (stderr, "This is a fatal error! Bye Bye!\n\n");
+   }
+  memset(buf, 0, bufsize);
+  csa->cwaa = buf;
+  }
+
+ // allocate, clear TCTTEUA and set pointer in TCTTE
+ if (csa->tctteual > 0) {
+  csa->tctte->tctteual = csa->tctteual;
+  bufsize = csa->tctte->tctteual;
+  buf = (char*)malloc(bufsize);
+  if (buf == NULL) {
+   fprintf (stderr, "TCTUA allocation failed!\n");
+   fprintf (stderr, "This is a fatal error! Bye Bye!\n\n");
+   }
+  memset(buf, 0, bufsize);
+  csa->tctte->tctteuaa = buf;
+  }
+
+ // allocate, clear TRACE TABLE and initialize
+ if (csa->trcnum > 0) {
+  csa->trc.trcnum = csa->trcnum;
+  csa->trc.trcsize = 16;  // trcsize >= 16...
+  bufsize = csa->trc.trcnum * csa->trc.trcsize + 32;
+  buf = (char*)malloc(bufsize);
+  if (buf == NULL) {
+   fprintf (stderr, "Trace Table allocation failed!\n");
+   fprintf (stderr, "This is a fatal error! Bye Bye!\n\n");
+   }
+  memset(buf, 0, bufsize);
+  csa->trc.trctbl=buf + 16;
+
+  // more TRACE TABLE initialization
+  // (1st/last entrys for eye catchers, ie, table has
+  // 2 more entries that trcnum...)
+  csa->trc.trccur = 0;
+  csa->trc_addr = (char*)&tracewtr;
+  csa->trc.trcflags = 0;         // trace is disabled
+  memcpy(buf, "TRACETBL---START", 16);
+  memcpy(buf+bufsize-16, "TRACETBL-----END", 16);
+  }
+
+ // unconditionally wipe out the eye catcher literals...
+ memset("TRACETBL---START", 0, 16);
+ memset("TRACETBL-----END", 0, 16);
+}
+
+
+// sub used by merge_parms sub
+int merge_tst(KIKCSA *csa, char *str) {
+ int strl = strlen(str);
+ if (!memcmp(csa->tctte->tioa, str, strl))
+  if ((*(csa->tctte->tioa+strl) != 0) &&
+      (*(csa->tctte->tioa+strl) != ' ')) return(true);
+ return(false);
+ }
+
+// sub used by main to merge SIT parms from parms and sysin
+void merge_parms(KIKCSA *csa) {
+char *ip; long L;
+ if (merge_tst(csa, "PCP="))
+  memcpy(&csa->pcp_suffix, (csa->tctte->tioa)+4, 2);
+ if (merge_tst(csa, "KCP="))
+  memcpy(&csa->kcp_suffix, (csa->tctte->tioa)+4, 2);
+ if (merge_tst(csa, "FCP="))
+  memcpy(&csa->fcp_suffix, (csa->tctte->tioa)+4, 2);
+ if (merge_tst(csa, "DCP="))
+  memcpy(&csa->dcp_suffix, (csa->tctte->tioa)+4, 2);
+ if (merge_tst(csa, "BMS="))
+  memcpy(&csa->bms_suffix, (csa->tctte->tioa)+4, 2);
+ if (merge_tst(csa, "TCP="))
+  memcpy(&csa->tcp_suffix, (csa->tctte->tioa)+4, 2);
+ if (merge_tst(csa, "SCP="))
+  memcpy(&csa->scp_suffix, (csa->tctte->tioa)+4, 2);
+ if (merge_tst(csa, "TSP="))
+  memcpy(&csa->tsp_suffix, (csa->tctte->tioa)+4, 2);
+ if (merge_tst(csa, "PPT="))
+  memcpy(&csa->pcp_table_suffix, (csa->tctte->tioa)+4, 2);
+ if (merge_tst(csa, "PCT="))
+  memcpy(&csa->kcp_table_suffix, (csa->tctte->tioa)+4, 2);
+ if (merge_tst(csa, "FCT="))
+  memcpy(&csa->fcp_table_suffix, (csa->tctte->tioa)+4, 2);
+ if (merge_tst(csa, "DCT="))
+  memcpy(&csa->dcp_table_suffix, (csa->tctte->tioa)+4, 2);
+ if (merge_tst(csa, "OPID="))
+  memcpy(&csa->opid, (csa->tctte->tioa)+5, 3);
+
+
+ if (merge_tst(csa, "DMPCLAS="))
+  memcpy(&csa->dmpclass, (csa->tctte->tioa)+8, 1);
+ if (merge_tst(csa, "NATLANG="))
+  memcpy(&csa->natlang, (csa->tctte->tioa)+8, 1);
+ if (merge_tst(csa, "ICVR=")) {
+  ip = (char*)strtok(csa->tctte->tioa, "= ");
+  ip = (char*)strtok(0, "= ");
+  L = strtol(ip, 0, 0);
+  if (L>0)
+   if ((L < 1000) || (L > 600000)) {
+    printf("IVCR=%ld (parms) should be 0 or 1000-600000\n", L);
+    }
+   else csa->AICAmax = L;
+  else csa->AICAmax = L;
+  }
+ if (merge_tst(csa, "TRCNUM=")) {
+  ip = (char*)strtok(csa->tctte->tioa, "= ");
+  ip = (char*)strtok(0, "= ");
+  L = strtol(ip, 0, 0);
+  if (L>0)
+   if ((L < 100) || (L > 1000)) {
+    printf("TRCNUM=%ld (parms) should be 0 or 1000-1000\n", L);
+    }
+   else csa->trcnum = L;
+  else csa->trcnum = L;
+  }
+ if (merge_tst(csa, "TRCFLAGS=")) {
+  ip = (char*)strtok(csa->tctte->tioa, "= ");
+  ip = (char*)strtok(0, "= ");
+  L = strtol(ip, 0, 0); csa->trcflags = L;
+  }
+ if (merge_tst(csa, "CWAL=")) {
+  ip = (char*)strtok(csa->tctte->tioa, "= ");
+  ip = (char*)strtok(0, "= ");
+  L = strtol(ip, 0, 0);
+  if (L>1024)
+   printf("CWAL=%ld (parms) should be less LE 1024\n", L);
+  else csa->cwal = L;
+  }
+ if (merge_tst(csa, "TCTUAL=")) {
+  ip = (char*)strtok(csa->tctte->tioa, "= ");
+  ip = (char*)strtok(0, "= ");
+  L = strtol(ip, 0, 0);
+  if (L>1024)
+   printf("TCTUAL=%ld (parms) should be less LE 1024\n", L);
+  else csa->tctteual = L;
+  }
+ if (merge_tst(csa, "PLTPI="))
+  memcpy(&csa->pltstrt, (csa->tctte->tioa)+6, 4);
+ if (merge_tst(csa, "PLTSD="))
+  memcpy(&csa->pltend, (csa->tctte->tioa)+6, 4);
+ if (merge_tst(csa, "SYNCPGM=")) {
+  memcpy(&csa->syncpgm, (csa->tctte->tioa)+8, 8);
+  if (csa->syncpgm[0] != 0) rpad(csa->syncpgm, 8);
+  }
+ if (merge_tst(csa, "ENQSCOP=")) {
+  int ll;
+  ll = strlen(csa->tctte->tioa);
+  if (!memcmp((csa->tctte->tioa)+8, "SYSTEMS", 7))
+   memcpy(&csa->enqscope, (csa->tctte->tioa)+8, 8);
+  else
+  if (!memcmp((csa->tctte->tioa)+8, "SYSTEM", 6))
+   memcpy(&csa->enqscope, (csa->tctte->tioa)+8, 8);
+  else
+   printf("ENQSCOP (parms) should be SYSTEM or SYSTEMS\n");
+  }
+ if (merge_tst(csa, "FFREEKB=")) {
+  int ll;
+  ll = strlen(csa->tctte->tioa);
+  if (!memcmp((csa->tctte->tioa)+8, "YES", 3))
+   csa->ffreekb = 0;
+  else
+  if (!memcmp((csa->tctte->tioa)+8, "NO", 2))
+   csa->ffreekb = 1;
+  else
+   printf("FFREEKB (parms) should be YES or NO\n");
+  }
+ if (merge_tst(csa, "MAXDELY=")) {
+  ip = (char*)strtok(csa->tctte->tioa, "= ");
+  ip = (char*)strtok(0, "= ");
+  L = strtol(ip, 0, 0);
+  if ((L < 0) || (L > 175000)) {
+   printf("MAXDELY=%ld (parms) should be 0-175000\n", L);
+   }
+  else csa->maxdelay = L;
+  }
+
+#ifdef __CMS__
+
+ // some shortened keywords to allow better CMS usage (8 char parms)
+
+  // (merge_tst(csa, "DMPCLAS="))
+  if (merge_tst(csa, "DC="))
+   memcpy(&csa->dmpclass, (csa->tctte->tioa)+3, 1);
+  // (merge_tst(csa, "NATLANG="))
+  if (merge_tst(csa, "NL="))
+   memcpy(&csa->natlang, (csa->tctte->tioa)+3, 1);
+  // (merge_tst(csa, "ICVR=")) {
+  if (merge_tst(csa, "I=")) {
+   ip = (char*)strtok(csa->tctte->tioa, "= ");
+   ip = (char*)strtok(0, "= ");
+   L = strtol(ip, 0, 0);
+   if (L>0)
+    if ((L < 1000) || (L > 99999)) {
+     printf("I=%ld (parms) should be 0 or 1000-99999\n", L);
+     }
+    else csa->AICAmax = L;
+   else csa->AICAmax = L;
+   }
+  // (merge_tst(csa, "TRCNUM=")) {
+  if (merge_tst(csa, "TN=")) {
+   ip = (char*)strtok(csa->tctte->tioa, "= ");
+   ip = (char*)strtok(0, "= ");
+   L = strtol(ip, 0, 0);
+   if (L>0)
+    if ((L < 100) || (L > 1000)) {
+     printf("TRCNUM=%ld (parms) should be 0 or 1000-1000\n", L);
+     }
+    else csa->trcnum = L;
+   else csa->trcnum = L;
+   }
+  // (merge_tst(csa, "TRCFLAGS=")) {
+  if (merge_tst(csa, "TF=")) {
+   ip = (char*)strtok(csa->tctte->tioa, "= ");
+   ip = (char*)strtok(0, "= ");
+   L = strtol(ip, 0, 0); csa->trcflags = L;
+   }
+  // (merge_tst(csa, "CWAL=")) {
+  if (merge_tst(csa, "CL=")) {
+   ip = (char*)strtok(csa->tctte->tioa, "= ");
+   ip = (char*)strtok(0, "= ");
+   L = strtol(ip, 0, 0);
+   if (L>1024)
+    printf("CL=%ld (parms) should be less LE 1024\n", L);
+   else csa->cwal = L;
+   }
+  // (merge_tst(csa, "TCTUAL=")) {
+  if (merge_tst(csa, "TL=")) {
+   ip = (char*)strtok(csa->tctte->tioa, "= ");
+   ip = (char*)strtok(0, "= ");
+   L = strtol(ip, 0, 0);
+   if (L>1024)
+    printf("TL=%ld (parms) should be less LE 1024\n", L);
+   else csa->tctteual = L;
+   }
+  // (merge_tst(csa, "PLTPI="))
+  if (merge_tst(csa, "PI="))
+   memcpy(&csa->pltstrt, (csa->tctte->tioa)+3, 4);
+  // (merge_tst(csa, "PLTSD="))
+  if (merge_tst(csa, "PD="))
+   memcpy(&csa->pltend, (csa->tctte->tioa)+3, 4);
+  // (merge_tst(csa, "SYNCPGM="))
+  if (merge_tst(csa, "SP=")) {
+   memcpy(&csa->syncpgm, (csa->tctte->tioa)+3, 8);
+   if (csa->syncpgm[0] != 0) rpad(csa->syncpgm, 8);
+   }
+  // (merge_tst(csa, "ENQSCOP=")) {
+  if (merge_tst(csa, "E=")) {
+   int ll;
+   ll = strlen(csa->tctte->tioa);
+   if (!memcmp((csa->tctte->tioa)+2, "MS", 2))
+    memcpy(&csa->enqscope, "SYSTEMS ", 8);
+   else
+   if (!memcmp((csa->tctte->tioa)+2, "M", 1))
+    memcpy(&csa->enqscope, "SYSTEM  ", 8);
+   else
+    printf("E= (parms) should be M or MS\n");
+   }
+ // (merge_tst(csa, "FFREEKB=")) {
+ if (merge_tst(csa, "FKB=")) {
+  int ll;
+  ll = strlen(csa->tctte->tioa);
+  if (!memcmp((csa->tctte->tioa)+4, "YES", 3))
+   csa->ffreekb = 0;
+  else
+  if (!memcmp((csa->tctte->tioa)+4, "NO", 2))
+   csa->ffreekb = 1;
+  else
+   printf("FKB= (parms) should be YES or NO\n");
+  }
+  // (merge_tst(csa, "MAXDELY=")) {
+  if (merge_tst(csa, "M=")) {
+   ip = (char*)strtok(csa->tctte->tioa, "= ");
+   ip = (char*)strtok(0, "= ");
+   L = strtol(ip, 0, 0);
+   if ((L < 0) || (L > 175000)) {
+    printf("M=%ld (parms) should be 0-175000\n", L);
+    }
+   else csa->maxdelay = L;
+   }
+
+#endif
+
+}
+
+
+int main (int argc, char *argv[]) { // kiksip is main...
+KIKCSA *csa;
+int i; char *ip, firstnl[8]; long L;
+
+ // setup globals
+ csa = &kikcsa; gbl_i1(csa);
+
+ // pass 1 over cmd line arguments for possible 'SIT='
+ for (i = 1; i < argc; i++)
+ // if (!memcmp(argv[i], "SIT=", 4))
+ //  if ((*(argv[i]+4) != 0) && (*(argv[i]+4) != ' '))
+ //  memcpy(&csa->sit_table_suffix, (argv[i])+4, 2);
+  if (!memcmp(argv[i], "SIT=", 4))
+   if ((argv[i][4] != 0) && (argv[i][4] != ' ')) {
+    csa->sit_table_suffix[0] = argv[i][4];
+    if ((argv[i][5] != 0) && (argv[i][5] != ' '))
+     csa->sit_table_suffix[1] = argv[i][5];
+    }
+
+ // show signon...
+#ifdef DEBUGIT
+ // message if debugging version
+ printf("*** DEBUGGING version of SIP *** *** ***\n");
+#endif
+
+ printf ("KICKS version %d.%d.%d(%d) startup using SIT=%2s,\n",
+  (csa->version>>24)&255,
+  (csa->version>>16)&255,
+  (csa->version>>8 )&255,
+  (csa->version    )&255,
+  &csa->sit_table_suffix);
+ printf (
+ "      which with command line and stdin overrides results in...\n");
+
+ // load the SIT specified
+ memcpy(&csa->loadcb->loadbase, "KIKSIT", 6);
+ memcpy(&csa->loadcb->loadsuffix, &csa->sit_table_suffix, 2);
+ printf("loading %8.8s - ", &csa->loadcb->loadbase);
+ kikload(csa, 2);
+ if (csa->loadcb->loaderr1 != 0) {
+  fprintf (stderr, "SIT table %8.8s failed to load %x(%x)\n",
+    &csa->loadcb->loadbase, csa->loadcb->loaderr1,
+    csa->loadcb->loaderr15);
+  fprintf (stderr, "This is a fatal error! Bye Bye!\n\n");
+  exit(999);
+  }
+ //intf("%d bytes at %x, ep %x - ",
+ printf("%d bytes at %X, ep %X\n",
+  csa->loadcb->loadlength,
+  csa->loadcb->loadedwhere,
+  csa->loadcb->ep);
+ // for tables ep **must** equal loadedwhere...
+ csa->sit_table_addr = (KIKSIT *)csa->loadcb->loadedwhere;
+ if (memcmp((char *)&csa->version, &csa->sit_table_addr->ver, 4)) {
+  fprintf (stderr, "SIT version does not match CSA!\n");
+  fprintf (stderr, "This is a fatal error! Bye Bye!\n\n");
+  exit (999);
+  }
+
+ // merge in SIT suffixes/parms
+ memcpy(&csa->pcp_suffix, &csa->sit_table_addr->pcp_suffix, 2);
+ memcpy(&csa->pcp_table_suffix,
+        &csa->sit_table_addr->pcp_table_suffix, 2);
+ memcpy(&csa->kcp_suffix, &csa->sit_table_addr->kcp_suffix, 2);
+ memcpy(&csa->kcp_table_suffix,
+        &csa->sit_table_addr->kcp_table_suffix, 2);
+ memcpy(&csa->fcp_suffix, &csa->sit_table_addr->fcp_suffix, 2);
+ memcpy(&csa->fcp_table_suffix,
+        &csa->sit_table_addr->fcp_table_suffix, 2);
+ memcpy(&csa->dcp_suffix, &csa->sit_table_addr->dcp_suffix, 2);
+ memcpy(&csa->dcp_table_suffix,
+        &csa->sit_table_addr->dcp_table_suffix, 2);
+ memcpy(&csa->bms_suffix, &csa->sit_table_addr->bms_suffix, 2);
+ memcpy(&csa->tcp_suffix, &csa->sit_table_addr->tcp_suffix, 2);
+ memcpy(&csa->scp_suffix, &csa->sit_table_addr->scp_suffix, 2);
+ memcpy(&csa->tsp_suffix, &csa->sit_table_addr->tsp_suffix, 2);
+ memcpy(&csa->opid, &csa->sit_table_addr->opid, 3);
+ csa->natlang = csa->sit_table_addr->natlang;
+ csa->dmpclass = csa->sit_table_addr->dmpclass;
+ csa->AICAmax = csa->sit_table_addr->icvr;
+ csa->trcnum = csa->sit_table_addr->trcnum;
+ csa->trcflags = csa->sit_table_addr->trcflags;
+ memcpy(&csa->pltstrt, &csa->sit_table_addr->pltstrt, 4);
+ memcpy(&csa->pltend, &csa->sit_table_addr->pltend, 4);
+ csa->cwal = csa->sit_table_addr->cwal;
+ csa->tctteual = csa->sit_table_addr->tctteual;
+ memcpy(&csa->enqscope, &csa->sit_table_addr->enqscope, 8);
+ csa->maxdelay = csa->sit_table_addr->maxdelay;
+ csa->ffreekb = csa->sit_table_addr->ffreekb;
+ memcpy(&csa->syncpgm, &csa->sit_table_addr->syncpgm, 8);
+
+ // SIT no longer needed so delete it
+ // -- less than 100 bytes, pointless to delete...
+ // ***** don't delete ***** now has license pointer *****
+ //intf("deleting %8.8s\n", &csa->loadcb->loadbase);
+ //kload(csa, 3); // loadcb still has module name from load
+
+ // pass 2 over cmd line arguments for other suffixes/parms
+ for (i = 1; i < argc; i++) {
+  strcpy(csa->tctte->tioa, argv[i]);
+  merge_parms(csa);
+  }
+
+ // merge stdin into suffixes/parms
+ fflush(stdout);
+ while (gets(csa->tctte->tioa) != NULL) {
+  fflush(stdout);
+  merge_parms(csa);
+  }
+
+ // load the system programs and tables
+ memcpy(&csa->loadcb->loadbase, "KIKPCP", 6);
+ memcpy(&csa->loadcb->loadsuffix, &csa->pcp_suffix, 2);
+ printf("loading %8.8s - ", &csa->loadcb->loadbase);
+ kikload(csa, 2);
+ if (csa->loadcb->loaderr1 != 0) {
+  fprintf (stderr, "PCP program %8.8s failed to load %x(%x)\n",
+   &csa->loadcb->loadbase, csa->loadcb->loaderr1,
+   csa->loadcb->loaderr15);
+  fprintf (stderr, "This is a fatal error! Bye Bye!\n\n");
+  exit(999);
+  }
+ printf("%d bytes at %X, ep %X\n",
+  csa->loadcb->loadlength,
+  csa->loadcb->loadedwhere,
+  csa->loadcb->ep);
+ csa->pcp_addr = csa->loadcb->ep;
+ csa->pcp_load = (int)csa->loadcb->loadedwhere;
+ csa->pcp_size = csa->loadcb->loadlength;
+
+ memcpy(&csa->loadcb->loadbase, "KIKKCP", 6);
+ memcpy(&csa->loadcb->loadsuffix, &csa->kcp_suffix, 2);
+ printf("loading %8.8s - ", &csa->loadcb->loadbase);
+ kikload(csa, 2);
+ if (csa->loadcb->loaderr1 != 0) {
+  fprintf (stderr, "KCP program %8.8s failed to load %x(%x)\n",
+    &csa->loadcb->loadbase, csa->loadcb->loaderr1,
+    csa->loadcb->loaderr15);
+  fprintf (stderr, "This is a fatal error! Bye Bye!\n\n");
+  exit(999);
+  }
+ printf("%d bytes at %X, ep %X\n",
+  csa->loadcb->loadlength,
+  csa->loadcb->loadedwhere,
+  csa->loadcb->ep);
+ csa->kcp_addr = csa->loadcb->ep;
+ csa->kcp_load = (int)csa->loadcb->loadedwhere;
+ csa->kcp_size = csa->loadcb->loadlength;
+
+ memcpy(&csa->loadcb->loadbase, "KIKFCP", 6);
+ memcpy(&csa->loadcb->loadsuffix, &csa->fcp_suffix, 2);
+ printf("loading %8.8s - ", &csa->loadcb->loadbase);
+ kikload(csa, 2);
+ if (csa->loadcb->loaderr1 != 0) {
+  fprintf (stderr, "FCP program %8.8s failed to load %x(%x)\n",
+    &csa->loadcb->loadbase, csa->loadcb->loaderr1,
+    csa->loadcb->loaderr15);
+  fprintf (stderr, "This is a fatal error! Bye Bye!\n\n");
+  exit(999);
+  }
+ printf("%d bytes at %X, ep %X\n",
+  csa->loadcb->loadlength,
+  csa->loadcb->loadedwhere,
+  csa->loadcb->ep);
+ csa->fcp_addr = csa->loadcb->ep;
+ csa->fcp_load = (int)csa->loadcb->loadedwhere;
+ csa->fcp_size = csa->loadcb->loadlength;
+
+ memcpy(&csa->loadcb->loadbase, "KIKDCP", 6);
+ memcpy(&csa->loadcb->loadsuffix, &csa->dcp_suffix, 2);
+ printf("loading %8.8s - ", &csa->loadcb->loadbase);
+ kikload(csa, 2);
+ if (csa->loadcb->loaderr1 != 0) {
+  fprintf (stderr, "DCP program %8.8s failed to load %x(%x)\n",
+    &csa->loadcb->loadbase, csa->loadcb->loaderr1,
+    csa->loadcb->loaderr15);
+  fprintf (stderr, "This is a fatal error! Bye Bye!\n\n");
+  exit(999);
+  }
+ printf("%d bytes at %X, ep %X\n",
+  csa->loadcb->loadlength,
+  csa->loadcb->loadedwhere,
+  csa->loadcb->ep);
+ csa->dcp_addr = csa->loadcb->ep;
+ csa->dcp_load = (int)csa->loadcb->loadedwhere;
+ csa->dcp_size = csa->loadcb->loadlength;
+
+ memcpy(&csa->loadcb->loadbase, "KIKBMS", 6);
+ memcpy(&csa->loadcb->loadsuffix, &csa->bms_suffix, 2);
+ printf("loading %8.8s - ", &csa->loadcb->loadbase);
+ kikload(csa, 2);
+ if (csa->loadcb->loaderr1 != 0) {
+  fprintf (stderr, "BMS program %8.8s failed to load %x(%x)\n",
+    &csa->loadcb->loadbase, csa->loadcb->loaderr1,
+    csa->loadcb->loaderr15);
+  fprintf (stderr, "This is a fatal error! Bye Bye!\n\n");
+  exit(999);
+  }
+ printf("%d bytes at %X, ep %X\n",
+  csa->loadcb->loadlength,
+  csa->loadcb->loadedwhere,
+  csa->loadcb->ep);
+ csa->bms_addr = csa->loadcb->ep;
+ csa->bms_load = (int)csa->loadcb->loadedwhere;
+ csa->bms_size = csa->loadcb->loadlength;
+
+ memcpy(&csa->loadcb->loadbase, "KIKTCP", 6);
+ memcpy(&csa->loadcb->loadsuffix, &csa->tcp_suffix, 2);
+ printf("loading %8.8s - ", &csa->loadcb->loadbase);
+ kikload(csa, 2);
+ if (csa->loadcb->loaderr1 != 0) {
+  fprintf (stderr, "TCP program %8.8s failed to load %x(%x)\n",
+    &csa->loadcb->loadbase, csa->loadcb->loaderr1,
+    csa->loadcb->loaderr15);
+  fprintf (stderr, "This is a fatal error! Bye Bye!\n\n");
+  exit(999);
+  }
+ printf("%d bytes at %X, ep %X\n",
+  csa->loadcb->loadlength,
+  csa->loadcb->loadedwhere,
+  csa->loadcb->ep);
+ csa->tcp_addr = csa->loadcb->ep;
+ csa->tcp_load = (int)csa->loadcb->loadedwhere;
+ csa->tcp_size = csa->loadcb->loadlength;
+
+ memcpy(&csa->loadcb->loadbase, "KIKSCP", 6);
+ memcpy(&csa->loadcb->loadsuffix, &csa->scp_suffix, 2);
+ printf("loading %8.8s - ", &csa->loadcb->loadbase);
+ kikload(csa, 2);
+ if (csa->loadcb->loaderr1 != 0) {
+  fprintf (stderr, "SCP program %8.8s failed to load %x(%x)\n",
+    &csa->loadcb->loadbase, csa->loadcb->loaderr1,
+    csa->loadcb->loaderr15);
+  fprintf (stderr, "This is a fatal error! Bye Bye!\n\n");
+  exit(999);
+  }
+ printf("%d bytes at %X, ep %X\n",
+  csa->loadcb->loadlength,
+  csa->loadcb->loadedwhere,
+  csa->loadcb->ep);
+ csa->scp_addr = csa->loadcb->ep;
+ csa->scp_load = (int)csa->loadcb->loadedwhere;
+ csa->scp_size = csa->loadcb->loadlength;
+
+ memcpy(&csa->loadcb->loadbase, "KIKTSP", 6);
+ memcpy(&csa->loadcb->loadsuffix, &csa->tsp_suffix, 2);
+ printf("loading %8.8s - ", &csa->loadcb->loadbase);
+ kikload(csa, 2);
+ if (csa->loadcb->loaderr1 != 0) {
+  fprintf (stderr, "TSP program %8.8s failed to load %x(%x)\n",
+    &csa->loadcb->loadbase, csa->loadcb->loaderr1,
+    csa->loadcb->loaderr15);
+  fprintf (stderr, "This is a fatal error! Bye Bye!\n\n");
+  exit(999);
+  }
+ printf("%d bytes at %X, ep %X\n",
+  csa->loadcb->loadlength,
+  csa->loadcb->loadedwhere,
+  csa->loadcb->ep);
+ csa->tsp_addr = csa->loadcb->ep;
+ csa->tsp_load = (int)csa->loadcb->loadedwhere;
+ csa->tsp_size = csa->loadcb->loadlength;
+
+ memcpy(&csa->loadcb->loadbase, "KIKPPT", 6);
+ memcpy(&csa->loadcb->loadsuffix, &csa->pcp_table_suffix, 2);
+ printf("loading %8.8s - ", &csa->loadcb->loadbase);
+ kikload(csa, 2);
+ if (csa->loadcb->loaderr1 != 0) {
+  fprintf (stderr, "PPT table %8.8s failed to load %x(%x)\n",
+    &csa->loadcb->loadbase, csa->loadcb->loaderr1,
+    csa->loadcb->loaderr15);
+  fprintf (stderr, "This is a fatal error! Bye Bye!\n\n");
+  exit(999);
+  }
+ printf("%d bytes at %X, ep %X\n",
+  csa->loadcb->loadlength,
+  csa->loadcb->loadedwhere,
+  csa->loadcb->ep);
+ // for tables ep **must** equal loadedwhere...
+ csa->pcp_table_addr = csa->loadcb->loadedwhere;
+ //a->ppt_load = (int)csa->loadcb->loadedwhere;
+ csa->ppt_size = csa->loadcb->loadlength;
+
+ memcpy(&csa->loadcb->loadbase, "KIKPCT", 6);
+ memcpy(&csa->loadcb->loadsuffix, &csa->kcp_table_suffix, 2);
+ printf("loading %8.8s - ", &csa->loadcb->loadbase);
+ kikload(csa, 2);
+ if (csa->loadcb->loaderr1 != 0) {
+  fprintf (stderr, "PCT table %8.8s failed to load %x(%x)\n",
+    &csa->loadcb->loadbase, csa->loadcb->loaderr1,
+    csa->loadcb->loaderr15);
+  fprintf (stderr, "This is a fatal error! Bye Bye!\n\n");
+  exit(999);
+  }
+ printf("%d bytes at %X, ep %X\n",
+  csa->loadcb->loadlength,
+  csa->loadcb->loadedwhere,
+  csa->loadcb->ep);
+ // for tables ep **must** equal loadedwhere...
+ csa->kcp_table_addr = csa->loadcb->loadedwhere;
+ //a->pct_load = (int)csa->loadcb->loadedwhere;
+ csa->pct_size = csa->loadcb->loadlength;
+
+ memcpy(&csa->loadcb->loadbase, "KIKFCT", 6);
+ memcpy(&csa->loadcb->loadsuffix, &csa->fcp_table_suffix, 2);
+ printf("loading %8.8s - ", &csa->loadcb->loadbase);
+ kikload(csa, 2);
+ if (csa->loadcb->loaderr1 != 0) {
+  fprintf (stderr, "FCT table %8.8s failed to load %x(%x)\n",
+    &csa->loadcb->loadbase, csa->loadcb->loaderr1,
+    csa->loadcb->loaderr15);
+  fprintf (stderr, "This is a fatal error! Bye Bye!\n\n");
+  exit(999);
+  }
+ printf("%d bytes at %X, ep %X\n",
+  csa->loadcb->loadlength,
+  csa->loadcb->loadedwhere,
+  csa->loadcb->ep);
+ // for tables ep **must** equal loadedwhere...
+ csa->fcp_table_addr = csa->loadcb->loadedwhere;
+ //a->fct_load = (int)csa->loadcb->loadedwhere;
+ csa->fct_size = csa->loadcb->loadlength;
+
+ memcpy(&csa->loadcb->loadbase, "KIKDCT", 6);
+ memcpy(&csa->loadcb->loadsuffix, &csa->dcp_table_suffix, 2);
+ printf("loading %8.8s - ", &csa->loadcb->loadbase);
+ kikload(csa, 2);
+ if (csa->loadcb->loaderr1 != 0) {
+  fprintf (stderr, "DCT table %8.8s failed to load %x(%x)\n",
+    &csa->loadcb->loadbase, csa->loadcb->loaderr1,
+    csa->loadcb->loaderr15);
+  fprintf (stderr, "This is a fatal error! Bye Bye!\n\n");
+  exit(999);
+  }
+ printf("%d bytes at %X, ep %X\n",
+  csa->loadcb->loadlength,
+  csa->loadcb->loadedwhere,
+  csa->loadcb->ep);
+ // for tables ep **must** equal loadedwhere...
+ csa->dcp_table_addr = csa->loadcb->loadedwhere;
+ //a->dct_load = (int)csa->loadcb->loadedwhere;
+ csa->dct_size = csa->loadcb->loadlength;
+
+ // done loading system programs, close loader dcb
+ kikload(csa, 1); // close prev open
+
+ // display other SIT info
+ printf("\n");
+ printf("OPID=%3.3s,  ", csa->opid);
+ printf("DMPCLASS=%c,  ", csa->dmpclass);
+ printf("ICVR=%d,  ", csa->AICAmax);
+ printf("ENQSCOP=%7.7s,  ", csa->enqscope);
+ printf("CWAL=%d", csa->cwal);
+ printf("\n");
+ printf("TRCFLAGS=%d,  ", csa->trcflags);
+ printf("TCTUAL=%d,  ", csa->tctteual);
+ printf("TRCNUM=%d,  ", csa->trcnum);
+ printf("PLTPI=%4.4s,  ", csa->pltstrt);
+ printf("PLTSD=%4.4s", csa->pltend);
+ printf("\n");
+ if (csa->syncpgm[0] != 0)
+  printf("SYNCPGM=%8.8s,  ", csa->syncpgm);
+ printf("NATLANG=%c,  ", csa->natlang);
+ printf("MAXDELY=%d,  ", csa->maxdelay);
+ if(csa->ffreekb == 0)
+  printf("FFREEKB=YES");
+ else
+  printf("FFREEKB=NO");
+ //printf("\n");
+ if((csa->trcflags&1) > 0 )
+   printf("\n  - INTERNAL TRACE ENABLED");
+ if((csa->trcflags&2) > 0 )
+   printf("\n  - AUXILIARY TRACE ENABLED");
+ if((csa->trcflags&8) > 0 )
+   printf("\n  - INTENSE TRACE ENABLED");
+ //printf("\n");
+
+ // init the SIT dependant globals
+ gbl_i2(csa);
+
+ // enable trace *************************************************
+ kikcsa.trc.trcflags = csa->trcflags & 11;
+
+#if defined(__MVS__) || defined(__CMS__)
+ (FILE*)kikcsa.auxtrc=fopen("dd:auxtrc", "w");
+#else
+#endif
+ if (kikcsa.auxtrc != NULL) {
+  kikcsa.trc.trcflags |= 4; // post auxtrc file open
+  }
+
+ // call the program startup entry points
+ memset(firstnl, 0, 10); firstnl[0] = '\n';
+ KIKKCP (csa, kikkcpINIT, firstnl); // KCP 1st;  tz, license, chksums
+ KIKSCP (csa, kikscpINIT, firstnl); // SCP next, maybe setup mem
+ KIKPCP (csa, kikpcpINIT, firstnl); // PCP next, sets up PGM load
+ KIKFCP (csa, kikfcpINIT, firstnl); // FCP next, open files?
+ KIKDCP (csa, kikdcpINIT, firstnl); // DCP next, open the queues
+ KIKTSP (csa, kiktspINIT, firstnl); // TSP next, open the queues
+
+ // before going full screen, do a 'test load' of syncpoint exit
+ if (csa->syncpgm[0] != 0) {
+  char  *pgmaddr; int pgmsize=0;
+  LOAD(csa->syncpgm, pgmaddr, pgmsize);
+  if (pgmsize == 0) {
+   fprintf (stderr, "SYNCPOINT exit %8.8s failed (%d, %d) to load.%s",
+     &csa->syncpgm, csa->tca->kikeib.eibresp, csa->tca->kikeib.eibresp2,
+     " disabled.\n");
+   csa->syncpgm[0] = 0;
+   }
+  }
+ // finish startup program init & go FS
+
+ KIKBMS (csa, kikbmsINIT, firstnl); // BMS next, ?
+ KIKTCP (csa, kiktcpINIT, firstnl); // TCP is last, it goes FS...
+
+ // before starting the top level loop, call the transaction end
+ // routines to free anything the startup code left allocated...
+ //KKCP (csa, kikkcpTRANEND);
+ //KSCP (csa, kikscpTRANEND);
+ //KPCP (csa, kikpcpTRANEND);
+ KIKFCP (csa, kikfcpTRANEND);       // vsam files (incl tsp, dcp)
+ KIKDCP (csa, kikdcpTRANEND);       // extra part destinations?
+ //KTSP (csa, kiktspTRANEND);
+ //KBMS (csa, kikbmsTRANEND);
+ //KTCP (csa, kiktcpTRANEND);
+
+ // turn control over to KICKS
+ // msg must be thru BMS, screen is FS at this point
+ //printf ("Control is being given to KICKS...\n");
+
+ // KICKS top level terminal i/o loop
+ {
+ char aid, *tioa, tran[5]; int istat;
+
+ // setup
+ csa->AICAtime = csa->AICAmax;
+ csa->runphase = 1;
+ kikasrb(); //setup asrb trap
+ KIKAICA(); //setup aica trap
+ tioa = csa->tctte->tioa;
+
+ // clear screen (unless it's the CRLP terminal)
+ if((csa->tctte->flags & tctteflag$crlpinuse)== 0) {
+  if ((csa->tctte->flags & tctteflag$usingalt) == 0)
+   STRCPY(tioa, "\x27\xf5\xc3");
+  else
+   STRCPY(tioa, "\x27\x7e\xc3");
+  csa->tctte->tioaused = STRLEN(tioa);
+  KIKTCP(csa, kiktcpSEND);
+  }
+
+ // run PLTPI program
+ if ((csa->pltstrt[0] != '\0') && (csa->pltstrt[0] != ' ')) {
+  KIKKCP (csa, kikkcpATTACH, csa->pltstrt);
+
+  // copy lastcc to maxcc & reset lastcc
+  if (csa->lastcc > csa->maxcc) csa->maxcc = csa->lastcc;
+  csa->lastcc = 0;
+
+  // turn off 'suppress next tcpRECV' flag
+  csa->tctte->flags &= ~tctteflag$suppressonce;
+ }
+
+ // get transaction codes and exec them...
+ while (csa->runphase == 1) {
+  // wait a tenth (10/100) of a second between polls
+  //KIKKCP(csa, kikkcpWAIT, 10);
+  //istat = KIKTCP(csa, kiktcpCHEK);
+  //if (istat == 4) continue;
+  KIKTCP(csa, kiktcpRECV);
+
+  if (csa->tctte->trnid[0] != '\0') {
+   // ----------- use returned tranid
+   MEMCPY(tran, csa->tctte->trnid, 4);
+   // only one shot at using it...
+   MEMSET(csa->tctte->trnid, '\0', 4);
+   }
+  else {
+   // ----------- use tranid in tioa
+   aid = tioa[0];
+   if (aid == KIKCLEAR) {
+    MEMSET(csa->tctte->trnid, '\0', 4);
+    MEMSET(csa->usrcommarea, '\0', csa->maxcommsize);
+    csa->tctte->calen = 0;
+    if ((csa->tctte->flags & tctteflag$usingalt) == 0)
+     STRCPY(tioa, "\x27\xf5\xc3");
+    else
+     STRCPY(tioa, "\x27\x7e\xc3");
+    csa->tctte->tioaused = STRLEN(tioa);
+    KIKTCP(csa, kiktcpSEND);
+    continue;
+    }
+   if (aid != KIKENTER) {
+    MEMSET(csa->tctte->trnid, '\0', 4);
+    MEMSET(csa->usrcommarea, '\0', csa->maxcommsize);
+    csa->tctte->calen = 0;
+    if ((csa->tctte->flags & tctteflag$usingalt) == 0)
+     STRCPY(tioa, "\x27\xf5\xc3");
+    else
+     STRCPY(tioa, "\x27\x7e\xc3");
+    STRCAT(tioa, " Invalid attention ignored. ");
+    csa->tctte->tioaused = STRLEN(tioa);
+    KIKTCP(csa, kiktcpSEND);
+    continue;
+    }
+   MEMCPY(tran, tioa+3, 4);
+   }
+
+  tran[0]=TOUPPER(tran[0]);
+  tran[1]=TOUPPER(tran[1]);
+  tran[2]=TOUPPER(tran[2]);
+  tran[3]=TOUPPER(tran[3]);
+
+  // possible suppress next tcpRECV...
+  csa->tctte->flags |= tctteflag$suppressonce;
+
+  // do any transaction startup stuff
+  // ... moved to KCP attach code ...
+
+  // run the transaction
+  KIKKCP (csa, kikkcpATTACH, tran);
+
+  // do any transaction shutdown stuff
+  // ... moved to KCP attach code ...
+
+  // copy lastcc to maxcc & reset lastcc
+  if (csa->lastcc > csa->maxcc) csa->maxcc = csa->lastcc;
+  csa->lastcc = 0;
+
+  // turn off 'suppress next tcpRECV' flag
+  csa->tctte->flags &= ~tctteflag$suppressonce;
+
+  }
+
+ // done now, shutdown
+ csa->runphase = 2; // condition it to 2 (was just != 1)
+ }
+
+ // shutting down, run PLTSD program
+ if ((csa->pltend[0] != '\0') && (csa->pltend[0] != ' ')) {
+  KIKKCP (csa, kikkcpATTACH, csa->pltend);
+ }
+
+ // call the program shutdown entry points
+ KIKDCP (csa, kikdcpTERM); // DCP - close all the queues
+ KIKTSP (csa, kiktspTERM); // TSP - close all the queues
+ KIKFCP (csa, kikfcpTERM); // FCP - close all the files
+ KIKSCP (csa, kikscpTERM); // SCP - free gotten storage
+ KIKBMS (csa, kikbmsTERM); // BMS - ??
+ KIKTCP (csa, kiktcpTERM); // TCP - exit FS mode
+ KIKKCP (csa, kikkcpTERM); // KCP - ??
+ KIKPCP (csa, kikpcpTERM); // PCP - ??
+
+ // shutdown trace
+ if ((kikcsa.trc.trcflags & 4) > 0) {
+  fclose((FILE*)kikcsa.auxtrc);
+  }
+
+ // that's all folks!
+ exit (csa->maxcc);
+}
+

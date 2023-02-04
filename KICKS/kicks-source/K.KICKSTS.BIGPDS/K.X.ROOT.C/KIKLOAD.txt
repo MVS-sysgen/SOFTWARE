@@ -1,0 +1,636 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+#include <stdio.h>
+
+#include "kicks.h"
+
+
+extern KIKCSA *csa;
+
+
+ // the most important reason to 'convert' KIKLOAD from BAL
+ // to GCCMVS is to eliminate the need to maintain assembler
+ // versions of KICKS control blocks (such as the csa).
+
+
+#ifdef __MVS__
+
+typedef struct _BLDL_LIST
+{
+ short FF;
+ short LL;
+ char  BL[76];
+} BLDL_LIST;
+
+void kikload (KIKCSA *csa, int whycalled) {
+
+ char *adcb, mem[8];
+ int ep=0, len=0, pass=0, r1=0, r15=0;
+ BLDL_LIST BLL; char *bep = &BLL.BL[29]; // ie, PDS2EPA
+                                         // ref IHAPDS
+  __asm__ (
+    "B P%=\n"
+ "D%= DCB DDNAME=KIKRPL,DSORG=PO,MACRF=R\n"
+ "P%= EQU *\n\t"
+    "LA 1,D%=\n\t"
+    "ST 1,%0"
+   : "=m"(adcb)
+   : /* no input */
+   : "1"
+  );
+
+ csa->loadcb->loadedwhere = 0;
+ csa->loadcb->ep          = 0;
+ csa->loadcb->loadlength  = 0;
+ csa->loadcb->loadflags   = 0;
+
+ switch (whycalled) {
+
+  case 0:  // open library
+     memcpy(&adcb[40], csa->loadcb->loadlib, 8);
+     __asm__ (
+       "L 2,%1\n\t"
+       "OPEN ((2),INPUT)\n\t"
+       "ST 15,%0"
+      : "=m"(r15)
+      : "m"(adcb)
+      : "1","2","15"
+     );
+     csa->loadcb->loaderr15 = r15;
+     csa->loadcb->loaderr1  = csa->loadcb->loaderr15;
+     return;
+
+  case 1:  // close library
+     __asm__ (
+       "L 2,%1\n\t"
+       "CLOSE ((2))\n\t"
+       "ST 15,%0"
+      : "=m"(r15)
+      : "m"(adcb)
+      : "1","2","15"
+     );
+     csa->loadcb->loaderr15 = r15;
+     csa->loadcb->loaderr1  = csa->loadcb->loaderr15;
+     return;
+
+  case 2:  // load member
+     memcpy(&mem[0], csa->loadcb->loadbase, 8);
+
+     // it's a little unusual to do a LOAD, then a BLDL
+     // (looks out of order) but I WANT the IEA703I to
+     // show up on the console for (some) failed loads...
+
+     __asm__ (
+       "L  2,%4\n\t"
+       "L  3,%5\n\t"
+       "LA 4,E%=\n\t"
+       "LOAD EPLOC=(2),DCB=(3),ERRET=(4)\n\t"
+       "ST 0,%0\n\t"
+       "ST 1,%1\n\t"
+       "ST 15,%2\n\t"
+       "ST 15,%3\n\t"
+       "B  P%=\n"
+     "E%= EQU *\n\t"
+       "ST 1,%2\n\t"
+       "ST 15,%3\n"
+     "P%= EQU *"
+      : "=m"(ep),"=m"(len),"=m"(r1),"=m"(r15)
+      : "m"(mem), "m"(adcb)
+      : "0","1","2","3","4","15"
+     );
+     csa->loadcb->loaderr1  = r1;
+     csa->loadcb->loaderr15 = r15;
+     if (r15 != 0) return;
+     csa->loadcb->loadedwhere = (char*)ep;
+     csa->loadcb->ep          = (char*)ep;
+     csa->loadcb->loadlength  = (len & 0xffffff) * 8;
+     csa->loadcb->loadflags   = (len>>24) & 0xff;
+
+     // at this point 'loadedwhere' may be wrong since
+     // the entry point might not be at the start of the pgm
+     // so we need to check the dir entry; if its ep <> 0
+     // subtract from loaded ep to get true load address...
+     memset(&BLL, 0, sizeof(BLDL_LIST));
+     BLL.FF = 1; BLL.LL = 74;
+     memcpy(&BLL.BL[0], csa->loadcb->loadbase, 8);
+     __asm__ (
+       "L  2,%2\n\t"
+       "LA 3,%1\n\t"
+       "BLDL (2),(3)\n\t"
+       "ST 15,%0"
+      : "=m"(r15)
+      : "m"(BLL), "m"(adcb)
+      : "0","1","2","3","15"
+     );
+     if (r15 != 0) return; // can't happen?
+     memcpy(&ep, bep, 3); ep = ep >> 8;
+     csa->loadcb->loadedwhere -= ep;
+     return;
+
+  case 3:  // delete member
+     memcpy(&mem[0], csa->loadcb->loadbase, 8);
+     do {
+      __asm__ (
+        "L 2,%1\n\t"
+        "DELETE EPLOC=(2)\n\t"
+        "ST 15,%0"
+       : "=m"(r15)
+       : "m"(mem)
+       : "1","2","15"
+      );
+      if(pass == 0) csa->loadcb->loaderr15 = r15;
+      pass++;
+      } while (r15 == 0);
+     csa->loadcb->loaderr1  = csa->loadcb->loaderr15;
+     return;
+
+  case 4:  // bldl (chk existance) member
+     //* -----------------------
+     //* Why a separate call for BLDL only? A single 806-4 on the
+     //* on the console during SIP (just before KICKS fails!) is
+     //* OK, but filling the console with them during the startup
+     //* PPT scan/load is not!!!
+     //* -----------------------
+
+     memset(&BLL, 0, sizeof(BLDL_LIST));
+     BLL.FF = 1; BLL.LL = 74;
+     memcpy(&BLL.BL[0], csa->loadcb->loadbase, 8);
+     __asm__ (
+       "L  2,%2\n\t"
+       "LA 3,%1\n\t"
+       "BLDL (2),(3)\n\t"
+       "ST 15,%0"
+      : "=m"(r15)
+      : "m"(BLL), "m"(adcb)
+      : "0","1","2","3","15"
+     );
+     csa->loadcb->loaderr15 = r15;
+     csa->loadcb->loaderr1  = csa->loadcb->loaderr15;
+     return;
+
+  default: //  bad call
+     csa->loadcb->loaderr15 = -1;
+     csa->loadcb->loaderr1  = csa->loadcb->loaderr15;
+     return;
+  }
+ }
+
+#endif
+
+
+
+ // used to have __MVS__ and __CMS__ stuff mixed in one, but
+ // there are just too many differences, so switched to using
+ // larger grouping...
+
+
+
+#ifdef __CMS__
+
+
+ // very simple routines to read
+ // only one fb80 CMS file (at a time)
+ // use for TXTLIB to allow skipping 61FFFF61 records...
+
+typedef struct {
+ char  fscbcomm[8]; // +0    file system command (rdbuf, wrbuf, etc)
+ char  fscbfn[8];   // +8    file name
+ char  fscbft[8];   // +16   file type
+ char  fscbfm[2];   // +24   file mode
+ short fscbitno;    // +26   relative record number to be read/written
+ char *fscbbuff;    // +28   address of r/w buffer or of statefst
+ int   fscbsize;    // +32   lenght of buffer
+ char  fscbfv;      // +36   recfm - c'F' or c'V'
+ char  fscbflg;     // +37   flag byte
+ short fscbnoit;    // +38   number of records to be read/written
+ int   fscbnord;    // +40   number of bytes actually read
+ } fscb;
+
+#define CMSsubmax 10
+
+int   CMSr15;                // global holds last retcde
+fscb  CMSfscb;               // global holds single fscb
+char  CMSbuf[CMSsubmax][80]; // global buffer
+int   CMSbufsub;             // global for buffer subscript
+
+fscb *CMSopen (char *name) { // NULL open failed, else OK
+ int r15=0; fscb *ModelFSCB;
+
+ memset(CMSfscb.fscbcomm, 0,    44);
+ memcpy(CMSfscb.fscbfn,   name, 18);
+ ModelFSCB = &CMSfscb;
+ CMSbufsub = 0;
+ __asm__ (
+   "L 2,%1\n\t"
+   "FSOPEN FSCB=(2)\n\t"
+   "ST 15,%0"
+  : "=m"(r15)
+  : "m"(ModelFSCB)
+  : "1","2","15"
+ );
+ CMSr15 = r15;
+ if (r15 == 0) return ModelFSCB;
+ return 0;
+ }
+
+void  CMSread (char *buffer, fscb *fscb) {
+ int numrecs, r15=0;
+
+ if (CMSbufsub == 0) {
+  fscb->fscbbuff = &CMSbuf[0][0];
+  fscb->fscbsize = 80 * CMSsubmax;
+  fscb->fscbfv = 'F';
+  fscb->fscbnoit = CMSsubmax;
+  __asm__ (
+    "L 2,%1\n\t"
+    "FSREAD FSCB=(2)\n\t"
+    "ST 15,%0"
+   : "=m"(r15)
+   : "m"(fscb)
+   : "1","2","15"
+  );
+  }
+ memcpy(buffer, &CMSbuf[CMSbufsub][0], 80);
+ buffer[80]=0; // terminate user buffer as C string...
+ CMSbufsub++;
+ if (CMSbufsub >= (fscb->fscbnord / 80)) CMSbufsub = 0;
+ CMSr15 = r15;
+ }
+
+int   CMSeof  (fscb *fscb) {  // 0 ok, 12 eof, else othr error...
+ return CMSr15;
+ }
+
+void  CMSclose(fscb *fscb) {  // close (if open)
+ int r15=0;
+ __asm__ (
+   "L 2,%1\n\t"
+   "FSCLOSE FSCB=(2)\n\t"
+   "ST 15,%0"
+  : "=m"(r15)
+  : "m"(fscb)
+  : "1","2","15"
+ );
+ CMSr15 = r15;
+ }
+
+
+ // very simple routines to read console stack
+ // used for compatibly obtaining list of
+ // GLOBAL'd TXTLIBS via 'Q TXTLIB (STACK'
+
+int chkstk() {
+ // returns number of lines in console stack
+ // NUMFINRD same vm370 thru zvm 5.4 (at least)
+ short *NUMFINRD = (short *)0x55C;
+ int rc = *NUMFINRD;
+ return rc;
+ }
+
+int rdstk(char *buffer, int maxbufl) {
+ // returns length of line retrieved from console stack
+ short bufl;char buf[132];
+   __asm__ (
+    "L   1,%1\n\t"
+    "ST  1,S%=+8\n\t"
+    "LA  1,1\n\t"
+    "STC 1,S%=+8\n\t"
+    "LA  1,S%=\n\t"
+    "SVC 202\n\t"
+    "DC AL4(*+4)\n\t"
+    "B X%=\n"
+   "S%= DS 0D\n\t"
+    "DC CL8'CONREAD'\n\t"
+    "DC AL1(1)\n\t"
+    "DC AL3(0) buffer address\n\t"
+    "DC CL1'U'\n\t"
+    "DC AL3(0) returned count\n\t"
+    "DC 8X'FF'\n"
+   "X%= EQU *\n\t"
+    "L 1,S%=+12\n\t"
+    "STH 1,%0"
+   : "=m"(bufl)
+   : "m"(&buf[0])
+   : "0", "1", "15"
+   );
+ memcpy(buffer, buf, maxbufl);
+ return bufl;
+ }
+
+
+typedef union __LINKBLK {
+ // for vm370
+ // see DMSSLN ( MAINT 393 ) for assembler layout
+ // LINKENT matches ep returned from os 'load', but
+ // that isn't the correct entry point address so
+ // STRTADDR (another NUCON address) is used...
+ struct __vm370 {
+  union __LINKBLK *LINKPTR;
+  int        LINKAREA;   // address of the loaded program
+  int        LINKBYTE;   // length  of the loaded program
+  char       LINKNAM[8]; // name of of the loaded program
+  int        SAVEPSW[2]; // old svc psw for LINK
+  int        LINKENT;    // entry point of loaded program **
+  short      LINKCNT;    // use count   of loaded program
+  int        SVAREA[19]; // save area   for ATTACH
+  int        SAVE13;
+  int        SAVE15;
+  } vm370;
+ // for z/vm (newer that vm370), see
+ // http://www.vm.ibm.com/pubs/cms440/LINKBLK.HTML for assembler layout
+ // LINKENT matches ep returned from os 'load', but
+ // that isn't the correct entry point address so
+ struct __newer {
+  union __LINKBLK *LINKPTR;
+  int        LINKAREA;   // address of the loaded program
+  union __LINKBLK *LINKBACK;
+  int        LINKBYTE;   // length  of the loaded program
+  char       LINKNAM[8]; // name of of the loaded program
+  int        SAVEPSW[2]; // old svc psw for LINK
+  int        LINKENT;    // entry point of loaded program **
+  short      LINKCNT;    // use count   of loaded program
+  int        SVAREA[19]; // save area   for ATTACH
+  int        SAVE13;
+  int        SAVE15;
+  // more...
+  } newer;
+} LINKBLK;
+
+
+void kikload (KIKCSA *csa, int whycalled) {
+
+ char *adcb, mem[8];
+ int ep=0, len=0, pass=0, r1=0, r15=0;
+
+ // LINKSTRT, LINKLAST defined in NUCON MACRO.--- SAME VM/370 TO Z/VM
+ // see DMSSLN (near DMSSLN8) for usage
+ LINKBLK *LINKSTRT=(LINKBLK*)0x5D0,
+         *LINKLAST=(LINKBLK*)0x5CC,
+         *XR0;
+
+ static char txtlibs[72];
+ static char *TXTLIBS=&txtlibs[0];
+
+ static int nummods=0;       // num entries in dynamic table
+ static char *modtab=0;      // addr of gotten stor for table
+ fscb *inc;
+ char incname[22], *txtlibname, newline[90];
+ int  i, j, numlibs;
+
+ // more NUCON stuff.                         --- SAME VM/370 TO Z/VM
+ char *STRTADDR=(char*)0x568;
+ char *FRSTLOC =(char*)0x56C;
+ char *LASTLOC =(char*)0x570;
+ int  *LDRRTCD = (int*)0x57C;
+ char *ALIASENT=(char*)0x5AC;
+ char *OSSFLAGS=(char*)0x5C7;
+#define COMPSWT 0x80;
+
+ csa->loadcb->loadedwhere = 0;
+ csa->loadcb->ep          = 0;
+ csa->loadcb->loadlength  = 0;
+ csa->loadcb->loadflags   = 0;
+ csa->loadcb->loaderr15   = 0;
+ csa->loadcb->loaderr1    = 0;
+
+ switch (whycalled) {
+
+  case 0:  // open library
+
+     if (modtab != NULL) return;
+
+     // turn COMPSWT off -- loads are for TEXT's
+     // ** this is supposed to be the default **
+      __asm__ (
+       "COMPSWT OFF"
+      : /* no output */
+      : /* no input  */
+      : "0", "1", "15"
+      );
+
+     // turn COMPSWT on -- loads are for MODULE's
+     // __asm__ (
+     //  "COMPSWT ON"
+     // : /* no output */
+     // : /* no input  */
+     // : "0", "1", "15"
+     // );
+
+     // pass 0 - obtain list of global'd txtlibs
+     { char conbuf[132]; int i;
+      // purge remaining lines in console stack
+      while (chkstk() > 0) rdstk(conbuf, 130);
+      // stack the global'd txtlib names
+      __asm__ (
+       "LA 1,S%=\n\t"
+       "SVC 202\n\t"
+       "DC AL4(*+4)\n\t"
+       "B X%=\n"
+      "S%= DS 0D\n"
+      "* DC CL8'CP' use CMS query (for stack) \n\t"
+       "DC CL8'Q'\n\t"
+       "DC CL8'TXTLIB'\n\t"
+       "DC CL8'('\n\t"
+       "DC CL8'STACK'\n\t"
+       "DC 8X'FF'\n"
+      "X%= EQU *"
+      : /* no output */
+      : /* no input  */
+      : "0", "1", "15"
+      );
+      // read 1st line
+      rdstk(conbuf, 130);
+      // copy to global and punctuate
+      memcpy(TXTLIBS, &conbuf[11], 72);
+      for (i=8; i< 73; i+=9) TXTLIBS[i] = 0;
+      if(!strncmp(TXTLIBS, "NONE ", 5)) *TXTLIBS = ' ';
+      // purge remaining lines in console stack
+      while (chkstk() > 0) rdstk(conbuf, 130);
+     }
+
+     // note that this routine only reads names into storage, and
+     // that it obtains the names by reading the full library looking
+     // for ESD records.
+     // It does *not* depend on directory location or format.
+     // It should be completely independant of TXTLIB release issues...
+
+     // There is a price for this independance, namely speed...
+
+#define MAXMODS 1000
+     modtab = (char*)malloc(8*MAXMODS);
+     if (modtab == NULL) {
+      fprintf(csa->csastderr,
+       "malloc for BLDL member list failed\n");
+      exit(99);
+      }
+
+     // pass 2 - read all the member names into storage
+     txtlibname = TXTLIBS;
+     nummods = 0; numlibs = 0;
+     for (i=0; i<8; i++, txtlibname += 9) {
+      if (*txtlibname != ' ') {
+       memset (incname, ' ', 22);
+       memcpy (incname,    txtlibname, 8);
+       memcpy (incname+8,  "TXTLIB  ", 8);
+       memcpy (incname+16, "  ", 2);
+       inc = CMSopen(incname);
+       if(inc == 0) continue;
+       while (1) {
+        CMSread(newline, inc);
+        if(CMSeof(inc)) break;
+        // do stuff...
+        if(memcmp(&newline[1], "ESD", 3)) continue;
+        if(newline[16] != ' ') {
+         memcpy(&modtab[nummods*8], &newline[16], 8);
+         nummods++;
+         }
+        if(newline[32] != ' ') {
+         memcpy(&modtab[nummods*8], &newline[32], 8);
+         nummods++;
+         }
+        if(newline[48] != ' ') {
+         memcpy(&modtab[nummods*8], &newline[48], 8);
+         nummods++;
+         }
+        if (nummods > (MAXMODS-3)) {
+         fprintf(csa->csastderr,
+          "too many modules in txtlibs\n");
+         exit(99);
+         }
+        } // end while
+       CMSclose(inc);
+       numlibs++;
+       }  // end if *txtlib ...
+      }   // end for
+     return;
+
+  case 1:  // close library
+
+     //if (modtab == NULL) return;   OPEN only happens once
+     //free(modtab);                 (before going fs)
+     //modtab = 0; nummods=0;        and CLOSE happens never...
+     return;
+
+  case 2:  // load member
+
+     for (i=0; i<nummods; i++) {
+      if (!memcmp(csa->loadcb->loadbase, &modtab[i*8], 8)) {
+       break;
+       }
+      }
+     if (i == nummods ) {
+      csa->loadcb->loaderr1  = 0x806; // note unable to find EP
+      csa->loadcb->loaderr15 = 4;     // in load rb list...
+      return;
+      }
+
+     memcpy(&mem[0], csa->loadcb->loadbase, 8);
+     // no libraries for CMS...
+     // no erret for CMS...
+     __asm__ (
+       "L  2,%4\n\t"
+       "LOAD EPLOC=(2)\n\t"
+       "ST 0,%0\n\t"
+       "ST 1,%1"
+      : "=m"(ep),"=m"(len),"=m"(r1),"=m"(r15)
+      : "m"(mem), "m"(adcb)
+      : "0","1","2","3","4","15"
+     );
+     // ignore r1, r15, both s.b. zero else would be abend...
+     // instead use return passed from DMSLDRB
+     r1 = *LDRRTCD; // 0 if good, 4 (or more) if bad
+     if (r1 != 0) {
+      csa->loadcb->loaderr1  = 0x806; // note whatever
+      csa->loadcb->loaderr15 = r1;    // non-zero rc we got...
+      return;
+       }
+
+     XR0 = LINKSTRT; // find load rb for what we just got
+     while (XR0 != 0) {
+      if (XR0->vm370.LINKENT == ep) {
+       csa->loadcb->ep          = (char*)ep;
+       csa->loadcb->loadedwhere = (char*)XR0->vm370.LINKAREA;
+       csa->loadcb->loadlength  = XR0->vm370.LINKBYTE;
+       if ((char*)ep == csa->loadcb->loadedwhere ) {
+        // possible mis-reporting by CMS loader, check KIKENTRY
+        if (!strncmp((char*)(ep+12), "KIKENTRY", 8)) {
+         ep = *(int*)(ep+8);
+         csa->loadcb->ep = (char*)ep;
+         }
+        }
+       return;
+       }
+      XR0 = XR0->vm370.LINKPTR;
+      }
+     // if vm370 scan fails try 'newer' tbl format...
+     XR0 = LINKSTRT; // find load rb for what we just got
+     while (XR0 != 0) {
+      if (XR0->newer.LINKENT == ep) {
+       // 'load' returns wrong ep address, so use STRTADDR
+       csa->loadcb->ep          = (char*)ep;
+       csa->loadcb->loadedwhere = (char*)XR0->newer.LINKAREA;
+       csa->loadcb->loadlength  = XR0->newer.LINKBYTE;
+       if ((char*)ep == csa->loadcb->loadedwhere ) {
+        // possible mis-reporting by CMS loader, check KIKENTRY
+        if (!strncmp((char*)(ep+12), "KIKENTRY", 8)) {
+         ep = *(int*)(ep+8);
+         csa->loadcb->ep = (char*)ep;
+         }
+        }
+       return;
+       }
+      XR0 = XR0->newer.LINKPTR;
+      }
+     csa->loadcb->loaderr1  = 0x806; // note unable to find EP
+     csa->loadcb->loaderr15 = -4;    // in load rb list...
+     return;
+
+  case 3:  // delete member
+
+     memcpy(&mem[0], csa->loadcb->loadbase, 8);
+     do {
+      __asm__ (
+        "L 2,%1\n\t"
+        "DELETE EPLOC=(2)\n\t"
+        "ST 15,%0"
+       : "=m"(r15)
+       : "m"(mem)
+       : "1","2","15"
+      );
+      if(pass == 0) csa->loadcb->loaderr15 = r15;
+      pass++;
+      } while (r15 == 0);
+     csa->loadcb->loaderr1  = csa->loadcb->loaderr15;
+     return;
+
+  case 4:  // bldl (chk existance) member
+
+     for (i=0; i<nummods; i++) {
+      if (!memcmp(csa->loadcb->loadbase, &modtab[i*8], 8)) {
+       return;
+       }
+      }
+     csa->loadcb->loaderr15 = 0x806; // not found
+     csa->loadcb->loaderr1  = csa->loadcb->loaderr15;
+     return;
+
+  default: //  bad call
+     csa->loadcb->loaderr15 = -1;
+     csa->loadcb->loaderr1  = csa->loadcb->loaderr15;
+     return;
+  }
+ }
+
+#endif

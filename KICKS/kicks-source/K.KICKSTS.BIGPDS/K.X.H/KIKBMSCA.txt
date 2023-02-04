@@ -1,0 +1,183 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like'
+ // functionality in MVS/TSO. Its CICS functionality is delivered
+ // at the source code level, not at the object code level.
+ // Applications must be recompiled and the recompiled programs
+ // are not compatible with any known version of 'real' CICS.
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license.
+ // See http://www.kicksfortso.com
+ // for most current information regarding licensing options.
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+
+   //  KIKBMPEM Printer end-of-message
+
+   //  KIKBMPNL Printer new-line
+
+   //  KIKBMPFF Printer form feed
+
+   //  KIKBMPCR Printer carriage return
+
+   //  KIKBMASK Autoskip
+#define KIKBMASK '\xF0'
+
+   //  KIKBMUNP Unprotected
+
+   //  KIKBMUNN Unprotected and numeric
+#define KIKBMUNN '\x50'
+
+   //  KIKBMPRO Protected
+#define KIKBMPRO '\x60'
+
+   //  KIKBMBRY Bright
+
+   //  KIKBMDAR Dark
+#define KIKBMDAR '\x4C'
+
+   //  KIKBMFSE MDT set
+
+   //  KIKBMPRF Protected and MDT set
+#define KIKBMPRF '\x61'
+
+   //  KIKBMASF Autoskip and MDT set
+#define KIKBMASF '\xF1'
+
+   //  KIKBMASB Autoskip and bright
+#define KIKBMASB '\xF8'
+
+   //  KIKBMPSO shift-out value X'0E'.
+
+   //  KIKBMPSI shift-in value X'0F'.
+
+   //  KIKBMEOF Field erased
+#define KIKBMEOF '\x80'
+
+   //  KIKBMCUR Field containing cursor flagged
+
+   //  KIKBMEC Erased field containing cursor (COBOL only)
+
+   //  KIKBMFLG Flags (COBOL only)
+
+   //  KIKBMDET Field detected
+
+   //  KIKSA(1) Set attribute (SA) order
+
+   //  KIKERROR Error code
+
+   //  KIKCOLOR(1 Color
+
+   //  KIKPS(1) Programmed symbols
+
+   //  KIKHLT(1) Highlight
+
+   //  KIK3270(1) Base 3270 field attribute
+
+   //  KIKVAL Validation
+
+   //  KIKOUTLN Field outlining attribute code
+
+   //  KIKBKTRN Background transparency attribute code
+
+   //  KIKALL(1) Reset all to defaults
+
+   //  KIKDFT Default
+#define KIKDFT '\xFF'
+
+   //  KIKDFCOL(1 Default color
+
+   //  KIKBLUE Blue
+#define KIKBLUE '\xF1'
+
+   //  KIKRED Red
+#define KIKRED '\xF2'
+
+   //  KIKPINK Pink
+#define KIKPINK '\xF3'
+
+   //  KIKGREEN Green
+#define KIKGREEN '\xF4'
+
+   //  KIKTURQ Turquoise
+#define KIKTURQ '\xF5'
+
+   //  KIKYELLO Yellow
+#define KIKYELLO '\xF6'
+
+   //  KIKNEUTR Neutral
+#define KIKNEUTR '\xF7'
+
+   //  KIKBASE(1) Base programmed symbols
+
+   //  KIKKIKI(1) Normal
+
+   //  KIKBLINK Blink
+#define KIKBLINK '\xF1'
+
+   //  KIKREVRS Reverse video
+#define KIKREVRS '\xF2'
+
+   //  KIKUNDLN Underscore
+#define KIKUNDLN '\xF4'
+
+   //  KIKMFIL(2) Mandatory fill
+
+   //  KIKMENT(2) Mandatory enter
+
+   //  KIKMFE Mandatory fill and mandatory enter
+
+   //  KIKMT Trigger
+
+   //  KIKMFT Mandatory fill and trigger
+
+   //  KIKMET Mandatory enter and trigger
+
+   //  KIKMFET Mandatory fill and mandatory enter and trigger
+
+   //  KIKUNNOD Unprotected, nondisplay, nonprint, nondetectable, MDT
+#define KIKUNNOD '\x4D'
+
+   //  KIKUNIMD Unprotected, intensify, light-pen detectable, MDT
+#define KIKUNIMD '\xC9'
+
+   //  KIKUNNUM Unprotected, numeric, MDT
+#define KIKUNNUM '\xD1'
+
+   //  KIKUNNUB Unprotected, numeric, intensify, intensify,
+   //                        light-pen detectable
+#define KIKUNNUB '\xD8'
+
+   //  KIKUNINT Unprotected, numeric, intensify,
+   //                        light-pen detectable, MDT
+#define KIKUNINT '\xD9'
+
+   //  KIKUNNON Unprotected, numeric, nondisplay, nonprint,
+   //                        nondetectable, MDT
+#define KIKUNNON '\x5D'
+
+   //  KIKPROTI Protected, intensify, light-pen detectable
+#define KIKPROTI '\xE8'
+
+   //  KIKPROTN Protected, nondisplay, nonprint, nondetectable
+#define KIKPROTN '\x6C'
+
+   //  KIKDFFR Default outline
+
+   //  KIKUNDER Underline
+
+   //  KIKRIGHT Right vertical line
+
+   //  KIKOVER Overline
+
+   //  KIKLEFT Left vertical line
+
+   //  KIKBOX Underline and right vertical and overline
+   //                        and left vertical
+
+   //  KIKSOSI SOSI=yes
+
+   //  KIKTRANS Background transparency
+
+   //  KIKOPAQ No background transparency

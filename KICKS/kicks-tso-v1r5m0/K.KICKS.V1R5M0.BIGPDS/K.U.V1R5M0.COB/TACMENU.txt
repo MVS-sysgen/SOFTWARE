@@ -1,0 +1,479 @@
+<WC> programs in the TAC system need old 'when compiled' even in CB2
+       ID DIVISION.
+       PROGRAM-ID.    TACMENU.
+       AUTHOR.        MICHAEL GOOD
+                      GOOD NEVADA SYSTEMS TECHNOLOGY, INC.
+       DATE-WRITTEN.  05/10/82.
+       DATE-COMPILED. TODAY.
+
+       REMARKS.
+                      MASTER AND SUBSIDIARY MENUS FOR
+                      ACCOUNTS AND CONTRIBUTIONS DATA ENTRY SYSTEM.
+
+
+         ------------ PPT ENTRY -- PROGRAM  -------------------------
+
+         DFHPPT TYPE=ENTRY,PROGRAM=TACMENU,PGMLANG=COBOL
+
+
+         ------------ PPT ENTRYS - MAPSETS  -------------------------
+
+         DFHPPT TYPE=ENTRY,PROGRAM=TACMS01,USAGE=MAP
+
+
+         ------------ PCT ENTRY -------------------------------------
+
+         DFHPCT TYPE=ENTRY,TRANSID=BTC0,PROGRAM=TACMENU,            *
+               TRANSEC=00,TPURGE=YES,SPURGE=YES,TWASIZE=000
+
+
+       ENVIRONMENT DIVISION.
+
+       DATA DIVISION.
+       WORKING-STORAGE SECTION.
+
+       77  PGM-ID   PIC X(24) VALUE 'TACMENU  WORKING STORAGE'.
+       77  FINISHED-MSG PIC X(20) VALUE 'DATA ENTRY CONCLUDED'.
+       77  I                           PIC S9(4) COMP VALUE +0.
+       77  J                           PIC S9(4) COMP VALUE +0.
+       77  K                           PIC S9(4) COMP VALUE +0.
+
+       COPY TACCOM.
+
+       01  CDATE.
+           05  FILLER                  PIC X(8).
+           05  XMONTH                  PIC XXX.
+           05  FILLER                  PIC X.
+           05  XDAY                    PIC 99.
+           05  FILLER                  PIC X(4).
+           05  XYEAR                   PIC 99.
+
+       01  MONTH-TABLE.
+           05  MONTHS                  PIC X(33)
+               VALUE 'JANFEBMARAPRMAYJUNJULAUGSEPOCTNOV'.
+           05  FILLER REDEFINES MONTHS.
+               10  MTBL OCCURS 11      PIC XXX.
+
+       01  WDATE.
+           05  ZMONTH                  PIC 99.
+           05  FILLER                  PIC X   VALUE '/'.
+           05  ZDAY                    PIC 99.
+           05  FILLER                  PIC X   VALUE '/'.
+           05  ZYEAR                   PIC 99.
+
+       01  PF-TABLE.
+           05  PFS.
+               10  FILLER              PIC X(48)  VALUE
+                'PF1 PF2 PF3 PF4 PF5 PF6 PF7 PF8 PF9 PF10PF11PF12'.
+               10  FILLER              PIC X(48)  VALUE
+                'PF01PF02PF03PF04PF05PF06PF07PF08PF09PF10PF11PF12'.
+               10  FILLER              PIC X(48)  VALUE
+                'PF13PF14PF15PF16PF17PF18PF19PF20PF21PF22PF23PF24'.
+           05  FILLER REDEFINES PFS.
+               10  PFTABLE OCCURS 36   PIC XXXX.
+
+       COPY TACMENUX.
+
+       COPY TACMS01.
+
+       COPY DFHBMSCA.
+
+       LINKAGE SECTION.
+
+       01  DFHCOMMAREA                 PIC X(200).
+
+       PROCEDURE DIVISION.
+
+      * ------ FIRST SETUP COMM-AREA.
+           IF EIBCALEN GREATER ZERO
+               THEN MOVE DFHCOMMAREA TO COMM-AREA
+               ELSE MOVE ZEROS       TO COMM-AREA
+                    MOVE SPACES      TO CA-ERR-MSG.
+
+      * ------ NEXT SETUP COMPILED DATE IN FORM MM/DD/YY
+           MOVE WHEN-COMPILED TO CDATE.
+           MOVE +0 TO I.
+       SETUP-1.
+           ADD  +1 TO I.
+           IF I      EQUAL +12     THEN GO TO SETUP-2.
+           IF XMONTH EQUAL MTBL(I) THEN GO TO SETUP-2.
+           GO TO SETUP-1.
+       SETUP-2.
+           MOVE I TO ZMONTH.
+           MOVE XDAY  TO I.  MOVE I TO ZDAY.
+           MOVE XYEAR TO I.  MOVE I TO ZYEAR.
+
+      * ------ NEXT SETUP HANDLE CONDITIONS FOR POSSIBLE ERRORS
+           EXEC CICS HANDLE CONDITION DSIDERR(ERR-01)
+                                      DSSTAT(ERR-02)
+                                      DUPKEY(ERR-03)
+                                      DUPREC(ERR-04)
+                                      ENDDATA(ERR-05)
+                                      ENDFILE(ERR-06)
+                                      ENDINPT(ERR-07)
+                                      EOC(ERR-08)
+                                      EODS(ERR-09)         END-EXEC
+           EXEC CICS HANDLE CONDITION EOF(ERR-10)
+                                      EXPIRED(ERR-11)
+                                      FUNCERR(ERR-12)
+                                      IGREQID(ERR-13)
+                                      ILLOGIC(ERR-14)
+                                      INBFMH(ERR-15)
+                                      INVERRTERM(ERR-16)
+                                      INVLDC(ERR-17)       END-EXEC.
+           EXEC CICS HANDLE CONDITION INVMPSZ(ERR-18)
+                                      INVREQ(ERR-19)
+                                      INVTSREQ(ERR-20)
+                                      IOERR(ERR-21)
+                                      ITEMERR(ERR-22)
+                                      JIDERR(ERR-23)
+                                      LENGERR(ERR-24)
+                                      MAPFAIL(ERR-25)      END-EXEC.
+           EXEC CICS HANDLE CONDITION NOJBUFSP(ERR-26)
+                                      NONVAL(ERR-27)
+                                      NOPASSBKRD(ERR-28)
+                                      NOPASSBKWR(ERR-29)
+                                      NOSPACE(ERR-30)
+                                      NOSTART(ERR-31)
+                                      NOSTG(ERR-32)
+                                      NOTFND(ERR-33)       END-EXEC.
+           EXEC CICS HANDLE CONDITION NOTOPEN(ERR-34)
+                                      OVERFLOW(ERR-35)
+                                      PGMIDERR(ERR-36)
+                                      QBUSY(ERR-37)
+                                      QIDERR(ERR-38)
+                                      QZERO(ERR-39)
+                                      RDATT(ERR-40)        END-EXEC.
+           EXEC CICS HANDLE CONDITION RETPAGE(ERR-41)
+                                      RTEFAIL(ERR-42)
+                                      RTESOME(ERR-43)
+                                      SELNERR(ERR-44)
+                                      SIGNAL(ERR-45)
+                                      TERMIDERR(ERR-46)
+                                      TRANSIDERR(ERR-47)
+                                      TSIOERR(ERR-48)
+                                      UNEXPIN(ERR-49)
+                                      WRBRK(ERR-50)
+                                      ERROR(ERR-51)     END-EXEC.
+
+      * ------ NEXT SETUP HANDLE AIDS FOR ATTENTION KEYS.
+           EXEC CICS HANDLE AID CLEAR(CLEAR-KEY) PA1(PA1-KEY)
+                                PA2(PA2-KEY)     PA3(PA3-KEY)
+                                END-EXEC.
+
+           EXEC CICS HANDLE AID PF1(PF1-KEY)   PF13(PF1-KEY)
+                                PF2(PF2-KEY)   PF14(PF2-KEY)
+                                PF3(PF3-KEY)   PF15(PF3-KEY)
+                                PF4(PF4-KEY)   PF16(PF4-KEY)
+                                PF5(PF5-KEY)   PF17(PF5-KEY)
+                                PF6(PF6-KEY)   PF18(PF6-KEY)
+                                END-EXEC.
+
+           EXEC CICS HANDLE AID PF7(PF7-KEY)   PF19(PF7-KEY)
+                                PF8(PF8-KEY)   PF20(PF8-KEY)
+                                PF9(PF9-KEY)   PF21(PF9-KEY)
+                                PF10(PF10-KEY) PF22(PF10-KEY)
+                                PF11(PF11-KEY) PF23(PF11-KEY)
+                                PF12(PF12-KEY) PF24(PF12-KEY)
+                                END-EXEC.
+
+       START-MAIN-ROUTINE.
+           MOVE LOW-VALUES TO TACMP01O.
+           ADD 1 TO CA-ENTRY.
+           IF CA-ENTRY GREATER 1 GO TO NEXT-TIME-IN.
+
+       FIRST-TIME-IN.
+           MOVE PGM-ID TO CA-PGM.
+           EXEC CICS ASSIGN OPID(CA-OPER-ID) END-EXEC.
+           MOVE SPACES TO CA-ERR-MSG.
+           PERFORM SEND-MAP   THRU SEND-MAP-EXIT.
+           GO TO RETURN-HERE.
+
+       NEXT-TIME-IN.
+           PERFORM RECV-MAP   THRU RECV-MAP-EXIT.
+       NTI-2.
+           MOVE SPACES TO CA-ERR-MSG.
+           PERFORM CHEK-MAP   THRU CHEK-MAP-EXIT.
+           IF CA-MENU-LEVEL NOT EQUAL ZERO
+               THEN
+               PERFORM DISPATCH-FUNCTION THRU DISPATCH-FUNCTION-EXIT.
+           PERFORM SEND-MAP   THRU SEND-MAP-EXIT.
+           MOVE 1 TO CA-ENTRY.
+           GO TO RETURN-HERE.
+
+       CHEK-MAP.
+           IF CA-PFKEY EQUAL 0 THEN GO TO CM-2.
+           IF CA-MENU-LEVEL NOT EQUAL 0 THEN GO TO CHEK-MAP-EXIT.
+           IF NOT VALID-MASTER-MENU THEN GO TO CM-2.
+           IF CA-PFKEY EQUAL 12 THEN GO TO RETURN-ABOVE.
+           MOVE CA-PFKEY TO CA-MENU-LEVEL.
+           PERFORM SEND-MAP THRU SEND-MAP-EXIT.
+           MOVE 1 TO CA-ENTRY.
+           GO TO RETURN-HERE.
+       CM-2.
+           MOVE 'INVALID ENTRY' TO CA-EM2.
+           PERFORM SEND-MAP THRU SEND-MAP-EXIT.
+           MOVE 1 TO CA-ENTRY.
+           GO TO RETURN-HERE.
+       CHEK-MAP-EXIT.
+
+       DISPATCH-FUNCTION.
+           MOVE 0 TO CA-ENTRY-2.
+           IF CA-MENU-LEVEL NOT EQUAL 1 THEN GO TO DF-2.
+           IF CA-PFKEY EQUAL 1 THEN
+               EXEC CICS XCTL PROGRAM('TACARA')
+                    COMMAREA(COMM-AREA) LENGTH(200) END-EXEC.
+           IF CA-PFKEY EQUAL 2 THEN
+               EXEC CICS XCTL PROGRAM('TACARR')
+                    COMMAREA(COMM-AREA) LENGTH(200) END-EXEC.
+           IF CA-PFKEY EQUAL 3 THEN
+               EXEC CICS XCTL PROGRAM('TACARC')
+                    COMMAREA(COMM-AREA) LENGTH(200) END-EXEC.
+           IF CA-PFKEY EQUAL 4 THEN
+               EXEC CICS XCTL PROGRAM('TACARD')
+                    COMMAREA(COMM-AREA) LENGTH(200) END-EXEC.
+           GO TO DF-RETURN-CHECK.
+       DF-2.
+           IF CA-MENU-LEVEL NOT EQUAL 2 THEN GO TO DF-3.
+           IF CA-PFKEY EQUAL 1 THEN
+               EXEC CICS XCTL PROGRAM('TACMRA')
+                    COMMAREA(COMM-AREA) LENGTH(200) END-EXEC.
+           IF CA-PFKEY EQUAL 2 THEN
+               EXEC CICS XCTL PROGRAM('TACMRR')
+                    COMMAREA(COMM-AREA) LENGTH(200) END-EXEC.
+           IF CA-PFKEY EQUAL 3 THEN
+               EXEC CICS XCTL PROGRAM('TACMRC')
+                    COMMAREA(COMM-AREA) LENGTH(200) END-EXEC.
+           IF CA-PFKEY EQUAL 4 THEN
+               EXEC CICS XCTL PROGRAM('TACMRD')
+                    COMMAREA(COMM-AREA) LENGTH(200) END-EXEC.
+           GO TO DF-RETURN-CHECK.
+       DF-3.
+           IF CA-MENU-LEVEL NOT EQUAL 3 THEN GO TO DF-4.
+           IF CA-PFKEY EQUAL 1 THEN
+               EXEC CICS XCTL PROGRAM('TACCCA')
+                    COMMAREA(COMM-AREA) LENGTH(200) END-EXEC.
+           IF CA-PFKEY EQUAL 2 THEN
+               EXEC CICS XCTL PROGRAM('TACCCR')
+                    COMMAREA(COMM-AREA) LENGTH(200) END-EXEC.
+      *    IF CA-PFKEY EQUAL 3 THEN
+      *        EXEC CICS XCTL PROGRAM('TACCCC')
+      *             COMMAREA(COMM-AREA) LENGTH(200) END-EXEC.
+           IF CA-PFKEY EQUAL 4 THEN
+               EXEC CICS XCTL PROGRAM('TACCCD')
+                    COMMAREA(COMM-AREA) LENGTH(200) END-EXEC.
+           GO TO DF-RETURN-CHECK.
+       DF-4.
+           IF CA-MENU-LEVEL NOT EQUAL 4 THEN GO TO DF-5.
+           IF CA-PFKEY EQUAL 1 THEN
+               EXEC CICS XCTL PROGRAM('TACDHA')
+                    COMMAREA(COMM-AREA) LENGTH(200) END-EXEC.
+           IF CA-PFKEY EQUAL 2 THEN
+               EXEC CICS XCTL PROGRAM('TACDHR')
+                    COMMAREA(COMM-AREA) LENGTH(200) END-EXEC.
+           IF CA-PFKEY EQUAL 3 THEN
+               EXEC CICS XCTL PROGRAM('TACDHC')
+                    COMMAREA(COMM-AREA) LENGTH(200) END-EXEC.
+           IF CA-PFKEY EQUAL 4 THEN
+               EXEC CICS XCTL PROGRAM('TACDHD')
+                    COMMAREA(COMM-AREA) LENGTH(200) END-EXEC.
+           GO TO DF-RETURN-CHECK.
+       DF-5.
+           IF CA-MENU-LEVEL NOT EQUAL 5 THEN GO TO DF-6.
+           IF CA-PFKEY EQUAL 1 THEN
+               EXEC CICS XCTL PROGRAM('TACDPA')
+                    COMMAREA(COMM-AREA) LENGTH(200) END-EXEC.
+           IF CA-PFKEY EQUAL 2 THEN
+               EXEC CICS XCTL PROGRAM('TACDPR')
+                    COMMAREA(COMM-AREA) LENGTH(200) END-EXEC.
+           IF CA-PFKEY EQUAL 3 THEN
+               EXEC CICS XCTL PROGRAM('TACDPC')
+                    COMMAREA(COMM-AREA) LENGTH(200) END-EXEC.
+           IF CA-PFKEY EQUAL 4 THEN
+               EXEC CICS XCTL PROGRAM('TACDPD')
+                    COMMAREA(COMM-AREA) LENGTH(200) END-EXEC.
+           GO TO DF-RETURN-CHECK.
+       DF-6.
+           IF CA-MENU-LEVEL NOT EQUAL 6 THEN GO TO DF-7.
+           IF CA-PFKEY EQUAL 1 THEN
+               EXEC CICS XCTL PROGRAM('TACRDA')
+                    COMMAREA(COMM-AREA) LENGTH(200) END-EXEC.
+           IF CA-PFKEY EQUAL 2 THEN
+               EXEC CICS XCTL PROGRAM('TACRDR')
+                    COMMAREA(COMM-AREA) LENGTH(200) END-EXEC.
+           IF CA-PFKEY EQUAL 3 THEN
+               EXEC CICS XCTL PROGRAM('TACRDC')
+                    COMMAREA(COMM-AREA) LENGTH(200) END-EXEC.
+           IF CA-PFKEY EQUAL 4 THEN
+               EXEC CICS XCTL PROGRAM('TACRDD')
+                    COMMAREA(COMM-AREA) LENGTH(200) END-EXEC.
+           GO TO DF-RETURN-CHECK.
+       DF-7.
+           IF CA-MENU-LEVEL NOT EQUAL 7 THEN GO TO DF-8.
+           IF CA-PFKEY EQUAL 1 THEN
+               EXEC CICS XCTL PROGRAM('TACOTA')
+                    COMMAREA(COMM-AREA) LENGTH(200) END-EXEC.
+           IF CA-PFKEY EQUAL 2 THEN
+               EXEC CICS XCTL PROGRAM('TACOTR')
+                    COMMAREA(COMM-AREA) LENGTH(200) END-EXEC.
+           IF CA-PFKEY EQUAL 3 THEN
+               EXEC CICS XCTL PROGRAM('TACOTC')
+                    COMMAREA(COMM-AREA) LENGTH(200) END-EXEC.
+           IF CA-PFKEY EQUAL 4 THEN
+               EXEC CICS XCTL PROGRAM('TACOTD')
+                    COMMAREA(COMM-AREA) LENGTH(200) END-EXEC.
+           GO TO DF-RETURN-CHECK.
+       DF-8.
+           MOVE 'LOGIC ERROR(1) - CALL PROGRAMMER'
+               TO CA-ERR-MSG.
+           GO TO DISPATCH-FUNCTION-EXIT.
+       DF-RETURN-CHECK.
+           IF CA-PFKEY EQUAL 12 THEN GO TO RETURN-ABOVE.
+           MOVE 'INVALID ENTRY' TO CA-EM2.
+       DISPATCH-FUNCTION-EXIT. EXIT.
+
+       RETURN-ABOVE.
+           IF CA-MENU-LEVEL EQUAL 0 THEN GO TO RETURN-CICS.
+           MOVE 0 TO CA-MENU-LEVEL.
+           PERFORM SEND-MAP   THRU SEND-MAP-EXIT.
+           MOVE 1 TO CA-ENTRY.
+           GO TO RETURN-HERE.
+
+       RETURN-CICS.
+           EXEC CICS SEND TEXT FROM(FINISHED-MSG)
+                               LENGTH(20)
+                               ERASE
+                               FREEKB  END-EXEC.
+           EXEC CICS RETURN            END-EXEC.
+
+       RETURN-HERE.
+           EXEC CICS RETURN TRANSID('BTC0') COMMAREA(COMM-AREA)
+                     LENGTH(200) END-EXEC.
+
+       RECV-MAP.
+           EXEC CICS RECEIVE MAP('TACMP01')
+                          MAPSET('TACMS01')
+                             END-EXEC.
+           IF CA-PFKEY NOT EQUAL 0 THEN GO TO RECV-MAP-EXIT.
+           MOVE +0 TO I.
+       RECV-MAP-1.
+           ADD  +1 TO I.
+           IF I > 36 THEN GO TO RECV-MAP-EXIT.
+           IF PFTABLE(I) EQUAL M01A21I
+               THEN
+               MOVE I TO CA-PFKEY
+               ELSE
+               GO TO RECV-MAP-1.
+           IF CA-PFKEY GREATER 12 THEN SUBTRACT 12 FROM CA-PFKEY.
+           IF CA-PFKEY GREATER 12 THEN SUBTRACT 12 FROM CA-PFKEY.
+       RECV-MAP-EXIT. EXIT.
+
+       SEND-MAP.
+           MOVE CA-MENU-LEVEL TO I.
+           IF I EQUAL +0 THEN MOVE +8 TO I.
+           MOVE MENU-TITLES(I)    TO M01A03O.
+           MOVE MENU-LINE (I,  1) TO M01A08O.
+           MOVE MENU-LINE (I,  2) TO M01A09O.
+           MOVE MENU-LINE (I,  3) TO M01A10O.
+           MOVE MENU-LINE (I,  4) TO M01A11O.
+           MOVE MENU-LINE (I,  5) TO M01A12O.
+           MOVE MENU-LINE (I,  6) TO M01A13O.
+           MOVE MENU-LINE (I,  7) TO M01A14O.
+           MOVE MENU-LINE (I,  8) TO M01A15O.
+           MOVE MENU-LINE (I,  9) TO M01A16O.
+           MOVE MENU-LINE (I, 10) TO M01A17O.
+           MOVE MENU-LINE (I, 11) TO M01A18O.
+           MOVE MENU-LINE (I, 12) TO M01A19O.
+           MOVE PGM-ID            TO M01A01O.
+           MOVE WDATE             TO M01A02O.
+           MOVE SPACES            TO M01A21O.
+           MOVE CA-ERR-MSG        TO M01A24O.
+           EXEC CICS SEND MAP('TACMP01')
+                       MAPSET('TACMS01')
+                       ERASE FREEKB END-EXEC.
+           MOVE 0             TO CA-PFKEY.
+       SEND-MAP-EXIT. EXIT.
+
+      * ------ ATTENTION HANDLING ROUTINES ------
+       CLEAR-KEY.  GO TO RETURN-ABOVE.
+       PA1-KEY.    GO TO INVALID-ATTENTION.
+       PA2-KEY.    GO TO INVALID-ATTENTION.
+       PA3-KEY.    GO TO INVALID-ATTENTION.
+       PF1-KEY.    MOVE  1 TO CA-PFKEY.  GO TO NTI-2.
+       PF2-KEY.    MOVE  2 TO CA-PFKEY.  GO TO NTI-2.
+       PF3-KEY.    MOVE  3 TO CA-PFKEY.  GO TO NTI-2.
+       PF4-KEY.    MOVE  4 TO CA-PFKEY.  GO TO NTI-2.
+       PF5-KEY.    MOVE  5 TO CA-PFKEY.  GO TO NTI-2.
+       PF6-KEY.    MOVE  6 TO CA-PFKEY.  GO TO NTI-2.
+       PF7-KEY.    MOVE  7 TO CA-PFKEY.  GO TO NTI-2.
+       PF8-KEY.    MOVE  8 TO CA-PFKEY.  GO TO NTI-2.
+       PF9-KEY.    MOVE  9 TO CA-PFKEY.  GO TO NTI-2.
+       PF10-KEY.   MOVE 10 TO CA-PFKEY.  GO TO NTI-2.
+       PF11-KEY.   MOVE 11 TO CA-PFKEY.  GO TO NTI-2.
+       PF12-KEY.   MOVE 12 TO CA-PFKEY.  GO TO NTI-2.
+
+       INVALID-ATTENTION.
+               MOVE 'INVALID ATTENTION' TO CA-EM2. GO TO SEND-ERR-MSG.
+
+      * ------ ERROR HANDLING ROUTINES ------
+       ERR-01. MOVE 'DSIDERR          ' TO CA-EM2. GO TO SEND-ERR-MSG.
+       ERR-02. MOVE 'DSSTAT           ' TO CA-EM2. GO TO SEND-ERR-MSG.
+       ERR-03. MOVE 'DUPKEY           ' TO CA-EM2. GO TO SEND-ERR-MSG.
+       ERR-04. MOVE 'DUPREC           ' TO CA-EM2. GO TO SEND-ERR-MSG.
+       ERR-05. MOVE 'ENDDATA          ' TO CA-EM2. GO TO SEND-ERR-MSG.
+       ERR-06. MOVE 'ENDFILE          ' TO CA-EM2. GO TO SEND-ERR-MSG.
+       ERR-07. MOVE 'ENDINPT          ' TO CA-EM2. GO TO SEND-ERR-MSG.
+       ERR-08. MOVE 'EOC              ' TO CA-EM2. GO TO SEND-ERR-MSG.
+       ERR-09. MOVE 'EODS             ' TO CA-EM2. GO TO SEND-ERR-MSG.
+       ERR-10. MOVE 'EOF              ' TO CA-EM2. GO TO SEND-ERR-MSG.
+       ERR-11. MOVE 'EXPIRED          ' TO CA-EM2. GO TO SEND-ERR-MSG.
+       ERR-12. MOVE 'FUNCERR          ' TO CA-EM2. GO TO SEND-ERR-MSG.
+       ERR-13. MOVE 'IGREQID          ' TO CA-EM2. GO TO SEND-ERR-MSG.
+       ERR-14. MOVE 'ILLOGIC          ' TO CA-EM2. GO TO SEND-ERR-MSG.
+       ERR-15. MOVE 'INBFMH           ' TO CA-EM2. GO TO SEND-ERR-MSG.
+       ERR-16. MOVE 'INVERRTERM       ' TO CA-EM2. GO TO SEND-ERR-MSG.
+       ERR-17. MOVE 'INVLDC           ' TO CA-EM2. GO TO SEND-ERR-MSG.
+       ERR-18. MOVE 'INVMPSZ          ' TO CA-EM2. GO TO SEND-ERR-MSG.
+       ERR-19. MOVE 'INVREQ           ' TO CA-EM2. GO TO SEND-ERR-MSG.
+       ERR-20. MOVE 'INVTSREQ         ' TO CA-EM2. GO TO SEND-ERR-MSG.
+       ERR-21. MOVE 'IOERR            ' TO CA-EM2. GO TO SEND-ERR-MSG.
+       ERR-22. MOVE 'ITEMERR          ' TO CA-EM2. GO TO SEND-ERR-MSG.
+       ERR-23. MOVE 'JIDERR           ' TO CA-EM2. GO TO SEND-ERR-MSG.
+       ERR-24. MOVE 'LENGERR          ' TO CA-EM2. GO TO SEND-ERR-MSG.
+       ERR-25. MOVE 'MAPFAIL          ' TO CA-EM2. GO TO SEND-ERR-MSG.
+       ERR-26. MOVE 'NOJBUFSP         ' TO CA-EM2. GO TO SEND-ERR-MSG.
+       ERR-27. MOVE 'NOVAL            ' TO CA-EM2. GO TO SEND-ERR-MSG.
+       ERR-28. MOVE 'NOPASSBKRD       ' TO CA-EM2. GO TO SEND-ERR-MSG.
+       ERR-29. MOVE 'NOPASSBKWR       ' TO CA-EM2. GO TO SEND-ERR-MSG.
+       ERR-30. MOVE 'NOSPACE          ' TO CA-EM2. GO TO SEND-ERR-MSG.
+       ERR-31. MOVE 'NOSTART          ' TO CA-EM2. GO TO SEND-ERR-MSG.
+       ERR-32. MOVE 'NOSTG            ' TO CA-EM2. GO TO SEND-ERR-MSG.
+       ERR-33. MOVE 'NOTFND           ' TO CA-EM2. GO TO SEND-ERR-MSG.
+       ERR-34. MOVE 'NOTOPEN          ' TO CA-EM2. GO TO SEND-ERR-MSG.
+       ERR-35. MOVE 'OVERFLOW         ' TO CA-EM2. GO TO SEND-ERR-MSG.
+       ERR-36. MOVE 'PGMIDERR         ' TO CA-EM2. GO TO SEND-ERR-MSG.
+       ERR-37. MOVE 'QBUSY            ' TO CA-EM2. GO TO SEND-ERR-MSG.
+       ERR-38. MOVE 'QIDERR           ' TO CA-EM2. GO TO SEND-ERR-MSG.
+       ERR-39. MOVE 'QZERO            ' TO CA-EM2. GO TO SEND-ERR-MSG.
+       ERR-40. MOVE 'RDATT            ' TO CA-EM2. GO TO SEND-ERR-MSG.
+       ERR-41. MOVE 'RETPAGE          ' TO CA-EM2. GO TO SEND-ERR-MSG.
+       ERR-42. MOVE 'RTEFAIL          ' TO CA-EM2. GO TO SEND-ERR-MSG.
+       ERR-43. MOVE 'RTESOME          ' TO CA-EM2. GO TO SEND-ERR-MSG.
+       ERR-44. MOVE 'SELNERR          ' TO CA-EM2. GO TO SEND-ERR-MSG.
+       ERR-45. MOVE 'SIGNAL           ' TO CA-EM2. GO TO SEND-ERR-MSG.
+       ERR-46. MOVE 'TERMIDERR        ' TO CA-EM2. GO TO SEND-ERR-MSG.
+       ERR-47. MOVE 'TRANSIDERR       ' TO CA-EM2. GO TO SEND-ERR-MSG.
+       ERR-48. MOVE 'TSIOERR          ' TO CA-EM2. GO TO SEND-ERR-MSG.
+       ERR-49. MOVE 'UNEXPIN          ' TO CA-EM2. GO TO SEND-ERR-MSG.
+       ERR-50. MOVE 'WRBRK            ' TO CA-EM2. GO TO SEND-ERR-MSG.
+       ERR-51. MOVE 'UNIDENT ERROR    ' TO CA-EM2. GO TO SEND-ERR-MSG.
+
+       SEND-ERR-MSG.
+      *    EXEC CICS DUMP COMPLETE DUMPCODE('TEST') END-EXEC.
+           PERFORM SEND-MAP   THRU SEND-MAP-EXIT.
+           MOVE 1 TO CA-ENTRY.
+           GO TO RETURN-HERE.
+
+       END-OF-PROGRAM.
+           EXEC CICS ABEND ABCODE('BARF') CANCEL END-EXEC.
+           STOP RUN.

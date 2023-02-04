@@ -1,0 +1,90 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+#include "kedfxeq.h"
+
+int GetMapDsectSize(char *mapsetname, char *mapname) {
+
+ ppte *pptent;
+ ppth *ppthdr;
+ int fldoffset=0, p;
+
+ BMSMAPSET *mapsetaddr;
+ BMSMAP *mapaddr, *mapchain;
+ BMSMAPFIELD *mapfieldaddr, *fieldchain;
+
+ // locate the mapset in the ppt
+ ppthdr = (ppth *)csa->pcp_table_addr;
+ for (pptent = ppthdr->first, p=0;
+      pptent != NULL; pptent=pptent->next) {
+  if (STRNCMP(mapsetname, &pptent->pgmname, 8)) continue;
+  p = (int)pptent;
+  break;
+  }
+
+ // check various mapset things
+ if (p == 0) return 0;                         // no ppt entry
+ if (pptent->pgmenableflag == 0) return 0;     // it's disabled
+
+ // load map if necessary
+ if (pptent->pgmload == 0) {                   // not (yet) loaded
+  int where, size;
+  LOAD(&pptent->pgmname, where, size);
+  if (csa->tca->kikeib.eibresp != 0) return 0; // can't load
+  }
+
+ // find map in mapset
+ mapsetaddr = (BMSMAPSET *)pptent->pgmaddr;
+ mapchain = mapsetaddr->firstmap;
+ while (mapchain != NULL) {
+  if (!MEMCMP(&mapchain->mapname, mapname, 8)) break;
+  mapchain = mapchain->nextmap;
+  if (mapchain == NULL) break;
+  if (mapchain->nextmap == NULL) break;
+  }
+ if (MEMCMP(&mapchain->mapname, mapname, 8))
+  return 0;                          // map not in mapset
+
+ // fix for 1.4.0 maps, remove later...
+ if (mapchain->mapflags == 0) mapchain->mapflags = 0x80;
+ else
+ if (mapchain->mapflags == 1) mapchain->mapflags = 0x8F;
+
+ // compute field offset for dsect lenght computation
+ fldoffset=0;
+ if ((mapchain->mapflags & 0x01) > 0) fldoffset++;
+ if ((mapchain->mapflags & 0x02) > 0) fldoffset++;
+ if ((mapchain->mapflags & 0x04) > 0) fldoffset++;
+ if ((mapchain->mapflags & 0x08) > 0) fldoffset++;
+ if ((mapchain->mapflags & 0x10) > 0) fldoffset++;
+ if ((mapchain->mapflags & 0x20) > 0) fldoffset++;
+ if ((mapchain->mapflags & 0x40) > 0) fldoffset++;
+
+ // run the map's field chain and add size of the named fields.
+ p=12; fieldchain = mapchain->firstfield;
+ while (fieldchain != NULL) {
+  if (fieldchain->fieldname[0] != ' ') {
+   p += 3+fieldchain->fieldlength;
+   p += fldoffset;  // adj for extatt/dsatts
+   }
+  fieldchain = fieldchain->nextfield;
+  if (fieldchain == NULL) break;
+  if (fieldchain->nextfield == NULL) break;
+  }
+
+ // return dsect size
+ return p;
+}
+
+

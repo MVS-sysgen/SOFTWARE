@@ -1,0 +1,52 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like'
+ // functionality in MVS/TSO. Its CICS functionality is delivered
+ // at the source code level, not at the object code level.
+ // Applications must be recompiled and the recompiled programs
+ // are not compatible with any known version of 'real' CICS.
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license.
+ // See http://www.kicksfortso.com
+ // for most current information regarding licensing options.
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+
+ // 3270 aid byte values, usually used in examining eibaid
+ //                       to determine what user pressed...
+
+#define KIKENTER '\x7d'
+
+#define KIKCLEAR '\x6d'
+
+#define KIKNULL  '\x00'
+
+#define KIKPA1   '\x6c'
+#define KIKPA2   '\x6e'
+#define KIKPA3   '\x6b'
+
+#define KIKPF1   '\xf1'
+#define KIKPF2   '\xf2'
+#define KIKPF3   '\xf3'
+#define KIKPF4   '\xf4'
+#define KIKPF5   '\xf5'
+#define KIKPF6   '\xf6'
+#define KIKPF7   '\xf7'
+#define KIKPF8   '\xf8'
+#define KIKPF9   '\xf9'
+#define KIKPF10  '\x7a'
+#define KIKPF11  '\x7b'
+#define KIKPF12  '\x7c'
+#define KIKPF13  '\xc1'
+#define KIKPF14  '\xc2'
+#define KIKPF15  '\xc3'
+#define KIKPF16  '\xc4'
+#define KIKPF17  '\xc5'
+#define KIKPF18  '\xc6'
+#define KIKPF19  '\xc7'
+#define KIKPF20  '\xc8'
+#define KIKPF21  '\xc9'
+#define KIKPF22  '\x4a'
+#define KIKPF23  '\x4b'
+#define KIKPF24  '\x4c'

@@ -1,0 +1,27 @@
+ /////////////////////////////////////////////////////////////////////
+ //
+ // LSTLINES
+ //
+ // reads stdin (aka SYSIN) and prints input lines with line numbers
+ // onto stdout (aka SYSPRINT).
+ //
+ // Written as part of 'KICKS for TSO' project
+ // © Copyright 2010-2014, Michael Noel, All Rights Reserved.
+ //
+ /////////////////////////////////////////////////////////////////////
+
+#include <stdio.h>
+
+ int main (int argc, char *argv[]) {
+  int i=0; char card[90];
+
+  fprintf(stdout,"\n");
+  fgets(card, 80, stdin);
+  while (!feof(stdin)) {
+   i++;
+   fprintf(stdout, "%5d\t%s", i, card);
+   fgets(card, 80, stdin);
+   }
+  fprintf(stdout,"\n\n");
+ }
+

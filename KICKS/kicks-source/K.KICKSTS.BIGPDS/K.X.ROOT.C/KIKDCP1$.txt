@@ -1,0 +1,1470 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+#include <stdio.h>
+
+#include "kicks.h"
+
+KIKCSA *csa = (KIKCSA*)&csa;
+
+#include "iefjfcb.h"
+iefjfcb *rdjfcb(char *ddname);
+
+#ifdef __MVS__
+#include "svc99.h"
+#endif
+
+#include "pcthdr.h"
+#include "pctent.h"
+
+#include "dcthdr.h"
+#include "dctent.h"
+
+
+ // TD intrapartition queues are implemented on VSAM ksds KIKINTRA.
+ //    ( KIKINTR in CMS, due to DOS name lenght restrictions )
+ // Unlike TS queues, TD queue names are not arbitary, but must be
+ // predefined in the DCT. Thou VSAM based, these queues lack the
+ // 'direct' functionality of TS queues. (READ/WRITE ITEM).
+
+ // TD queues are also "read once". when a record is read it is
+ // (at least logically) deleted. KICKS implements this by updating
+ // the 'next' field only on reads.
+
+ // KICKS always warm starts the queues, meaning it does an FCP write
+ // followed by an FCP delete on startup, intended to ensure that if
+ // the cluster has been newly del/def'd it will operate OK. Besides
+ // that it does nothing at all other than open them each time access
+ // is needed, just like any other vsam file. A standalone job
+ // provides for queue maintenance (delete/define) to "cold start".
+
+ // KSDS keys are the first six bytes of the record: 4 bytes of
+ // qname followed by two bytes of binary itemnum.
+ // Following the key are 1 to 32757 bytes of actual user data
+ // User data length is obtained from read length minus 6.
+
+ // Itemnum's are assigned by 'WRITEQ TD' and start with 1 ranging
+ // up to 32767. Items LE zero are invalid.
+
+ // Item 0, invalid for user, is a queue control record. 'User' data
+ // length is 4. First 2 are high used item (ie, NumItems). This is
+ // set by WriteQ. Last 2 bytes are the 'NEXT' item to be read. This
+ // is initially set by WriteQ to 1, and reset by each ReadQ (any
+ // KICKS user) to the currently read item (number) plus 1.
+
+ // Numitems can be recovered by startbr for high-values itemnum
+ // (invalid since it is a *negative* number) and backing up to get
+ // the key of the highest.
+
+ typedef struct __intrakey__ {
+  char   qname[4];
+  short  item;
+ } intrakey;
+
+ typedef struct __intrarec__ {
+  intrakey key;
+  union {
+   struct {
+    char rest[32757];
+   } usrrec;
+   struct {
+    short numitems;
+    short next;
+   } reczero;
+  };
+ } intrarec;
+
+ ///////////////////////////////////////////////////////////////
+ //
+ //  function prototypes
+ //
+ ///////////////////////////////////////////////////////////////
+
+void ETRACE(int type_of, char *more, int intense);
+void XTRACE(int retcode, int intense);
+
+int enq(char *dsname);
+void deq(char *dsname);
+int openq(dcte *d);
+int reopenq(dcte *d);
+dcte *FindAndOpen(char *queue);
+void closeq(dcte *d);
+#define finalcloseq closeq
+
+int delete(dcte *d);
+int readq(dcte *d, char *into, short *length);
+int writeq(dcte *d, char *from, short length);
+
+int spoolopen(char *token, char *writer, char *node, char *class);
+int spoolclose(char *token);
+int spoolwrite(char *token, char *from, int flength);
+
+ ///////////////////////////////////////////////////////////////
+ //
+ //  kikdcp mainline
+ //
+ ///////////////////////////////////////////////////////////////
+
+
+#define maxJES 10
+FILE *JES[maxJES];
+int JESrecsize[maxJES];
+
+
+int kikdcp (KIKCSA *kikcsa, int type_of,
+   char *arg1, char *arg2, char *arg3, char *arg4) {
+
+ int dodump=0, suppress=1;
+#define firstnl arg1
+
+ dcte *dctent;
+ dcth *dcthdr;
+ int i;
+ char *p;
+
+ switch (type_of)
+  {
+
+  case kikdcpINIT:     // startup
+      // first dcp call in normal startup
+      csa = kikcsa;
+      ETRACE(type_of, "", 0);
+      //
+      //no arguments
+
+#ifdef DEBUGIT
+      // message if debugging version
+      FPRINTF(csa->csastderr,"%s", firstnl); firstnl[0]=0;
+      FPRINTF(csa->csastderr,"*** DEBUGGING version of DCP *** *** ***\n");
+#endif
+
+      // check table version matches csa version
+      //  -- ALL 4 bytes of it...
+      //  -- at some point we may be able to relax that some
+      dcthdr = (dcth *)csa->dcp_table_addr;
+      if (MEMCMP((char *)&csa->version, &dcthdr->ver[0], 4)) {
+       FPRINTF(csa->csastderr,"%s", firstnl); firstnl[0]=0;
+       FPRINTF(csa->csastderr,"DCT version does not match CSA!\n");
+       FPRINTF(csa->csastderr,"This is a fatal error! Bye Bye!\n\n");
+       EXIT (999);
+       }
+
+      // null the SPOOLOPEN/CLOSE/WRITE file pointers
+      { int i;
+      for (i=0; i<maxJES; i++) {
+       JES[i] = NULL;
+       }
+      }
+
+      { // first pass thru dct - obtain dsns from jfcb
+      int ii, iii;
+
+      for (dctent=dcthdr->first; dctent != NULL; dctent=dctent->next) {
+       iefjfcb *j;
+
+       if((dctent->flags & dcte$flags$disabled ) > 0) {
+        FPRINTF(csa->csastderr,"%s", firstnl); firstnl[0]=0;
+        FPRINTF(csa->csastderr,"queue %4.4s is disabled in DCT...\n",
+               dctent->destid);
+        continue;
+        }
+
+       if((dctent->flags & dcte$flags$extra) == 0) continue;
+
+       j = rdjfcb(dctent->extra.ddname);
+
+       // if no dd/alloc for INTRDR, dyn alloc INTRDR and redrive...
+#ifdef __MVS__
+       if ((j->jfcbind2 == 0) &&
+           (!STRNCMP(dctent->extra.ddname, "INTRDR  ", 8))) {
+        alc_intr("INTRDR  ", "A");
+        j = rdjfcb(dctent->extra.ddname);
+        }
+#endif
+
+       // disable dest if no alloc/dd
+
+#ifdef __MVS__
+        if (j->jfcbind2 == 0)   { // DD not present
+#endif
+#ifdef __CMS__
+        if (j->jfcbind2 == 192) { // FILEDEF not present or new
+#endif
+        FPRINTF(csa->csastderr,"%s", firstnl); firstnl[0]=0;
+        FPRINTF(csa->csastderr,"no alloc/DD for file %8.8s ",
+               dctent->extra.ddname);
+        FPRINTF(csa->csastderr,"associated with queue %4.4s, disabling...\n",
+               dctent->destid);
+        dctent->flags |= dcte$flags$disabled;
+        continue;
+        }
+       else {
+        MEMCPY(dctent->extra.dsname, j->jfcbdsnm, 44);
+        if ((j->jfcbind2 & jfcshare) > 0)
+         dctent->flags |= dcte$flags$dispshr;
+        if ((j->jfcbind1 & jfcsds) > 0)
+         dctent->flags &= ~dcte$flags$dispshr;
+        }
+
+       } // end for (pass 1)
+
+      // 2nd pass - open to confirm existance
+      //         ** immed close unless disp=old **
+      ii = 1; iii=1;
+      while (ii>0) {
+       for (dctent = dcthdr->first, ii=0;
+            dctent != NULL; dctent=dctent->next) {
+        if((dctent->flags & dcte$flags$extra) == 0) continue;
+        if((dctent->flags & dcte$flags$disabled) > 0) continue;
+        if((dctent->flags & dcte$flags$initopened) > 0) continue;
+        if(enq(dctent->extra.dsname) == 0) {
+          ii++;
+         if(openq(dctent) != 0) {
+          if((dctent->flags & dcte$flags$dispshr) > 0)
+             closeq(dctent);
+          dctent->flags |= dcte$flags$initopened;
+          }
+         else {
+          FPRINTF(csa->csastderr,"%s", firstnl); firstnl[0]=0;
+          FPRINTF(csa->csastderr,"file %8.8s associated with queue ",
+               dctent->extra.ddname);
+          FPRINTF(csa->csastderr,"%4.4s did not open, disabling...\n",
+               dctent->destid);
+          dctent->flags |= dcte$flags$disabled;
+          }
+         deq(dctent->extra.dsname);
+         }
+        else ii++;
+        } // end for
+        if (ii==0) continue;
+        if ((iii % 10) == 0 ) {
+         FPRINTF(csa->csastderr,"%s", firstnl); firstnl[0]=0;
+         FPRINTF(csa->csastderr,"waiting for DCT files...\n");
+         }
+        STIMER(30);
+        iii++;
+        if (iii>100) break; // max 30 seconds waiting for files
+       } // end while (pass 2a)
+
+      // 2nd pass - part b - disable anything we could not
+      //            enqueue in the first part of pass 2
+      for (dctent = dcthdr->first; dctent != NULL; dctent=dctent->next) {
+       if((dctent->flags & dcte$flags$extra) == 0) continue;
+       if((dctent->flags & dcte$flags$disabled) > 0) continue;
+       if((dctent->flags & dcte$flags$initopened) == 0) {
+        FPRINTF(csa->csastderr,"%s", firstnl); firstnl[0]=0;
+        FPRINTF(csa->csastderr,
+         "unable to enqueue file %8.8s associated with queue ",
+         dctent->extra.ddname);
+        FPRINTF(csa->csastderr,"%4.4s, disabling...\n",
+               dctent->destid);
+        dctent->flags |= dcte$flags$disabled;
+        }
+       } // end for (pass 2b)
+
+      } // end of dct checking...
+
+      {   // following will warm start KIKINTRA
+      int six=6, recl=10, flags=0, numrec;
+      intrarec *rec;
+      rec = (intrarec*)MALLOC(32768);
+      if (rec != NULL) {
+       MEMSET(rec, 0, 32768);
+       WRITE("KIKINTRA",flags,rec,recl,rec,six);
+       flags=1; // generic
+       DELETE("KIKINTRA", flags, rec, six, numrec);
+       FREE(rec);
+       }
+         // now is also a good time to scan all
+         // the queues and delete any old records
+
+      }
+
+      XTRACE(0, 0);
+      return(0);
+      //break;
+
+  case kikdcpTERM:     // shutdown
+      // last dcp call before normal shut
+      ETRACE(type_of, "", 0);
+      //
+      //no arguments
+
+      // close down open JES queues
+      { int i, t; char tok[10];
+      MEMSET(tok, ' ', 8); tok[8] = 0;
+      for (i=0, t='0'; i<maxJES; i++, t++) {
+       tok[0] = t;
+       spoolclose(tok);
+       }
+      }
+
+      // close down any TD queues open
+      dcthdr = (dcth *)csa->dcp_table_addr;
+      for (dctent = dcthdr->first; dctent != NULL; dctent=dctent->next) {
+       if((dctent->flags & dcte$flags$disabled) > 0) continue;
+       if((dctent->flags & dcte$flags$opened) == 0) continue;
+       if((dctent->flags & dcte$flags$dispshr) > 0) {
+        closeq(dctent);
+        deq(dctent->extra.dsname);
+        }
+       }
+
+      XTRACE(0, 0);
+      return(0);
+      //break;
+
+  case kikdcpTRANEND:     // close DISP=SHR files
+    {
+    ETRACE(type_of, "", 1); // 'intense'
+
+    //
+    //no arguments
+
+    // Can get called
+    // 1 -- by SIP when transaction really ends (ie, when kcpattach
+    //      returns) or
+    // 2 -- by SYNCPOINT, or
+    // 3 -- by TCP when a conversational program tries to read the
+    //      terminal
+    // SIP calling, task number zero & it's OK to clean up everything.
+    // SYNCPOINT last function 5634 & it's OK to clean up everything
+    // Otherwise it's conversational,
+    // -- so see if it's KEDF in which case files need to stay open
+    // -- if not SIP, SYNCPOINT, KEDF we need to find the pct entry
+    //    for the current transid & see if 'KPOPEN' (keep files open)
+    //    set. if not then once again clean up everything.
+
+    if ((csa->trc.trcflags & 16) > 0) {
+     XTRACE(0, 1); // 'intense'      // leave KEDF alone...
+     return(0);
+     }
+
+    if(csa->tca->tasknum != 0)
+     if (*(short*)&csa->tca->kikeib.eibfn != 5634 ) {
+      pcte *pctent;
+      pcth *pcthdr;
+      pcthdr = (pcth *)csa->kcp_table_addr;
+      for (pctent = pcthdr->first; pctent != NULL; pctent=pctent->next) {
+       if (!MEMCMP(csa->tca->tranid, pctent->tranid, 4)) { break; }
+       }
+      if (pctent != NULL) {
+       if (pctent->fcpenableflag > 0) { // if current tran has the
+        XTRACE(0, 1); // 'intense'      // flag set leave it along
+        return(0);
+        }
+       }
+      }
+
+    // here when SIP call
+    //  or SYNCPOINT
+    //  or current trans does not have flag set
+
+    // close down open JES queues
+    { int i, t; char tok[10];
+    MEMSET(tok, ' ', 8); tok[8] = 0;
+    for (i=0, t='0'; i<maxJES; i++, t++) {
+     tok[0] = t;
+     spoolclose(tok);
+     }
+    }
+
+    // close down any TD queues open
+    dcthdr = (dcth *)csa->dcp_table_addr;
+    for (dctent = dcthdr->first; dctent != NULL; dctent=dctent->next) {
+     if((dctent->flags & dcte$flags$disabled) > 0) continue;
+     if((dctent->flags & dcte$flags$opened) == 0) continue;
+     if((dctent->flags & dcte$flags$dispshr) > 0) {
+      closeq(dctent);
+      deq(dctent->extra.dsname);
+      }
+     }
+
+    XTRACE(0, 1);           // 'intense'
+    return(0);
+    }
+    //break;
+
+  case kikdcpTRANSTRT:     // Called by attach to clean up dct
+    {                      // Some of this cant be done in
+                           // kikdcptranend 'cause that gets
+                           // called in the middle of conversational
+                           // transactactions as well as at the
+                           // end of pseudo-conversational ones...
+    ETRACE(type_of, "", 1); // 'intense'
+    //
+    //no arguments
+
+    // do kikdcpTRANEND stuff in case it didn't get done...
+
+    // close down open JES queues
+    { int i, t; char tok[10];
+    MEMSET(tok, ' ', 8); tok[8] = 0;
+    for (i=0, t='0'; i<maxJES; i++, t++) {
+     tok[0] = t;
+     spoolclose(tok);
+     }
+    }
+
+    // close down any TD queues open
+    dcthdr = (dcth *)csa->dcp_table_addr;
+    for (dctent = dcthdr->first; dctent != NULL; dctent=dctent->next) {
+     if((dctent->flags & dcte$flags$disabled) > 0) continue;
+     if((dctent->flags & dcte$flags$opened) == 0) continue;
+     if((dctent->flags & dcte$flags$dispshr) > 0) {
+      closeq(dctent);
+      deq(dctent->extra.dsname);
+      }
+     }
+
+    XTRACE(0, 1);           // 'intense'
+    return(0);
+    }
+    //break;
+
+  case kikdcpDELETEQ:   // delete queue
+
+      {
+      KIKTCA *tca=csa->tca;
+
+      ETRACE(type_of, arg1, 0);
+      //
+      //queue name = arg1; // (Ir) queue
+
+      char  *queue;
+
+      queue = arg1;
+
+      // find the queue
+      dctent = FindAndOpen(queue);
+
+      // do the delete
+      deleteq(dctent);
+
+      XTRACE(0, 0);
+      return(0);
+      }
+      //break;
+
+  case kikdcpREADQ:     // read queue
+
+      {
+      KIKTCA *tca=csa->tca;
+
+      ETRACE(type_of, arg1, 0);
+      //
+      //queue name = arg1; // (Ir) queue
+      //into       = arg2; // (Or) into
+      //length     = arg3; // (Ir) length
+
+      char  *queue, *into;
+      short   *length;
+
+      queue = arg1;
+      into = arg2; length = (short*)arg3;
+
+      // find the queue
+      dctent = FindAndOpen(queue);
+
+      // do the read
+      readq(dctent, into, length);
+
+      XTRACE(0, 0);
+      return(0);
+      }
+      //break;
+
+  case kikdcpWRITEQ:    // write queue
+
+      {
+      KIKTCA *tca=csa->tca;
+
+      ETRACE(type_of, arg1, 0);
+      //
+      //queue name = arg1; // (Ir) queue
+      //from       = arg2; // (Or) from
+      //length     = arg3; // (Ir) length
+
+      char  *queue, *from;
+      short    length;
+
+      queue = arg1;
+      from = arg2; length = *(short*)arg3;
+
+      // find the queue
+      dctent = FindAndOpen(queue);
+
+      // do the write
+      writeq(dctent, from, length);
+
+      XTRACE(0, 0);
+      return(0);
+      }
+      //break;
+
+  case kikdcpSPOOLOPEN: // open JES i/o
+      {                 // input not supportted!!!
+      KIKTCA *tca=csa->tca;
+
+      ETRACE(type_of, arg1, 0);
+      //
+      //token  = arg1; // (Or) 8 char token
+      //writer = arg2; // (Ir) 8 char writer/userid
+      //node   = arg3; // (Ir) 8 char node
+      //class  = arg4; // (Ir) 1 char class
+
+      char  *token, *writer, *node, *class;
+
+      token = arg1; writer = arg2;
+      node  = arg3; class  = arg4;
+
+      // do the write
+      spoolopen(token, writer, node, class);
+
+      XTRACE(0, 0);
+      return(0);
+      }
+      //break;
+
+  case kikdcpSPOOLCLOSE: // close JES i/o
+      {
+      ETRACE(type_of, "", 0);
+      //
+      //token = arg1; // (Ir) 8 char token
+
+      char  *token;
+
+      token = arg1;
+
+      // do the write
+      spoolclose(token);
+
+      XTRACE(0, 0);
+      return(0);
+     }
+      //break;
+
+  case kikdcpSPOOLREAD: // read JES input (another job's output)
+      {                 // not supportted!!!
+      ETRACE(type_of, "", 0);
+      //
+
+      XTRACE(0, 0);
+      return(0);
+      }
+      //break;
+
+  case kikdcpSPOOLWRITE: // write JES output (sysout or intrdr)
+      {
+      ETRACE(type_of, "", 0);
+      //
+      //token      = arg1; // (Ir) 8 char token
+      //from       = arg2; // (Or) from
+      //flength    = arg3; // (Ir) flength
+
+      char  *token, *from;
+      int    flength;
+
+      token = arg1;
+      from  = arg2; flength = *(int*)arg3;
+
+      // do the write
+      spoolwrite(token, from, flength);
+
+      XTRACE(0, 0);
+      return(0);
+      }
+      //break;
+
+  default:    // bad calls get here
+      ETRACE(type_of, "", 0);
+      {
+      if ((csa->trc.trcflags & 4) > 0) {
+        FCLOSE((FILE*)kikcsa->auxtrc);
+        csa->trc.trcflags &= ~4; // show closed
+       }
+      ABEND(kikdcpTYPE, type_of);
+      }
+  }
+
+}
+
+void ETRACE(int type_of, char *more, int intense)
+{ char tmsg[20]; int t; t = csa->tca->tasknum;
+  csa->AICAtime = -1;
+  csa->tca->kikeib.eibresp = csa->tca->kikeib.eibresp2 = 0;
+  if (more == NULL)
+  SPRINTF(tmsg, "D%2.2X%4.4s     %4.4X", type_of, "", t);
+  else
+  SPRINTF(tmsg, "D%2.2X%4.4s     %4.4X", type_of, more, t);
+  ((SubPtr)csa->trc_addr)(tmsg, intense);
+}
+
+void XTRACE(int retcode, int intense)
+{ char tmsg[20]; int t; t = csa->tca->tasknum;
+  SPRINTF(tmsg, "DX%03.3d       %4.4X", retcode, t);
+  ((SubPtr)csa->trc_addr)(tmsg, intense);
+  //return(retcode);
+  csa->AICAtime = csa->AICAmax;
+}
+
+
+
+
+
+ /////////////////////////////////////////////////////////////
+ //
+ // SUBROUTINE TO FIND DCTE AND OPEN FILE IF NEEDED
+ //
+ /////////////////////////////////////////////////////////////
+
+ dcte *FindAndOpen(char *queue) {
+
+ dcte *dctent,*d;
+ dcth *dcthdr;
+ int dodump=0, suppress=1;
+ int i, ii;
+
+ // scan thru dct for requested queue
+ dcthdr = (dcth *)csa->dcp_table_addr;
+ for (dctent = dcthdr->first; dctent != NULL; dctent=dctent->next) {
+  if(!MEMCMP(queue, dctent->destid, 4)) break;
+  }
+ // abend if not found
+ if (dctent == NULL) { // resp=qiderr
+  KIKPCP(csa, kikpcpABND, "D001", &dodump); // abend, not in dct
+  }
+ // post resp, resp2 in dctent
+ //dctent->resp = 0; dctent->resp2 = 0;
+ // abend if disabled
+ if((dctent->flags & dcte$flags$disabled) > 0) { // resp=disabled
+  KIKPCP(csa, kikpcpABND, "D002", &dodump); // abend, disabled
+  }
+
+ // check for indirect...
+ if((dctent->flags & dcte$flags$indir) > 0) {
+  // use this code replication instead of a recursive call to
+  // protect against loops like two indirs pointing to each other!
+  d = dctent;
+  // scan thru dct for requested queue
+  dcthdr = (dcth *)csa->dcp_table_addr;
+  for (dctent = dcthdr->first; dctent != NULL; dctent=dctent->next) {
+   if(!MEMCMP(d->indir.phydest, dctent->destid, 4)) break;
+   }
+  // abend if not found
+  if (dctent == NULL) { // resp=qiderr
+   d->flags |= dcte$flags$disabled; // stop indirecting...
+   KIKPCP(csa, kikpcpABND, "D001", &dodump); // abend, not in dct
+   }
+  // post resp, resp2 in dctent
+  //dctent->resp = 0; dctent->resp2 = 0;
+  // abend if disabled
+  if((dctent->flags & dcte$flags$disabled) > 0) { // resp=disabled
+   d->flags |= dcte$flags$disabled; // stop indirecting...
+   KIKPCP(csa, kikpcpABND, "D002", &dodump); // abend, disabled
+   }
+  }
+
+ // die now if indir, since we already did that once
+ if((dctent->flags & dcte$flags$indir) > 0) {
+  d->flags |= dcte$flags$disabled; // stop indirecting...
+  KIKPCP(csa, kikpcpABND, "D004", &dodump); // abend, recursive indir
+  }
+
+ // if queue is intra we are done
+ if((dctent->flags & dcte$flags$intra) > 0)  return(dctent);
+
+ // from here down is extra...
+
+
+ // if queue is already open we are done
+ if((dctent->flags & dcte$flags$opened) > 0) return(dctent);
+
+ // issue enqueue on dest filename
+ ii=0;
+ while(enq(dctent->extra.dsname) != 0) {
+  STIMER(10);
+  ii++;
+  if (ii>300) { // total of 10*300=3000, or 30 seconds
+   KIKPCP(csa, kikpcpABND, "D005", &dodump); // abend, enq fail
+   }
+  }
+
+ // open the queue
+ // if open fails release the enqueue
+ if(reopenq(dctent) == 0) {
+  deq(dctent->extra.dsname);
+  dctent->flags |= dcte$flags$disabled;
+  KIKPCP(csa, kikpcpABND, "D006", &dodump); // abend, open failed
+  }
+
+ // return dct pointer to open queue
+ return(dctent);
+ }
+
+
+
+
+ ///////////////////////////////////////////////////////////////
+ //
+ // FUNCTION to enqueue on a dataset name
+ //
+ ///////////////////////////////////////////////////////////////
+
+ int enq(char *dsname) {
+
+ char qname[8];
+ char rname[44];
+ int rtn;
+
+ MEMCPY(&qname[0], "KICKSFCP", 8);  // gonna use FCP based enqueue
+ MEMCPY(&rname[0], dsname, 44);     // name even thou this is DCP
+
+ if (csa->enqscope[6] == 'S') {
+  __asm__ (
+    "L 2,%1\n\t"
+    "L 3,%2\n\t"
+    "ENQ ((2),(3),E,44,SYSTEMS),RET=USE\n\t"
+    "ST 15,%0"
+    : "=m"(rtn)
+    : "m"(qname),"m"(rname)
+    : "0","1","2","3","15"
+   );
+  }
+ else {
+  __asm__ (
+    "L 2,%1\n\t"
+    "L 3,%2\n\t"
+    "ENQ ((2),(3),E,44,SYSTEM),RET=USE\n\t"
+    "ST 15,%0"
+    : "=m"(rtn)
+    : "m"(qname),"m"(rname)
+    : "0","1","2","3","15"
+   );
+  }
+
+  return(rtn); // 0 - enqueued; not 0 - non enqueued
+ }
+
+
+ ///////////////////////////////////////////////////////////////
+ //
+ // SUBROUTINE to release enqueue on a dataset name
+ //
+ ///////////////////////////////////////////////////////////////
+
+ void deq(char *dsname) {
+
+ char qname[8];
+ char rname[44];
+ int rtn;
+
+ MEMCPY(&qname[0], "KICKSFCP", 8); // gonna use FCP based enqueue
+ MEMCPY(&rname[0], dsname, 44);    // name even thou this is DCP
+
+ if (csa->enqscope[6] == 'S') {
+   __asm__ (
+    "L 2,%1\n\t"
+    "L 3,%2\n\t"
+    "DEQ ((2),(3),44,SYSTEMS),RET=HAVE\n\t"
+    "ST 15,%0"
+    : "=m"(rtn)
+    : "m"(qname),"m"(rname)
+    : "0","1","2","3","15"
+   );
+  }
+ else {
+   __asm__ (
+    "L 2,%1\n\t"
+    "L 3,%2\n\t"
+    "DEQ ((2),(3),44,SYSTEM),RET=HAVE\n\t"
+    "ST 15,%0"
+    : "=m"(rtn)
+    : "m"(qname),"m"(rname)
+    : "0","1","2","3","15"
+   );
+  }
+ }
+
+
+ /////////////////////////////////////////////////////////////
+ //
+ // SUBROUTINE TO CLOSE Q ---  same as FINALCLOSEQ ---
+ //
+ /////////////////////////////////////////////////////////////
+
+ void closeq(dcte *d) {
+
+  // if disabled return
+  if((d->flags & dcte$flags$disabled) > 0) return;
+
+  // if not extrapartition return
+  if((d->flags & dcte$flags$extra) == 0) return;
+
+  // if already closed return
+  if((d->flags & dcte$flags$opened) == 0) return;
+
+  d->extra.tell = FTELL(d->extra.qfile);
+  FCLOSE(d->extra.qfile);
+  d->flags &= ~dcte$flags$opened;
+
+ }
+
+
+ /////////////////////////////////////////////////////////////
+ //
+ // SUBROUTINE TO OPEN Q
+ //
+ /////////////////////////////////////////////////////////////
+
+ int openq(dcte *d) {
+  char withdd[16];
+
+  // if disabled return
+  if((d->flags & dcte$flags$disabled) > 0) return(0);
+
+  // if not extrapartition return
+  if((d->flags & dcte$flags$extra) == 0) return(0);
+
+  // if already open return (not zero)
+  if((d->flags & dcte$flags$opened) > 0)
+   return((int)d->extra.qfile);
+
+  STRCPY(withdd, "DD:"); STRNCAT(withdd, d->extra.ddname, 8);
+  if((d->flags & dcte$flags$output) > 0)
+   d->extra.qfile = (FILE*)FOPEN(withdd, "wb");
+  else
+   d->extra.qfile = (FILE*)FOPEN(withdd, "rb");
+  if (d->extra.qfile == NULL) return(0);
+
+  d->extra.tell = 0;
+  d->flags |= dcte$flags$opened;
+  return ((int)d->extra.qfile);
+
+ }
+
+
+ /////////////////////////////////////////////////////////////
+ //
+ // SUBROUTINE TO RE-OPEN Q
+ //
+ /////////////////////////////////////////////////////////////
+
+ int reopenq(dcte *d) {
+  char withdd[16];
+  int i;
+
+  // if disabled return
+  if((d->flags & dcte$flags$disabled) > 0) return(0);
+
+  // if not extrapartition return
+  if((d->flags & dcte$flags$extra) == 0) return(0);
+
+  // if already open return (not zero)
+  if((d->flags & dcte$flags$opened) > 0)
+   return((int)d->extra.qfile);
+
+  STRCPY(withdd, "DD:"); STRNCAT(withdd, d->extra.ddname, 8);
+  if((d->flags & dcte$flags$output) > 0) {
+   d->extra.qfile = (FILE*)FOPEN(withdd, "wb");
+   if (d->extra.qfile == NULL) return(0);
+   // re-establish position (eof for output file)
+   // version of pdpclib I have does not support this...
+   //i = FSEEK(d->extra.qfile, 0, SEEK_END);
+   //
+   // SO - disp=shr extrapartition outputs need to be
+   //      disp=mod which is not possible!
+   //    * *** more thought needed ***
+   //
+   } else {
+   d->extra.qfile = (FILE*)FOPEN(withdd, "rb");
+   if (d->extra.qfile == NULL) return(0);
+   // re-establish position (where I was for input file)
+   i = FSEEK(d->extra.qfile, d->extra.tell, SEEK_SET);
+   }
+
+  // if seek fails close file & report open fail
+  if (i != 0) {
+   FCLOSE(d->extra.qfile);
+   return(0);
+   }
+
+  d->flags |= dcte$flags$opened;
+  return ((int)d->extra.qfile);
+
+ }
+
+
+ /////////////////////////////////////////////////////////////
+ //
+ // SUBROUTINE TO DELETE Q
+ //
+ /////////////////////////////////////////////////////////////
+
+ // http://publib.boulder.ibm.com/infocenter/cicsts/v3r1/topic/
+ //      com.ibm.cics.ts31.doc/dfhp4/topics/dfhp4_commands.htm
+
+ // DELETEQ TD deletes all the transient data associated with a
+ // particular intrapartition destination (queue). All storage
+ // associated with the destination is released (deallocated).
+ // Note that you cannot use this command to delete an extrapartition
+ // transient data queue. An attempt to do so results in an INVREQ
+ // condition.
+
+ int deleteq(dcte *d) {
+  int dodump=0, suppress=1;
+  int flags=1; // generic
+  short four=4, numrec=0;
+  KIKEIB *eib;
+
+  eib = &csa->tca->kikeib;
+  eib->eibresp = 0; eib->eibresp2 = 0;
+
+  switch (d->flags & 7) { // processing depends on queue type
+
+   case dcte$flags$extra:
+
+    eib->eibresp = 16; // invreq
+    KIKPCP(csa, kikpcpABND, "D003", &dodump);
+
+   case dcte$flags$intra:
+
+    // do the (generic) delete
+    DELETE("KIKINTRA", flags, d->destid, four, numrec);
+
+    // return if all is well (including rnf)
+    if((eib->eibresp == 0) || (eib->eibresp == 13)) {
+     eib->eibresp = 0;
+     return(0);
+     }
+
+    // map some other returns to ioerr
+    // note - should be able to recover underlying
+    //        fcp issues by looking at eibrcode...
+    eib->eibresp = 17; // ioerr
+    KIKPCP(csa, kikpcpABND, "D003", &dodump);
+
+   default:
+    ABEND(kikdcpTYPE, 999);
+  }
+
+ }
+
+
+ /////////////////////////////////////////////////////////////
+ //
+ // SUBROUTINE TO READ Q
+ //
+ /////////////////////////////////////////////////////////////
+
+ // READQ TD reads transient data from a queue (after which the record
+ // is no longer available).
+
+ // If you are using automatic transaction initiation (ATI) (see the
+ // section on ATI in the CICS® Application Programming Guide for
+ // introductory information) your application should test for the
+ // QZERO condition to ensure that termination of an automatically
+ // initiated task occurs only when the queue is empty.
+
+ // If the READQ TD command attempts to access a record in a logically
+ // recoverable intrapartition queue that is being written to, or
+ // deleted by, another task, and there are no more committed records,
+ // the command waits until the queue is no longer being used for output.
+ // If, however, the NOSUSPEND option has been specified, or there is an
+ // active HANDLE CONDITION for QBUSY, the QBUSY condition is raised.
+
+ int readq(dcte *d, char *into, short *length) {
+  int dodump=0, suppress=1;
+  int numread=0;
+  short six=6, recl;
+  int flags, Len, Len2;
+  int savr, savr2;
+  short next, last;
+  KIKEIB *eib;
+  char *erec;
+  intrarec *rec;
+
+  eib = &csa->tca->kikeib;
+  eib->eibresp = 0; eib->eibresp2 = 0;
+
+  switch (d->flags & 7) { // processing depends on queue type
+
+   case dcte$flags$extra:
+
+    if((d->flags & dcte$flags$output) > 0 ) { // can't read output queue
+     eib->eibresp = 16; // invreq
+     KIKPCP(csa, kikpcpABND, "D003", &dodump);
+     }
+
+    if (FEOF(d->extra.qfile)) {               // already at eof
+     eib->eibresp = 23; // qzero
+     KIKPCP(csa, kikpcpABND, "D003", &dodump);
+     }
+
+    // get a buffer
+    erec = (char*)MALLOC(d->extra.qfile->lrecl);
+    if (erec == NULL) {                       // can't get a buffer
+     eib->eibresp = 17; // call it ioerr
+     KIKPCP(csa, kikpcpABND, "D003", &dodump);
+     }
+
+    // read fixed length record into buffer
+    numread = FREAD(erec, 1, d->extra.qfile->lrecl, d->extra.qfile);
+
+    if (FEOF(d->extra.qfile)) {               // hit EOF
+     eib->eibresp = 23; // qzero
+     KIKPCP(csa, kikpcpABND, "D003", &dodump);
+     }
+
+    // check for lengerr
+    if (numread > *length) {
+     MEMCPY(into, erec, *length);
+     FREE(erec); // release buffer
+     eib->eibresp = 22; // lengerr          // what I read is too big
+     KIKPCP(csa, kikpcpABND, "D003", &dodump);
+     }
+    else {
+     *length = numread;
+     MEMCPY(into, erec, *length);
+     FREE(erec); // release buffer
+    }
+
+    break;
+
+   case dcte$flags$intra:
+
+    // check for null qname already done (above)
+
+    // get a buffer
+    rec = (intrarec*)MALLOC(32768);
+    if (rec == NULL) {
+     eib->eibresp = 17; // call it ioerr
+      KIKPCP(csa, kikpcpABND, "D003", &dodump);
+     }
+
+    // read queue record 0 into buffer
+
+    MEMSET(rec, 0, 32768);
+    MEMCPY(rec->key.qname, d->destid, 4);
+    //rec->key.item = 0; // implied by above MEMSET...
+    recl = 10;  // key 6 + user data 4
+    flags = 48; // equal + update
+    READ("KIKINTRA",flags,rec,recl,rec,six);
+    if (eib->eibresp != 0) {
+     savr=eib->eibresp; savr2=eib->eibresp2;
+     UNLOCK("KIKINTRA", flags);
+     FREE(rec); // release buffer
+     eib->eibresp=savr; eib->eibresp2=savr2;
+     if((eib->eibresp == 12) ||   // fnf
+        (eib->eibresp == 13) ||   // rnf
+        (eib->eibresp == 19) ||   // notopen
+        (eib->eibresp == 84)) {   // disabled
+      eib->eibresp = 44;   // --> qiderr
+      } else eib->eibresp = 17;   // --> ioerr
+     KIKPCP(csa, kikpcpABND, "D003", &dodump);
+     }
+    next = rec->reczero.next;
+    last = rec->reczero.numitems;
+
+    // check for next > last
+    if (next > last) {
+     UNLOCK("KIKINTRA", flags);
+     FREE(rec); // release buffer
+     eib->eibresp = 26; // itemerr
+     KIKPCP(csa, kikpcpABND, "D003", &dodump);
+     }
+
+    // rewrite record 0
+    rec->reczero.next = next + 1;
+    recl = 10;  // key 6 + user data 4
+    flags = 0;  // not actually used by rewrite...
+    REWRITE("KIKINTRA",flags,rec,recl);
+    if (eib->eibresp != 0) {
+     UNLOCK("KIKINTRA", flags);
+     FREE(rec); // release buffer
+     eib->eibresp = 17; // ioerr
+     KIKPCP(csa, kikpcpABND, "D003", &dodump);
+     }
+
+    // read user record into buffer
+    Len = *length;
+    MEMSET(into, 0, *length);
+    MEMSET(rec, 0, 32768);
+    MEMCPY(rec->key.qname, d->destid, 4);
+    rec->key.item = next;
+    recl = *length + 6;
+    *length = 0;
+    flags = 16; // equal
+    READ("KIKINTRA",flags,rec,recl,rec,six);
+    if((eib->eibresp == 0) ||
+       (eib->eibresp == 22)) { // lengerr
+     if (recl > 6) {
+      *length = Len2 = (recl-6);
+      if (Len2 > Len) Len2 = Len;
+      MEMCPY(into, &rec->usrrec.rest[0], Len2);
+      }
+     }
+    FREE(rec); // release buffer
+
+    // goback
+    if (eib->eibresp == 0) return (0);
+    // if not lengerr make it itemerr
+    if (eib->eibresp != 22)
+      eib->eibresp = 26;
+    KIKPCP(csa, kikpcpABND, "D003", &dodump);
+
+   default:
+    ABEND(kikdcpTYPE, 999);
+  }
+
+ }
+
+
+ /////////////////////////////////////////////////////////////
+ //
+ // SUBROUTINE TO WRITE Q
+ //
+ /////////////////////////////////////////////////////////////
+
+ // WRITEQ TD writes transient data to a predefined symbolic destination.
+
+ int writeq(dcte *d, char *from, short length) {
+  int dodump=0, suppress=1;
+#define mybufsize 200
+  char mybuf[mybufsize];
+  short six=6, recl;
+  int flags, savr, savr2;
+  short next, last;
+  KIKEIB *eib;
+  intrarec *rec;
+
+  eib = &csa->tca->kikeib;
+  eib->eibresp = 0; eib->eibresp2 = 0;
+
+  switch (d->flags & 7) { // processing depends on queue type
+
+   case dcte$flags$extra:
+
+    if((d->flags & dcte$flags$output) == 0 ) { // can't write input queue
+     eib->eibresp = 16; // invreq
+     KIKPCP(csa, kikpcpABND, "D003", &dodump);
+     }
+
+    if (length > mybufsize) length = mybufsize; // shouldn't happen...
+    MEMSET(mybuf, ' ', mybufsize);
+    MEMCPY(mybuf, from, length);
+
+    FWRITE(mybuf, 1, d->extra.qfile->lrecl, d->extra.qfile);
+    break;
+
+   case dcte$flags$intra:
+
+    // check for null qname already done (above)
+
+    // validate length already done (above)
+
+    // get a buffer
+    rec = (intrarec*)MALLOC(32768);
+    if (rec == NULL) {
+     eib->eibresp = 17; // call it ioerr
+      KIKPCP(csa, kikpcpABND, "D003", &dodump);
+     }
+
+    // read queue record 0 into buffer
+    MEMSET(rec, 0, 32768);
+    MEMCPY(rec->key.qname, d->destid, 4);
+    //rec->key.item = 0; // implied by above MEMSET...
+    recl = 10;  // key 6 + user data 4
+    flags = 16; // equal
+    READ("KIKINTRA",flags,rec,recl,rec,six);
+    if((eib->eibresp != 0) && (eib->eibresp != 13)) {
+     savr=eib->eibresp; savr2=eib->eibresp2;
+     FREE(rec); // release buffer
+     eib->eibresp=savr; eib->eibresp2=savr2;
+     if((eib->eibresp == 12) ||   // fnf
+        (eib->eibresp == 19) ||   // notopen
+        (eib->eibresp == 84)) {   // disabled
+      eib->eibresp = 18;   // --> NOSPACE
+      // could be ioerr or qiderr, but I think nospace is best...
+      } else eib->eibresp = 17;   // --> ioerr
+     KIKPCP(csa, kikpcpABND, "D003", &dodump);
+     }
+    if (eib->eibresp == 13) { // rnf for 1st read
+     MEMSET(rec, 0, 32768);
+     MEMCPY(rec->key.qname, d->destid, 4);
+     //rec->key.item = 0; // implied by above MEMSET...
+     recl = 10;  // key 6 + user data 4
+     flags = 0;
+     WRITE("KIKINTRA",flags,rec,recl,rec,six);
+     if (eib->eibresp != 0) {
+      FREE(rec); // release buffer
+      eib->eibresp = 18;   // --> NOSPACE
+      KIKPCP(csa, kikpcpABND, "D003", &dodump);
+      }
+     // read (again)
+     MEMSET(rec, 0, 32768);
+     MEMCPY(rec->key.qname, d->destid, 4);
+     //rec->key.item = 0; // implied by above MEMSET...
+     recl = 10;  // key 6 + user data 4
+     flags = 16; // equal
+     READ("KIKINTRA",flags,rec,recl,rec,six);
+     if (eib->eibresp != 0) {
+      FREE(rec); // release buffer
+      eib->eibresp = 17;
+      KIKPCP(csa, kikpcpABND, "D003", &dodump);
+      }
+     }
+    // write new record at the end
+    next = rec->reczero.next;
+    last = rec->reczero.numitems;
+    last++;
+    MEMSET(rec, 0, 32768);
+    MEMCPY(rec->key.qname, d->destid, 4);
+    rec->key.item = last;
+    MEMCPY(&rec->usrrec.rest[0], from, length);
+    recl = length + 6;
+    flags = 0;
+    WRITE("KIKINTRA",flags,rec,recl,rec,six);
+    if (eib->eibresp != 0) {
+     FREE(rec); // release buffer
+     eib->eibresp = 18;   // --> NOSPACE
+     KIKPCP(csa, kikpcpABND, "D003", &dodump);
+     }
+    // update record zero
+    MEMSET(rec, 0, 32768);
+    MEMCPY(rec->key.qname, d->destid, 4);
+    //rec->key.item = 0; // implied by above MEMSET...
+    recl = 10;  // key 6 + user data 4
+    flags = 48; // equal + update
+    READ("KIKINTRA",flags,rec,recl,rec,six);
+    if (eib->eibresp != 0) {
+     UNLOCK("KIKINTRA", flags);
+     FREE(rec); // release buffer
+     eib->eibresp = 17;
+     KIKPCP(csa, kikpcpABND, "D003", &dodump);
+     }
+    rec->reczero.numitems = last;
+    // set 'next', but only on first write...
+    if (last == 1) rec->reczero.next = last;
+    recl = 10;  // key 6 + user data 4
+    flags = 0;  // not actually used by rewrite...
+    REWRITE("KIKINTRA",flags,rec,recl);
+    if (eib->eibresp != 0) {
+     UNLOCK("KIKINTRA", flags);
+     FREE(rec); // release buffer
+     eib->eibresp = 17;
+     KIKPCP(csa, kikpcpABND, "D003", &dodump);
+     }
+
+     // free the buffer
+     FREE(rec);
+
+     break;
+
+   default:
+    ABEND(kikdcpTYPE, 999);
+  }
+
+ }
+
+
+ /////////////////////////////////////////////////////////////
+ //
+ // SUBROUTINE TO OPEN SPOOL (output only)
+ //
+ /////////////////////////////////////////////////////////////
+
+ // The SPOOLOPEN OUTPUT command opens a spool report for output from
+ // CICS® to the system spooler and defines its characteristics.
+
+ // It results in a dynamic allocation of the output file using the
+ // nodeid to specify the remote destination and the userid to specify
+ // the remote user. As this is a multithread output request, requesters
+ // of this service could interleave. This SPOOLOPEN OUTPUT command
+ // enables users to acquire the token for a report that it expects to
+ // create (write). This token is used to identify the report in later
+ // SPOOLWRITE and SPOOLCLOSE commands.
+
+ // When printing on a local device, use the NOCC|ASA|MCC options to
+ // control output formatting. If you do not specify a format, the
+ // default value of NOCC is used. NODE and USERID can be used to write
+ // the data set directly to the local spool file only if specified with
+ // a value of '*'.
+
+ // If you do not issue SPOOLCLOSE before the end of the transaction,
+ // CICS performs an implicit SPOOLCLOSE DELETE and writes a message to
+ // CSMT to alert you to the possible unnecessary retention of resources.
+
+ // Note: If you retrieve a formatted data set, the system spooler could
+ // have changed the data set format. For example, the system spooler
+ // could have converted an MCC format data set to ASA format during data
+ // set creation. This does not affect the final printed output.
+
+ int spoolopen(char *token, char *writer, char *node, char *class) {
+  int i, rc, t=*token, dodump=0, suppress=1;
+  char theDD[16], usr[9];
+  KIKEIB *eib;
+
+  eib = &csa->tca->kikeib;
+  eib->eibresp = 0; eib->eibresp2 = 0;
+
+  for (t=0; t<maxJES; t++) if (JES[t] == NULL) break;
+  if (t == maxJES) {
+   eib->eibresp = 19; eib->eibresp2 = 8; // notopen
+   KIKPCP(csa, kikpcpABND, "AEIS", &dodump);
+   }
+  t += '0'; *token = t; t -= '0';
+  MEMSET(theDD, 0, 16);
+  MEMCPY(theDD, "DD:SPOOLO  ", 11);
+  theDD[9] = token[0]; theDD[10] = 0;
+
+#ifdef __MVS__
+  if (!MEMCMP(writer, "INTRDR", 6)) {
+   rc = alc_intr(theDD+3, class); // writer implied, node ignored...
+   if (rc != 0) {
+    eib->eibresp = 19; eib->eibresp2 = 9; // notopen
+    KIKPCP(csa, kikpcpABND, "AEIS", &dodump);
+    }
+   } else {
+   MEMSET(usr, 0, 8);
+   MEMCPY(usr, writer, 8);
+   if(usr[0] == '*') MEMSET(usr, 0, 8);
+   rc = alc_syso(theDD+3, class, usr);         // node ignored...
+   if (rc != 0) {
+    eib->eibresp = 19; eib->eibresp2 = 10; // notopen
+    KIKPCP(csa, kikpcpABND, "AEIS", &dodump);
+    }
+   }
+#endif
+
+#ifdef __CMS__
+  // in CMS I want a separate DD for INTRDR
+  if (!MEMCMP(writer, "INTRDR", 6)) {
+   MEMCPY(theDD, "DD:INTRDR  ", 11);
+   //theDD[9] = token[0]; theDD[10] = 0;
+   }
+#endif
+
+  JES[t] = (FILE *)FOPEN(theDD, "wb");
+  if (JES[t] == NULL) {
+   eib->eibresp = 19; eib->eibresp2 = 11; // notopen
+   KIKPCP(csa, kikpcpABND, "AEIS", &dodump);
+   }
+  JESrecsize[t] = JES[t]->lrecl;
+
+  return (0);
+ }
+
+int JESrecsize[maxJES];
+
+ /////////////////////////////////////////////////////////////
+ //
+ // SUBROUTINE TO CLOSE SPOOL
+ //
+ /////////////////////////////////////////////////////////////
+
+ // The SPOOLCLOSE command closes a CICS® spool report and, optionally,
+ // changes its retention characteristics. If more than one transaction
+ // is trying to read reports from JES, SPOOLCLOSE should not be
+ // immediately followed by SPOOLOPEN. It should be followed by a WAIT,
+ // so that other transactions can use the interface.
+
+ // A default disposition is taken if both KEEP and DELETE are omitted
+ // from the SPOOLCLOSE command, or if the report is closed implicitly
+ // by a SYNCPOINT or RETURN command:
+
+ // * When an INPUT report is explicitly closed by a SPOOLCLOSE command,
+ //   the default disposition is DELETE.
+ // * In all other cases, the default disposition is KEEP.
+
+ int spoolclose(char *token) {
+  int rc, t=*token, dodump=0, suppress=1;
+  char theDD[16];
+  KIKEIB *eib;
+
+  eib = &csa->tca->kikeib;
+  eib->eibresp = 0; eib->eibresp2 = 0;
+
+  t -= '0';
+  if((t < 0) || (t>maxJES)) {
+   eib->eibresp = 19; eib->eibresp2 = 8; // notopen
+   KIKPCP(csa, kikpcpABND, "AEIS", &dodump);
+   }
+  if (JES[t] == NULL) { // no err closing already closed...
+   //eib->eibresp = 19; eib->eibresp2 = 8; // notopen
+   //KIKPCP(csa, kikpcpABND, "AEIS", &dodump);
+   return (0);
+   }
+
+  FCLOSE(JES[t]);
+  JES[t] = NULL;
+
+#ifdef __MVS__
+  MEMSET(theDD, 0, 16);
+  MEMCPY(theDD, "DD:SPOOLO  ", 11);
+  theDD[9] = token[0];
+  rc = unalc_ds(theDD+3,"KEEP","");
+  if (rc != 0) {
+   eib->eibresp = 19; eib->eibresp2 = 8; // notopen
+   KIKPCP(csa, kikpcpABND, "AEIS", &dodump);
+   }
+#endif
+
+  return (0);
+ }
+
+
+ /////////////////////////////////////////////////////////////
+ //
+ // SUBROUTINE TO WRITE SPOOL
+ //
+ /////////////////////////////////////////////////////////////
+
+ // The SPOOLWRITE command writes data to a spool report.
+
+ int spoolwrite(char *token, char *from, int flength) {
+  int t=*token, f, dodump=0, suppress=1;
+  KIKEIB *eib;
+//efine mybufsize 200  ** already defined in WRITEQ
+  char mybuf[mybufsize];
+
+  eib = &csa->tca->kikeib;
+  eib->eibresp = 0; eib->eibresp2 = 0;
+
+  t -= '0';
+  if((t < 0) || (t>maxJES)) {
+   eib->eibresp = 19; eib->eibresp2 = 8; // notopen
+   KIKPCP(csa, kikpcpABND, "AEIS", &dodump);
+   }
+  if (JES[t] == NULL) {
+   eib->eibresp = 19; eib->eibresp2 = 8; // notopen
+   KIKPCP(csa, kikpcpABND, "AEIS", &dodump);
+   }
+  if ((flength < 1) || (flength > JESrecsize[t])) {
+   eib->eibresp = 22; // lengerr
+   if ((flength < 0) || (flength > 32760))
+    eib->eibresp2 = 0;
+   else
+    eib->eibresp2 = flength - JESrecsize[t];
+   KIKPCP(csa, kikpcpABND, "AEIV", &dodump);
+   }
+  if (flength > mybufsize) flength = mybufsize; // shouldn't happen...
+  MEMSET(mybuf, ' ', mybufsize);
+  MEMCPY(mybuf, from, flength);
+
+  FWRITE(mybuf, JESrecsize[t], 1, JES[t]);
+
+  return (0);
+ }
+

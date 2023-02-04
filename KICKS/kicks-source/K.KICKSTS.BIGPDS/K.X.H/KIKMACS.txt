@@ -1,0 +1,565 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+#ifndef __KIKMACS__
+
+#define __KIKMACS__
+
+ // in Linux these 'function' macros will be true (external) functions...
+
+#if defined(__MVS__) || defined(__CMS__)
+ /////////////////////////////////////////////////////////////////
+ //
+ //  FCP api macros - **NOTE** these will modify the EIB...
+ //                            must be so if results checkable...
+ //
+ //  setjmp env saved/restored so that abends in fcp return
+ //  to this code, but abends afterword go back to glue routine.
+ //
+ //  KEDF's trace suppress flag is used to keep trace 'clean'...
+ //
+ /////////////////////////////////////////////////////////////////
+
+#define DELETE(file,flags,ridfld,keylen,numrec)                \
+{                                                              \
+int SJrtn;                                                     \
+MYjmp_buf abenv2;                                              \
+MEMCPY(&abenv2, &csa->tca->abenv1, sizeof(MYjmp_buf));         \
+csa->trc.trcflags |= 16;                                       \
+while (1) {                                                    \
+ SJrtn = MYsetjmp(csa->tca->abenv1);                           \
+ if (SJrtn != 0) break;                                        \
+ KIKFCP(csa,kikfcpDELE,file,&flags,0,0,ridfld,&keylen,&numrec); \
+ break;                                                        \
+ }                                                             \
+csa->trc.trcflags &= ~16;                                      \
+MEMCPY(&csa->tca->abenv1, &abenv2, sizeof(MYjmp_buf));         \
+}
+
+#define ENDBR(file,flags,reqid)                                \
+{                                                              \
+int SJrtn;                                                     \
+MYjmp_buf abenv2;                                              \
+MEMCPY(&abenv2, &csa->tca->abenv1, sizeof(MYjmp_buf));         \
+csa->trc.trcflags |= 16;                                       \
+while (1) {                                                    \
+ SJrtn = MYsetjmp(csa->tca->abenv1);                           \
+ if (SJrtn != 0) break;                                        \
+ KIKFCP(csa,kikfcpENDB,file,&flags,0,0,0,0,&reqid);            \
+ break;                                                        \
+ }                                                             \
+csa->trc.trcflags &= ~16;                                      \
+MEMCPY(&csa->tca->abenv1, &abenv2, sizeof(MYjmp_buf));         \
+}
+
+#define READNEXT(file,flags,into,length,ridfld,keylen,reqid)   \
+{                                                              \
+int SJrtn;                                                     \
+MYjmp_buf abenv2;                                              \
+MEMCPY(&abenv2, &csa->tca->abenv1, sizeof(MYjmp_buf));         \
+csa->trc.trcflags |= 16;                                       \
+while (1) {                                                    \
+ SJrtn = MYsetjmp(csa->tca->abenv1);                           \
+ if (SJrtn != 0) break;                                        \
+ KIKFCP(csa,kikfcpREDN,file,&flags,into,&length,ridfld,&keylen,&reqid); \
+ break;                                                        \
+ }                                                             \
+csa->trc.trcflags &= ~16;                                      \
+MEMCPY(&csa->tca->abenv1, &abenv2, sizeof(MYjmp_buf));         \
+}
+
+#define READPREV(file,flags,into,length,ridfld,keylen,reqid)   \
+{                                                              \
+int SJrtn;                                                     \
+MYjmp_buf abenv2;                                              \
+MEMCPY(&abenv2, &csa->tca->abenv1, sizeof(MYjmp_buf));         \
+csa->trc.trcflags |= 16;                                       \
+while (1) {                                                    \
+ SJrtn = MYsetjmp(csa->tca->abenv1);                           \
+ if (SJrtn != 0) break;                                        \
+ KIKFCP(csa,kikfcpREDP,file,&flags,into,&length,ridfld,&keylen,&reqid); \
+ break;                                                        \
+ }                                                             \
+csa->trc.trcflags &= ~16;                                      \
+MEMCPY(&csa->tca->abenv1, &abenv2, sizeof(MYjmp_buf));         \
+}
+
+#define READ(file,flags,into,length,ridfld,keylen)             \
+{                                                              \
+int SJrtn;                                                     \
+MYjmp_buf abenv2;                                              \
+MEMCPY(&abenv2, &csa->tca->abenv1, sizeof(MYjmp_buf));         \
+csa->trc.trcflags |= 16;                                       \
+while (1) {                                                    \
+ SJrtn = MYsetjmp(csa->tca->abenv1);                           \
+ if (SJrtn != 0) break;                                        \
+ KIKFCP(csa,kikfcpREAD,file,&flags,into,&length,ridfld,&keylen); \
+ break;                                                        \
+ }                                                             \
+csa->trc.trcflags &= ~16;                                      \
+MEMCPY(&csa->tca->abenv1, &abenv2, sizeof(MYjmp_buf));         \
+}
+
+#define RESETBR(file,flags,ridfld,keylen,reqid)                \
+{                                                              \
+int SJrtn;                                                     \
+MYjmp_buf abenv2;                                              \
+MEMCPY(&abenv2, &csa->tca->abenv1, sizeof(MYjmp_buf));         \
+csa->trc.trcflags |= 16;                                       \
+while (1) {                                                    \
+ SJrtn = MYsetjmp(csa->tca->abenv1);                           \
+ if (SJrtn != 0) break;                                        \
+ KIKFCP(csa,kikfcpREBR,file,&flags,0,0,ridfld,&keylen,&reqid); \
+ break;                                                        \
+ }                                                             \
+csa->trc.trcflags &= ~16;                                      \
+MEMCPY(&csa->tca->abenv1, &abenv2, sizeof(MYjmp_buf));         \
+}
+
+#define REWRITE(file,flags,from,length)                        \
+{                                                              \
+int SJrtn;                                                     \
+MYjmp_buf abenv2;                                              \
+MEMCPY(&abenv2, &csa->tca->abenv1, sizeof(MYjmp_buf));         \
+csa->trc.trcflags |= 16;                                       \
+while (1) {                                                    \
+ SJrtn = MYsetjmp(csa->tca->abenv1);                           \
+ if (SJrtn != 0) break;                                        \
+ KIKFCP(csa,kikfcpREWR,file,&flags,from,&length);              \
+ break;                                                        \
+ }                                                             \
+csa->trc.trcflags &= ~16;                                      \
+MEMCPY(&csa->tca->abenv1, &abenv2, sizeof(MYjmp_buf));         \
+}
+
+#define STARTBR(file,flags,ridfld,keylen,reqid)                \
+{                                                              \
+int SJrtn;                                                     \
+MYjmp_buf abenv2;                                              \
+MEMCPY(&abenv2, &csa->tca->abenv1, sizeof(MYjmp_buf));         \
+csa->trc.trcflags |= 16;                                       \
+while (1) {                                                    \
+ SJrtn = MYsetjmp(csa->tca->abenv1);                           \
+ if (SJrtn != 0) break;                                        \
+ KIKFCP(csa,kikfcpSTBR,file,&flags,0,0,ridfld,&keylen,&reqid); \
+ break;                                                        \
+ }                                                             \
+csa->trc.trcflags &= ~16;                                      \
+MEMCPY(&csa->tca->abenv1, &abenv2, sizeof(MYjmp_buf));         \
+}
+
+#define UNLOCK(file,flags)                                     \
+{                                                              \
+int SJrtn;                                                     \
+MYjmp_buf abenv2;                                              \
+MEMCPY(&abenv2, &csa->tca->abenv1, sizeof(MYjmp_buf));         \
+csa->trc.trcflags |= 16;                                       \
+while (1) {                                                    \
+ SJrtn = MYsetjmp(csa->tca->abenv1);                           \
+ if (SJrtn != 0) break;                                        \
+ KIKFCP(csa,kikfcpUNLK,file,&flags);                           \
+ break;                                                        \
+ }                                                             \
+csa->trc.trcflags &= ~16;                                      \
+MEMCPY(&csa->tca->abenv1, &abenv2, sizeof(MYjmp_buf));         \
+}
+
+#define WRITE(file,flags,from,length,ridfld,keylen)            \
+{                                                              \
+int SJrtn;                                                     \
+MYjmp_buf abenv2;                                              \
+MEMCPY(&abenv2, &csa->tca->abenv1, sizeof(MYjmp_buf));         \
+csa->trc.trcflags |= 16;                                       \
+while (1) {                                                    \
+ SJrtn = MYsetjmp(csa->tca->abenv1);                           \
+ if (SJrtn != 0) break;                                        \
+ KIKFCP(csa,kikfcpWRIT,file,&flags,from,&length,ridfld,&keylen); \
+ break;                                                        \
+ }                                                             \
+csa->trc.trcflags &= ~16;                                      \
+MEMCPY(&csa->tca->abenv1, &abenv2, sizeof(MYjmp_buf));         \
+}
+
+void CLOSE(char *file);
+#define CLOSE(file)                                            \
+{                                                              \
+int SJrtn;                                                     \
+MYjmp_buf abenv2;                                              \
+MEMCPY(&abenv2, &csa->tca->abenv1, sizeof(MYjmp_buf));         \
+csa->trc.trcflags |= 16;                                       \
+while (1) {                                                    \
+ SJrtn = MYsetjmp(csa->tca->abenv1);                           \
+ if (SJrtn != 0) break;                                        \
+ KIKFCP(csa,kikfcpCLOSE,file);                                 \
+ break;                                                        \
+ }                                                             \
+csa->trc.trcflags &= ~16;                                      \
+MEMCPY(&csa->tca->abenv1, &abenv2, sizeof(MYjmp_buf));         \
+}
+
+ /////////////////////////////////////////////////////////////////
+ //
+ //  (a few) PCP api macros - **NOTE** these modify the EIB...
+ //
+ //  setjmp env saved/restored so that abends in pcp return
+ //  to this code, but abends afterword go back to glue routine.
+ //
+ //  KEDF's trace suppress flag is used to keep trace 'clean'...
+ //
+ /////////////////////////////////////////////////////////////////
+
+ // 'hold' type LOAD
+#define LOAD(pgm,addr,size)                                    \
+{                                                              \
+int SJrtn, hold=2;                                             \
+MYjmp_buf abenv2;                                              \
+MEMCPY(&abenv2, &csa->tca->abenv1, sizeof(MYjmp_buf));         \
+csa->trc.trcflags |= 16;                                       \
+while (1) {                                                    \
+ SJrtn = MYsetjmp(csa->tca->abenv1);                           \
+ if (SJrtn != 0) break;                                        \
+ KIKPCP(csa, kikpcpLOAD, pgm, &addr, &size, &hold);            \
+ break;                                                        \
+ }                                                             \
+csa->trc.trcflags &= ~16;                                      \
+MEMCPY(&csa->tca->abenv1, &abenv2, sizeof(MYjmp_buf));         \
+}
+
+ // RELEASE -- aka DELETE loaded program...
+#define RELEASE(pgm)                                           \
+{                                                              \
+int SJrtn;                                                     \
+MYjmp_buf abenv2;                                              \
+MEMCPY(&abenv2, &csa->tca->abenv1, sizeof(MYjmp_buf));         \
+csa->trc.trcflags |= 16;                                       \
+while (1) {                                                    \
+ SJrtn = MYsetjmp(csa->tca->abenv1);                           \
+ if (SJrtn != 0) break;                                        \
+ KIKPCP(csa, kikpcpDELE, pgm);                                 \
+ break;                                                        \
+ }                                                             \
+csa->trc.trcflags &= ~16;                                      \
+MEMCPY(&csa->tca->abenv1, &abenv2, sizeof(MYjmp_buf));         \
+}
+
+#define LINK(pgm,caaddr,casize)                                \
+{                                                              \
+int SJrtn;;                                                    \
+MYjmp_buf abenv2;                                              \
+MEMCPY(&abenv2, &csa->tca->abenv1, sizeof(MYjmp_buf));         \
+csa->trc.trcflags |= 16;                                       \
+while (1) {                                                    \
+ SJrtn = MYsetjmp(csa->tca->abenv1);                           \
+ if (SJrtn != 0) break;                                        \
+ KIKPCP(csa, kikpcpLINK, pgm, &caaddr, &casize);               \
+ break;                                                        \
+ }                                                             \
+csa->trc.trcflags &= ~16;                                      \
+MEMCPY(&csa->tca->abenv1, &abenv2, sizeof(MYjmp_buf));         \
+}
+
+
+ /////////////////////////////////////////////////////////////////
+ //
+ //  TCP api macros - **NOTE** these modify the EIB...
+ //
+ //  setjmp env saved/restored so that abends in pcp return
+ //  to this code, but abends afterword go back to glue routine.
+ //
+ //  KEDF's trace suppress flag is used to keep trace 'clean'...
+ //
+ /////////////////////////////////////////////////////////////////
+
+#define WTO(msg,msgl,rout,numr,action)                         \
+{                                                              \
+int SJrtn;;                                                    \
+MYjmp_buf abenv2;                                              \
+MEMCPY(&abenv2, &csa->tca->abenv1, sizeof(MYjmp_buf));         \
+csa->trc.trcflags |= 16;                                       \
+while (1) {                                                    \
+ SJrtn = MYsetjmp(csa->tca->abenv1);                           \
+ if (SJrtn != 0) break;                                        \
+ KIKTCP(csa, kiktcpWTO, msg, &msgl, rout, &numr, &action);     \
+ break;                                                        \
+ }                                                             \
+csa->trc.trcflags &= ~16;                                      \
+MEMCPY(&csa->tca->abenv1, &abenv2, sizeof(MYjmp_buf));         \
+}
+
+ ///////////////////////////////////////////////////////////////
+ //
+ //  Macros for calling assembly level functionality
+ //
+ ///////////////////////////////////////////////////////////////
+
+#define ABEND(code, reason) \
+{ int c, r;                 \
+  c=code;                   \
+  r=reason;                 \
+  __asm__ (                 \
+ "L 1,%0\n\t"               \
+ "L 15,%1\n\t"              \
+ "ABEND (1),DUMP,STEP"      \
+ : /* no output */          \
+ : "m"(c), "m"(r)           \
+ : "0", "1", "15"           \
+ );                         \
+}
+
+// above works generally
+// below only works with variables (not constants)
+
+#define ABENX(code, reason) \
+{ __asm__ (                 \
+ "L 1,%0\n\t"               \
+ "L 2,%1\n\t"               \
+ "ABEND (1),DUMP,STEP"      \
+ : /* no output */          \
+ : "m"(code), "m"(reason)   \
+ : "0", "1", "2", "15"      \
+ );                         \
+}
+
+// 24 bit version of macro to get the program mask
+#define GETPMASK(someint)   \
+{  __asm__ (                \
+ "BALR 0,0\n\t"             \
+ "ST 0,%0"                  \
+ : "=m"(someint)            \
+ : /* no input */           \
+ : "0"                      \
+ );                         \
+}
+
+// 31 bit version of macro to get the program mask
+#define GETPMASK31(someint) \
+{  __asm__ (                \
+ "IPM\n\t"                  \
+ "ST 1,%0"                  \
+ : "=m"(someint)            \
+ : /* no input */           \
+ : "1"                      \
+ );                         \
+}
+
+ // macro to set the program mask
+#define SETPMASK(someint)   \
+{  __asm__ (                \
+ "L 1,%0\n\t"               \
+ "SPM 1"                    \
+ : /* no output */          \
+ : "m"(someint)             \
+ : "1"                      \
+ );                         \
+}
+
+
+#define GETR13(someint)     \
+{  __asm__ (                \
+ "ST 13,%0"                 \
+ : "=m"(someint)            \
+ : /* no input */           \
+ );                         \
+}
+
+#define GETR14(someint)     \
+{  __asm__ (                \
+ "ST 14,%0"                 \
+ : "=m"(someint)            \
+ : /* no input */           \
+ );                         \
+}
+
+ // In CMS,the following requires "SET TIMER REAL"
+ //     or a directory entry with "OPTION REALTIMER"
+
+#define STIMER(huns)              \
+{                                 \
+  __asm__ (                       \
+ "SR 0,0\n\t"                     \
+ "ST 0,E%=\n\t"                   \
+ "STIMER REAL,X%=,BINTVL=%0\n\t"  \
+ "WAIT ECB=E%=\n\t"               \
+ "B P%=\n\t"                      \
+ "USING *,15\n"                   \
+"X%= POST E%=\n\t"                \
+ "BR 14\n\t"                      \
+ "DS 0D\n"                        \
+"E%= DS F\n\t"                    \
+ "DROP 15\n"                      \
+"P%= EQU *"                       \
+ : /* no output */                \
+ : "m"(huns)                      \
+ : "0", "1", "15"                 \
+ );                               \
+}
+
+ // note that ZONE=LT (what we want) is the default...
+#define TIMEMAC(date, time) \
+{  __asm__ (                \
+ "TIME DEC\n\t"             \
+ "ST 0,%0\n\t"              \
+ "ST 1,%1"                  \
+ : "=m"(time), "=m"(date)   \
+ : /* no input */           \
+ : "0", "1", "15"           \
+ );                         \
+}
+
+#define CVB(packed, binary) \
+{  __asm__ (                \
+ "CVB 0,%1\n\t"             \
+ "ST 0,%0"                  \
+ : "=m"(binary)             \
+ : "m"(packed)              \
+ : "0"                      \
+ );                         \
+}
+
+#define CLEAN12             \
+{  __asm__ (                \
+   "LA  12,0(,12)"          \
+   );                       \
+}
+
+#define BE31                \
+{                           \
+ if((csa->systype & (csasystype$zos | csasystype$zvm)) > 0) { \
+   __asm__ (                \
+   "LA  1,P%=\n\t"          \
+   "O   1,M%=\n\t"          \
+   "BSM 0,1\n\t"            \
+   "CNOP 0,4\n"             \
+  "M%= DC X'80000000'\n"    \
+  "P%= EQU *"               \
+ : /* no output */          \
+ : /* no  input */          \
+ : "0", "1"                 \
+   );                       \
+  }                         \
+}
+
+#define BE24                \
+{                           \
+ if((csa->systype & (csasystype$zos | csasystype$zvm)) > 0) { \
+   __asm__ (                \
+   "LA  1,P%=\n\t"          \
+   "N   1,M%=\n\t"          \
+   "BSM 0,1\n\t"            \
+   "CNOP 0,4\n"             \
+  "M%= DC X'7FFFFFFF'\n"    \
+  "P%= EQU *"               \
+ : /* no output */          \
+ : /* no  input */          \
+ : "0", "1"                 \
+   );                       \
+  }                         \
+}
+
+
+ // remaining macros are TSO only, used only in TCP modules
+
+
+#ifdef __MVS__
+ ///////////////////////////////////////////////////////////////
+ //
+ //  More macros for calling assembly level functionality
+ //  These are used only in TSO TCP modules
+ //
+ ///////////////////////////////////////////////////////////////
+
+#define GTSIZE(size) \
+{  __asm__ (         \
+ "GTSIZE\n\t"        \
+ "ST 0,%0"           \
+ : "=m"(size)        \
+ : /* no input */    \
+ : "0", "15"         \
+ );                  \
+}
+
+ // requires zp00032 for assembly...
+#define GTTERM(prm, alt, att, trm, rtn)                   \
+{ __asm__ (                                               \
+ "L 2,%1\n\t"                                             \
+ "L 3,%2\n\t"                                             \
+ "L 4,%3\n\t"                                             \
+ "L 5,%4\n\t"                                             \
+ "GTTERM PRMSZE=(2),ALTSZE=(3),ATTRIB=(4),TERMID=(5)\n\t" \
+ "ST 15,%0"                                               \
+ : "=m"(rtn)                                              \
+ : "m"(&prm), "m"(&alt), "m"(&att), "m"(&trm)             \
+ : "0", "1", "2", "3", "4", "5", "15"                     \
+ );                                                       \
+}
+
+ // note below use of %2 as output var
+ // is improper, but it seems to work.
+#define TGET(inbuf, instat, inbufln) \
+{ __asm__ (                          \
+ "L 1,%1\n\t"                        \
+ "L 0,%2\n\t"                        \
+ "TGET (1),(0),ASIS\n\t"             \
+ "ST 1,%2\n\t"                       \
+ "ST 15,%0"                          \
+ : "=m"(instat)                      \
+ : "m"(inbuf), "m"(inbufln)          \
+ : "0", "1", "15"                    \
+ );                                  \
+}
+
+ // note below use of %2 as output var
+ // is improper, but it seems to work.
+#define TGET_NOWAIT(inbuf, instat, inbufln) \
+{ __asm__ (                                 \
+ "L 1,%1\n\t"                               \
+ "L 0,%2\n\t"                               \
+ "TGET (1),(0),ASIS,NOWAIT\n\t"             \
+ "ST 1,%2\n\t"                              \
+ "ST 15,%0"                                 \
+ : "=m"(instat)                             \
+ : "m"(inbuf), "m"(inbufln)                 \
+ : "0", "1", "15"                           \
+ );                                         \
+}
+
+#define TPUT_FS(inbuf, inbufln) \
+{ __asm__ (                     \
+ "L    1,%0\n\t"                \
+ "L    0,%1\n\t"                \
+ "TPUT (1),(0),FULLSCR"         \
+ : /* no output */              \
+ : "m"(inbuf), "m"(inbufln)     \
+ : "0", "1", "15"               \
+ );                             \
+}
+
+#define TPUT_NE(inbuf, inbufln) \
+{ __asm__ (                     \
+ "L    1,%0\n\t"                \
+ "LA   1,1(,1)\n\t"             \
+ "L    0,%1\n\t"                \
+ "BCTR 0,0\n\t"                 \
+ "TPUT (1),(0),NOEDIT"          \
+ : /* no output */              \
+ : "m"(inbuf), "m"(inbufln)     \
+ : "0", "1", "15"               \
+ );                             \
+}
+
+#endif
+
+#endif
+
+#endif

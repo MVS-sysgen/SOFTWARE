@@ -1,0 +1,214 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+ // main include for MAPGEN
+
+#define true  1
+#define false 0
+
+ // define quote (single apostrophe) in ascii & ebcdic
+#ifdef __i386__
+#define QUOTE 39
+#define __KFT__ "'KICKS for PC '"
+#endif
+#ifdef __MVS__
+#define QUOTE 125
+#define __KFT__ "'KICKS for TSO'"
+#endif
+#ifdef __CMS__
+#define QUOTE 125
+#define __KFT__ "'KICKS for CMS'"
+#endif
+
+ // 'states' for parsing macro quoted strings & sub arguments
+#define STATE$OUT 0
+#define STATE$IN  1
+#define STATE$QUOTE 10
+#define STATE$PAREN 20
+
+ // function prototypes
+ char *MYstrstr(char *big, char *little);
+ int INDEX(char *str1, char *str2);
+ char *MYbegstr(char *big, char *little);
+ void PNT_stdin(int linenum);
+
+ char *currentdate(void);
+ char *currentwcdate(void);
+ char *currenttime(void);
+ int mkversion(void);
+ void chop(char *string);
+ int tabchk(char *string);
+ char *rpad(char *string, int slong);
+ char *rtrim(char *string);
+ char *lpad(char *string, int slong);
+ char *ltrim(char *string);
+ char *pad(char *string, int slong);
+ char *trim(char *string);
+ char *UP(char *string);
+ char *DN(char *string);
+
+ void prt_error(char *line, int errr);
+ void prt_normal(char *line);
+ void prt_as_comment(char *line);
+
+ void Do_MultiPass(void);
+ void Do_MapBlock(int numlines);
+
+ void MSD_Vars(void);
+ void MDI_Vars(void);
+ void MDF_Vars(void);
+
+ void Do_MSD(void);
+ void Do_MDI(void);
+ void Do_MDF(void);
+ void Do_PDI(void);
+ void Do_PSD(void);
+
+ void BinaryMap(int final);
+ void GCC_Dsect(int final);
+ void COB_Dsect(int final);
+
+ // globals
+
+  // following are general globals
+
+#ifdef KIKMG01FLAG
+
+ // 3270 translate table
+ int xlt3270[] = {
+  0x40, 0xC1, 0xC2, 0xC3, 0xC4, 0xC5, 0xC6, 0xC7,
+  0xC8, 0xC9, 0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F,
+  0x50, 0xD1, 0xD2, 0xD3, 0xD4, 0xD5, 0xD6, 0xD7,
+  0xD8, 0xD9, 0x5A, 0x5B, 0x5C, 0x5D, 0x5E, 0x5F,
+  0x60, 0x61, 0xE2, 0xE3, 0xE4, 0xE5, 0xE6, 0xE7,
+  0xE8, 0xE9, 0x6A, 0x6B, 0x6C, 0x6D, 0x6E, 0x6F,
+  0xF0, 0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7,
+  0xF8, 0xF9, 0x7A, 0x7B, 0x7C, 0x7D, 0x7E, 0x7F };
+ int xlt3270_max=sizeof(xlt3270)/sizeof(int);
+
+ #define MAXPASSES 4
+  int passno=0;
+  int currline, blockline, maxerror=0;
+  char wcdate[30], mkv1[20], mkv2[20];
+  char sysdate[10], systime[10];
+  FILE *sysut1;
+
+  // following are global variables that can be overriden
+  int dolist=false; // send listing of source to stderr (w/errs)
+  int mixin=true;   // put listing of source into (binary) map
+  int DFHmap=true;  // consider DFHXXX opcodes to be KIKXXX opcodes?
+  char sysparm[10]; // prefilled later with 8 spaces'
+  char msdlang[10]; // prefilled later with ''
+  char msdtype[10]; // prefilled later with ''
+
+  // following are lines gathered by the main loop and
+  // passed to Map_Block
+ #define MAXLINES 10
+  int numlines, maxlines=MAXLINES;
+  char lines[MAXLINES][85];
+
+  // following are broken down label, opcode, and arguments
+  // from Map_Block passed to various opcode routines
+  char lbl[10], opcode[10];
+  char arg[30][300];
+  int  numargs;
+
+  // following are broken down 'most current' arguments from
+  //  -- MSD opcode routine
+  char msd_label[10], msd_type[10], msd_lang[10], msd_mode[10];
+  char msd_tioapfx[10], msd_ctrl[10][10];
+  char msd_extatt[10], msd_color[10], msd_hilight[10], msd_storageauto[10];
+  char msd_mapatts[10][8], msd_dsatts[10][8];
+  char msd_fold[10], msd_bmsmapbr[100];
+  int  msd_occurs=0; // msd flags for mdf features used                 ...
+  //  -- MDI opcode routine
+  int mdi_1s=0;   // size first dsect
+  int mdi_curr=0; // size current dsect
+  int mdi_maxs=0; // max size any cobol dsect
+  int mdi_ebits, mdi_elong;
+  long mdi_ic1pos, mdi_ic2pos; // 'IC' location from mdf attrb...
+  char mdi_1_lbl[10]; // lbl of first dsect
+  char mdi_label[10], mdi_siz1[10], mdi_siz2[10];
+  char mdi_extatt[10], mdi_color[10], mdi_hilight[10];
+  char mdi_mapatts[10][8], mdi_dsatts[10][8];
+  //ar mdi_grpname[10]; // grpname going fwd
+  //  -- MDF opcode routine (one field only!)
+  char mdf_label[10], mdf_picin[30], mdf_picout[30];
+  char mdf_initial[1000];
+  char mdf_pos1[10], mdf_pos2[10], mdf_length[10], mdf_occurs[10];
+  char mdf_color[10], mdf_hilight[10];
+  char mdf_attrb[20][10];
+  //ar mdf_grpname[10]; // grpname in current stmt
+
+#else
+
+  // 3270 translate table
+  extern int xlt3270[], xlt3270_max;
+
+ #define MAXPASSES 4
+  extern int passno;
+  extern int currline, blockline, maxerror;
+  extern char wcdate[30], mkv1[20], mkv2[20];
+  extern char sysdate[10], systime[10];
+  extern FILE *sysut1;
+
+  // following are global variables that can be overriden
+  extern int dolist;       // send listing of source to stderr (w/errs)
+  extern int mixin;        // put listing of source into (binary) map
+  extern int DFHmap;       // consider DFHXXX opcodes to be KIKXXX opcodes?
+  extern char sysparm[10]; // prefilled later with 8 spaces'
+  extern char msdlang[10]; // prefilled later with ''
+  extern char msdtype[10]; // prefilled later with ''
+
+  // following are lines gathered by the main loop and
+  // passed to Map_Block
+ #define MAXLINES 10
+  extern int numlines, maxlines;
+  extern char lines[MAXLINES][85];
+
+  // following are broken down label, opcode, and arguments
+  // from Map_Block passed to various opcode routines
+  extern char lbl[10], opcode[10];
+  extern char arg[30][300];
+  extern int  numargs;
+
+  // following are broken down 'most current' arguments from
+  //  -- MSD opcode routine
+  extern char msd_label[10], msd_type[10], msd_lang[10], msd_mode[10];
+  extern char msd_tioapfx[10], msd_ctrl[10][10];
+  extern char msd_extatt[10], msd_color[10], msd_hilight[10],
+              msd_storageauto[10];
+  extern char msd_mapatts[10][8], msd_dsatts[10][8];
+  extern char msd_fold[10], msd_bmsmapbr[100];
+  extern int  msd_occurs; // msd flags for mdf features used...
+  //  -- MDI opcode routine
+  extern int mdi_1s;         // size first dsect
+  extern int mdi_curr;       // size current dsect
+  extern int mdi_maxs;       // max size any cobol dsect
+  extern int mdi_ebits, mdi_elong;
+  extern long mdi_ic1pos, mdi_ic2pos; // 'IC' location from mdf attrb...
+  extern char mdi_1_lbl[10]; // lbl of first dsect
+  extern char mdi_label[10], mdi_siz1[10], mdi_siz2[10];
+  extern char mdi_extatt[10], mdi_color[10], mdi_hilight[10];
+  extern char mdi_mapatts[10][8], mdi_dsatts[10][8];
+  //tern char mdi_grpname[10]; // grpname going fwd
+  //  -- MDF opcode routine (one field only!)
+  extern char mdf_label[10], mdf_picin[30], mdf_picout[30];
+  extern char mdf_initial[1000];
+  extern char mdf_pos1[10], mdf_pos2[10], mdf_length[10], mdf_occurs[10];
+  extern char mdf_color[10], mdf_hilight[10];
+  extern char mdf_attrb[20][10];
+  //tern char mdf_grpname[10]; // grpname in current stmt
+
+#endif

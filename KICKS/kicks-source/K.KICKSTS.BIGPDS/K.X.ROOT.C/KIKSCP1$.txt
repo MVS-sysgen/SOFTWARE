@@ -1,0 +1,479 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+#include <stdio.h>
+
+#include "kicks.h"
+
+
+
+KIKCSA *csa = (KIKCSA*)&csa;
+
+
+ ///////////////////////////////////////////////////////////////
+ //
+ //  function prototypes
+ //
+ ///////////////////////////////////////////////////////////////
+
+void ETRACE(int type_of, char *more, int intense);
+void XTRACE(int retcode, int intense);
+void TRACEstring(char *sometxt);
+GottenStorage *Do_GetMain(int size);
+void Do_FreeMain(GottenStorage *gs);
+
+
+ ///////////////////////////////////////////////////////////////
+ //
+ //  kikscp mainline
+ //
+ ///////////////////////////////////////////////////////////////
+
+int kikscp (KIKCSA *kikcsa, int type_of,
+   char *arg1, char *arg2, char *arg3, char *arg4,
+   char *arg5, char *arg6, char *arg7, char *arg8, char *arg9
+   ) {
+
+ int dodump=0, suppress=1;
+#define firstnl arg1
+
+ switch (type_of)
+  {
+  case kikscpINIT:    // startup
+
+      csa = kikcsa;
+      ETRACE(type_of, "", 0);
+      //
+      //no arguments
+
+
+#ifdef DEBUGIT
+      // message if debugging version
+     FPRINTF(csa->csastderr,"%s", firstnl); firstnl[0]=0;
+     FPRINTF(csa->csastderr,"*** DEBUGGING version of SCP *** *** ***\n");
+#endif
+
+      XTRACE(0, 0);
+      return (0);
+      //break;
+
+  case kikscpTERM:    // shutdown
+
+      ETRACE(type_of, "", 0);
+      //
+      //no arguments
+
+      { // freemain 'shared' storage
+      GottenStorage *gs, **back;
+      int len;
+
+      back = &csa->next_GS;
+      gs = *back;
+      while (gs != NULL) {
+       len = gs->size;
+       // remove from list
+       *back = gs->next;
+       // free storage
+       Do_FreeMain(gs);
+       back = &csa->next_GS;
+       gs = *back;
+       }
+      }
+
+      XTRACE(0, 0);
+      return (0);
+      //break;
+
+  case kikscpGETMAIN:  // get main storage
+
+      ETRACE(type_of, "", 0);
+      //
+      //arg1 - set
+      //arg2 - length
+      //arg3 - initimg
+      //arg4 - flags
+      {
+      char *initimg;
+      int  *set, len, flags;
+      GottenStorage *gs;
+
+      set = (int*)arg1; len = *(int*)arg2;
+      initimg = arg3; flags = *(int*)arg4;
+
+      // validate length
+      if (len <= 0) {
+       KIKPCP(csa, kikpcpABND, "S001", &dodump);
+       }
+
+      // obtain storage
+      gs = Do_GetMain(len);
+      if (gs == NULL) {
+       // failed to obtain memory
+       csa->tca->kikeib.eibresp  = 42; // nostg
+       csa->tca->kikeib.eibresp2 = 2;  // will be turned into a non-abend
+       *set = 0;
+       }
+      else {
+       // fill in storage control info
+       gs->size = len;
+       if((flags & 2) > 0) {
+        // shared
+        gs->next = csa->next_GS;
+        csa->next_GS = gs;
+        }
+       else {
+        // not shared, transaction based
+        gs->next = csa->tca->next_GS;
+        csa->tca->next_GS = gs;
+        }
+
+       // if initimg initalize storage value
+       if((flags & 32) > 0) {
+        MEMSET(&gs->where[0], *initimg, len);
+        }
+
+       // return pointer
+       *set = (int)&gs->where[0];
+       }
+      }
+
+      XTRACE(0, 0);
+      return(0);
+      //break;
+
+  case kikscpFREEMAIN: // free main storage
+
+      ETRACE(type_of, "", 0);
+      //
+      //arg1 - data or datapointer
+      //arg2 - flags
+      {
+      int  dataptr, flags;
+      GottenStorage *gs, **back;
+
+      dataptr = (int)arg1; flags = *(int*)arg2;
+
+      // dereference ptr (if that's what it is...)
+      if((flags & 1) > 0) dataptr = *(int*)dataptr;
+
+      // backup ptr to match gs
+      dataptr -= 8;
+
+      // find storage - look first in 'shared' storage
+      back = &csa->next_GS;
+      gs = *back;
+      while (gs != NULL) {
+       if ((int)gs == dataptr) break;
+       back = &gs->next;
+       gs = *back;
+       }
+      //              - look in non-shared if necessary
+      if (gs == 0) {
+       back = &csa->tca->next_GS;
+       gs = *back;
+       while (gs != NULL) {
+        if ((int)gs == dataptr) break;
+        back = &gs->next;
+        gs = *back;
+        }
+       }
+      if (gs == NULL) {
+       // failed to locate memory
+       KIKPCP(csa, kikpcpABND, "S003", &dodump);
+       }
+
+      // unchain storage & free it
+      *back = gs->next;
+      Do_FreeMain(gs);
+      }
+
+      XTRACE(0, 0);
+      return(0);
+      //break;
+
+  case kikscpSTAT: // report main storage available
+
+
+  // ********* unacceptable performance hit  *********
+  // takes ~15 seconds per call in a 1m region...
+
+      ETRACE(type_of, "", 1); // intense
+      //
+      //arg1 - report max total (in k) available
+      //arg2 - report max size block (in k) available
+      {
+      int ksize1=0, ksize2=0, len;
+      GottenStorage *gs, *chain;
+
+      // first get the largest block available
+      do {
+       ksize2++;
+       len = (ksize2*1024)-sizeof(GottenStorage);
+       gs = Do_GetMain(len);
+       if (gs != NULL) {
+        gs->size = len;
+        Do_FreeMain(gs);
+        }
+       } while (gs != NULL);
+
+      ksize2--;
+      chain = NULL;
+      if (ksize2 > 0) {
+       len = (ksize2*1024)-sizeof(GottenStorage);
+       gs = Do_GetMain(len);
+       if (gs != NULL) { // should not fail - worked before...
+        gs->size = len;
+        gs->next = chain;
+        chain = gs;
+        }
+       }
+
+      // then get the rest as 1k blocks
+      do {
+       len = (1024)-sizeof(GottenStorage);
+       gs = Do_GetMain(len);
+       if (gs != NULL) {
+        ksize1++;
+        gs->size = len;
+        gs->next = chain;
+        chain = gs;
+        }
+       } while (gs != NULL);
+
+      // now free all of it
+      gs = chain;
+      do {
+       chain = gs->next;
+       if (gs != NULL) {
+        Do_FreeMain(gs);
+        gs = chain;
+        }
+       } while (gs != NULL);
+
+      // finally report results...
+      *(int*)arg1 = ksize1 + ksize2 + 32; // 'course the last 32k is reserved...
+      *(int*)arg2 = ksize2;
+      }
+
+      XTRACE(0, 1);
+      return(0);
+      //break;
+
+  case kikscpTRANSTRT:   // transaction start
+
+      ETRACE(type_of, "", 1); // 'intense'
+      //
+      //no arguments
+
+      XTRACE(0, 1);           // 'intense'
+      return(0);
+      //break;
+
+  case kikscpTRANEND:    // transaction end
+
+      ETRACE(type_of, "", 1); // 'intense'
+      //
+      //no arguments
+
+      { // freemain transaction storage
+      GottenStorage *gs, **back;
+      int len;
+
+      back = &csa->tca->next_GS;
+      gs = *back;
+      while (gs != NULL) {
+       len = gs->size;
+       // remove from list
+       *back = gs->next;
+       // free storage
+       Do_FreeMain(gs);
+       back = &csa->tca->next_GS;
+       gs = *back;
+       }
+      }
+
+      XTRACE(0, 1);           // 'intense'
+      return(0);
+      //break;
+
+  default:    // bad calls get here
+
+      ETRACE(type_of, "", 0);
+      {
+      if ((csa->trc.trcflags & 4) > 0) {
+        FCLOSE((FILE*)kikcsa->auxtrc);
+        csa->trc.trcflags &= ~4; // show closed
+       }
+      ABEND(kikscpTYPE, type_of);
+      }
+  }
+}
+
+
+void ETRACE(int type_of, char *more, int intense)
+{ char tmsg[20]; int t; t = csa->tca->tasknum;
+  csa->AICAtime = -1;
+  csa->tca->kikeib.eibresp = csa->tca->kikeib.eibresp2 = 0;
+  if (more == NULL)
+  SPRINTF(tmsg, "S%2.2X%4.4s     %4.4X", type_of, "", t);
+  else
+  SPRINTF(tmsg, "S%2.2X%4.4s     %4.4X", type_of, more, t);
+  ((SubPtr)csa->trc_addr)(tmsg, intense);
+}
+
+
+void XTRACE(int retcode, int intense)
+{ char tmsg[20]; int t; t = csa->tca->tasknum;
+  SPRINTF(tmsg, "SX%03.3d       %4.4X", retcode, t);
+  ((SubPtr)csa->trc_addr)(tmsg, intense);
+  //return(retcode);
+  csa->AICAtime = csa->AICAmax;
+}
+
+
+void TRACEstring(char *sometxt)
+{
+  FPRINTF((FILE*)csa->auxtrc, "%80s\n", sometxt);
+}
+
+
+#ifdef __CMS__
+
+ int *MAINLIST = (int*)0x500;
+ int *MAINSTRT = (int*)0x504;
+ int *MAINHIGH = (int*)0x510;
+ int *FREELOWE = (int*)0x514;
+ int *LOCCNT   = (int*)0x574;
+ char mtbuf[80];
+
+ ///////////////////////////////////////////////////////////////
+ //
+ // FUNCTION to report memory usage
+ //
+ ///////////////////////////////////////////////////////////////
+
+void MTSCAN (char *where) {
+ }
+
+void MTSCAN2 (char *where) {
+ int num=0, tots=0, maxs=0, *next=(int*)*MAINLIST;
+
+ SPRINTF(mtbuf,
+ "%s LOCCNT=%06X, MAINSTRT=%06X,MAINHIGH=%06X, FREELOWE=%06X",
+         where, *LOCCNT, *MAINSTRT, *MAINHIGH, *FREELOWE);
+ TRACEstring(mtbuf);
+
+ while (next > 0) {
+  num++;
+  tots += *(next+1);
+  if (*(next+1) > maxs) maxs = *(next+1);
+  next = (int*)*next;
+  }
+ if(num > 0) {
+  SPRINTF(mtbuf,
+  "    num=%0d, tots=%06X,maxs=%06X", num, tots, maxs);
+  TRACEstring(mtbuf);
+  }
+
+ }
+#endif
+
+
+GottenStorage *Do_GetMain(int gssize) {
+  //return ( (GottenStorage*) MALLOC(sizeof(GottenStorage)+size) );
+  //not using MALLOC 'cause it 878's instead of returning NULL...
+
+  int rtn=0, rtnb=0, where=0, whereb=0,
+      size=gssize+sizeof(GottenStorage);
+
+#ifdef __CMS__
+  MTSCAN("GM before");
+#endif
+
+  // get a 32k buffer, fail if unavail
+  // prevents user getmains grabbing all storage & causing crash
+  __asm__ (
+   "LA 4,1024\n\t"
+   "SLL 4,5   32k...\n\t"
+   "LA 5,%1\n\t"
+   "GETMAIN EC,LV=(4),A=(5)\n\t"
+   "ST 15,%0"
+   : "=m"(rtnb),"=m"(whereb)
+   : /* no input */
+   : "0","1","4","5","15"
+  );
+  if (rtnb != 0) return(NULL);
+
+  // get the user storage
+   __asm__ (
+    "L 4,%2\n\t"
+    "LA 5,%1\n\t"
+    "GETMAIN EC,LV=(4),A=(5)\n\t"
+    "ST 15,%0"
+    : "=m"(rtn),"=m"(where)
+    : "m"(size)
+   : "0","1","4","5","15"
+   );
+
+  // free the 32k buffer
+   __asm__(
+  "LA 4,1024\n\t"
+  "SLL 4,5   32k...\n\t"
+  "LA 5,%1\n\t"
+  "FREEMAIN EC,LV=(4),A=(5)\n\t"
+  "ST 15,%0"
+  : "=m"(rtnb)
+  : "m"(whereb)
+  : "0","1","4","5","15"
+  );
+
+#ifdef __CMS__
+  MTSCAN("GM after ");
+#endif
+
+  // return user storage
+  if (rtn != 0) where = 0;
+  return( (GottenStorage*) where);
+}
+
+
+void Do_FreeMain(GottenStorage *gs) {
+  //FREE(gs);
+  //not using FREE 'cause not using MALLOC - see above...
+
+  int rtn=0, where=(int)gs,
+      size=gs->size+sizeof(GottenStorage);
+
+#ifdef __CMS__
+  MTSCAN("FM before");
+#endif
+
+   __asm__(
+  "L 4,%1\n\t"
+  "LA 5,%2\n\t"
+  "FREEMAIN EC,LV=(4),A=(5)\n\t"
+  "ST 15,%0"
+  : "=m"(rtn)
+  : "m"(size), "m"(where)
+  : "0","1","4","5","15"
+  );
+
+#ifdef __CMS__
+  MTSCAN("FM before");
+#endif
+
+}
+
+
+

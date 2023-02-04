@@ -1,0 +1,397 @@
+*/////////////////////////////////////////////////////////////////////
+*// 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+*// in MVS/TSO. Its CICS functionality is delivered at the source code
+*// level, not at the object code level. Applications must be
+*// recompiled and the recompiled programs are not compatible with any
+*// known version of 'real' CICS (the IBM program product),
+*//
+*// © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+*//
+*// Usage of 'KICKS for TSO' is in all cases subject to license. See
+*// http://www.kicksfortso.com
+*// for most current information regarding licensing options..
+*////////1/////////2/////////3/////////4/////////5/////////6/////////7
+*
+*
+*  //////1/////////2/////////3/////////4/////////5/////////6/////////7
+* THIS SUBR0UTINE ESTABLISH THE ESTAE (AKA ASRB) TRAP FOR KICKS. ASRA
+* (PROGRAM CHECK) IS HANDLED AS JUST ANOTHER ABEND HERE (ALTHOUGH THE
+* CALLED C CODE WILL DISTINGUISH).
+* A SECOND ENTRY POINT ESTABLISHES (AND RE-ESTABLISHES) A STIMER FOR
+* FOR A TIMEOUT (AKA AICA) TRAP.
+*  //////1/////////2/////////3/////////4/////////5/////////6/////////7
+*
+*
+R0       EQU   0
+R1       EQU   1
+R2       EQU   2
+R3       EQU   3
+R4       EQU   4
+R5       EQU   5
+R6       EQU   6
+R7       EQU   7
+R8       EQU   8
+R9       EQU   9
+R10      EQU   10
+R11      EQU   11
+R12      EQU   12
+R13      EQU   13
+R14      EQU   14
+R15      EQU   15
+*
+*
+KIKASRB  CSECT
+         USING *,R10
+         USING KIKCSA,R11
+*
+         STM   R14,R12,12(R13)    SAVE REGS
+         LR    R10,R15
+         L     R15,76(,R13)       RUNS IN GCC/PDPLIB ENVIRONMENT!
+         ST    R13,4(,R15)
+         ST    R15,8(,R13)
+         LR    R13,R15
+         A     R15,=F'200'        PUT SOMETHING REASONABLE
+         ST    R15,76(,R13)        INTO NEXT STACK PTR
+*
+         AIF (&CMS).CMS1
+         ESTAE ASRBX,CT,TERM=YES .
+         AGO   .DIDSTAE
+.CMS1    ANOP
+         STAE  ASRBX,CT
+.DIDSTAE ANOP
+*
+         SPIE  ASRAX,((1,7),9,11,12,15)   the non-maskables
+*
+         L     R13,4(,R13)
+         LM    R14,R12,12(R13)
+         BR    R14
+*
+*
+         ENTRY KIKAICA
+KIKAICA  STM   R14,R12,12(R13)    SAVE REGS
+         LR    R10,R15            GET R10 INTO SHAPE AS
+         LA    R15,KAICAOFF        OUR NORMAL BASE
+         SR    R10,R15
+*
+         L     R15,76(,R13)       RUNS IN GCC/PDPLIB ENVIRONMENT!
+         ST    R13,4(,R15)
+         ST    R15,8(,R13)
+         LR    R13,R15
+         A     R15,=F'200'        PUT SOMETHING REASONABLE
+         ST    R15,76(,R13)        INTO NEXT STACK PTR
+*
+         STIMER REAL,AICAX,BINTVL=HUNS
+*
+         L     R13,4(,R13)
+         LM    R14,R12,12(R13)
+         BR    R14
+*
+KAICAOFF EQU   KIKAICA-KIKASRB
+*
+*
+*
+*
+*  //////1/////////2/////////3/////////4/////////5/////////6/////////7
+* THIS IS THE PROGRAM CHECK TRAP. IT GETS CONTROL WHEN AN PC OCCURS,
+* CALLS THE 'ASRARTN' TO REPORT IT AND ABEND.
+* ABEND RECOVERY IS NOT SUPPORTED. WHEN THE 'ASRARTN' RETURNS THE
+* TRAP WILL CONTINUE THE ABEND WITH A DUMP.
+*  //////1/////////2/////////3/////////4/////////5/////////6/////////7
+*
+ASRAX    NOPR  R0
+         USING ASRAX,R15
+         USING PIE,R1
+*
+* SPIE routines are entered with R13 pointing to an un-usable
+* register save area, so the first thing this routine has to
+* do is setup 'normal' linkage. This isn't 'cause we will rtn,
+* but 'cause it makes KIKACP code easier & 'cause we can make
+* the eventual SYSUDUMP easier to read...
+*
+         STM   R3,R12,ASRASAV1+32       save non-pie regs R3-R12
+         ST    R13,ASRAR13              save R13 for unusable SA
+         ST    R1,ASRAR1                save pie ptr
+         MVC   ASRASAV1+12(20),PIEGR14  save pie regs R14-R2
+         B     ASRAX2
+ASRASAV1 DC    18F'0'                  'normal' SA
+ASRAR13  EQU   ASRASAV1+4               - back pointer
+ASRAR1   DC    F'0'                     R1 (pie ptr) here
+         DC    A(ASRASAV1)              a(savearea) here
+ASRAX2   EQU   *
+*
+         LR    R10,R15            GET R10 INTO SHAPE AS
+         LA    R15,ASRAOFF          OUR NORMAL BASE
+         SR    R10,R15
+         DROP  R15
+         DROP  R1
+*
+         L     R13,ASRASAVA       SWITCH TO OUR SA
+         LR    R15,R13
+         A     R15,=F'200'        PUT SOMETHING REASONABLE
+         ST    R15,76(,R13)        INTO NEXT STACK PTR
+*
+         L     R11,=V(KIKCSA)     GET CSA BASE REGISTER
+*
+         L     R0,RUNPHASE        SEE WHERE WE ARE
+         C     R0,=F'1'            STILL IN INIT?
+         BL    ASRADONE             YES - DON'T TRY FMT DUMP
+         C     R0,=F'2'            ALREADY IN SOME FINAL RECOVERY?
+         BH    ASRADONE             YES - DON'T TRY ANOTHER
+         MVC   RUNPHASE,=F'4'     DECLARE ASRA EVENT IN RUNPHASE
+*
+         L     R15,ASRARTN        GET ADDRESS OF KICKS MAIN ASRA CODE
+         LTR   R15,R15             IS THERE ONE?
+         BZ    ASRADONE             NO - OUTA HERE
+         LA    R1,ASRAR1          POINT R1 AT  A(pie)
+         BALR  R14,R15            CALL THE KICKS ASRA CODE
+*
+*
+*        LTR   R15,R15            Check return for suppress (!=0)
+*        BNE   ASRANODP            Suppress dump if requested...
+*
+ASRADONE EQU   *
+*
+  STAE  0                  turn off stae, not needed..
+*
+         L     R13,ASRAR13        SWITCH BACK TO CALLERS SAVE
+         LM    R14,R12,ASRASAV1+12 RESTORE REGS
+*
+         LA    R1,257             0x101 is ASRA
+         LA    R15,0
+         ABEND (1),DUMP
+*
+*
+ASRASAVA DC    V(ASRASAV)
+*
+ASRAOFF  EQU   ASRAX-KIKASRB
+*
+*
+*
+*
+*  //////1/////////2/////////3/////////4/////////5/////////6/////////7
+* THIS IS THE ABEND TRAP. IT GETS CONTROL WHEN AN ABEND OCCURS,
+* CALLS THE 'ASRBRTN' TO REPORT IT AND ABEND.
+* ABEND RECOVERY IS NOT SUPPORTED. WHEN THE 'ASRBRTN' RETURNS THE
+* TRAP WILL CONTINUE THE ABEND WITH A DUMP.
+*
+* NOTE
+*       RUNNING IN A TSO ENVIRONMENT, WHEN KICKS ABENDS THE TMP
+*       PRINTS "...ENDED DUE TO ERROR+" THEN "READY". AT THIS
+*       POINT THE DUMP IS NOT PRINTED YET. IF THE USER PRESSES
+*       JUST "RETURN" THE DUMP WILL PRINT AND THE USER WILL GET
+*       ANOTHER "READY". MOST OTHER RESPONSES WILL RESULT IN
+*       THE DUMP BEING LOST.
+*
+*  //////1/////////2/////////3/////////4/////////5/////////6/////////7
+*
+ASRBX    NOPR  R0
+         USING ASRBX,R15
+         C     R0,ASRBF12         MAKE SURE SDWA PROVIDED
+         BNE   ASRBSDWA            DO FORMATTED DUMP IF SO, ELSE...
+         WTO   'ASRB WO/SDWA, FORMATTED DUMP SUPPRESSED'
+         LA    R15,0              CONTINUE ABEND
+         BR    R14
+*
+ASRBF12  DC    F'12'
+*
+ASRBSDWA STM   R14,R12,12(R13)    SAVE REGS
+         DROP  R15
+         LR    R10,R15            GET R10 INTO SHAPE AS
+         LA    R15,ASRBOFF          OUR NORMAL BASE
+         SR    R10,R15
+         LA    R1,24(,R13)        POINT R1 AT SAVED R1
+         LR    R12,R13            CHAIN SAVE AREAS AND
+         L     R13,ASRBSAVA         SWITCH TO OUR OWN
+         ST    R12,4(0,R13)
+         ST    R13,8(0,R12)
+         LR    R15,R13
+         A     R15,=F'200'        PUT SOMETHING REASONABLE
+         ST    R15,76(,R13)        INTO NEXT STACK PTR
+*
+         L     R11,=V(KIKCSA)     GET CSA BASE REGISTER
+*
+         L     R0,RUNPHASE        SEE WHERE WE ARE
+         C     R0,=F'1'            STILL IN INIT?
+         BL    ASRBDONE             YES - DON'T TRY FMT DUMP
+         C     R0,=F'2'            ALREADY IN SOME FINAL RECOVERY?
+         BH    ASRBDONE             YES - DON'T TRY ANOTHER
+         MVC   RUNPHASE,=F'5'     DECLARE ASRB EVENT IN RUNPHASE
+*
+         L     R15,ASRBRTN        GET ADDRESS OF KICKS MAIN ASRB CODE
+         LTR   R15,R15             IS THERE ONE?
+         BZ    ASRBDONE             NO - OUTA HERE
+*        arg to main code is ptr to sdwa, see above 'la 1,24(,13)'...
+         BALR  R14,R15            CALL THE KICKS ASRB CODE
+         LTR   R15,R15            Check return for suppress (!=0)
+         BNE   ASRBNODP            Suppress dump if requested...
+*
+ASRBDONE EQU   *
+         L     R13,4(,R13)        SWITCH BACK TO CALLERS SAVE
+         LM    R14,R12,12(R13)    RESTORE REGISTERS
+         AIF (&CMS).CMS2
+         SETRP DUMP=YES
+.CMS2    ANOP
+         XR    R15,R15              percolate
+         BR    R14
+*
+ASRBNODP EQU   *
+         L     R13,4(,R13)        SWITCH BACK TO CALLERS SAVE
+         LM    R14,R12,12(R13)    RESTORE REGISTERS
+         AIF (&CMS).CMS3
+         SETRP DUMP=NO
+.CMS3    ANOP
+         XR    R15,R15              percolate
+         BR    R14
+*
+ASRBSAVA DC    V(ASRBSAV)
+*
+ASRBOFF  EQU   ASRBX-KIKASRB
+*
+*
+*
+*
+*  //////1/////////2/////////3/////////4/////////5/////////6/////////7
+* THIS IS THE TIMER TRAP. IT GETS CONTROL EVERY 1/10 SECOND AND CHECKS
+* FOR RUNAWAY TASKS (AS DEFINED BY 'AICATIME' IN THE CSA). IF A
+* RUNAWAY IS DETECTED IT CALLS THE 'AICARTN' TO REPORT IT AND
+* ABEND. RECOVERY IS NOT SUPPORTED. WHEN THE 'AICARTN' RETURNS THE
+* TRAP WILL DO AN ABEND/DUMP.
+*  //////1/////////2/////////3/////////4/////////5/////////6/////////7
+*
+AICAX    STM   R14,R12,12(R13)    SAVE REGS
+         LR    R10,R15            GET R10 INTO SHAPE AS
+         LA    R15,AICAOFF          OUR NORMAL BASE
+         SR    R10,R15
+         LR    R12,R13            CHAIN SAVE AREAS AND
+         L     R13,AICASAVA         SWITCH TO OUR OWN
+         ST    R12,4(0,R13)
+         ST    R13,8(0,R12)
+         LR    R15,R13
+         A     R15,=F'200'        PUT SOMETHING REASONABLE
+         ST    R15,76(,R13)        INTO NEXT STACK PTR
+*
+         ST    R1,AR1             save inbound R1
+*
+         L     R11,=V(KIKCSA)     GET CSA BASE REGISTER
+*
+         L     R0,RUNPHASE        SEE WHERE WE ARE
+         C     R0,=F'1'            MAIN LOOP?
+         BNE   AICADONE             NO - no need for timer
+         L     R0,AICATIME        GET AICA TICKER
+         LTR   R0,R0              IS IT <= 0?
+         BNP   AICADONE            YES - no need for timer
+         S     R0,=F'100'         DECREMENT IT
+         ST    R0,AICATIME
+         LTR   R0,R0              IS IT > 0?
+         BP    AICAGAIN            YES - keep running a timer
+         MVC   RUNPHASE,=F'3'      NO  - AICA EVENT IN RUNPHASE
+*
+         L     R15,AICARTN        GET ADDRESS OF KICKS MAIN AICA CODE
+         LTR   R15,R15             IS THERE ONE?
+         BZ    AICADONE             NO - OUTA HERE
+*
+*        inbound R1 used as arg to ACIARTN
+         LA    R1,AR1
+         BALR  R14,R15            CALL THE KICKS AICA CODE
+*
+         LA    R1,258             0x102 is AICA
+         LA    R15,0
+         ABEND (1),DUMP
+*
+AICAGAIN EQU   *
+*
+         AIF (&MVS).CMS4
+         TM    X'4D8',X'C0'  DOSFLAGS,DOSMODE+DOSSVC
+         BNZ   AICADONE      don't ever try to set timer in DOS mode
+.CMS4    ANOP
+*
+         STIMER REAL,AICAX,BINTVL=HUNS
+*
+AICADONE EQU   *
+         L     R13,4(,R13)        SWITCH BACK TO CALLERS SAVE
+         LM    R14,R12,12(R13)    RESTORE REGISTERS AND RETURN
+         BR    R14
+*
+HUNS     DC    F'10'              1/10 SECOND (10/100)
+AR1      DC    F'0'               save inbound R1 here
+AICASAVA DC    V(AICASAV)
+*
+AICAOFF  EQU   AICAX-KIKASRB
+*
+*
+*
+         LTORG
+*
+*
+*
+         ENTRY AICASAV
+AICASAV  DS    2500F          10K SAVE AREA TO CALL C AICA ROUTINE
+*
+         ENTRY ASRASAV
+ASRASAV  DS    2500F          10K SAVE AREA TO CALL C ASRA ROUTINE
+*
+         ENTRY ASRBSAV
+ASRBSAV  DS    2500F          10K SAVE AREA TO CALL C ASRB ROUTINE
+*
+*
+*
+*
+KIKCSA   DSECT
+CSASTRT  DS    CL16        +000 EYE CATCHER
+VERSION  DS    CL4         +016 VERSION V.R.M.E
+TRCTBL   DS    AL4         +020 ADDRESS OF TRACE TABLE
+TRCNUM   DS    H           +024 NUMBER OF ENTRIES IN TRACE TABLE
+TRCCUR   DS    H           +026 NUMBER OF CURRENT ENTRY
+TRCFLAGS DS    CL1         +028 TRACE FLAGS
+*                                - 1 enable int trace
+*                                - 2 enable aux trace
+*                                - 4 aux trace file open
+*                                - 8 trace 'intense' units
+         DS    CL1         +029 NUMBER OF BYTES IN EACH TRACE ENTRY
+         DS    H           +030 *** ALIGN ***
+TRCADDR  DS    AL4         +032 ADDRESS OF TRACE WRITER ROUTINE
+TRCFILE  DS    AL4         +036 ADDRESS OF AUXTRC (FILE*)
+COBR13   DS    AL4         +040 R13 JUST BEFORE CALLING COBOL APP
+LOADCB   DS    AL4         +044 ADDRESS OF LOADER CONTROL BLOCK
+VCONS    DS    AL4         +048 ADDRESS OF MY C LIBRARY ADDRESS TABLE
+TCA      DS    AL4         +052 ADDRESS OF TCA
+NXTTSKNM DS    F           +056 NUMBER OF NEXT TASK (CURRENT+1)
+TCTTE    DS    AL4         +060 ADDRESS OF TCTTE
+USRCOMAR DS    AL4         +064 ADDRESS OF COMM-AREA
+MAXCOMAR DS    F           +068 MAX SIZE OF COMM-AREA
+RUNPHASE DS    F           +072 RUN PHASE - 0=INIT, 1-MAIN, 2=SHUT,
+*                                    - 3=AICA, 4=ASRA, 5=ASRB
+AICATIME DS    F           +076 'TICKS' UNTIL AICA
+AICAMAX  DS    F           +080 RESET VALUE FOR AICA TICKER
+AICAINST DS    AL4         +084 ADDRESS TO (RE)INSTALL AICA TRAP
+AICARTN  DS    AL4         +088 ADDRESS THAT GETS CALLED FOR AICA
+ASRARTN  DS    AL4         +092 ADDRESS THAT GETS CALLED FOR ASRB
+ASRBRTN  DS    AL4         +096 ADDRESS THAT GETS CALLED FOR ASRB
+*
+*        MORE STUFF, MOSTLY NUCLEUS SUFFIXS AND ENTRY POINTS
+*
+*
+         AIF (&CMS).CMS5
+         IHASDWA
+.CMS5    ANOP
+*
+*        IHAPIE      lives in SYS1.APVTMACS on MVS380,
+*                        apparently nowhere on VM/370
+*                        so dsect version replicated here...
+PIE      DSECT
+*        IEZBITS , -          SYMBOLIC BIT DEFINITIONS
+PIEPICA  DS    0F -           ADDRESS OF THE CURRENT PICA
+PIEFLGS  DS    B -            FLAG BYTE
+PIENOPI  EQU   128 -  (aka BIT0 in IEZBITS) IF ONE INDICATES THAT
+*                             THE TASK CANNOT ACCEPT FURTHER PI'S
+PIEPICAA DS    AL3 -          ADDRESS OF THE CURRENT PICA
+PIEPSW   DS    CL8 -          PI OLD PSW STORED AT PROGRAM INTERRUPT
+*                             TIME
+PIEGR14  DS    F -            SAVE AREA FOR REGISTER 14
+PIEGR15  DS    F -            SAVE AREA FOR REGISTER 15
+PIEGR0   DS    F -            SAVE AREA FOR REGISTER 0
+PIEGR1   DS    F -            SAVE AREA FOR REGISTER 1
+PIEGR2   DS    F -            SAVE AREA FOR REGISTER 2
+*
+*
+         END

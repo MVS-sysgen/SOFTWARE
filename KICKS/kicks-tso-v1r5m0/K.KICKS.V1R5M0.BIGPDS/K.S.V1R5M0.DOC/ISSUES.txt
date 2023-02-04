@@ -1,0 +1,5 @@
+Status of KICKS 1.5.0 issues
+
+This has been moved to Appendix C in the KICKS User's Guide, available
+online at http://www.kicksfortso.com/User%27s%20Guide/index.html
+

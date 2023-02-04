@@ -1,0 +1,38 @@
+)F FUNCTION -
+    THISSTEP
+
+    This is a batch program which will tell you the specific STEP
+    in a job (and PROC STEP if applicable) where the program was
+    run from. You can also add a PARM and will will print that
+    as well. 
+
+    Example JCL
+
+    //STEP5 EXEC PGM=THISSTEP
+    //SYSOUT DD SYSOUT=*,DCB=(RECFM=FBA,LRECL=161,BLKSIZE=16100)
+
+    Output:
+
+    STEP NAME
+    STEP5    ========================================================
+
+    Example:
+
+    //STEP6 EXEC PGM=THISSTEP,PARM='TEST PARAMETER'
+    //SYSOUT DD SYSOUT=*,DCB=(RECFM=FBA,LRECL=161,BLKSIZE=16100)
+
+    Output:
+
+    STEP NAME
+    STEP6    ========================================================
+    TEST PARAMETER
+
+    Why?
+
+    When looking at output in RFE or a printed output its sometimes
+    hard to tell where the output from one step ends and the other
+    begins. So this is to help with. 
+
+
+)X SYNTAX   - NONE
+)O OPERANDS - NONE

@@ -1,0 +1,68 @@
+//TESTRUN JOB  CLASS=C,MSGCLASS=A,MSGLEVEL=(1,1),REGION=3000K
+//*
+//GO     EXEC PGM=KIKSIP1$,TIME=5,PARM='SIT=B$'
+//* kiksip1$ comes from steplib...
+//STEPLIB  DD DSN=K.S.V1R5M0.SKIKLOAD,DISP=SHR
+//* tables come from skikload...
+//SKIKLOAD DD DSN=K.S.V1R5M0.SKIKLOAD,DISP=SHR
+//* programs & maps come from kikrpl...
+//KIKRPL   DD DSN=K.U.V1R5M0.KIKRPL,DISP=SHR,
+//         DCB=BLKSIZE=32000
+//         DD DSN=K.S.V1R5M0.KIKRPL,DISP=SHR
+//*
+//SYSPRINT DD SYSOUT=*,DCB=(RECFM=F,BLKSIZE=80)
+//SYSTERM  DD SYSOUT=*,DCB=(RECFM=F,BLKSIZE=80)
+//SYSOUT   DD SYSOUT=*,DCB=BLKSIZE=132
+//SYSO     DD SYSOUT=*,DCB=BLKSIZE=132
+//CRLPOUT  DD SYSOUT=*,DCB=(RECFM=F,BLKSIZE=132)
+//TRANDUMP DD SYSOUT=*,DCB=(RECFM=F,BLKSIZE=132)
+//SYSUDUMP DD SYSOUT=*
+//*
+//AUXTRC   DD SYSOUT=*,DCB=(RECFM=F,BLKSIZE=120)
+//*
+//SYSIN    DD DUMMY,DCB=(RECFM=F,BLKSIZE=80)
+//*
+//TSTKSDS  DD DSN=K.U.V1R5M0.TSTKSDS,DISP=SHR
+//TSTKSDP  DD DSN=K.U.V1R5M0.TSTKSDS.PATH,DISP=SHR
+//TSTESDS  DD DSN=K.U.V1R5M0.TSTESDS,DISP=SHR
+//TSTESDP  DD DSN=K.U.V1R5M0.TSTESDS.PATH,DISP=SHR
+//TSTRRDS  DD DSN=K.U.V1R5M0.TSTRRDS,DISP=SHR
+//*
+//CRLPIN   DD *,DCB=BLKSIZE=80
+<CLEAR>            PREPARE TO ENTER NEXT TRANSACTION
+CRLP BORDER<ENTER> SHOW CRLP OPTIONS
+<CLEAR>            PREPARE TO ENTER NEXT TRANSACTION
+TEST<ENTER>        START THE TEST
+<PF1>                 BKS - BROWSE KSDS
+<PF11>                  RUN SCRIPT
+<PF12>                  RETURN
+<PF2>                 BKP - BROWSE KSDS VIA PATH
+<PF11>                  RUN SCRIPT
+<PF12>                  RETURN
+<PF3>                 BES - BROWSE ESDS
+<PF11>                  RUN SCRIPT
+<PF12>                  RETURN
+<PF4>                 BEP - BROWSE ESDS VIA PATH
+<PF11>                  RUN SCRIPT
+<PF12>                  RETURN
+<PF5>                 DKS - DIRECT ACCESS TO KSDS
+<PF11>                  RUN SCRIPT
+<PF12>                  RETURN
+<PF6>                 DKP - DIRECT ACCESS TO KSDS VIA PATH
+<PF11>                  RUN SCRIPT
+<PF12>                  RETURN
+<PF7>                 DES - DIRECT ACCESS TO ESDS
+<PF11>                  RUN SCRIPT
+<PF12>                  RETURN
+<PF8>                 DEP - DIRECT ACCESS TO ESDS VIA PATH
+<PF11>                  RUN SCRIPT
+<PF12>                  RETURN
+<PF9>                 BRR - BROWSE RRDS
+<PF11>                  RUN SCRIPT
+<PF12>                  RETURN
+<PF10>                DRR - DIRECT ACCESS TO RRDS
+<PF11>                  RUN SCRIPT
+<PF12>                  RETURN
+<PF12>                FINISH TEST
+/*
+//

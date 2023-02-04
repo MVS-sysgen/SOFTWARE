@@ -1,0 +1,91 @@
+         PRINT NOGEN
+SUMSET1  DFHMSD TYPE=&SYSPARM,                                         X
+               LANG=COBOL,                                             X
+               MODE=OUT,                                               X
+               TERM=3270-2,                                            X
+               CTRL=FREEKB,                                            X
+               STORAGE=AUTO,                                           X
+               TIOAPFX=YES
+***********************************************************************
+SUMMAP1  DFHMDI SIZE=(24,80),                                          X
+               LINE=1,                                                 X
+               COLUMN=1
+***********************************************************************
+         DFHMDF POS=(1,1),                                             X
+               LENGTH=8,                                               X
+               ATTRB=(NORM,PROT),                                      X
+               COLOR=BLUE,                                             X
+               INITIAL='SUMMAP1'
+         DFHMDF POS=(1,20),                                            X
+               LENGTH=15,                                              X
+               ATTRB=(NORM,PROT),                                      X
+               COLOR=GREEN,                                            X
+               INITIAL='Invoice summary'
+TRANID   DFHMDF POS=(1,76),                                            X
+               LENGTH=4,                                               X
+               ATTRB=(NORM,PROT),                                      X
+               COLOR=BLUE,                                             X
+               INITIAL='XXXX'
+***********************************************************************
+         DFHMDF POS=(3,1),                                             X
+               LENGTH=29,                                              X
+               ATTRB=(NORM,PROT),                                      X
+               COLOR=WHITE,                                            X
+               INITIAL='Press Enter to return to menu.'
+         DFHMDF POS=(5,1),                                             X
+               LENGTH=29,                                              X
+               ATTRB=(NORM,PROT),                                      X
+               COLOR=GREEN,                                            X
+               INITIAL='Invoices in file. . . . . . :'
+COUNT    DFHMDF POS=(5,31),                                            X
+               LENGTH=6,                                               X
+               ATTRB=(NORM,PROT),                                      X
+               COLOR=TURQUOISE,                                        X
+               PICOUT='ZZ,ZZ9'
+         DFHMDF POS=(6,1),                                             X
+               LENGTH=29,                                              X
+               ATTRB=(NORM,PROT),                                      X
+               COLOR=GREEN,                                            X
+               INITIAL='First invoice number. . . . :'
+FIRST    DFHMDF POS=(6,31),                                            X
+               LENGTH=6,                                               X
+               COLOR=TURQUOISE,                                        X
+               ATTRB=(NORM,PROT),                                      X
+               PICOUT='999999'
+         DFHMDF POS=(7,1),                                             X
+               LENGTH=29,                                              X
+               ATTRB=(NORM,PROT),                                      X
+               COLOR=GREEN,                                            X
+               INITIAL='Last invoice number . . . . :'
+LAST     DFHMDF POS=(7,31),                                            X
+               LENGTH=6,                                               X
+               COLOR=TURQUOISE,                                        X
+               ATTRB=(NORM,PROT),                                      X
+               PICOUT='999999'
+         DFHMDF POS=(9,1),                                             X
+               LENGTH=29,                                              X
+               ATTRB=(NORM,PROT),                                      X
+               COLOR=GREEN,                                            X
+               INITIAL='Total value of invoices . . :'
+TOTAL    DFHMDF POS=(9,31),                                            X
+               LENGTH=13,                                              X
+               COLOR=TURQUOISE,                                        X
+               ATTRB=(NORM,PROT),                                      X
+               PICOUT='$$,$$$,$$9.99'
+***********************************************************************
+MESSAGE  DFHMDF POS=(23,1),                                            X
+               LENGTH=79,                                              X
+               ATTRB=(BRT,PROT),                                       X
+               COLOR=YELLOW
+         DFHMDF POS=(24,1),                                            X
+               LENGTH=19,                                              X
+               ATTRB=(NORM,PROT),                                      X
+               COLOR=BLUE,                                             X
+               INITIAL='F3=Exit  F12=Cancel'
+DUMMY    DFHMDF POS=(24,79),                                           X
+               LENGTH=1,                                               X
+               ATTRB=(DRK,PROT,FSET),                                  X
+               INITIAL=' '
+***********************************************************************
+         DFHMSD TYPE=FINAL
+         END

@@ -1,0 +1,266 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+#define PRO
+#undef  GOLDEN
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <setjmp.h>
+#include <time.h>
+
+// true is actually 'not zero'
+#ifndef true
+#define true  1
+#define false 0
+#endif
+
+#ifndef NULL
+#define NULL ((void *)0)
+#endif
+
+
+#include "kikvcon5.h"
+#include "kikload.h"
+
+
+typedef struct _KIKSIT
+{
+ char sit_table_suffix[2]; // init table (self describing!)
+ char ver[4];              // 4 byte version: (V),(R),(M),(edit)
+ short filler;
+ char pcp_suffix[2];       // program control program
+ char pcp_table_suffix[2]; // program property table (PPT)
+ char kcp_suffix[2];       // task control program
+ char kcp_table_suffix[2]; // program control table (PCT)
+ char fcp_suffix[2];       // file control program
+ char fcp_table_suffix[2]; // file control table (FCT)
+ char dcp_suffix[2];       // dest control program
+ char dcp_table_suffix[2]; // dest control table (DCT)
+ char bms_suffix[2];       // bms program
+ char tcp_suffix[2];       // tcp program
+ char scp_suffix[2];       // scp program
+ char tsp_suffix[2];       // tsp program
+
+ char  opid[3];            // 3 char (numeric?) 'operator id'
+ char  natlang;            // 1 char language code
+ int   icvr;               // time (milliseconds) to AICA
+ short trcnum;             // # entries in the internal trace tbl
+ unsigned char trcflags;   // initial flags (kiktrac.h for breakout)
+ char  ffreekb;            // flag for control of kb lock
+ char  dmpclass;           // sysout class for 'spin off' dumps
+ char  fil1er3[3];
+ char  pltstrt[4];         // first transaction
+ char  pltend[4];          // last transaction
+ short cwal;               // size (characters) of CWA
+ short tctteual;           // size (characters) of TCTTEUA
+ char  enqscope[8];        // s.b. SYSTEM or SYSTEMS
+ int   maxdelay;           // max allowed wait for kcp 'delay' (secs)
+ char syncpgm[8];          // syncpoint exit
+
+} KIKSIT;
+
+
+#include "kiktrac.h"
+ // need internal version of eib  (w/eib preface)
+#include "kikeib.h"
+#include "kiktca.h"
+#include "kiktctte.h"
+#include "kikcsa.h"
+
+
+#define TIOASIZE 20000
+#define COMASIZE 24576
+
+ // v1r1m0 - make compile VRME known outside of SIP
+ // following used by SIP to stamp version into CSA
+ // V(version), R(release), M(mod), E(edit)
+#define V 1
+#define R 5
+#define M 0
+#define E 0
+#define MKVER(V, R, M, E) ((V*256*256*256)+(R*256*256)+(M*256)+(E))
+
+#ifdef KIKSIP
+
+ // this is the real storage for the CSA
+KIKCSA kikcsa;
+
+ // this is the real storage for the TCA
+KIKTCA kiktca;
+
+ // this is the real storage for the TCTTE
+KIKTCTTE kiktctte;
+
+ // this is the real storage for the TIOA
+char tioabuf[TIOASIZE];
+char lotioabuf[TIOASIZE];
+
+ // this is the real storage for the LOADCB
+LOADCB loadcb;
+
+ // this is the real storage for the user comm-area
+ // theoretically comm-area can be as large as 32k
+ //   but IBM recommends max 24k for real CICS...
+char commarea[COMASIZE];
+
+ // this is the vcon for my C library table
+extern vconstb5;
+
+ // this is the entry to (re)init AICA trap
+extern kikaica;
+
+#endif
+
+
+ // pcp call types
+#define kikpcpINIT 0
+#define kikpcpTERM 1
+#define kikpcpLOAD 2
+#define kikpcpLINK 3
+#define kikpcpXCTL 4
+#define kikpcpRETN 5
+#define kikpcpDELE 6
+#define kikpcpABND 7
+#define kikpcpABND2 8
+#define kikpcpDUMP 9
+#define kikpcpENTR 10
+#define kikpcpHANDLECOND  66
+#define kikpcpIGNORECOND  67
+#define kikpcpCANCELCOND  68
+#define kikpcpHANDLEABEND 69
+#define kikpcpTRANEND     91
+#define kikpcpTRANSTRT    92
+
+ // fcp call types
+#define kikfcpINIT 0
+#define kikfcpTERM 1
+#define kikfcpDELE 2
+#define kikfcpENDB 3
+#define kikfcpREDN 4
+#define kikfcpREDP 5
+#define kikfcpREAD 6
+#define kikfcpREBR 7
+#define kikfcpREWR 8
+#define kikfcpSTBR 9
+#define kikfcpUNLK 10
+#define kikfcpWRIT 11
+#define kikfcpCLOSE      90
+#define kikfcpTRANEND    91
+#define kikfcpTRANSTRT   92
+
+ // more kcp - chap, wait, schedule, avail, purge, nopurge
+#define kikkcpINIT 0
+#define kikkcpTERM 1
+#define kikkcpATTACH 2
+#define kikkcpDETACH 3
+#define kikkcpSUSPND 4
+#define kikkcpRESUME 5
+#define kikkcpENQ 6
+#define kikkcpDEQ 7
+#define kikkcpDEQALL 8
+#define kikkcpWAIT 9
+#define kikkcpADDRESS 10
+#define kikkcpASSIGN 11
+#define kikkcpASKTIME 12
+#define kikkcpFMTTIME 13
+#define kikkcpDELAY 14
+#define kikkcpSIGNOFF 15
+#define kikkcpSYNCPOINT 16
+#define kikkcpTRANEND    91
+#define kikkcpTRANSTRT   92
+
+ // tcp call types
+#define kiktcpINIT 0
+#define kiktcpTERM 1
+#define kiktcpSEND 2
+#define kiktcpRECV 3
+#define kiktcpCHEK 4
+#define kiktcpWTO  5
+#define kiktcpWTOR 6
+#define kiktcpTRANEND    91
+#define kiktcpTRANSTRT   92
+
+ // bms call types
+#define kikbmsINIT 0
+#define kikbmsTERM 1
+#define kikbmsSEND 2
+#define kikbmsRECV 3
+#define kikbmsSTXT 4
+#define kikbmsRTXT 5
+#define kikbmsHANDLEAID  66
+#define kikbmsCANCELAID  67
+#define kikbmsTRANEND    91
+#define kikbmsTRANSTRT   92
+
+ // dcp call types
+#define kikdcpINIT 0
+#define kikdcpTERM 1
+#define kikdcpDELETEQ 2
+#define kikdcpREADQ 3
+#define kikdcpWRITEQ 4
+#define kikdcpSPOOLOPEN 10
+#define kikdcpSPOOLCLOSE 11
+#define kikdcpSPOOLREAD 12
+#define kikdcpSPOOLWRITE 13
+#define kikdcpTRANEND    91
+#define kikdcpTRANSTRT   92
+
+ // scp call types
+#define kikscpINIT 0
+#define kikscpTERM 1
+#define kikscpGETMAIN 2
+#define kikscpFREEMAIN 3
+#define kikscpSTAT 4
+#define kikscpTRANEND    91
+#define kikscpTRANSTRT   92
+
+ // tsp call types
+#define kiktspINIT 0
+#define kiktspTERM 1
+#define kiktspDELETEQ 2
+#define kiktspREADQ 3
+#define kiktspWRITEQ 4
+#define kiktspTRANEND    91
+#define kiktspTRANSTRT   92
+
+ // types
+#define kikkcpTYPE 1
+#define kikpcpTYPE 2
+#define kikfcpTYPE 3
+#define kiktcpTYPE 4
+#define kikbmsTYPE 5
+#define kikdcpTYPE 6
+#define kikscpTYPE 7
+#define kiktspTYPE 8
+
+
+#include "kikmacs.h"
+
+
+#define KIKPCP  ((SubIPtr)csa->pcp_addr)
+#define KIKKCP  ((SubIPtr)csa->kcp_addr)
+#define KIKFCP  ((SubIPtr)csa->fcp_addr)
+#define KIKBMS  ((SubIPtr)csa->bms_addr)
+#define KIKTCP  ((SubIPtr)csa->tcp_addr)
+#define KIKDCP  ((SubIPtr)csa->dcp_addr)
+#define KIKSCP  ((SubIPtr)csa->scp_addr)
+#define KIKTSP  ((SubIPtr)csa->tsp_addr)
+
+#define KIKAICA ((SubPtr)csa->AICAinst)
+
+#define KIKLOAD ((SubPtr)csa->loadcb->loader)
+void kikload(KIKCSA *csa, int action);
+ // action = 0 (open), 1 (close), 2 (load), 3 (delete), 4(bldl)
+

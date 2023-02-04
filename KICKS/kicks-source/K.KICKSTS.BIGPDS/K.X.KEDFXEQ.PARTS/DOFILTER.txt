@@ -1,0 +1,111 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+#include "kedfxeq.h"
+
+int stonoff=-1; // values in table are 0, 1
+
+int  DoFilter(KIKEIB *eib, DEBUGGERCA *comm) {
+ // 0 return means normal process, else means bypass
+const short sourcetrace=9999;
+short *eibfn2, *tfn2, *tflag;
+char  *pgmaddr;
+int pgmsize;
+
+ // address the filter table
+ LOAD("KEDFILTR", pgmaddr, pgmsize);
+ if (eib->eibresp != 0)  // call bad load a version problem
+   KIKPCP(csa, kikpcpABND2, "VER5", &suppress);
+
+ // validate table vrm
+ if (csa->version != *(int*)pgmaddr)
+   KIKPCP(csa, kikpcpABND2, "VER4", &suppress);
+
+ // check for source trace being on,
+ //  - 'cause if it's on, so it everything else..,
+ tfn2 = (short*)pgmaddr; tfn2++; tfn2++;
+ tflag = tfn2; tflag++;
+ while (*tfn2 != 0) {
+  if (*tfn2 == sourcetrace) {
+   // see if stonoff changed...
+   if(*tflag != stonoff) {
+    stonoff = *tflag;
+    if(stonoff == 0) {
+     srcapi = sourct = 1;
+     }
+    else {
+     srcapi = sourct = -1;
+     // should also purge existing breakpoints????
+     }
+    }
+   if (*tflag == 0) return (0); /* meaning trace it */
+   break;  /* pointless, source trace is last entry */
+   }
+  tfn2++; tflag++;
+  tfn2++; tflag++;
+  }
+
+ // skip source trace entries
+ // if source trace is off (and it must be if here!)
+  if ((comm->mgtpgm  == kikpcpTYPE) &&
+      (comm->type_of == 256)) {
+   return(1);                  /* meaning ignore it */
+   }
+
+ // else scan table for match, returning found flag
+ eibfn2 = (short*)&eibSave.eibfn;
+ tfn2 = (short*)pgmaddr; tfn2++; tfn2++;
+ tflag = tfn2; tflag++;
+ while (*tfn2 != 0) {
+  if (*tfn2 == *eibfn2) return (*tflag);
+  tfn2++; tflag++;
+  tfn2++; tflag++;
+  }
+
+ // no match return bypass
+ return(1);                    /* meaning ignore it */
+}
+
+void  DoSTog(KIKEIB *eib, DEBUGGERCA *comm) {
+ // toggle source trace on/off
+const short sourcetrace=9999;
+short *eibfn2, *tfn2, *tflag;
+char  *pgmaddr;
+int pgmsize;
+
+ // address the filter table
+ LOAD("KEDFILTR", pgmaddr, pgmsize);
+ if (eib->eibresp != 0)  // call bad load a version problem
+   KIKPCP(csa, kikpcpABND2, "VER5", &suppress);
+
+ // validate table vrm
+ if (csa->version != *(int*)pgmaddr)
+   KIKPCP(csa, kikpcpABND2, "VER4", &suppress);
+
+ // flip source trace flag
+ tfn2 = (short*)pgmaddr; tfn2++; tfn2++;
+ tflag = tfn2; tflag++;
+ while (*tfn2 != 0) {
+  if (*tfn2 == sourcetrace) {
+   if (*tflag == 0) *tflag = 1; else *tflag = 0;
+   if (*tflag == 0) sourct = 1; else sourct = -1;
+   srcapi = sourct;
+   break;  /* pointless, source trace is last entry */
+   }
+  tfn2++; tflag++;
+  tfn2++; tflag++;
+  }
+}
+
+

@@ -1,0 +1,36 @@
+* note - not an exec; a cmsbatch fragment to create an exec...
+*
+FILEDEF  INMOVE  TERM ( RECFM F BLOCK 80 LRECL 80
+FILEDEF  OUTMOVE DISK KGCCGET EXEC A  ( RECFM F BLOCK 80 LRECL 80
+MOVEFILE
+&CONTROL OFF NOMSG
+STATE GCC PARM A
+&IF &RETCODE EQ 0 &EXIT
+SET LDRTBLS 64
+*
+*XEC GETGCC
+*OPY PDPCLIB TXTLIB N = = A (REPLACE
+*
+* TRYING TO USE THE STANDARD GETGCC WITH CMSBATCH DOESN'T SEEM TO
+* WORK WELL - PROBABLY TO OLD - I GET ERRORS LIKE THESE...
+*
+* <stdin>: In function `PunchIt':
+* <stdin>:745: unable to generate reloads for:
+* (insn 129 128 130 (set (reg:HI 49)
+*         (reg:HI 2 2 [48])) 17 {*I370    MD:1073} (nil)
+*     (expr_list:REG_DEAD (reg:HI 2 2 [48])
+*         (nil)))
+* <stdin>:745: Internal compiler error in ?, at <stdin>:3590
+* Please submit a full bug report,
+* with preprocessed source if appropriate.
+* See <URL:http://gcc.gnu.org/bugs.html> for instructions.
+*
+* SO INSTEAD I JUST UNPACK A COMPLETE INSTALL (WITH MY FIXES)
+*
+* NOTE the following vmarc file is not included with KICKS source,
+*      but is build by the source user with the contents of the
+*
+VMARC UNPACK GCCCMS VMARC N = = A (NOTRACE REPLACE
+COPY GCC PARM N = = A (REPLACE
+&EXIT
+/*

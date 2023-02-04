@@ -1,0 +1,176 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+ /////////////////////////////////////////////////////////////
+ //
+ // SUBROUTINE to convert rpl feedback to CICS eib rcode
+ //
+ // for info on rpl feedback for MVS see
+ //   Macro Instructions for Data Sets (SC26-7408),
+ //   Chapter 4,
+ //  "VSAM Macro Return and Reason Codes"
+ // publibz.boulder.ibm.com/cgi-bin/bookmgr/BOOKS/DGT2D500/CCONTENTS
+ //
+ // for info on rpl feedback for CMS see
+ //   z/VM V5R4.0 Group Control System (SC24-6098),
+ //  "Feedback Field Codes"
+ // publib.boulder.ibm.com/infocenter/zvm/v5r4/topic/
+ //      com.ibm.zvm.v54.gcta0/hcsf5b3087.htm#wq1274
+ //
+ /////////////////////////////////////////////////////////////
+
+#ifdef __CMS__
+#include "ikqrpl.h"
+#endif
+
+
+ void SetRcode(fcte *f, ifgrpl *r) {
+
+  f->rcode[0] = 0x06; f->rcode[1] = 0; f->rcode[2] = 0;
+  f->rcode[3] = 0;    f->rcode[4] = 0; f->rcode[5] = 0;
+
+  // don't use SHOWCB; it only returns one of the four fields
+  // at a time and doesn't seem CMS compatible anyway
+
+#ifdef __MVS__
+  f->rcode[2] = r->rplfdbwd.rplfdbk.rplrtncd;
+  f->rcode[3] = r->rplfdbwd.rplfdbk.rplcndcd.rplfdb3;  // aka rplerrcd
+  f->rcode[4] = r->rplfdbwd.rplstat; // na in CMS/DOS  // aka rplfuncd
+  f->rcode[5] = r->rplfdbwd.rplfdbk.rplcndcd.rplfdb2;  // aka rplcmpon
+#endif
+
+#ifdef __CMS__
+  ikqrpl *d = (ikqrpl*)r; // DOS version of rpl...
+  if((csa->systype == csasystype$vm6pk) ||
+     (csa->systype == csasystype$vmsp)) {
+   f->rcode[2] = d->rplrtncd;
+   f->rcode[3] = d->rplfdbkc;                          // aka rplerrcd
+   f->rcode[4] = 0xff;                // na in CMS/DOS // aka rplfuncd
+   f->rcode[5] = d->rplfdb2;                           // aka rplcmpon
+   } else {
+   f->rcode[2] = r->rplfdbwd.rplfdbk.rplrtncd;
+   f->rcode[3] = r->rplfdbwd.rplfdbk.rplcndcd.rplfdb3; // aka rplerrcd
+   f->rcode[4] = r->rplfdbwd.rplstat; // na in CMS/DOS // aka rplfuncd
+   f->rcode[5] = r->rplfdbwd.rplfdbk.rplcndcd.rplfdb2; // aka rplcmpon
+   }
+#endif
+
+}
+
+ /////////////////////////////////////////////////////////////
+ //
+ // SUBROUTINE TO TRANSLATE VSAM RPL RETURN CODES INTO
+ //            KICKS RESP AND RESP2 CODES
+ //
+ /////////////////////////////////////////////////////////////
+
+#define KIKRESP$NORMAL    0
+#define KIKRESP$ERROR     1
+
+#define KIKRESP$DSIDERR   12
+#define KIKRESP$NOTFND    13
+#define KIKRESP$DUPREC    14
+#define KIKRESP$DUPKEY    15
+#define KIKRESP$INVREQ    16
+#define KIKRESP$IOERR     17
+#define KIKRESP$NOSPACE   18
+#define KIKRESP$NOTOPEN   19
+#define KIKRESP$ENDFILE   20
+#define KIKRESP$ILLOGIC   21
+#define KIKRESP$LENGERR   22
+#define KIKRESP$DISABLED  84
+
+
+ void maprtn(fcte *f, short reqID) {
+
+ ifgrpl *r = &f->reqids[0].rpl;
+ int reqid, rplrtncd, rplfdb3;
+
+  f->resp  = 0;  f->resp2 = 0;
+
+  reqid = mapReqId(f, reqID);
+  if (reqid < 0) {
+   f->resp  = KIKRESP$ILLOGIC;
+   f->resp2 = -1;
+   f->rcode[1] = 0x02;
+   return;
+   }
+
+  r = &f->reqids[reqid].rpl;
+  SetRcode(f, r);
+
+  rplrtncd = f->rcode[2];
+  rplfdb3  = f->rcode[3];
+
+  switch (rplrtncd) {
+   case 0:    // no error
+    return;
+   case 8:    // logical error
+    switch (rplfdb3) { // aka rplerrcd
+     case 4:    // end of data
+      f->resp = KIKRESP$ENDFILE;
+      f->resp2 = 90;
+      f->rcode[1] = 0x0f;
+      return;
+     case 8:    // duplicate record
+      f->resp = KIKRESP$DUPREC;
+      f->resp2 = 150;
+      f->rcode[1] = 0x82;
+      return;
+     case 16:   // record not found
+      f->resp = KIKRESP$NOTFND;
+      f->resp2 = 80;
+      f->rcode[1] = 0x81;
+      return;
+     case 28:   // no space to add res
+      f->resp = KIKRESP$NOSPACE;
+      //f->resp2 = ; // several possbilites for resp2...
+      f->rcode[1] = 0x83;
+      return;
+     default:   // something else?
+      f->resp = KIKRESP$ILLOGIC;
+      f->resp2 = 110;
+      f->rcode[1] = 0x02;
+     }
+    return;
+   case 12:   // physical error
+    switch (rplfdb3) { // aka rplerrcd
+     case 4:    // read errors
+     case 8:
+     case 12:
+      f->resp = KIKRESP$IOERR;
+      f->resp2 = 120;
+      f->rcode[1] = 0x80;
+      return;
+     case 16:   // write errors
+     case 20:
+     case 24:
+      f->resp = KIKRESP$IOERR;
+      f->resp2 = 120;
+      f->rcode[1] = 0x80;
+      return;
+     default:   // something else?
+      f->resp = KIKRESP$IOERR;
+      f->resp2 = 120;
+      f->rcode[1] = 0x80;
+     }
+    return;
+   default:   // something else?
+    f->resp = KIKRESP$ILLOGIC;
+    f->resp2 = 110;
+    f->rcode[1] = 0x02;
+   }
+ }
+
+

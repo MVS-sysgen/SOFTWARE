@@ -1,0 +1,273 @@
+/////////////////////////////////////////////////////////////////////
+// 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+// in MVS/TSO. Its CICS functionality is delivered at the source code
+// level, not at the object code level. Applications must be
+// recompiled and the recompiled programs are not compatible with any
+// known version of 'real' CICS (the IBM program product),
+//
+// © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+//
+// Usage of 'KICKS for TSO' is in all cases subject to license. See
+// http://www.kicksfortso.com
+// for most current information regarding licensing options..
+////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+#include <stdio.h>
+#include <string.h>
+#include <time.h>
+
+#include "kikmg01.h"
+
+ //
+ // following two functions (FOLD & NLZ) used to be
+ // 'nested' in GCC_Dsect, but they cause crashed
+ // if used 'too much' in that routine, so I conclude
+ // that while 'nested' functions seem to work, they
+ // actually do not. Thus they are now UN-nested...
+ //
+
+ char *FOLD(char *ab, char *cd) { // make UC/LC depending...
+  static char ef[256];
+  strncpy(ef, ab, 250); strncat(ef, cd, 250);
+  if (!strcmp(msd_fold, "LOWER")) {
+   return (DN(ef));
+   }
+  else {
+   return (UP(ef));
+   }
+ }
+
+ char *NLZ(char *ab) {            // strip leading zeros
+  static char *ip, *ix;
+  ip=ab; ix=ip+strlen(ip);
+  while (ip < ix) {
+   if (*ip != '0') return(ip);
+   ip++;
+  }
+  return(ab); // if all zero just return pointer to first...
+ }
+
+
+void GCC_Dsect(int final) {
+
+int i, ii, iii;
+char lvl[10], lvl2[10];
+
+ // pass 3 does in, out, and inout
+
+ // with storage=auto the OUT of an INOUT overlays the IN
+ //      but MDI's do not overlay each other.
+ // without storage=auto the OUT's still overlay the INs,
+ //      but the MDI's DO overlay each other.
+
+ // in (and in side of inout) goes directly to stdout
+ // out (and out side of inout) goes initially to sysut1,
+ //     then on final or next mdi, is merged back
+ //     to stdout following the associated 'in'.
+
+ if(passno != 3) return;
+
+
+ if(!strcmp(opcode, "KIKMSD")) {
+
+  if( !final ) {
+   // for first msd do header
+   fprintf(stdout, "\
+ ///////////////////////////////////////////////////////////////////// \n\
+ // 'BMS' map for use with %s \n\
+ //   generated %s at %s with mapgen version %s \n\
+ // \n\
+ // %s  \n\
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved. \n\
+ // \n\
+ // Assuming the input belongs to you this generated map is also \n\
+ // your property and you may do whatever you like with it.  \n\
+ //   HOWEVER \n\
+ // \n\
+ // Usage of %s is subject to license. See \n\
+ // http://www.kicksfortso.com \n\
+ // for most current information regarding licensing options. \n\
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7 \n\
+ \n\
+#ifndef _FILLER1 \n\
+#define _FILLER1 \n\
+typedef  struct _FILLER1 { char filler[1]; } FILLER1; \n\
+#endif \n\
+ \n\
+#ifndef _FILLER2 \n\
+#define _FILLER2 \n\
+typedef  struct _FILLER2 { char filler[2]; } FILLER2; \n\
+#endif \n\
+ \n\
+#ifndef _FILLER3 \n\
+#define _FILLER3 \n\
+typedef  struct _FILLER3 { char filler[3]; } FILLER3; \n\
+#endif \n\
+ \n\
+#ifndef _FILLER4 \n\
+#define _FILLER4 \n\
+typedef  struct _FILLER4 { char filler[4]; } FILLER4; \n\
+#endif \n\
+ \n\
+#ifndef _FILLER5 \n\
+#define _FILLER5 \n\
+typedef  struct _FILLER5 { char filler[5]; } FILLER5; \n\
+#endif \n\
+ \n\
+#ifndef _FILLER6 \n\
+#define _FILLER6 \n\
+typedef  struct _FILLER6 { char filler[6]; } FILLER6; \n\
+#endif \n\
+ \n\
+#ifndef _FILLER7 \n\
+#define _FILLER7 \n\
+typedef  struct _FILLER7 { char filler[7]; } FILLER7; \n\
+#endif \n\
+ \n\
+#ifndef _FILLER12 \n\
+#define _FILLER12 \n\
+typedef  struct _FILLER12 { char filler[12]; } FILLER12; \n\
+#endif \n\n",
+    __KFT__, sysdate, systime, mkv1, __KFT__, __KFT__);
+   if (!strcmp(msd_storageauto, "YES")) {
+    // storage=AUTO
+    }
+   else {
+    // no storage=AUTO
+    fprintf(stdout, " union %s {\n", FOLD(msd_label, ""));
+    }
+   }
+  // for final msd do trailer (unless storage=auto)
+  else {
+   // for last msd do trailer
+   if (!strcmp(msd_storageauto, "YES")) {
+    // storage=AUTO
+    }
+   else {
+    // no storage=AUTO
+    fprintf(stdout, " } *%s;\n", FOLD(msd_bmsmapbr, ""));
+    }
+   }
+  return;
+  }
+
+
+ if(!strcmp(opcode, "KIKMDI")) {
+
+  if( !final ) {
+// here to write the header for a new mdi
+   if (!strcmp(msd_storageauto, "YES")) {
+    // storage=AUTO
+    fprintf(stdout, " union  {\n", FOLD(mdi_1_lbl, ""));
+    }
+   if ((!strcmp(msd_mode, "IN")) || (!strcmp(msd_mode, "INOUT"))) {
+    fprintf(stdout, "  struct {\n");
+    fprintf(stdout, "          FILLER12;\n");
+    }
+   if ((!strcmp(msd_mode, "OUT")) || (!strcmp(msd_mode, "INOUT"))) {
+    fprintf(sysut1, "  struct {\n");
+    fprintf(sysut1, "          FILLER12;\n");
+    }
+   }
+  else {
+// here to wrap up the prior mdi (prev, or last)
+   if ((!strcmp(msd_mode, "IN")) || (!strcmp(msd_mode, "INOUT"))) {
+    fprintf(stdout, "         } __attribute__((__packed__)) %s;\n\n",
+            FOLD(mdi_label, "i"));
+    }
+   if ((!strcmp(msd_mode, "OUT")) || (!strcmp(msd_mode, "INOUT"))) {
+    fprintf(sysut1, "         } __attribute__((__packed__)) %s;\n\n",
+            FOLD(mdi_label, "o"));
+    }
+// after writting any wrap up lines need to paste the sysut1 lines
+// onto the end of stdout, then clear sysut1 for the 'next' mdi
+   {
+   char aline[82];
+   fclose(sysut1);
+   sysut1 = fopen("DD:SYSUT1", "r");
+   if (sysut1 == NULL) prt_error("SYSUT1 failed to reopen 'r'", 16);
+   while (1) {
+    fgets(aline, 80, sysut1);
+    if (feof(sysut1)) break;
+    fprintf(stdout, "%s", aline);
+    }
+   fclose(sysut1);
+   sysut1 = fopen("DD:SYSUT1", "w");
+   if (sysut1 == NULL) prt_error("SYSUT1 failed to reopen 'w'", 16);
+   }
+// end the mdi union if storage=auto
+  if (!strcmp(msd_storageauto, "YES")) {
+   // storage=AUTO
+   fprintf(stdout, " } %s;\n\n", FOLD(mdi_label, ""));
+   }
+   }
+  return;
+  }
+
+
+ if(!strcmp(opcode, "KIKMDF")) {
+  if (mdf_label[0] == '\0') return;
+
+  // set extatt bits and length
+  ii  = mdi_ebits;
+  iii = mdi_elong;
+
+  strcpy(lvl, ""); strcpy(lvl2, "");
+  if ((!strcmp(msd_mode, "IN")) || (!strcmp(msd_mode, "INOUT"))) {
+    if (mdf_occurs[0] != 0) {
+     fprintf(sysut1, "          struct {\n");
+     strcpy(lvl, "        ");
+     }
+    fprintf(stdout, "          %sshort %s;\n", lvl, FOLD(mdf_label, "l"));
+    fprintf(stdout, "          %schar  %s;\n", lvl, FOLD(mdf_label, "f"));
+    if (iii > 0) {
+     fprintf(stdout, "          %sFILLER%d;\n", lvl, iii);
+     }
+    fprintf(stdout, "          %schar  %s[%s];\n",
+            lvl, FOLD(mdf_label, "i"), NLZ(mdf_length));
+    if (mdf_occurs[0] != 0) {
+     fprintf(sysut1, "                 } %s[%s];\n\n",
+            FOLD(mdf_label, "d"), mdf_occurs);
+     }
+   }
+
+  strcpy(lvl, ""); strcpy(lvl2, "");
+  if ((!strcmp(msd_mode, "OUT")) || (!strcmp(msd_mode, "INOUT"))) {
+    if (mdf_occurs[0] != 0) {
+     fprintf(sysut1, "          struct {\n");
+     strcpy(lvl, "        ");
+     }
+    fprintf(sysut1, "          %sFILLER2;\n", lvl);
+    fprintf(sysut1, "          %schar  %s;\n", lvl, FOLD(mdf_label, "a"));
+    if((ii & 0x01) > 0)
+     fprintf(sysut1, "          %schar  %s;\n", lvl, FOLD(mdf_label, "c"));
+    if((ii & 0x02) > 0)
+     fprintf(sysut1, "          %schar  %s;\n", lvl, FOLD(mdf_label, "p"));
+    if((ii & 0x04) > 0)
+     fprintf(sysut1, "          %schar  %s;\n", lvl, FOLD(mdf_label, "h"));
+    if((ii & 0x08) > 0)
+     fprintf(sysut1, "          %schar  %s;\n", lvl, FOLD(mdf_label, "v"));
+    if((ii & 0x10) > 0)
+     fprintf(sysut1, "          %schar  %s;\n", lvl, FOLD(mdf_label, "u"));
+    if((ii & 0x20) > 0)
+     fprintf(sysut1, "          %schar  %s;\n", lvl, FOLD(mdf_label, "m"));
+    if((ii & 0x40) > 0)
+     fprintf(sysut1, "          %schar  %s;\n", lvl, FOLD(mdf_label, "t"));
+    fprintf(sysut1, "          %schar  %s[%s];\n",
+            lvl, FOLD(mdf_label, "o"), NLZ(mdf_length));
+    if (mdf_occurs[0] != 0) {
+     if (msd_mode[0] == 'O') { // OUT gets 'd'
+      fprintf(sysut1, "                 } %s[%s];\n\n",
+            FOLD(mdf_label, "d"), mdf_occurs);
+      }
+     else {                    // INOUT gets 'e'
+      fprintf(sysut1, "                 } %s[%s];\n\n",
+            FOLD(mdf_label, "e"), mdf_occurs);
+      }
+     }
+   }
+  return;
+  }
+}
+
+

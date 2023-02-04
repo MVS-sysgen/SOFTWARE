@@ -1,0 +1,27 @@
+#ifndef __IHAPIE__
+#define __IHAPIE__
+
+ // from SYS1.APVTMACS(IHAPIE) on MVS 3.8J 'MVS380' system
+
+ typedef struct __ihapie__
+ {
+  char pieflgs;            // +000 flags
+  char piepicca[3];        // +001 address of current PICA
+  char piepsw[8];          // +004 old program int psw
+  int  piegr14;            // +012 gr 14
+  int  piegr15;            // +016 gr 15
+  int  piegr0;             // +020 gr 0
+  int  piegr1;             // +024 gr 1
+  int  piegr2;             // +028 gr 2
+
+ } ihapie;
+
+#endif
+
+
+
+
+
+
+
+

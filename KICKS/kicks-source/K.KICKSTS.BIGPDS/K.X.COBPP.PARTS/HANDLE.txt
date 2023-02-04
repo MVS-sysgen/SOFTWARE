@@ -1,0 +1,465 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+void Do_HANDLE() {
+// establish abend exits
+// EXEC CICS HANDLE ABEND { PROGRAM(name) | LABEL(label) |
+//      CANCEL | RESET } END-EXEC.
+// -- or --
+// establish routines to be invoked when AID keys (enter, pf and pa keys) are
+//       detected by a receive map
+// EXEC CICS HANDLE AID option [(label)] END-EXEC.
+// -- or --
+// specifies how certain exception conditions should be processed
+// EXEC CICS HANDLE CONDITION condition-name [(label)] END-EXEC.
+
+char err[100], saveblocks[4000];
+
+if (MYbegstr(blk_op2, "AID")) {
+
+#ifdef PPGCC
+sprintf(err, " %s %s not implemented for MVSGCC!", blk_op1, blk_op2);
+prt_error(err, 8);
+No_Code();
+return;
+#endif
+#ifdef PPCOB
+ char op[100], op2[100], ops[30][100], *ip;
+ int  i, j, numops=0, nodump=0, verb;
+
+ int numaids1=0, numaids2=0;
+ union { int aki[4]; char akc[16]; } aidsi, aidsh;
+ char akr[16][100];
+
+ // init the aids union
+ for (i=0; i<4; i++) { aidsi.aki[i] = aidsh.aki[i] = 0; }
+
+ // break up string my way
+ numops = 0;
+ strcpy(saveblocks, cicsblks);
+ ip = SPCLTOK(saveblocks, " ");   // EXEC
+ while (ip=SPCLTOK(0, " ")) {     // KICKS, verb, ... END-EXEC
+  strcpy(ops[numops], ip);
+  numops++;
+  }
+
+ // march thru the args
+ for (i=0; i<numops; i++) {
+  strcpy(op, ops[i]);
+
+//printf("op %s\n", op);
+//printf("oplen %d\n", strlen(op));
+
+  if(strlen(op)==0) { continue; }
+  if(MYbegstr(op,".")) { continue; }
+  if(MYbegstr(op,"RESP")) { continue; }
+  if(MYbegstr(op,"RESP2")) { continue; }
+  if(MYbegstr(op,"NOHANDLE")) { continue; }
+  if(MYbegstr(op,"EXEC")) { continue; }
+  if(MYbegstr(op,"KICKS")) { continue; }
+  if(MYbegstr(op,"HANDLE")) { continue; }
+  if(MYbegstr(op,"AID")) { continue; }
+  if(MYbegstr(op,"END-EXEC") || MYbegstr(op,";")) { continue; }
+
+  // find  matching.option (backward to find longest first)
+  for (j=ak_max, verb=-1; j>0; j--) {
+   if (MYbegstr(op, aid_keys[j-1])) { verb = AidKeyValues[j-1]; break; }
+   }
+  if (verb == -1) {
+   sprintf(err, "unknown/unsupported argument %s of HANDLE AID", op);
+   prt_error(err, 8);
+   No_Code();
+   return;
+   }
+
+  // stash verb (aid value) and routine
+  strcpy(op2, op);
+  ip = strtok(op2, "()");   // sb the key name
+  ip=strtok(0, "()");       // sb the routine (iff it is given!)
+  if (ip != NULL)
+   { // an aid to handle...
+   parrensDown(ip);
+   strcpy(op2, ip);
+   strcpy(akr[numaids1], op2);
+   aidsh.akc[numaids1] = verb;
+   numaids1++;
+   if (numaids1 > 15) {
+    sprintf(err, "exceeded max 16 args to HANDLE(H) AID");
+    prt_error(err, 8);
+    No_Code();
+    return;
+    }
+   }
+  else
+   { // an aid to ignore...
+   aidsi.akc[numaids2] = verb;
+   numaids2++;
+   if (numaids2 > 15) {
+    sprintf(err, "exceeded max 16 args to HANDLE(C) AID");
+    prt_error(err, 8);
+    No_Code();
+    return;
+    }
+   }
+  }
+
+#if defined(__MVS__) || defined(__CMS__)
+ // ENDIAN issue -
+ // in MVS the byte order is different, so must reverse...
+ for (i=0; i<16; i=i+4) {
+  int tmp;
+  tmp=aidsh.akc[3+i]; aidsh.akc[3+i]= aidsh.akc[0+i]; aidsh.akc[0+i]= tmp;
+  tmp=aidsh.akc[2+i]; aidsh.akc[2+i]= aidsh.akc[1+i]; aidsh.akc[1+i]= tmp;
+  tmp=aidsi.akc[3+i]; aidsi.akc[3+i]= aidsi.akc[0+i]; aidsi.akc[0+i]= tmp;
+  tmp=aidsi.akc[2+i]; aidsi.akc[2+i]= aidsi.akc[1+i]; aidsi.akc[1+i]= tmp;
+ }
+#endif
+
+ // make sure something to do
+ if((numaids1 == 0) && (numaids2 == 0)){
+  sprintf(err, "nothing entered for HANDLE/CANCEL AID");
+  prt_error(err, 8);
+  No_Code();
+  return;
+  }
+
+ // generate call to handle aid
+ if (numaids1 > 0) {
+  fprintf(stdout, "            MOVE 518 TO EIBFN-2\n");
+  fprintf(stdout,  "           MOVE %d TO KIK-AIDS1\n", aidsh.aki[0]);
+  if (numaids1 > 4)
+   fprintf(stdout, "           MOVE %d TO KIK-AIDS2\n", aidsh.aki[1]);
+  if (numaids1 > 8)
+   fprintf(stdout, "           MOVE %d TO KIK-AIDS3\n", aidsh.aki[2]);
+  if (numaids1 > 12)
+   fprintf(stdout, "           MOVE %d TO KIK-AIDS4\n", aidsh.aki[3]);
+  fprintf(stdout, "           MOVE %d TO KIK-NUM-GOTO\n", numaids1);
+  fprintf(stdout, "           MOVE +0 TO KIK-GOTOVAR\n");
+  fprintf(stdout, "           CALL 'KIKCOBGL' USING KIKEIB,\n");
+  if (!strcmp(respvar, ""))
+   fprintf(stdout, "                 KIK-V1,\n");
+  else
+   fprintf(stdout, "                 KIK-V2,\n");
+  fprintf(stdout, "                 KIK-GOTOVAR, KIK-NUM-GOTO,\n");
+  fprintf(stdout,
+    "                 KIK-AIDS1, KIK-AIDS2, KIK-AIDS3, KIK-AIDS4\n");
+  fprintf(stdout, "           GO TO \n");
+
+  for (i=0; i<numaids1; i++) {
+   fprintf(stdout, "                 %s\n", akr[i]);
+   }
+
+  fprintf(stdout,
+    "                 DEPENDING ON KIK-GOTOVAR");
+  }
+
+ // generate call to cancel aid
+ if (numaids2 > 0) {
+  fprintf(stdout, "            MOVE 518 TO EIBFN-2\n");
+  fprintf(stdout,"\n           MOVE %d TO KIK-AIDS1\n", aidsi.aki[0]);
+  if (numaids2 > 4)
+   fprintf(stdout, "           MOVE %d TO KIK-AIDS2\n", aidsi.aki[1]);
+  if (numaids2 > 8)
+   fprintf(stdout, "           MOVE %d TO KIK-AIDS3\n", aidsi.aki[2]);
+  if (numaids2 > 12)
+   fprintf(stdout, "           MOVE %d TO KIK-AIDS4\n", aidsi.aki[3]);
+  fprintf(stdout, "           MOVE %d TO KIK-NUM-GOTO\n", numaids2);
+  fprintf(stdout, "           MOVE +1 TO KIK-GOTOVAR\n");
+
+  fprintf(stdout, "           CALL 'KIKCOBGL' USING KIKEIB,\n");
+  if (!strcmp(respvar, ""))
+   fprintf(stdout, "                 KIK-V1,\n");
+  else
+   fprintf(stdout, "                 KIK-V2,\n");
+  fprintf(stdout, "                 KIK-GOTOVAR, KIK-NUM-GOTO,\n");
+  fprintf(stdout,
+    "                 KIK-AIDS1, KIK-AIDS2, KIK-AIDS3, KIK-AIDS4");
+  }
+
+ return;
+#endif
+ }
+
+if (MYbegstr(blk_op2, "CONDITION")) {
+
+#ifdef PPGCC
+sprintf(err, " %s %s not implemented for MVSGCC!", blk_op1, blk_op2);
+prt_error(err, 8);
+No_Code();
+return;
+#endif
+#ifdef PPCOB
+ char op[100], op2[100], ops[30][100], *ip;
+ int  i, j, numops=0, nodump=0, verb;
+
+ int numcond1=0, numcond2=0;
+ union { int aki[4]; char akc[16]; } aidsi, aidsh;
+ char akr[16][100];
+
+ // init the aids union
+ for (i=0; i<4; i++) { aidsi.aki[i] = aidsh.aki[i] = 0; }
+
+ // break up string my way
+ numops = 0;
+ strcpy(saveblocks, cicsblks);
+ ip = SPCLTOK(saveblocks, " ");   // EXEC
+ while (ip=SPCLTOK(0, " ")) {     // KICKS, verb, ... END-EXEC
+  strcpy(ops[numops], ip);
+  numops++;
+  }
+
+ // march thru the args
+ for (i=0; i<numops; i++) {
+  strcpy(op, ops[i]);
+
+//printf("op %s\n", op);
+//printf("oplen %d\n", strlen(op));
+
+  if(strlen(op)==0) { continue; }
+  if(MYbegstr(op,".")) { continue; }
+  if(MYbegstr(op,"RESP")) { continue; }
+  if(MYbegstr(op,"RESP2")) { continue; }
+  if(MYbegstr(op,"NOHANDLE")) { continue; }
+  if(MYbegstr(op,"EXEC")) { continue; }
+  if(MYbegstr(op,"KICKS")) { continue; }
+  if(MYbegstr(op,"HANDLE")) { continue; }
+  if(MYbegstr(op,"CONDITION")) { continue; }
+  if(MYbegstr(op,"END-EXEC") || MYbegstr(op,";")) { continue; }
+
+  // find  matching.condition
+  for (j=rt_max, verb=-1; j>0; j--) {
+   if (MYbegstr(op, resp_text[j-1])) { verb = resp_codes[j-1]; break; }
+   }
+  if (verb == -1) {
+   sprintf(err, "unknown/unsupported argument %s of HANDLE CONDITION", op);
+   prt_error(err, 8);
+   No_Code();
+   return;
+   }
+
+  // stash verb (condition value) and routine
+  strcpy(op2, op);
+  ip = strtok(op2, "()");   // sb the key name
+  ip=strtok(0, "()");       // sb the routine (iff it is given!)
+  if (ip != NULL)
+   { // a condition to handle...
+   parrensDown(ip);
+   strcpy(op2, ip);
+   strcpy(akr[numcond1], op2);
+   aidsh.akc[numcond1] = verb;
+   numcond1++;
+   if (numcond1 > 15) {
+    sprintf(err, "exceeded max 16 args to HANDLE(H) CONDITION");
+    prt_error(err, 8);
+    No_Code();
+    return;
+    }
+   }
+  else
+   { // a condition to ignore...
+   aidsi.akc[numcond2] = verb;
+   numcond2++;
+   if (numcond2 > 15) {
+    sprintf(err, "exceeded max 16 args to HANDLE(C) CONDITION");
+    prt_error(err, 8);
+    No_Code();
+    return;
+    }
+   }
+  }
+
+#if defined(__MVS__) || defined(__CMS__)
+ // ENDIAN issue -
+ // in MVS the byte order is different, so must reverse...
+ for (i=0; i<16; i=i+4) {
+  int tmp;
+  tmp=aidsh.akc[3+i]; aidsh.akc[3+i]= aidsh.akc[0+i]; aidsh.akc[0+i]= tmp;
+  tmp=aidsh.akc[2+i]; aidsh.akc[2+i]= aidsh.akc[1+i]; aidsh.akc[1+i]= tmp;
+  tmp=aidsi.akc[3+i]; aidsi.akc[3+i]= aidsi.akc[0+i]; aidsi.akc[0+i]= tmp;
+  tmp=aidsi.akc[2+i]; aidsi.akc[2+i]= aidsi.akc[1+i]; aidsi.akc[1+i]= tmp;
+ }
+#endif
+
+ if((numcond1 == 0) && (numcond2 == 0)){
+  sprintf(err, "nothing entered for HANDLE/CANCEL CONDITION");
+  prt_error(err, 8);
+  No_Code();
+  return;
+  }
+
+ // generate call to handle condition
+ if (numcond1 > 0) {
+  fprintf(stdout, "            MOVE 516 TO EIBFN-2\n");
+  fprintf(stdout,  "           MOVE %d TO KIK-AIDS1\n", aidsh.aki[0]);
+  if (numcond1 > 4)
+   fprintf(stdout, "           MOVE %d TO KIK-AIDS2\n", aidsh.aki[1]);
+  if (numcond1 > 8)
+   fprintf(stdout, "           MOVE %d TO KIK-AIDS3\n", aidsh.aki[2]);
+  if (numcond1 > 12)
+   fprintf(stdout, "           MOVE %d TO KIK-AIDS4\n", aidsh.aki[3]);
+  fprintf(stdout, "           MOVE %d TO KIK-NUM-GOTO\n", numcond1);
+  fprintf(stdout, "           MOVE +0 TO KIK-GOTOVAR\n");
+  fprintf(stdout, "           CALL 'KIKCOBGL' USING KIKEIB,\n");
+  if (!strcmp(respvar, ""))
+   fprintf(stdout, "                 KIK-V1,\n");
+  else
+   fprintf(stdout, "                 KIK-V2,\n");
+  fprintf(stdout, "                 KIK-GOTOVAR, KIK-NUM-GOTO,\n");
+  fprintf(stdout,
+    "                 KIK-AIDS1, KIK-AIDS2, KIK-AIDS3, KIK-AIDS4\n");
+  fprintf(stdout, "           GO TO \n");
+
+  for (i=0; i<numcond1; i++) {
+   fprintf(stdout, "                 %s\n", akr[i]);
+   }
+
+  fprintf(stdout,
+    "                 DEPENDING ON KIK-GOTOVAR");
+  }
+
+ // generate call to cancel condition
+ if (numcond2 > 0) {
+  fprintf(stdout, "            MOVE 516 TO EIBFN-2\n");
+  fprintf(stdout,"\n           MOVE %d TO KIK-AIDS1\n", aidsi.aki[0]);
+  if (numcond2 > 4)
+   fprintf(stdout, "           MOVE %d TO KIK-AIDS2\n", aidsi.aki[1]);
+  if (numcond2 > 8)
+   fprintf(stdout, "           MOVE %d TO KIK-AIDS3\n", aidsi.aki[2]);
+  if (numcond2 > 12)
+   fprintf(stdout, "           MOVE %d TO KIK-AIDS4\n", aidsi.aki[3]);
+  fprintf(stdout, "           MOVE %d TO KIK-NUM-GOTO\n", numcond2);
+  fprintf(stdout, "           MOVE +1 TO KIK-GOTOVAR\n");
+  fprintf(stdout, "           CALL 'KIKCOBGL' USING KIKEIB,\n");
+  if (!strcmp(respvar, ""))
+   fprintf(stdout, "                 KIK-V1,\n");
+  else
+   fprintf(stdout, "                 KIK-V2,\n");
+  fprintf(stdout, "                 KIK-GOTOVAR, KIK-NUM-GOTO,\n");
+  fprintf(stdout,
+    "                 KIK-AIDS1, KIK-AIDS2, KIK-AIDS3, KIK-AIDS4");
+  }
+
+ return;
+#endif
+ }
+
+if (MYbegstr(blk_op2, "ABEND")) {
+
+// establish abend exits
+// EXEC CICS HANDLE ABEND { PROGRAM(name) | LABEL(label) |
+//      CANCEL | RESET } END-EXEC.
+
+ char op[100], op2[100], ops[30][100], *ip;
+ int  i, j, numops=0;
+
+ char pgm[20]="", lbl[20]="";
+ int cancel=0, reset=0;
+
+ // break up string my way
+ numops = 0;
+ strcpy(saveblocks, cicsblks);
+ ip = SPCLTOK(saveblocks, " ");   // EXEC
+ while (ip=SPCLTOK(0, " ")) {     // KICKS, verb, ... END-EXEC
+  strcpy(ops[numops], ip);
+  numops++;
+  }
+
+ // march thru the args
+ for (i=0; i<numops; i++) {
+  strcpy(op, ops[i]);
+
+  if(strlen(op)==0) { continue; }
+  if(MYbegstr(op,".")) { continue; }
+  if(MYbegstr(op,"RESP")) { continue; }
+  if(MYbegstr(op,"RESP2")) { continue; }
+  if(MYbegstr(op,"NOHANDLE")) { continue; }
+  if(MYbegstr(op,"EXEC")) { continue; }
+  if(MYbegstr(op,"KICKS")) { continue; }
+  if(MYbegstr(op,"HANDLE")) { continue; }
+  if(MYbegstr(op,"ABEND")) { continue; }
+  if(MYbegstr(op,"END-EXEC") || MYbegstr(op,";")) { continue; }
+
+  if(MYbegstr(op,"LABEL")) {
+   ip = strtok(op, "()");   // LABEL
+   ip = strtok(0, "()");    // the name of the label
+   if (ip == NULL) {
+    parrensDown(ip);
+    sprintf(err,
+    "malformed argument %s of HANDLE ABEND", op);
+    prt_error(err, 8);
+    No_Code();
+    return;
+    }
+   strcpy(lbl, ip);
+   fixXNAME(lbl, 8);
+   continue;
+   }
+  if(MYbegstr(op,"PROGRAM")) {
+   ip = strtok(op, "()");   // PROGRAM
+   ip = strtok(0, "()");    // the name of the program
+   if (ip == NULL) {
+    parrensDown(ip);
+    sprintf(err,
+    "malformed argument %s of HANDLE ABEND", op);
+    prt_error(err, 8);
+    No_Code();
+    return;
+    }
+   strcpy(pgm, ip);
+   fixXNAME(pgm, 8);
+   continue;
+   }
+  if(MYbegstr(op,"CANCEL")) { cancel = 1; continue; }
+  if(MYbegstr(op,"RESET"))  { reset = 2;  continue; }
+  }
+
+#ifdef PPCOB
+ fprintf(stdout, "           MOVE 3598 TO EIBFN-2\n");
+ fprintf(stdout, "           MOVE %d TO KIK-GOTOVAR\n", cancel+reset);
+ fprintf(stdout, "           CALL 'KIKCOBGL' USING KIKEIB,\n");
+ if (!strcmp(respvar, ""))
+ fprintf(stdout, "                 KIK-V1,\n");
+ else
+ fprintf(stdout, "                 KIK-V2,\n");
+ fprintf(stdout, "                 KIK-GOTOVAR\n");
+ if (strcmp(pgm, "")) {
+  fprintf(stdout, "           IF KIK-GOTOVAR > 0 CALL '%s'", pgm);
+  }
+ else
+ if (strcmp(lbl, "")) {
+  fprintf(stdout, "           IF KIK-GOTOVAR > 0 GO TO %s", lbl);
+  }
+#endif
+#ifdef PPGCC
+ fprintf(stdout, "\t{ short *eibfn2 = (short*)&__KIKEIB->eibfn;\n");
+ fprintf(stdout, "\t\t*eibfn2 = 3598;\n");
+ if (!strcmp(respvar, ""))
+  fprintf(stdout, "\t  int *v=&KIK_V1;\n");
+ else
+  fprintf(stdout, "\t  int *v=&KIK_V2;\n");
+ fprintf(stdout, "\t  short flag=%d, *FLAG=&flag;\n", cancel+reset);
+ fprintf(stdout, "\t kikgccgl(__KIKEIB, v, FLAG);\n");
+ if (strcmp(pgm, "")) {
+  fprintf(stdout, "\t if (flag > 0) %s();\n", pgm);
+  // what to do after return??? -- there should never be one...
+  }
+ else
+ if (strcmp(lbl, "")) {
+  fprintf(stdout, "\t if (flag > 0) goto %s;\n", lbl);
+  }
+#endif
+ return;
+ }
+
+}

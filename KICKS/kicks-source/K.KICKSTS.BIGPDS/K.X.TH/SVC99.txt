@@ -1,0 +1,86 @@
+
+ /* see http://ftp.sas.com/techsup/download/SASC/sample/h/SVC99H.html  */
+ /*---------------------------------------------------------------------+
+ |                Copyright (c) 1995, SAS Institute Inc.                |
+ |                  Unpublished - All Rights Reserved                   |
+ |                      S A S / C   S A M P L E                         |
+ |                                                                      |
+ |         NAME: SVC99H                                                 |
+ |     LANGUAGE: C                                                      |
+ |      PURPOSE: Function prototypes used by SVC99C. The default dataset|
+ |               location is: prefix.SAMPLE.H(SVC99H)                   |
+ |               where "prefix" is the installation defined high-level- |
+ |               qualifier for the SAS/C product.                       |
+ |   MISC NOTES: Function Descriptions:                                 |
+ |                                                                      |
+ |   These functions provide a simple interface to dynamically          |
+ |   allocate and unallocate data sets and the INTERNAL READER using    |
+ |   SVC 99.  Three external functions are provided.                    |
+ |                                                                      |
+ |   alc_ds    allocates a data set and associates it with a            |
+ |             ddname provided by the caller                            |
+ |                                                                      |
+ |   unalc_ds  unallocates a data set associated with a ddname          |
+ |                                                                      |
+ |   alc_intr  allocates the Interal Reader (INTRDR) to a ddname with   |
+ |             the specified class                                      |
+ |                                                                      |
+ |   alc_syso  allocates the a SYSOUT dataset.  Allow a SYSOUT          |
+ |             program to be specified along with a class.              |
+ |                                                                      |
+ +---------------------------------------------------------------------*/
+
+ /*-------------------------------------------------------------------*/
+ /*                                                                   */
+ /*  alc_ds - Dynamically allocate a dataset.  Accept space, dcb,     */
+ /*           status, normal and conditional disposition.             */
+ /*                                                                   */
+ /*-------------------------------------------------------------------*/
+
+ int alc_ds(
+      char * ddname,            /* ddname to attach                   */
+      char * dsname,            /* dsname with optional member name   */
+      char * status,            /* Initial data set status            */
+      char * normdisp,          /* Data set norm disposition          */
+      char * conddisp,          /* Data set cond disposition          */
+      char * spc_unit,          /* Space Unit (ie. TRK, CYL, xxx)     */
+      int    spc_prim,          /* Space Primary                      */
+      int    spc_sec,           /* Space Secondary                    */
+      int    spc_blks,          /* Directory Blocks                   */
+      char * recfm,             /* DCB RECFM (ie. F, FB, VB, etc)     */
+      int    lrecl,             /* DCB LRECL                          */
+      int    blksize,           /* DCB BLKSIZE                        */
+      char * dsorg);            /* DCB DSORG (ie. PS, PO, DA, etc)    */
+ /*-------------------------------------------------------------------*/
+ /*                                                                   */
+ /*  unalc_ds - Dynamically release any allocated dataset. Accept a   */
+ /*             normal and conditional disposition.                   */
+ /*                                                                   */
+ /*-------------------------------------------------------------------*/
+
+ int unalc_ds (
+      char * ddname,            /* ddname to unallocate               */
+      char * normdisp,          /* Data set norm disposition          */
+      char * conddisp);         /* Data set cond disposition          */
+ /*-------------------------------------------------------------------*/
+ /*                                                                   */
+ /*  alc_intr -- Dynamically allocate the internal reader (INTRDR)    */
+ /*              for the purpose of submitting jobs from a C program. */
+ /*                                                                   */
+ /*-------------------------------------------------------------------*/
+ int alc_intr (
+      char * ddname,            /* ddname to attach                   */
+      char * class);            /* SYSOUT CLASS                       */
+
+ /*-------------------------------------------------------------------*/
+ /*                                                                   */
+ /*  alc_syso -- Dynamically allocate a SYSOUT dataset.  Allow a      */
+ /*              program to be specified (such as INTRDR).            */
+ /*                                                                   */
+ /*-------------------------------------------------------------------*/
+ int alc_syso (
+      char * ddname,            /* ddname to attach                   */
+      char * class,             /* SYSOUT CLASS                       */
+      char * program);          /* SYSOUT Program to run              */
+
+

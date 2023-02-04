@@ -1,0 +1,33 @@
+ // DIAG 0 return block
+
+ //  for vm/370 layout see System Programmer's Guide
+
+ //  for detailed info on z/VM return see
+ //  http://publib.boulder.ibm.com/infocenter/zvm/
+ //         v5r4/topic/com.ibm.zvm.v54.hcpb4/hcse5b3112.htm#wq29
+
+ typedef union __extid {
+  struct __vm370 {
+   char system[8];    // 'VM/370' for vm/370...
+   char version;
+   char level;
+   char plc;
+   char filler[5];
+   char userid[8];    // same loc either way...
+   char ppbitmap[8];
+   } vm370;
+  struct __zvm {
+   char  reserved[8];
+   short environ;     // check hi bit to see if 370 (<0) or current (>0)
+   char  versioninfo; // ** ah, no *** 370 is too early for that test **
+   char  versioncode;
+   short reserved2;
+   short processorid;
+   char  userid[8];   // same loc either way...
+   char  ppbitmap[8];
+   int   tzdiff;
+   char  relinfo[4];
+   } zvm;
+  } extid;
+
+

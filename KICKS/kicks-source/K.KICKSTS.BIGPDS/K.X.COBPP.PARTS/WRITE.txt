@@ -1,0 +1,551 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+void Do_WRITE() {
+// write a record to a file
+// EXEC CICS WRITE { DATASET(name) | FILE(name) } FROM(data-area)
+//       [LENGTH(data-area)] RIDFLD(data-area) [KEYLENGTH(data-area)]
+//       [SYSID(name)]
+//       [RBA | RRN] [MASSINSERT] END-EXEC.
+// -- or --
+// write a record to the journal file
+// EXEC CICS WRITE JOURNALNUM(data-value) JTYPEID(data-value) FROM(data-area)
+//        [LENGTH(data-area)] [PREFIX(data-value) [PFXLENG(data-value)]]
+//       [REQID(data-area)] [WAIT] [STARTIO] [NOSUSPEND] END-EXEC.
+// -- or --
+// write a message to a system console
+// EXEC CICS WRITE OPERATOR TEXT(data-value) [TEXTLENGTH(data-value)]
+//       [ROUTECODES(data-value) [NUMROUTES)data-value)]]
+//       [ACTION(data-value) | EVENTUAL | IMMEDIATE | CRITICAL |
+//       REPLY(data-area) MAXLENGTH(data-value)
+//       [REPLYLENGTH(data-area)] [TIMEOUT(data-value)]] END-EXEC.
+// *** WRITE JOURNALNUM not supported
+// *** SYSID not supported
+
+ char err[100], saveblocks[4000];
+
+ char op[100], ops[30][100], *ip;
+ int  i, numops=0;
+
+
+if (MYbegstr(blk_op2, "DATASET") ||
+    MYbegstr(blk_op2, "FILE") ) {
+
+  char file[100], from[100]="";
+  char length[100]="-1", ridfld[100];
+  char keylength[100]="-1";
+  int generic=0, rba=0, rrn=0, massinsert=0;
+
+ strcpy(ridfld, kiknull);
+
+  // break up string my way
+  numops = 0;
+  strcpy(saveblocks, cicsblks);
+  ip = SPCLTOK(saveblocks, " ");   // EXEC
+  while (ip=SPCLTOK(0, " ")) {     // KICKS, verb, ... END-EXEC
+   strcpy(ops[numops], ip);
+   numops++;
+   }
+
+  // march thru the args
+  for (i=0; i<numops; i++) {
+   strcpy(op, ops[i]);
+   if(strlen(op)==0) { continue; }
+   if(MYbegstr(op,".")) { continue; }
+   if(MYbegstr(op,"RESP")) { continue; }
+   if(MYbegstr(op,"RESP2")) { continue; }
+   if(MYbegstr(op,"NOHANDLE")) { continue; }
+   if(MYbegstr(op,"EXEC")) { continue; }
+   if(MYbegstr(op,"KICKS")) { continue; }
+   if(MYbegstr(op,"WRITE")) { continue; }
+   if(MYbegstr(op,"END-EXEC") || MYbegstr(op,";")) { continue; }
+   if(MYbegstr(op,"FILE") || MYbegstr(op,"DATASET")) {
+    ip = strtok(op, "()");   // FILE
+    ip = strtok(0, "()");    // the name of the file
+    if (ip == NULL) {
+     sprintf(err,
+     "malformed argument %s of WRITE", op);
+     prt_error(err, 8);
+     No_Code();
+     return;
+     }
+    parrensDown(ip);
+    strcpy(file, ip);
+    fixXNAME(file, 8);
+    continue;
+    }
+   if(MYbegstr(op,"FROM")) {
+    ip = strtok(op, "()");   // FROM
+    ip = strtok(0, "()");    // the name of the var to get data
+    if (ip == NULL) {
+     sprintf(err,
+     "malformed argument %s of WRITE FILE", op);
+     prt_error(err, 8);
+     No_Code();
+     return;
+     }
+    parrensDown(ip);
+    strcpy(from, ip);
+    continue;
+    }
+   if(MYbegstr(op,"LENGTH")) {
+    ip = strtok(op, "()");   // LENGTH
+    ip = strtok(0, "()");    // the name of the var holding the length
+    if (ip == NULL) {
+     sprintf(err,
+     "malformed argument %s of WRITE FILE", op);
+     prt_error(err, 8);
+     No_Code();
+     return;
+     }
+    parrensDown(ip);
+    strcpy(length, ip);
+    continue;
+    }
+   if(MYbegstr(op,"RIDFLD")) {
+    ip = strtok(op, "()");   // RIDFLD
+    ip = strtok(0, "()");    // the name of the var holding the ridfld
+    if (ip == NULL) {
+     sprintf(err,
+     "malformed argument %s of WRITE FILE", op);
+     prt_error(err, 8);
+     No_Code();
+     return;
+     }
+    parrensDown(ip);
+    strcpy(ridfld, ip);
+    continue;
+    }
+   if(MYbegstr(op,"KEYLENGTH")) {
+    ip = strtok(op, "()");   // KEYLENGTH
+    ip = strtok(0, "()");    // the name of the var holding the keylength
+    if (ip == NULL) {
+     sprintf(err,
+     "malformed argument %s of WRITE FILE", op);
+     prt_error(err, 8);
+     No_Code();
+     return;
+     }
+    parrensDown(ip);
+    strcpy(keylength, ip);
+    continue;
+    }
+
+   if(MYbegstr(op,"RBA")) { rba = 1; continue; }
+   if(MYbegstr(op,"RRN")) { rrn = 1; continue; }
+   if(MYbegstr(op,"MASSINSERT")) {
+    sprintf(err,
+      " unsupported argument %s of %s %s is ignored", op, blk_op1, blk_op2);
+    prt_error(err, 2);
+    massinsert = 1;
+    continue;
+    }
+
+   sprintf(err,
+   "unknown/unsupported argument %s of WRITE FILE", op);
+   prt_error(err, 8);
+   No_Code();
+   return;
+   }
+
+  if (!strcmp(ridfld, kiknull)) generic += 8388608;
+  generic += 2*rba + 4*rrn + 64*massinsert;
+
+#ifdef PPCOB
+  fprintf(stdout, "           MOVE 1540 TO EIBFN-2\n");
+  fprintf(stdout, "           MOVE %s TO KIK-FILENAME\n", file);
+  fprintf(stdout, "           MOVE %d TO KIK-FLAGS\n", generic);
+  COBLEX(length, "-1", from, "", "KIK-LEN");
+  COBLEX(keylength, "-1", ridfld, kiknull, "KIK-KEYLEN");
+  fprintf(stdout, "           CALL 'KIKCOBGL' USING KIKEIB,\n");
+  if (!strcmp(respvar, ""))
+   fprintf(stdout, "                 KIK-V1,\n");
+  else
+   fprintf(stdout, "                 KIK-V2,\n");
+  fprintf(stdout, "                 KIK-FILENAME,\n");
+  fprintf(stdout, "                 KIK-FLAGS,\n");
+  fprintf(stdout, "                 %s,\n", from);
+  fprintf(stdout, "                 KIK-LEN,\n");
+  fprintf(stdout, "                 %s,\n", ridfld);
+  fprintf(stdout, "                 KIK-KEYLEN");
+#endif
+#ifdef PPGCC
+  fprintf(stdout, "\t{ short *eibfn2 = (short*)&__KIKEIB->eibfn;\n");
+  fprintf(stdout, "\t\t*eibfn2 = 1540;\n");
+  if (!strcmp(respvar, ""))
+   fprintf(stdout, "\t  int *v=&KIK_V1;\n");
+  else
+   fprintf(stdout, "\t  int *v=&KIK_V2;\n");
+  fprintf(stdout, "\t  int generic=%d, *GENERIC=&generic;\n", generic);
+  GCCLEX(length, "-1", from, "", "KIK-LEN");
+  GCCLEX(keylength, "-1", ridfld, kiknull, "KIK-KEYLEN");
+  fprintf(stdout, "\t  short length=%s, *LENGTH=&length;\n", length);
+  fprintf(stdout, "\t  short keylength=%s, *KEYLENGTH=&keylength;\n",
+           keylength);
+  fprintf(stdout, "\t kikgccgl(__KIKEIB, v, %s, GENERIC,\n", file);
+  fprintf(stdout, "\t\t&%s, LENGTH,\n", from);
+  fprintf(stdout, "\t\t&%s, KEYLENGTH);\n", ridfld);
+#endif
+  return;
+  } // end of 'DATASET' || 'FILE' ...
+
+
+// EXEC CICS WRITE OPERATOR TEXT(data-value) [TEXTLENGTH(data-value)]
+//       [ROUTECODES(data-value) [NUMROUTES(data-value)]]
+//       [ACTION(data-value) | EVENTUAL | IMMEDIATE | CRITICAL |
+//       REPLY(data-area) MAXLENGTH(data-value)
+//       [REPLYLENGTH(data-area)] [TIMEOUT(data-value)]] END-EXEC.
+
+if (MYbegstr(blk_op2, "OPERATOR")) {
+
+  char text[100]="";
+  char textlength[100]="-1";
+  char routcodes[100], numroutes[100];
+  char action[100]="2";   // also holds eventual, immediate, critical
+  char reply[100]="";
+  char maxlength[100]="-1", replylength[100]="-1";
+  char timeout[100]="30";
+
+ strcpy(routcodes, kiknull);
+ strcpy(numroutes, kiknull);
+
+  // break up string my way
+  numops = 0;
+  strcpy(saveblocks, cicsblks);
+  ip = SPCLTOK(saveblocks, " ");   // EXEC
+  while (ip=SPCLTOK(0, " ")) {     // KICKS, verb, ... END-EXEC
+   strcpy(ops[numops], ip);
+   numops++;
+   }
+
+  // march thru the args
+  for (i=0; i<numops; i++) {
+   strcpy(op, ops[i]);
+   if(strlen(op)==0) { continue; }
+   if(MYbegstr(op,".")) { continue; }
+   if(MYbegstr(op,"RESP")) { continue; }
+   if(MYbegstr(op,"RESP2")) { continue; }
+   if(MYbegstr(op,"NOHANDLE")) { continue; }
+   if(MYbegstr(op,"EXEC")) { continue; }
+   if(MYbegstr(op,"KICKS")) { continue; }
+   if(MYbegstr(op,"WRITE")) { continue; }
+   if(MYbegstr(op,"OPERATOR")) { continue; }
+   if(MYbegstr(op,"END-EXEC") || MYbegstr(op,";")) { continue; }
+
+   if(MYbegstr(op,"TEXTLENGTH")) {
+    ip = strtok(op, "()");   // TEXTLENGTH
+    ip = strtok(0, "()");    // the name of the var holding the length
+    if (ip == NULL) {
+     sprintf(err,
+     "malformed argument %s of WRITE OPERATOR", op);
+     prt_error(err, 8);
+     No_Code();
+     return;
+     }
+    parrensDown(ip);
+    strcpy(textlength, ip);
+    continue;
+    }
+
+   if(MYbegstr(op,"TEXT")) {
+    ip = strtok(op, "()");   // TEXT
+    ip = strtok(0, "()");    // the name of the var with the message
+    if (ip == NULL) {
+     sprintf(err,
+     "malformed argument %s of WRITE OPERATOR", op);
+     prt_error(err, 8);
+     No_Code();
+     return;
+     }
+    parrensDown(ip);
+    strcpy(text, ip);
+    continue;
+    }
+
+   if(MYbegstr(op,"ROUTECODES")) {
+    ip = strtok(op, "()");   // FROM
+    ip = strtok(0, "()");    // the name of the var with the route codes
+    if (ip == NULL) {
+     sprintf(err,
+     "malformed argument %s of WRITE OPERATOR", op);
+     prt_error(err, 8);
+     No_Code();
+     return;
+     }
+    parrensDown(ip);
+    strcpy(routcodes, ip);
+    continue;
+    }
+
+   if(MYbegstr(op,"NUMROUTES")) {
+    ip = strtok(op, "()");   // NUMROUTES
+    ip = strtok(0, "()");    // the name of the var holding # routes
+    if (ip == NULL) {
+     sprintf(err,
+     "malformed argument %s of WRITE OPERATOR", op);
+     prt_error(err, 8);
+     No_Code();
+     return;
+     }
+    parrensDown(ip);
+    strcpy(numroutes, ip);
+    continue;
+    }
+
+   if(MYbegstr(op,"ACTION")) {
+    ip = strtok(op, "()");   // ACTION
+    ip = strtok(0, "()");    // the name of the var holding action
+    if (ip == NULL) {
+     sprintf(err,
+     "malformed argument %s of WRITE OPERATOR", op);
+     prt_error(err, 8);
+     No_Code();
+     return;
+     }
+    parrensDown(ip);
+    strcpy(action, ip);
+    if(MYbegstr(action,"IMMEDIATE")) strcpy(action, "2");
+    if(MYbegstr(action,"EVENTUAL"))  strcpy(action, "3");
+    if(MYbegstr(action,"CRITICAL"))  strcpy(action, "11");
+    continue;
+    }
+
+   if(MYbegstr(op,"IMMEDIATE")) { strcpy(action, "2");  continue; }
+   if(MYbegstr(op,"EVENTUAL"))  { strcpy(action, "3");  continue; }
+   if(MYbegstr(op,"CRITICAL"))  { strcpy(action, "11"); continue; }
+
+   if(MYbegstr(op,"MAXLENGTH")) {
+    ip = strtok(op, "()");   // MAXLENGTH
+    ip = strtok(0, "()");    // the name of the var holding max length
+    if (ip == NULL) {
+     sprintf(err,
+     "malformed argument %s of WRITE OPERATOR", op);
+     prt_error(err, 8);
+     No_Code();
+     return;
+     }
+    parrensDown(ip);
+    strcpy(maxlength, ip);
+    continue;
+    }
+
+   if(MYbegstr(op,"REPLYLENGTH")) {
+    ip = strtok(op, "()");   // REPLYLENGTH
+    ip = strtok(0, "()");    // the name of the var to get the length
+    if (ip == NULL) {
+     sprintf(err,
+     "malformed argument %s of WRITE OPERATOR", op);
+     prt_error(err, 8);
+     No_Code();
+     return;
+     }
+    parrensDown(ip);
+    strcpy(replylength, ip);
+    continue;
+    }
+
+   if(MYbegstr(op,"REPLY")) {
+    ip = strtok(op, "()");   // REPLY
+    ip = strtok(0, "()");    // the name of the var to get reply
+    if (ip == NULL) {
+     sprintf(err,
+     "malformed argument %s of WRITE OPERATOR", op);
+     prt_error(err, 8);
+     No_Code();
+     return;
+     }
+    parrensDown(ip);
+    strcpy(reply, ip);
+    continue;
+    }
+
+   if(MYbegstr(op,"TIMEOUT")) {
+    ip = strtok(op, "()");   // TIMEOUT
+    ip = strtok(0, "()");    // the name of the var holding timeout secs
+    if (ip == NULL) {
+     sprintf(err,
+     "malformed argument %s of WRITE OPERATOR", op);
+     prt_error(err, 8);
+     No_Code();
+     return;
+     }
+    parrensDown(ip);
+    strcpy(timeout, ip);
+    continue;
+    }
+
+   sprintf(err,
+   "unknown/unsupported argument %s of WRITE OPERATOR", op);
+   prt_error(err, 8);
+   No_Code();
+   return;
+   }
+
+  if (strlen(text) == 0) {
+   prt_error("TEXT missing, always required", 8);
+   No_Code();
+   return;
+   }
+
+  if (strlen(reply) == 0) {
+   if((strcmp(maxlength, "-1")) ||
+      (strcmp(replylength, "-1")) ||
+      (strcmp(timeout, "30"))) {
+     prt_error("WTOR args invalid for plain WTO", 8);
+     No_Code();
+     return;
+    }
+   }
+
+#ifdef PPCOB
+  fprintf(stdout, "           MOVE 27650 TO EIBFN-2\n");
+  { // if no lenght spec maybe use literal length?
+  if (textlength[0]=='-') {
+   if (text[0]=='\'') {
+    int fl;
+    fl = strlen(text) - 2;
+    sprintf(textlength, "%d", fl);
+    fprintf(stdout, "           MOVE %s TO KIK-MSG\n", text);
+    }
+   else
+    // or maybe use 'LENGTH OF'
+    sprintf(textlength, "LENGTH OF %s", text);
+   }
+  }
+  { // handle 'LENGTH OF' for textlength
+  char buf[90], buf2[90]; int result;
+  sprintf(buf2, "           MOVE %s TO KIK-FLEN\n", textlength);
+  strcpy(buf, buf2);
+  result = DoLengthOf(buf2);
+  switch (result) {
+   case 0: // note problem with current
+    prt_error("can't resolve LENGTH OF ...", 4);
+    break;
+   case 1: // card as is
+    break;
+   case 2: // comment current, proceed with replacement
+    prt_as_comment(buf);
+    break;
+   default:
+    prt_error("invalid return from DoLengthOf ...", 12);
+   }
+  prt_normal (buf2);
+  }
+ //
+ // NOTE off label use of KIK-AIDS1, 2, 3 as numroutes, maxlength,
+ //                                       and timeout
+ //
+  fprintf(stdout, "           MOVE %s TO KIK-AIDS1\n", numroutes);
+  fprintf(stdout, "           MOVE %s TO KIK-FLAGS\n", action);
+  if (strcmp(reply, "")) {
+   if (maxlength[0]=='-')
+     sprintf(maxlength, "LENGTH OF %s", reply);
+   { // handle 'LENGTH OF' for maxlength
+   char buf[90], buf2[90]; int result;
+   sprintf(buf2, "           MOVE %s TO KIK-AIDS2\n", maxlength);
+   strcpy(buf, buf2);
+   result = DoLengthOf(buf2);
+   switch (result) {
+    case 0: // note problem with current
+     prt_error("can't resolve LENGTH OF ...", 4);
+     break;
+    case 1: // card as is
+     break;
+    case 2: // comment current, proceed with replacement
+     prt_as_comment(buf);
+     break;
+    default:
+     prt_error("invalid return from DoLengthOf ...", 12);
+    }
+   prt_normal (buf2);
+   }
+   fprintf(stdout, "           MOVE %s TO KIK-AIDS3\n", timeout);
+   fprintf(stdout, "           ADD +64 TO KIK-FLAGS\n");
+   }
+  fprintf(stdout, "           CALL 'KIKCOBGL' USING KIKEIB,\n");
+  if (!strcmp(respvar, ""))
+   fprintf(stdout, "                 KIK-V1,\n");
+  else
+   fprintf(stdout, "                 KIK-V2,\n");
+  if (text[0]=='\'')
+   fprintf(stdout, "                 KIK-MSG,\n");
+  else
+   fprintf(stdout, "                 %s,\n", text);
+  fprintf(stdout, "                 KIK-FLEN,\n");
+  fprintf(stdout, "                 %s,\n", routcodes);
+  fprintf(stdout, "                 KIK-AIDS1,\n");
+  fprintf(stdout, "                 KIK-FLAGS");
+  if (strcmp(reply, "")) {
+   fprintf(stdout, ",\n");
+   fprintf(stdout, "                 %s,\n", reply);
+   fprintf(stdout, "                 KIK-AIDS2,\n");
+   if (replylength[0]=='-') strcpy(replylength, "KIK-NULL");
+   fprintf(stdout, "                 %s,\n", replylength);
+   fprintf(stdout, "                 KIK-AIDS3");
+  }
+#endif
+#ifdef PPGCC
+  fprintf(stdout, "\t{ short *eibfn2 = (short*)&__KIKEIB->eibfn;\n");
+  fprintf(stdout, "\t\t*eibfn2 = 27650;\n");
+  if (!strcmp(respvar, ""))
+   fprintf(stdout, "\t  int *v=&KIK_V1;\n");
+  else
+   fprintf(stdout, "\t  int *v=&KIK_V2;\n");
+  if (textlength[0]=='-') {
+   if (text[0]=='\"') {
+    int fl;
+    fl = strlen(text) - 2;
+    sprintf(textlength, "%d", fl);
+    }
+   else
+    // or maybe use 'sizeof'
+    sprintf(textlength, "sizeof(%s)", text);
+   }
+  if (strcmp(reply, "")) {
+   //if (replylength[0]=='-')
+   //  sprintf(replylength, "sizeof(%s)", reply);
+   if (maxlength[0]=='-')
+     sprintf(maxlength, "sizeof(%s)", reply);
+   }
+  fprintf(stdout, "\t  char *TEXT=(char*)%s;\n", text);
+  fprintf(stdout, "\t  int tl=%s, *TL=&tl;\n", textlength);
+  fprintf(stdout, "\t  int numroutes=%s, *NUMROUTES=&numroutes;\n", numroutes);
+  if (strcmp(reply, "")) {
+   fprintf(stdout, "\t  int action=%s+64, *ACTION=&action;\n", action);
+   fprintf(stdout, "\t  int maxlength=%s, *MAXLENGTH=&maxlength;\n", maxlength);
+   fprintf(stdout, "\t  int timeout=%s, *TIMEOUT=&timeout;\n", timeout);
+   }
+  else {
+   fprintf(stdout, "\t  int action=%s, *ACTION=&action;\n", action);
+   }
+  fprintf(stdout, "\t kikgccgl(__KIKEIB, v, TEXT, TL,\n");
+  fprintf(stdout, "\t\t&%s, NUMROUTES, ACTION", routcodes);
+  if (strcmp(reply, "")) {
+   fprintf(stdout, ",\n");
+   if (replylength[0]=='-') strcpy(replylength, "KIK_NULL");
+   fprintf(stdout, "\t\t&%s, MAXLENGTH, &%s, TIMEOUT);\n",
+     reply, replylength);
+   }
+  else {
+   fprintf(stdout, ");\n");
+   }
+#endif
+  return;
+  } // end of 'OPERATOR' ...
+
+sprintf(err,
+" %s %s not yet implemented!", blk_op1, blk_op2);
+prt_error(err, 8);
+No_Code();
+}

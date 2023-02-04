@@ -1,0 +1,1604 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <time.h>
+
+#include "kikpp01.h"
+char *MYstrstr(char *big, char *little);
+
+#ifdef PPCOB
+ // routine to setup dmap processing
+
+ void InitDmap() {
+
+  FILE *D;
+  char line[130], err[100], lvl[3], src[30], def[10];
+  long i, j, errlvl=-1;
+
+   if (DOdmap != 2) return; // nothing to do for 0 or 1.
+
+   D = fopen("DD:DMAPIN", "r");
+   if (D == NULL) {
+    sprintf(err, "dmap failed to open");
+    prt_error(err, 12);
+    }
+
+   dmapcnt=0;
+   while (1) {
+    memset(line, 0, 130);
+    fgets (line, 121, D);
+    if (feof(D)) break;
+    // count number of symbol table entries
+    if (!memcmp(&line[8], "DNM=", 4)) dmapcnt++;
+    // obtain highest error level
+    if (errlvl == -1) {
+     if (!memcmp(&line[2], "CARD   ERROR MESSAGE", 20)) errlvl++;
+     }
+    else {
+     if (!memcmp(&line[17], "-W", 2)) if(errlvl <  4) errlvl =  4;
+     if (!memcmp(&line[17], "-C", 2)) if(errlvl <  8) errlvl =  8;
+     if (!memcmp(&line[17], "-E", 2)) if(errlvl < 12) errlvl = 12;
+     }
+    }
+
+   if (errlvl > 4) {
+    // if highest error level > 4 then print the listing...
+    rewind(D);
+    while (1) {
+     memset(line, 0, 130);
+     fgets (line, 121, D);
+     fprintf(stderr, "%s", line);
+     if (feof(D)) break;
+     }
+    }
+
+   // regardless of errlvl, proceed with DMAP processing...
+   if (dmapcnt == 0) {
+     sprintf(err, "no DNM= entries found!");
+     prt_error(err, 12);
+    }
+
+   rewind(D);
+   dmap = (dmaparray*)malloc(dmapcnt*sizeof(dmapent));
+   if (dmap == NULL) {
+     sprintf(err, "dmap malloc failed for %d members",dmapcnt);
+     prt_error(err, 12);
+    }
+
+   dmapcnt=0;
+   while (1) {
+    memset(line, 0, 130);
+    fgets (line, 121, D);
+    if (feof(D)) break;
+    if (memcmp(&line[8], "DNM=", 4)) continue;
+    // get the variable level
+    memcpy(lvl, &line[22], 2);  lvl[2]  = 0;
+    i = strtol(lvl,0,0);
+    dmap->de[dmapcnt].level = i;
+    // get the variable length
+    memcpy(def, &line[90], 8);
+    for (i=0; i<8; i++) { if (def[i] == ' ') def[i] = 0; }
+    i = strtol(def,0,0); if (i==0) i++;
+    for (j=0; j<8; j++) {
+     if (def[j] == 'F') { i *= 4; break; }
+     if (def[j] == 'H') { i *= 2; break; }
+     if (def[j] == 'L') {
+      j = strtol(&def[j+1],0,0);
+      i *= j;
+      break;
+      }
+     }
+    dmap->de[dmapcnt].size = i;
+    // get the variable name
+    memcpy(src, &line[26], 26); src[26] = 0;
+    for (i=0; i<26; i++) { if (src[i] == ' ') src[i] = 0; }
+    memcpy(dmap->de[dmapcnt].varname, src, 26);
+    // advance to next array element
+    dmapcnt++;
+    }
+   fclose(D);
+   }
+
+
+ // HANDLE --
+ //      LENGTH OF in open code
+ //      LENGTH OF in api argument
+ //      add LENGTH/FLENGTH when not specified by
+ //        accessing indicated field (INTO? FROM? ...)
+ //
+ // also handles text literals, enclosed in "'s...
+
+ // routine to lookup a variable name and return length.
+ //  -- calls ExtractNameForDmap, so input name
+ //     can be anything ExtractNameForDmap understands...
+
+ int DmapLookup(char *from) {
+  long i, ii, lvl=0, maybe, targL, argL;
+  char targ[36];
+  namesfordmap DMnames;
+
+  i = ExtractNameForDmap(from, &DMnames);
+  if (i==0) return 0;
+
+  ii = DMnames.numofs;
+
+  // pass one - find in dmap
+  memset(targ, 0, 36);
+  memcpy(targ, &DMnames.partname[ii][0], 32);
+  targL = strlen(targ);
+  for(i=0; i<dmapcnt; i++) {
+   argL = strlen(dmap->de[i].varname);
+   if((argL != targL) ||
+      (strcmp(targ, dmap->de[i].varname))) {
+    if (dmap->de[i].level <= lvl) {
+     ii = DMnames.numofs; lvl = 0;
+     memcpy(targ, &DMnames.partname[ii][0], 32);
+     targL = strlen(targ);
+     continue;
+     }
+    continue;
+    }
+   if (ii == DMnames.numofs) lvl = dmap->de[i].level;
+   ii--; if (ii < 0) break;
+   memcpy(targ, &DMnames.partname[ii][0], 32);
+   targL = strlen(targ);
+   lvl = dmap->de[i].level;
+   }
+  if((i == dmapcnt) || (ii >= 0)) return -1; // not found
+
+  // save index to the first we found
+  maybe = i;
+
+  // pass two - ensure unique
+  ii = DMnames.numofs; lvl = 0;
+  memcpy(targ, &DMnames.partname[ii][0], 32);
+  targL = strlen(targ);
+  for(i=maybe+1; i<dmapcnt; i++) {
+   argL = strlen(dmap->de[i].varname);
+   if((argL != targL) ||
+      (strcmp(targ, dmap->de[i].varname))) {
+    if (dmap->de[i].level <= lvl) {
+     ii = DMnames.numofs; lvl = 0;
+     memcpy(targ, &DMnames.partname[ii][0], 32);
+     targL = strlen(targ);
+     continue;
+     }
+    continue;
+    }
+   if (ii == DMnames.numofs) lvl = dmap->de[i].level;
+   ii--; if (ii < 0) break;
+   memcpy(targ, &DMnames.partname[ii][0], 32);
+   targL = strlen(targ);
+   lvl = dmap->de[i].level;
+   }
+  if((i == dmapcnt) || (ii >= 0)) return dmap->de[maybe].size;
+
+  return -2;  // not unique
+  }
+
+
+ // routine to extract a broken down variable name
+ // from an api parameter or from a text string
+ // beginning with ' LENGTH OF ' ...
+
+ int ExtractNameForDmap(char *from, namesfordmap *DMnames) {
+  char buf[80], *ip;
+  int fstl, i, ii, oftrig;
+  memset(DMnames, 0, sizeof(namesfordmap));
+
+  strncpy(buf, from, 78);
+  strcat(buf, " "); // assure trailing space...
+  fstl = strlen(buf);
+
+  // space out leading 'LENGTH OF ' if present
+  if (!strncmp(buf, "LENGTH OF ", 10)) memset(buf, ' ', 10);
+
+  // space out ()'s and anything inside them
+  for (i=0, ii=0; i<fstl; i++) {
+   if (buf[i] == ')') { ii++; buf[i] = ' '; continue; }
+   if (buf[i] == '(') { ii--; buf[i] = ' '; continue; }
+   if (ii > 0) buf[i] = ' ';
+  }
+  //fprintf(stderr, "buf: %s\n", buf);
+
+  // analyze space delineated things and decide
+  // what they are: (1) likely variable, (2) 'OF',
+  // (3) 'TO', (4) anything else.
+  ip = strtok(buf, " ");
+  ii = 0;
+  strncpy(&DMnames->partname[ii][0], ip, 32);
+  DMnames->from2 = (int)ip - (int)&buf + strlen(ip);
+  //fprintf(stderr, "%d ipx: %s\n", ii, ip);
+  oftrig=0; // clear 'OF' trigger
+  while (ip=strtok(0, " ")) {
+   //fprintf(stderr, "%d ip: %s\n", ii, ip);
+   if((*ip < 'A') | (*ip > 'Z')) break;
+   if(!strcmp(ip, "OF")) { oftrig=1; continue; }
+   if(oftrig > 0) {
+    // looks like part of a var name...
+    oftrig=0; // clear 'OF' trigger
+    if (ii < MAXDMAPNAMESOFS) {
+     ii++;
+     strncpy(&DMnames->partname[ii][0], ip, 32);
+     DMnames->from2 = (int)ip - (int)&buf + strlen(ip);
+     //fprintf(stderr, "%d ipx: %s\n", ii, ip);
+     continue;
+     }
+    }
+   break; // stop looking when here wo/'OF trigger'...
+   }
+
+  DMnames->numofs = ii;
+
+  return 1; // 0=false 1=true
+  }
+
+
+int DoLengthOf(char *cardimage) {   // 0 - length determine error
+ char *ip;                          // 1 - pass on as is
+ // 'LENGTH OF ???' stuff           // 2 - comment orig, & pass on new
+ while (ip = MYstrstr(cardimage, " LENGTH OF ")) {
+  char *ip2, buf[90], sbuf[10];
+  int i;
+  long LL=0;
+  namesfordmap DMnames;
+
+  if (DOcb2) return 1; // cob2 compilers do it themselves...
+  switch (DOdmap) {
+   case 1:
+    // pass 1 - replace 'lenght of var' with '1'
+    ip2 = ip; ip2++;
+    i = ExtractNameForDmap(ip2, &DMnames);
+    if (i  == 0) return 0; // let compiler deal with it...
+    // turn lenght of ... into spaces
+    for (i=0; i<DMnames.from2; i++) { *ip2 = ' '; ip2++; }
+    // also space anything immediately following & starting with '('
+       for (i=0; *ip2!=0; ) {
+        if (*ip2 == '(') i++;
+        if (*ip2 == ')') i--;
+        if((i>0)  || (*ip2 == ')')) *ip2 = ' ';
+        if((i==0) && (*ip2 != ' ')) break;
+        ip2++;
+        }
+    // finally copy a '1' where the lenght of was
+    ip2 = ip; ip2++;
+    *ip2 = '1';
+    return 2;
+   case 2:
+    // pass 2 - replace 'lenght of var' with true length
+    ip2 = ip; ip2++;
+    LL = DmapLookup(ip2);
+    if (LL < 0) {
+     //prt_error("can't resolve LENGTH OF ...", 4);
+     return 0; // let compiler deal with it...
+     }
+    i = ExtractNameForDmap(ip2, &DMnames);
+    if (i==0) return 0;    // can't happen this time???
+    // turn lenght of ... into spaces
+    for (i=0; i<DMnames.from2; i++) { *ip2 = ' '; ip2++; }
+    // also space anything immediately following & starting with '('
+       for (i=0; *ip2!=0; ) {
+        if (*ip2 == '(') i++;
+        if (*ip2 == ')') i--;
+        if((i>0)  || (*ip2 == ')')) *ip2 = ' ';
+        if((i==0) && (*ip2 != ' ')) break;
+        ip2++;
+        }
+    // finally copy the dmap lenght where the lenght of was
+    ip2 = ip; ip2++; *ip2 = 0; ip2++;
+    sprintf(sbuf, "%d", LL);
+    for (i=1; i<strlen(sbuf); i++) ip2++;
+    strcpy(buf, cardimage);
+    strcat(buf, sbuf);
+    strcat(buf, ip2);
+    strcpy(cardimage, buf);
+    return 2;
+   default:
+    // dmap option not specified, so -
+    //   let compiler deal with it.
+    return 0;
+   }
+  }
+ return 1;
+ }
+#endif
+
+
+ // turn multi levels of parens "()" into different parens "([{<>}])"
+ // this supports up to 4 levels, I probably only need two
+ // using it to handle things like 'program(pgm-tbl(i))'
+ void differParens(char *ip) {
+  int i, j, k=0;
+  for (i=0, j=strlen(ip); i<j; i++) {
+   if (ip[i] == '(') {
+    k++;
+#ifdef PPCOB
+    if (k == 1) ip[i] = '(';
+    if (k == 2) ip[i] = '[';
+    if (k == 3) ip[i] = '{';
+    if (k == 4) ip[i] = '<';
+#endif
+#ifdef PPGCC
+    if (k == 1) ip[i] = '(';
+    if (k == 2) ip[i] = 204; // thinking that codepoints
+    if (k == 3) ip[i] = 220; // 204/205, 220/221, 236/237
+    if (k == 4) ip[i] = 236; // are unused in C source...
+#endif
+    }
+   if (ip[i] == ')') {
+#ifdef PPCOB
+    if (k == 1) ip[i] = ')';
+    if (k == 2) ip[i] = ']';
+    if (k == 3) ip[i] = '}';
+    if (k == 4) ip[i] = '>';
+#endif
+#ifdef PPGCC
+    if (k == 1) ip[i] = ')';
+    if (k == 2) ip[i] = 205;
+    if (k == 3) ip[i] = 221;
+    if (k == 4) ip[i] = 237;
+#endif
+    k--;
+    }
+   }
+  }
+
+ // downlevel parens (if they exists) from < - { - [ - ( (etc)
+ // used in conjunction with differPerans to handle things like
+ // 'program(pgm-tbl(i))' using strtok & friends...
+ void parrensDown(char *ip) {
+  int i, j;
+  for (i=0, j=strlen(ip); i<j; i++) {
+#ifdef PPCOB
+   if (ip[i] == '[') { ip[i] = '('; continue; }
+   if (ip[i] == '{') { ip[i] = '['; continue; }
+   if (ip[i] == '<') { ip[i] = '{'; continue; }
+   if (ip[i] == ']') { ip[i] = ')'; continue; }
+   if (ip[i] == '}') { ip[i] = ']'; continue; }
+   if (ip[i] == '>') { ip[i] = '}'; continue; }
+#endif
+#ifdef PPGCC
+   if (ip[i] == 204) { ip[i] = '('; continue; }
+   if (ip[i] == 220) { ip[i] = 204; continue; }
+   if (ip[i] == 236) { ip[i] = 220; continue; }
+   if (ip[i] == 205) { ip[i] = ')'; continue; }
+   if (ip[i] == 221) { ip[i] = 205; continue; }
+   if (ip[i] == 237) { ip[i] = 221; continue; }
+#endif
+   }
+  }
+
+
+char *SPCLTOK(char *buf, char *targ) {
+
+// 'SPECIAL' version of strtok. What's special is that
+// (1) it ignores *targ and instead looks initially for just a
+// space. However, if while looking for a space it finds a '(' it
+// then looks for a matching ')' before looking for a space again.
+// This allows it to handle args that contain things like quoted
+// strings, qualified names, and functions.
+// (2) it conditionally translates DFH/CICS to KIK/KICKS
+
+ static char tbuf[4000];
+ static char rtnbuf[4000];
+ int findp, i, ii, tbufsiz;
+
+ // first time save scan buffer
+ if ((int)buf != 0) strcpy(tbuf, buf);
+ // find first non-space
+ tbufsiz = strlen(tbuf);
+ for (i=0; i<tbufsiz; i++) {
+  if (tbuf[i] != ' ') break;
+  }
+ if (i==tbufsiz) { // there is no match...
+  tbuf[0] = 0;
+  return 0;
+  }
+ // find next space outside ()'s
+ for (findp=0, ii=i; ii<tbufsiz; ii++) {
+  if((tbuf[ii] == ' ') && (findp == 0)) break;
+  if (tbuf[ii] == '(') findp = 1; // just one level 'cause
+  if (tbuf[ii] == ')') findp = 0; // it's been differPerans'd
+  }
+ // set return buffer
+ rtnbuf[0] = 0;
+ if (i < ii) {
+  strncpy(rtnbuf, &tbuf[i], (ii - i));
+  rtnbuf[ii-i] = 0;
+  }
+ // set scan buffer for next time
+ tbuf[0] = 0;
+ if (ii < tbufsiz ) {
+  strcpy(tbuf, &tbuf[ii]); // overlapping move...
+  tbuf[tbufsiz-ii] = 0;
+  }
+ // conditionally translate DFH/CICS to KIK/KICKS
+ if (DFHmap) {
+  char *ip; int i, ii;
+  // turn all ' DFH' strings into 'KIK' strings
+  while (ip = MYstrstr(rtnbuf, "DFH")) {
+   i = ip - rtnbuf - 1;
+   rtnbuf[i+1] = 'K';
+   rtnbuf[i+2] = 'I';
+   rtnbuf[i+3] = 'K';
+   }
+  // turn all 'CICS' strings into 'KICKS' strings
+  while (ip = MYstrstr(rtnbuf, "CICS")) {
+   i = ip - rtnbuf -1;
+   ii = strlen(rtnbuf);
+   for (; ii>i; ii--) rtnbuf[ii] = rtnbuf[ii-1];
+   rtnbuf[i+1] = 'K';
+   rtnbuf[i+2] = 'I';
+   rtnbuf[i+3] = 'C';
+   rtnbuf[i+4] = 'K';
+   rtnbuf[i+5] = 'S';
+   }
+  }
+ // return results
+ return rtnbuf;
+ }
+
+
+ // remove trailing CR's and LF's
+ void chop(char *string)
+ {
+  int i;
+  for (i=strlen(string)-1; i>=0; i--) {
+   if (string[i] == '\n') string[i] = 0;
+   else if (string[i] == '\r') string[i] = 0;
+   else break;
+  }
+ }
+
+ // check for tabs
+ int tabchk(char *string)
+ {
+  int i;
+  for (i=strlen(string); i>0; i--) {
+   if (string[i-1] == '\t') return true;
+   }
+  return false;
+ }
+
+ // add trailing spaces (left justify)
+ char *rpad(char *string, int slong)
+ {
+  int i;
+  for (i=strlen(string); i<slong; i++) {
+   string[i] = ' ';
+   string[i+1] = 0;
+   }
+  return string;
+ }
+
+ // remove trailing spaces
+ char *rtrim(char *string)
+ {
+  int i;
+  for (i=strlen(string)-1; i>=0; i--) {
+   if (string[i] == ' ') string[i] = 0;
+   else break;
+  }
+  return string;
+ }
+
+ // MYstrstr returning index instead of ptr
+ int INDEX(char *str1, char *str2)
+ {
+  char *ip; int i;
+  ip = MYstrstr(str1, str2);
+  if(ip == NULL) return 0;
+  return ip-str1;
+ }
+
+ // make a string uppercase
+ char *UP(char *string)
+ {
+  int i;
+  for (i=strlen(string); i>=0; i--) {
+   string[i] = toupper(string[i]);
+   }
+  return string;
+ }
+
+#ifdef __CMS__
+#define TIMEMAC(date, time) \
+{  __asm__ (  \
+ "TIME DEC\n\t"  \
+ "ST 0,%0\n\t" \
+ "ST 1,%1" \
+ : "=m"(time), "=m"(date) \
+ : /* no input */ \
+ : "0", "1", "15" \
+ ); \
+}
+#define CVB(packed, binary) \
+{  __asm__ (  \
+ "CVB 0,%1\n\t"  \
+ "ST 0,%0"  \
+ : "=m"(binary) \
+ : "m"(packed) \
+ : "0" \
+ ); \
+}
+
+ // get HH, MM via OS 'TIME' macro
+ void useTMAC (int *HH, int *MM) {
+  int dp[2];
+  int tp[2], tb;
+
+  // obtain date/time using MVS TIME macro
+  // would normally be localtime; in CMS that's the only choice
+  // ** always LOCAL ** same as shown with 'q time' **
+  dp[0]=0; tp[0]=0; TIMEMAC(dp[1], tp[1]);
+  tp[1] = tp[1] >> 4; tp[1] |= 15;
+
+  CVB(tp[0], tb);
+  *MM = (tb / 100) % 100;
+  *HH = (tb / 10000) % 100;
+ }
+
+ // get HH, MM via STCK
+ void useSTCK (int *HH, int *MM) {
+  int workarea[12]; char *where;
+  int i, secs;
+  struct tm *tm;
+
+  // do STCK and get result into the desired format (packed)
+  __asm__ (
+   "L     4,%1\n\t"
+   "STCK  0(4)\n\t"
+   "LM    2,3,0(4)\n\t"
+   "N     2,A%=\n\t"
+   "CVD   2,8(4)\n\t"
+   "TM    0(4),X'80'\n\t"
+   "BNO   *+10\n\t"
+   "AP    8(8,4),B%=\n\t"
+   "N     3,A%=\n\t"
+   "CVD   3,16(4)\n\t"
+   "TM    4(4),X'80'\n\t"
+   "BNO   *+10\n\t"
+   "AP    16(8,4),B%=\n\t"
+   "ZAP   24(16,4),8(8,4)\n\t"
+   "MP    24(16,4),C%=\n\t"
+   "AP    24(16,4),16(8,4)\n\t"
+   "DP    24(16,4),D%=\n\t"
+   "ZAP   40(8,4),24(10,4)\n\t"
+   "LA    1,40(4)\n\t"
+   "ST    1,%0\n\t"
+   "B     D%=+6\n\t"
+   "CNOP  0,4\n"
+  "A%=   DC    XL4'7FFFFFFF'\n"
+  "B%=   DC    PL6'2147483648'\n"
+  "C%=   DC    PL6'4294967296'\n"
+  "D%=   DC    PL6'4096000'"
+   : "=m"(where)
+   : "m"(workarea)
+   : "0", "1", "2", "3", "4", "15"
+   );
+
+  // workarea is PD milliseconds since 00:00 01/01/1900 (GMT)
+  // make it into binary seconds since 00:00 01/01/1970 -- for PDPCLIB
+  __asm__ (
+   "XR   1,1\n\t"
+   "ST   1,%0\n\t"
+   "L    1,%2\n\t"
+   "ZAP  A%=,0(8,1)\n\t"
+   "MVO  A%=(8),A%=(7)\n\t"
+   "MVO  A%=(8),A%=(7)\n\t"
+   "MVO  A%=(8),A%=(7)\n\t"
+   "SP   A%=,B%=\n\t"
+   "CP   A%=,D%=\n\t"
+   "BC   2,X%=\n\t"
+   "CP   A%=,C%=\n\t"
+   "BC   4,X%=\n\t"
+   "CVB  1,A%=\n\t"
+   "ST   1,%1\n\t"
+   "B    D%=+6\n"
+  "X%=   LA   1,A%=\n\t"
+   "ST   1,%0\n\t"
+   "B    D%=+6\n\t"
+   "CNOP 0,8\n"
+  "A%=  DS PL8\n"
+  "B%=  DC PL8'2208988800'\n"
+  "C%=  DC PL6'-2147483648'\n"
+  "D%=  DC PL6'2147483647'"
+   : "=m"(i),"=m"(secs)
+   : "m"(where)
+   : "1"
+   );
+  if (i > 0) exit (999); // result not in PCPCLIB date range!!
+
+  // get broken down time
+  // use gmtime, **not** localtime -- we **don't** want
+  // it to use any TZ adjusts it thinks it knows about!!
+  tm = (struct tm *)gmtime((time_t*)&secs);
+
+  // return HH, MM
+  *HH = tm->tm_hour;
+  *MM = tm->tm_min;
+ }
+
+ // get time zone offset
+ int GetTZ () {
+ int i, TM_MM, TM_HH, ST_MM, ST_HH, secs, tz = -100;
+ int abuf[12]; char *where = (char*)&abuf[0];
+
+ while (tz < -99) {
+  useSTCK(&ST_HH, &ST_MM);
+  useTMAC(&TM_HH, &TM_MM);
+  if (ST_MM != TM_MM) {
+   tz--;
+   if (tz > -105) continue;
+   exit(998); // can't get MM's to agree...
+   }
+  // now calculate the differnce (in hours) as TZ offset
+  tz = TM_HH - ST_HH; // local - gmt
+  if (tz < -12) tz += 24;
+  else
+  if (tz >  12) tz -= 24;
+  } // end while
+ return tz; // return TZ adjustment in hours
+ }
+
+ // return mm/dd/yy for today
+ char *currentdate()
+ {
+ static char s[20]; struct tm tim; time_t now; size_t i; int tz;
+ now = time(NULL);
+ tz = GetTZ(); now += tz * 3600;
+ tim = *(gmtime(&now));
+ i=strftime(s,30,"%m/%d/%y",&tim);
+ return s;
+ }
+
+ // return 22 char 'hh.mm.ssMMM DD, YYYY' (22 including aposte)
+ // to match os/vs cobol 'when-compiled' special register.
+ char *currentwcdate()
+ {
+ static char s[32]; struct tm tim; time_t now; size_t i; int tz;
+ now = time(NULL);
+ tz = GetTZ(); now += tz * 3600;
+ tim = *(gmtime(&now));
+ i=strftime(s,30,"'%H:%M:%S%b %d, %Y'",&tim);
+ return UP(s);
+ }
+
+ // return hh:mm:ss for now
+ char *currenttime()
+ {
+ static char s[20]; struct tm tim; time_t now; size_t i; int tz;
+ now = time(NULL);
+ tz = GetTZ(); now += tz * 3600;
+ tim = *(gmtime(&now));
+ i=strftime(s,30,"%H:%M:%S",&tim);
+ return s;
+ }
+
+  //#endif
+  //#ifdef __MVS__
+ #else
+  // just use library for MVS & linux...
+
+  // return mm/dd/yy for today
+ char *currentdate()
+ {
+ static char s[20]; struct tm tim; time_t now; size_t i;
+ now = time(NULL);
+ tim = *(localtime(&now));
+ i=strftime(s,30,"%m/%d/%y",&tim);
+ return s;
+ }
+
+ // return 22 char 'hh.mm.ssMMM DD, YYYY' (22 including aposte)
+ // to match os/vs cobol 'when-compiled' special register.
+ char *currentwcdate()
+ {
+ static char s[20]; struct tm tim; time_t now; size_t i;
+ now = time(NULL);
+ tim = *(localtime(&now));
+ i=strftime(s,30,"'%H:%M:%S%b %d, %Y'",&tim);
+ return UP(s);
+ }
+
+ // return hh:mm:ss for now
+ char *currenttime()
+ {
+ static char s[20]; struct tm tim; time_t now; size_t i;
+ now = time(NULL);
+ tim = *(localtime(&now));
+ i=strftime(s,30,"%H:%M:%S",&tim);
+ return s;
+ }
+#endif
+
+
+void fixXNAME(char *field, int fieldlen) {
+ // right pads things like filenames, pgmnames, etc
+ // with spaces.
+ int padsize;
+ if (field[0] == '"') {
+  // field constains a literal
+  padsize = 2 + fieldlen - strlen(field);
+  if (padsize <= 0) return;
+  if (padsize > 15) return;
+  field[strlen(field)-1] = 0;
+  strncat(field, "                ", padsize);
+  strcat (field, "\"");
+  }
+}
+
+
+ //  This routine looks up a CVDA character string and returns
+ //  the corresponding numeric value or 0 if the string not found.
+ //
+ //  Table of DFHVALUE (aka CVDA) values derived from
+ //  http://publib.boulder.ibm.com/infocenter/cicsts/v3r1/topic/
+ //        com.ibm.cics.ts31.doc/dfha8/dfha813.htm#dfha813
+ //
+ //  11/28/2010 - added LUW=246 as alias of UOW, for enq/deq
+ //  10/22/2013 - converted from assembler to C
+
+ int kikvalue(char *text) {
+
+ typedef struct _tvalue {
+  short num;
+  char  txt[12];
+ } tvalue;
+
+ static tvalue tbl[830] = {
+          900,"ABEND",
+          515,"ACQFAIL",
+          69,"ACQUIRED",
+          71,"ACQUIRING",
+          181,"ACTIVE",
+          1002,"ACTIVITY",
+          291,"ADD",
+          41,"ADDABLE",
+          519,"ADDFAIL",
+          265,"ADVANCE",
+          282,"AINIT",
+          501,"ALARM",
+          169,"ALLCONN",
+          81,"ALLOCATED",
+          431,"ALLQUERY",
+          52,"ALTERABLE",
+          197,"ALTERNATE",
+          446,"ALTPRTCOPY",
+          1126,"ANALYZER",
+          1005,"AND",
+          158,"ANY",
+          391,"APLKYBD",
+          393,"APLTEXT",
+          124,"APPC",
+          374,"APPCPARALLEL",
+          373,"APPCSINGLE",
+          1036,"APPEND",
+          559,"APPLICATION",
+          338,"APPLNAME",
+          224,"ASACTL",
+          616,"ASCII7",
+          617,"ASCII8",
+          150,"ASSEMBLER",
+          1104,"ASSERTED",
+          75,"ATI",
+          524,"ATTENTION",
+          395,"AUDALARM",
+          630,"AUTOACTIVE",
+          262,"AUTOARCH",
+          1095,"AUTOAUTH",
+          170,"AUTOCONN",
+          631,"AUTOINACTIVE",
+          284,"AUTOINIT",
+          1140,"AUTOINSTALL",
+          80,"AUTOPAGEABLE",
+          1094,"AUTOREGISTER",
+          618,"AUTOSTART",
+          1120,"AUTOTERMID",
+          247,"AUXILIARY",
+          313,"AUXPAUSE",
+          312,"AUXSTART",
+          314,"AUXSTOP",
+          95,"AVAILABLE",
+          192,"BACKOUT",
+          397,"BACKTRANS",
+          800,"BACKUPNONBWO",
+          10,"BASE",
+          1052,"BASEAPI",
+          664,"BASESPACE",
+          1092,"BASICAUTH",
+          2,"BDAM",
+          510,"BEGINSESSION",
+          159,"BELOW",
+          63,"BGAM",
+          1038,"BINARY",
+          283,"BINIT",
+          1020,"BIT",
+          47,"BLK",
+          16,"BLOCKED",
+          1100,"BOTH",
+          39,"BROWSABLE",
+          61,"BSAM",
+          612,"BUSY",
+          149,"C",
+          791,"CACHE",
+          526,"CANCEL",
+          624,"CANCELLED",
+          1025,"CANCELLING",
+          491,"CD",
+          370,"CEDF",
+          1093,"CERTIFICAUTH",
+          833,"CFTABLE",
+          902,"CGROUP",
+          1047,"CHANNEL",
+          1019,"CHAR",
+          737,"CHUNKEND",
+          735,"CHUNKNO",
+          736,"CHUNKYES",
+          660,"CICS",
+          1052,"CICSAPI",
+          379,"CICSDATAKEY",
+          195,"CICSECURITY",
+          381,"CICSEXECKEY",
+          101,"CICSTABLE",
+          1055,"CKOPEN",
+          1075,"CLASSCACHE",
+          640,"CLEAR",
+          743,"CLICONVERT",
+          1122,"CLIENT",
+          1032,"CLIENTAUTH",
+          1087,"CLIENTCERT",
+          741,"CLOSE",
+          19,"CLOSED",
+          349,"CLOSEFAILED",
+          261,"CLOSELEAVE",
+          22,"CLOSEREQUEST",
+          21,"CLOSING",
+          673,"CMDPROT",
+          207,"CMDSECEXT",
+          205,"CMDSECNO",
+          207,"CMDSECYES",
+          151,"COBOL",
+          375,"COBOLII",
+          788,"COLD",
+          72,"COLDACQ",
+          433,"COLDQUERY",
+          266,"COLDSTART",
+          399,"COLOR",
+          1048,"COMMAREA",
+          208,"COMMIT",
+          792,"COMMITFAIL",
+          1026,"COMPLETE",
+          1003,"COMPOSITE",
+          82,"CONFFREE",
+          83,"CONFRECEIVE",
+          84,"CONFSEND",
+          903,"CONNECT",
+          690,"CONNECTED",
+          904,"CONNECTING",
+          755,"CONNECTION",
+          723,"CONSISTENT",
+          66,"CONSOLE",
+          836,"CONTENTION",
+          623,"CONTROLSHUT",
+          600,"CONVERSE",
+          518,"CONVIDLE",
+          770,"COORDINATOR",
+          908,"COPID",
+          401,"COPY",
+          1101,"CORBA",
+          1141,"CORBASERVER",
+          148,"CPLUSPLUS",
+          67,"CREATE",
+          11,"CRITICAL",
+          905,"CSIGN",
+          906,"CTERM",
+          632,"CTLGALL",
+          633,"CTLGMODIFY",
+          634,"CTLGNONE",
+          56,"CTRLABLE",
+          907,"CTX",
+          260,"CURRENT",
+          909,"CUSERID",
+          684,"DAE",
+          508,"DATA",
+          756,"DATASET",
+          793,"DATASETFULL",
+          543,"DATASTREAM",
+          1142,"DB2CONN",
+          1143,"DB2ENTRY",
+          794,"DEADLOCK",
+          1082,"DEBUG",
+          46,"DEC",
+          198,"DEFAULT",
+          497,"DEFRESP1",
+          528,"DEFRESP1OR2",
+          498,"DEFRESP2",
+          499,"DEFRESP3",
+          637,"DELAY",
+          43,"DELETABLE",
+          292,"DELETE",
+          520,"DELETEFAIL",
+          795,"DELEXITERROR",
+          679,"DEREGERROR",
+          678,"DEREGISTERED",
+          235,"DEST",
+          24,"DISABLED",
+          1125,"DISABLEDHOST",
+          25,"DISABLING",
+          513,"DISCARDFAIL",
+          1118,"DISCARDING",
+          910,"DISCONNING",
+          444,"DISCREQ",
+          252,"DISK1",
+          253,"DISK2",
+          254,"DISK2PAUSE",
+          228,"DISPATCHABLE",
+          1144,"DISPATCHER",
+          1145,"DOCTEMPLATE",
+          1024,"DORMANT",
+          383,"DPLSUBSET",
+          615,"DS3270",
+          403,"DUALCASE",
+          781,"DUMMY",
+          178,"DYNAMIC",
+          490,"EB",
+          1039,"EBCDIC",
+          1098,"ECI",
+          1102,"EJB",
+          268,"EMERGENCY",
+          210,"EMPTY",
+          31,"EMPTYREQ",
+          23,"ENABLED",
+          51,"ENABLING",
+          790,"ENDAFFINITY",
+          1146,"ENQUEUE",
+          911,"EQUAL",
+          5,"ESDS",
+          334,"EVENT",
+          1012,"EVENTFAIL",
+          3,"EVENTUAL",
+          332,"EXCEPT",
+          523,"EXCEPTRESP",
+          650,"EXCI",
+          48,"EXCTL",
+          751,"EXECENQ",
+          752,"EXECENQADDR",
+          912,"EXIT",
+          362,"EXITTRACE",
+          747,"EXPECT",
+          1017,"EXPIRED",
+          405,"EXTENDEDDS",
+          221,"EXTRA",
+          194,"EXTSECURITY",
+          782,"FAILED",
+          357,"FAILEDBKOUT",
+          358,"FAILINGBKOUT",
+          273,"FCLOSE",
+          238,"FILE",
+          183,"FINALQUIESCE",
+          270,"FINPUT",
+          1001,"FIRED",
+          625,"FIRSTINIT",
+          182,"FIRSTQUIESCE",
+          12,"FIXED",
+          783,"FLUSH",
+          502,"FMH",
+          385,"FMHPARM",
+          272,"FOPEN",
+          342,"FORCE",
+          655,"FORCECANCEL",
+          351,"FORCECLOSE",
+          353,"FORCECLOSING",
+          1013,"FORCED",
+          237,"FORCEPURGE",
+          342,"FORCEUOW",
+          606,"FORMATEDF",
+          542,"FORMATTED",
+          407,"FORMFEED",
+          271,"FOUTPUT",
+          85,"FREE",
+          94,"FREEING",
+          212,"FULL",
+          384,"FULLAPI",
+          1073,"FULLAUTO",
+          354,"FWDRECOVABLE",
+          651,"GENERIC",
+          748,"GET",
+          604,"GMT",
+          172,"GOINGOUT",
+          913,"GROUP",
+          317,"GTFSTART",
+          318,"GTFSTOP",
+          750,"HEAD",
+          758,"HEURBACKOUT",
+          757,"HEURCOMMIT",
+          45,"HEX",
+          409,"HFORM",
+          1040,"HFSFILE",
+          914,"HIGH",
+          413,"HILIGHT",
+          163,"HOLD",
+          1103,"HOME",
+          1096,"HTTP",
+          1034,"HTTPNO",
+          1029,"HTTPS",
+          1033,"HTTPYES",
+          1,"IGNORE",
+          1105,"IGNORED",
+          816,"IGNORERR",
+          1097,"IIOP",
+          350,"IMMCLOSE",
+          352,"IMMCLOSING",
+          2,"IMMEDIATE",
+          706,"IMMQUIESCED",
+          378,"INACTIVE",
+          547,"INBOUND",
+          1014,"INCOMPLETE",
+          796,"INDEXRECFULL",
+          122,"INDIRECT",
+          620,"INDOUBT",
+          621,"INFLIGHT",
+          628,"INITCOMPLETE",
+          789,"INITIAL",
+          1112,"INITING",
+          532,"INOUT",
+          226,"INPUT",
+          73,"INSERVICE",
+          550,"INSTALLED",
+          512,"INSTALLFAIL",
+          1058,"INTERNAL",
+          222,"INTRA",
+          310,"INTSTART",
+          311,"INTSTOP",
+          359,"INVALID",
+          797,"IOERROR",
+          121,"IRC",
+          658,"ISOLATE",
+          147,"JAVA",
+          1147,"JOURNALNAME",
+          1148,"JOURNALNUM",
+          1080,"JVM",
+          1149,"JVMPOOL",
+          1150,"JVMPROFILE",
+          1151,"JVMPROGRAM",
+          415,"KATAKANA",
+          786,"KEEP",
+          8,"KEYED",
+          232,"KILL",
+          6,"KSDS",
+          832,"LCKSTRUCFULL",
+          377,"LE370",
+          811,"LEAVE",
+          377,"LENV",
+          493,"LIC",
+          417,"LIGHTPEN",
+          834,"LOAD",
+          605,"LOCAL",
+          837,"LOCKING",
+          54,"LOG",
+          216,"LOGICAL",
+          269,"LOGTERM",
+          544,"LOSE",
+          915,"LOW",
+          165,"LPA",
+          1152,"LSRPOOL",
+          125,"LU61",
+          541,"LUP",
+          525,"LUSTAT",
+          246,"LUW",
+          248,"MAIN",
+          155,"MAP",
+          155,"MAPSET",
+          241,"MCHCTL",
+          506,"MDT",
+          813,"MOD",
+          190,"MODE24",
+          191,"MODE31",
+          189,"MODEANY",
+          370,"MODEL",
+          1153,"MONITOR",
+          492,"MORE",
+          419,"MSRCONTROL",
+          780,"MVS",
+          1154,"MVSTCB",
+          931,"N906",
+          921,"N906D",
+          530,"NEGATIVE",
+          28,"NEW",
+          167,"NEWCOPY",
+          485,"NEWSESSION",
+          500,"NOALARM",
+          447,"NOALTPRTCOPY",
+          1127,"NOANALYZER",
+          392,"NOAPLKYBD",
+          394,"NOAPLTEXT",
+          1037,"NOAPPEND",
+          339,"NOAPPLNAME",
+          76,"NOATI",
+          396,"NOAUDALARM",
+          1091,"NOAUTHENTIC",
+          1071,"NOAUTO",
+          263,"NOAUTOARCH",
+          193,"NOBACKOUT",
+          398,"NOBACKTRANS",
+          371,"NOCEDF",
+          1076,"NOCLASSCACHE",
+          641,"NOCLEAR",
+          744,"NOCLICONVERT",
+          742,"NOCLOSE",
+          674,"NOCMDPROT",
+          400,"NOCOLOR",
+          916,"NOCONNECT",
+          556,"NOCONV",
+          601,"NOCONVERSE",
+          402,"NOCOPY",
+          68,"NOCREATE",
+          223,"NOCTL",
+          685,"NODAE",
+          1155,"NODE",
+          1083,"NODEBUG",
+          445,"NODISCREQ",
+          404,"NODUALCASE",
+          32,"NOEMPTYREQ",
+          335,"NOEVENT",
+          333,"NOEXCEPT",
+          49,"NOEXCTL",
+          917,"NOEXIT",
+          363,"NOEXITTRACE",
+          406,"NOEXTENDEDDS",
+          503,"NOFMH",
+          386,"NOFMHPARM",
+          1054,"NOFORCE",
+          607,"NOFORMATEDF",
+          408,"NOFORMFEED",
+          410,"NOHFORM",
+          414,"NOHILIGHT",
+          164,"NOHOLD",
+          745,"NOINCONVERT",
+          657,"NOISOLATE",
+          1081,"NOJVM",
+          416,"NOKATAKANA",
+          418,"NOLIGHTPEN",
+          835,"NOLOAD",
+          55,"NOLOG",
+          710,"NOLOSTLOCKS",
+          507,"NOMDT",
+          531,"NOMSGJRNL",
+          420,"NOMSRCONTROL",
+          171,"NONAUTOCONN",
+          661,"NONCICS",
+          1090,"NONCRITICAL",
+          496,"NONE",
+          1084,"NONLE370",
+          422,"NOOBFORMAT",
+          388,"NOOBOPERID",
+          746,"NOOUTCONVERT",
+          424,"NOOUTLINE",
+          426,"NOPARTITIONS",
+          331,"NOPERF",
+          1110,"NOPHASEOUT",
+          243,"NOPRESETSEC",
+          428,"NOPRINTADAPT",
+          430,"NOPROGSYMBOL",
+          449,"NOPRTCOPY",
+          432,"NOQUERY",
+          700,"NORECOVDATA",
+          681,"NOREENTPROT",
+          918,"NORELEASE",
+          443,"NORELREQ",
+          337,"NORESRCE",
+          934,"NORESYNC",
+          711,"NORETAINED",
+          294,"NOREUSE",
+          1016,"NORMAL",
+          356,"NORMALBKOUT",
+          522,"NORMALRESP",
+          775,"NORMI",
+          919,"NOROLLBACK",
+          196,"NOSECURITY",
+          289,"NOSHUTDOWN",
+          435,"NOSOSI",
+          694,"NOSPI",
+          739,"NOSRVCONVERT",
+          1031,"NOSSL",
+          487,"NOSTSN",
+          285,"NOSWITCH",
+          603,"NOSYNCPOINT",
+          654,"NOSYSCONNECT",
+          185,"NOSYSDUMP",
+          784,"NOSYSLOG",
+          42,"NOTADDABLE",
+          53,"NOTALTERABLE",
+          1,"NOTAPPLIC",
+          608,"NOTASKSTART",
+          40,"NOTBROWSABLE",
+          613,"NOTBUSY",
+          495,"NOTCDEB",
+          691,"NOTCONNECTED",
+          57,"NOTCTRLABLE",
+          659,"NOTDEFINED",
+          44,"NOTDELETABLE",
+          1021,"NOTDYNAMIC",
+          211,"NOTEMPTY",
+          214,"NOTERMINAL",
+          437,"NOTEXTKYBD",
+          439,"NOTEXTPRINT",
+          1000,"NOTFIRED",
+          361,"NOTFWDRCVBLE",
+          546,"NOTINBOUND",
+          376,"NOTINIT",
+          551,"NOTINSTALLED",
+          9,"NOTKEYED",
+          166,"NOTLPA",
+          127,"NOTPENDING",
+          161,"NOTPURGEABLE",
+          187,"NOTRANDUMP",
+          36,"NOTREADABLE",
+          259,"NOTREADY",
+          30,"NOTRECOVABLE",
+          667,"NOTREQUIRED",
+          721,"NOTRLS",
+          1022,"NOTROUTABLE",
+          669,"NOTSOS",
+          15,"NOTSUPPORTED",
+          1027,"NOTSUSPENDED",
+          100,"NOTTABLE",
+          78,"NOTTI",
+          38,"NOTUPDATABLE",
+          920,"NOTWAIT",
+          451,"NOUCTRAN",
+          1011,"NOUSER",
+          441,"NOVALIDATION",
+          412,"NOVFORM",
+          341,"NOWAIT",
+          275,"NOWRITE",
+          365,"NOZCPTRACE",
+          774,"NRS",
+          421,"OBFORMAT",
+          387,"OBOPERID",
+          96,"OBTAINING",
+          200,"OFF",
+          274,"OK",
+          26,"OLD",
+          162,"OLDCOPY",
+          486,"OLDSESSION",
+          201,"ON",
+          18,"OPEN",
+          1053,"OPENAPI",
+          798,"OPENERROR",
+          20,"OPENING",
+          256,"OPENINPUT",
+          257,"OPENOUTPUT",
+          933,"OPID",
+          759,"OPTIONS",
+          1006,"OR",
+          1107,"OTS",
+          1108,"OTSCOORD",
+          423,"OUTLINE",
+          227,"OUTPUT",
+          74,"OUTSERVICE",
+          753,"OWNER",
+          79,"PAGEABLE",
+          425,"PARTITIONS",
+          156,"PARTITIONSET",
+          11,"PATH",
+          1035,"PDSMEMBER",
+          558,"PENDBEGIN",
+          560,"PENDDATA",
+          86,"PENDFREE",
+          126,"PENDING",
+          1113,"PENDINIT",
+          565,"PENDPASS",
+          87,"PENDRECEIVE",
+          562,"PENDRELEASE",
+          1114,"PENDRESOLVE",
+          561,"PENDSTART",
+          557,"PENDSTSN",
+          564,"PENDUNSOL",
+          330,"PERF",
+          484,"PERMANENT",
+          168,"PHASEIN",
+          1111,"PHASEOUT",
+          215,"PHYSICAL",
+          1124,"PIPELINE",
+          152,"PL1",
+          152,"PLI",
+          922,"POOL",
+          529,"POSITIVE",
+          636,"POST",
+          242,"PRESETSEC",
+          110,"PRIMARY",
+          427,"PRINTADAPT",
+          174,"PRIVATE",
+          1010,"PROCESS",
+          157,"PROFILE",
+          1072,"PROGAUTO",
+          154,"PROGRAM",
+          429,"PROGSYMBOL",
+          504,"PROTECTED",
+          448,"PRTCOPY",
+          1085,"PUBLISH",
+          236,"PURGE",
+          160,"PURGEABLE",
+          749,"PUT",
+          1057,"QR",
+          1050,"QUASIRENT",
+          814,"QUEUE",
+          707,"QUIESCED",
+          708,"QUIESCING",
+          35,"READABLE",
+          209,"READBACK",
+          275,"READONLY",
+          258,"READY",
+          923,"REBUILD",
+          88,"RECEIVE",
+          1046,"RECEIVER",
+          924,"RECONNECT",
+          701,"RECOVDATA",
+          29,"RECOVERABLE",
+          277,"RECOVERED",
+          712,"RECOVERLOCKS",
+          1156,"RECOVERY",
+          680,"REENTPROT",
+          677,"REGERROR",
+          670,"REGISTERED",
+          815,"REJECT",
+          675,"RELATED",
+          563,"RELEASE",
+          70,"RELEASED",
+          549,"RELEASING",
+          1078,"RELOAD",
+          1079,"RELOADING",
+          442,"RELREQ",
+          713,"REMLOSTLOCKS",
+          4,"REMOTE",
+          276,"REMOVE",
+          740,"REMSESSION",
+          103,"REMTABLE",
+          724,"REPEATABLE",
+          1157,"REQUESTMODEL",
+          666,"REQUIRED",
+          812,"REREAD",
+          290,"RESET",
+          714,"RESETLOCKS",
+          1115,"RESOLVING",
+          1109,"RESPECTED",
+          336,"RESRCE",
+          204,"RESSECEXT",
+          203,"RESSECINT",
+          202,"RESSECNO",
+          204,"RESSECYES",
+          702,"RESYNC",
+          715,"RETAINED",
+          1086,"RETRACT",
+          716,"RETRY",
+          293,"REUSE",
+          264,"REVERTED",
+          811,"REWIND",
+          646,"RFC1123",
+          720,"RLS",
+          730,"RLSACTIVE",
+          799,"RLSGONE",
+          731,"RLSINACTIVE",
+          761,"RLSSERVER",
+          771,"RMI",
+          89,"ROLLBACK",
+          1023,"ROUTABLE",
+          638,"ROUTE",
+          153,"RPG",
+          830,"RRCOMMITFAIL",
+          7,"RRDS",
+          831,"RRINDOUBT",
+          1063,"RRMS",
+          527,"RTR",
+          494,"RU",
+          229,"RUNNING",
+          1088,"SCAN",
+          614,"SCS",
+          626,"SECONDINIT",
+          90,"SEND",
+          1045,"SENDER",
+          1123,"SERVER",
+          372,"SESSION",
+          517,"SESSIONFAIL",
+          516,"SESSIONLOST",
+          514,"SETFAIL",
+          27,"SHARE",
+          173,"SHARED",
+          762,"SHUNTED",
+          645,"SHUTDISABLED",
+          288,"SHUTDOWN",
+          644,"SHUTENABLED",
+          925,"SIGN",
+          245,"SIGNEDOFF",
+          244,"SIGNEDON",
+          324,"SINGLEOFF",
+          323,"SINGLEON",
+          810,"SKIP",
+          255,"SMF",
+          60,"SNA",
+          1044,"SOAP",
+          668,"SOS",
+          683,"SOSABOVE",
+          682,"SOSBELOW",
+          434,"SOSI",
+          652,"SPECIFIC",
+          177,"SPECTRACE",
+          693,"SPI",
+          175,"SPRSTRACE",
+          926,"SQLCODE",
+          738,"SRVCONVERT",
+          1030,"SSL",
+          629,"STANDBY",
+          176,"STANTRACE",
+          635,"START",
+          609,"STARTED",
+          772,"STARTING",
+          180,"STARTUP",
+          179,"STATIC",
+          1158,"STATS",
+          610,"STOPPED",
+          1159,"STORAGE",
+          1160,"STREAMNAME",
+          509,"STSN",
+          488,"STSNSET",
+          489,"STSNTEST",
+          773,"SUBORDINATE",
+          1161,"SUBPOOL",
+          663,"SUBSPACE",
+          1106,"SUPPORTED",
+          371,"SURROGATE",
+          231,"SUSPENDED",
+          188,"SWITCH",
+          287,"SWITCHALL",
+          225,"SWITCHING",
+          286,"SWITCHNEXT",
+          91,"SYNCFREE",
+          602,"SYNCPOINT",
+          92,"SYNCRECEIVE",
+          93,"SYNCSEND",
+          653,"SYSCONNECT",
+          184,"SYSDUMP",
+          1162,"SYSDUMPCODE",
+          785,"SYSLOG",
+          662,"SYSPLEX",
+          643,"SYSTEM",
+          320,"SYSTEMOFF",
+          319,"SYSTEMON",
+          533,"T3278M2",
+          534,"T3278M3",
+          535,"T3278M4",
+          536,"T3278M5",
+          537,"T3279M2",
+          538,"T3279M3",
+          539,"T3279M4",
+          540,"T3279M5",
+          1163,"TABLEMGR",
+          111,"TAKEOVER",
+          250,"TAPE1",
+          251,"TAPE2",
+          233,"TASK",
+          611,"TASKSTART",
+          1164,"TASKSUBPOOL",
+          64,"TCAM",
+          65,"TCAMSNA",
+          366,"TCEXITALL",
+          369,"TCEXITALLOFF",
+          368,"TCEXITNONE",
+          367,"TCEXITSYSTEM",
+          239,"TCLASS",
+          1165,"TCPIP",
+          1166,"TCPIPSERVICE",
+          767,"TDQ",
+          1167,"TDQUEUE",
+          1168,"TEMPLATENAME",
+          483,"TEMPORARY",
+          234,"TERM",
+          213,"TERMINAL",
+          1077,"TERMINATE",
+          436,"TEXTKYBD",
+          438,"TEXTPRINT",
+          627,"THIRDINIT",
+          1051,"THREADSAFE",
+          240,"TIME",
+          511,"TIMEOUT",
+          1004,"TIMER",
+          932,"TPOOL",
+          552,"TPS55M2",
+          553,"TPS55M3",
+          554,"TPS55M4",
+          555,"TPS55M5",
+          760,"TRACE",
+          1169,"TRANCLASS",
+          186,"TRANDUMP",
+          1170,"TRANDUMPCODE",
+          452,"TRANIDONLY",
+          1171,"TRANSACTION",
+          768,"TSQ",
+          1172,"TSQUEUE",
+          77,"TTI",
+          927,"TWAIT",
+          929,"TX",
+          928,"TXID",
+          450,"UCTRAN",
+          1056,"UKOPEN",
+          820,"UNATTEMPTED",
+          672,"UNAVAILABLE",
+          17,"UNBLOCKED",
+          722,"UNCOMMITTED",
+          703,"UNCONNECTED",
+          14,"UNDEFINED",
+          355,"UNDETERMINED",
+          33,"UNENABLED",
+          34,"UNENABLING",
+          1015,"UNEXPECTED",
+          1018,"UNEXPIRED",
+          774,"UNKNOWN",
+          505,"UNPROTECTED",
+          709,"UNQUIESCED",
+          671,"UNREGISTERED",
+          1116,"UNRESOLVED",
+          521,"UNSOLDATA",
+          1117,"UNUSABLE",
+          246,"UOW",
+          37,"UPDATABLE",
+          1049,"UPDATING",
+          1173,"URIMAP",
+          1121,"URMTERMID",
+          642,"USER",
+          380,"USERDATAKEY",
+          382,"USEREXECKEY",
+          930,"USERID",
+          322,"USEROFF",
+          321,"USERON",
+          102,"USERTABLE",
+          360,"VALID",
+          440,"VALIDATION",
+          13,"VARIABLE",
+          1099,"VERIFY",
+          411,"VFORM",
+          732,"VRRDS",
+          3,"VSAM",
+          60,"VTAM",
+          340,"WAIT",
+          763,"WAITCOMMIT",
+          754,"WAITER",
+          622,"WAITFORGET",
+          765,"WAITING",
+          766,"WAITRMI",
+          267,"WARMSTART",
+          1174,"WEBSERVICE",
+          545,"WIN",
+          665,"XCF",
+          123,"XM",
+          144,"XNOTDONE",
+          143,"XOK",
+          1068,"XPLINK",
+          364,"ZCPTRACE"
+         };
+  static int tblnum =sizeof(tbl)/(sizeof(short) + 12*sizeof(char));
+
+  int i;
+
+  // seldom used so not worth trouble to do binary search here
+  for (i=0; i<tblnum; i++) {
+   if(!strcmp(text, tbl[i].txt)) return (tbl[i].num);
+   }
+  return 0;
+  }
+

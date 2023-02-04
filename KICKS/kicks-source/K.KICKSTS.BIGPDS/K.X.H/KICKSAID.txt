@@ -1,0 +1,42 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+#include "kikaid.h"
+
+ char *aid_text[] = {"ENTER", "CLEAR", "NOAID",
+ "PA1",  "PA2",  "PA3",
+ "PF1",  "PF2",  "PF3",  "PF4",  "PF5",  "PF6",
+ "PF7",  "PF8",  "PF9",  "PF10", "PF11", "PF12",
+ "PF13", "PF14", "PF15", "PF16", "PF17", "PF18",
+ "PF19", "PF20", "PF21", "PF22", "PF23", "PF24",
+ "REM",  "REMARK",
+ "RESET", "TAB",  "BTAB", "HOME", "END", "ERASE"
+ };
+
+ int aid_max=sizeof(aid_text)/sizeof(char*);
+
+ // note - 1 more in aid_code table than in aid_text table...
+ //        the extra is the '8' for <xx,yy> positioning
+
+ int aid_code[] = {KIKENTER, KIKCLEAR, 0x60,
+ KIKPA1, KIKPA2, KIKPA3,
+ KIKPF1, KIKPF2, KIKPF3, KIKPF4, KIKPF5, KIKPF6,
+ KIKPF7, KIKPF8, KIKPF9, KIKPF10,KIKPF11,KIKPF12,
+ KIKPF13,KIKPF14,KIKPF15,KIKPF16,KIKPF17,KIKPF18,
+ KIKPF19,KIKPF20,KIKPF21,KIKPF22,KIKPF23,KIKPF24,
+ 1, 1,
+ 2, 3, 4, 5, 6, 7,
+ 8 // code for <xx,yy>
+ };
+

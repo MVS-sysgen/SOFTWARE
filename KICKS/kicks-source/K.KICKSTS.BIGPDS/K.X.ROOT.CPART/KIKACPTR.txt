@@ -1,0 +1,428 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+
+int  Get2Hex(int b);
+void FmtTrace(char *trc, char *fmt);
+
+
+int  Get2Hex(int b) {
+  int c, d;
+  c = *(char*)b; b++; d = *(char*)b;
+  if (c == 'X') return (-1); // ?cp exit
+  if (c == 'U') return (-3); // pcp enter - user data
+  if((c >= 'a') && (c <= 'f')) c += 'A' - 'a';
+  if((d >= 'a') && (c <= 'f')) d += 'A' - 'a';
+  if(((c >= '0') && (c <= '9')) || ((c >= 'A') && (c <= 'F'))) ;
+   else return (-2);         // bad hex
+  if (c < '0')
+   c = c - 'A' + 10;
+  else
+   c = c - '0';
+  if(((d >= '0') && (d <= '9')) || ((d >= 'A') && (d <= 'F'))) ;
+   else return (-2);         // bad hex
+  if (d < '0')
+   d = d - 'A' + 10;
+  else
+   d = d - '0';
+  return (d + 16*c);
+  }
+
+void FmtTrace(char *trc, char *fmt) {
+int bx, tx;
+char c;
+
+   bx = (int)trc;
+   c =*(char *)bx++;
+   STRCPY(fmt, "");
+   switch (c)
+   {
+    case 0:   // unused
+     //RCPY(fmt, ""); -- already done above --
+     break;
+    case 'B': // bms
+     STRCPY(fmt, " BMS, ");
+     tx = Get2Hex(bx);
+     switch (tx)
+     {
+      case kikbmsINIT:
+       STRCAT(fmt, "startup");
+       break;
+      case kikbmsTERM:
+       STRCAT(fmt, "shutdown");
+       break;
+      case kikbmsSEND:
+       STRCAT(fmt, "send map");
+       break;
+      case kikbmsRECV:
+       STRCAT(fmt, "receive map");
+       break;
+      case kikbmsSTXT:
+       STRCAT(fmt, "send text");
+       break;
+      case kikbmsRTXT:
+       STRCAT(fmt, "receive text");
+       break;
+      case kikbmsTRANEND:
+       STRCAT(fmt, "(internal)"); // transend
+       break;
+      case kikbmsTRANSTRT:
+       STRCAT(fmt, "(internal)"); // transtart
+       break;
+      case -1:
+       STRCAT(fmt, "exit");
+       break;
+      default:
+       STRCAT(fmt, "unknown command");
+     }
+     break;
+    case 'D': // dcp
+     STRCPY(fmt, " Dest Control, ");
+     tx = Get2Hex(bx);
+     switch (tx)
+     {
+      case kikdcpINIT:
+       STRCAT(fmt, "startup");
+       break;
+      case kikdcpTERM:
+       STRCAT(fmt, "shutdown");
+       break;
+      case kikdcpDELETEQ:
+       STRCAT(fmt, "delete TD queue");
+       break;
+      case kikdcpREADQ:
+       STRCAT(fmt, "read TD queue");
+       break;
+      case kikdcpWRITEQ:
+       STRCAT(fmt, "write TD queue");
+       break;
+      case kikdcpSPOOLOPEN:
+       STRCAT(fmt, "spoolopen");
+       break;
+      case kikdcpSPOOLCLOSE:
+       STRCAT(fmt, "spoolclose");
+       break;
+      case kikdcpSPOOLREAD:
+       STRCAT(fmt, "spoolread");
+       break;
+      case kikdcpSPOOLWRITE:
+       STRCAT(fmt, "spoolwrite");
+       break;
+      case kikdcpTRANEND:
+       STRCAT(fmt, "(internal)"); // transend
+       break;
+      case kikdcpTRANSTRT:
+       STRCAT(fmt, "(internal)"); // transtart
+       break;
+      case -1:
+       STRCAT(fmt, "exit");
+       break;
+      default:
+       STRCAT(fmt, "unknown command");
+     }
+     break;
+    case 'F': // fcp
+     STRCPY(fmt, " File Control, ");
+     tx = Get2Hex(bx);
+     switch (tx)
+     {
+      case kikfcpINIT:
+       STRCAT(fmt, "startup");
+       break;
+      case kikfcpTERM:
+       STRCAT(fmt, "shutdown");
+       break;
+      case kikfcpDELE:
+       STRCAT(fmt, "delete");
+       break;
+      case kikfcpENDB:
+       STRCAT(fmt, "end browse");
+       break;
+      case kikfcpREDN:
+       STRCAT(fmt, "read next");
+       break;
+      case kikfcpREDP:
+       STRCAT(fmt, "read previous");
+       break;
+      case kikfcpREAD:
+       STRCAT(fmt, "read");
+       break;
+      case kikfcpREBR:
+       STRCAT(fmt, "reset browse");
+       break;
+      case kikfcpREWR:
+       STRCAT(fmt, "rewrite");
+       break;
+      case kikfcpSTBR:
+       STRCAT(fmt, "start browse");
+       break;
+      case kikfcpUNLK:
+       STRCAT(fmt, "unlock");
+       break;
+      case kikfcpWRIT:
+       STRCAT(fmt, "write");
+       break;
+      case kikfcpCLOSE:
+       STRCAT(fmt, "(internal)"); // close
+       break;
+      case kikfcpTRANEND:
+       STRCAT(fmt, "(internal)"); // transend
+       break;
+      case kikfcpTRANSTRT:
+       STRCAT(fmt, "(internal)"); // transtart
+       break;
+      //case 'V':
+      // STRCAT(fmt, "(internal)"); // vsam rpl info
+      // break;
+      case -1:
+       STRCAT(fmt, "exit");
+       break;
+      default:
+       STRCAT(fmt, "unknown command");
+     }
+     break;
+    case 'K': // kcp
+     STRCPY(fmt, " Task Control, ");
+     tx = Get2Hex(bx);
+     switch (tx)
+     {
+      case kikkcpINIT:
+       STRCAT(fmt, "startup");
+       break;
+      case kikkcpTERM:
+       STRCAT(fmt, "shutdown");
+       break;
+      case kikkcpATTACH:
+       STRCAT(fmt, "attach");
+       break;
+      case kikkcpDETACH:
+       STRCAT(fmt, "detach");
+       break;
+      case kikkcpSUSPND:
+       STRCAT(fmt, "suspend");
+       break;
+      case kikkcpRESUME:
+       STRCAT(fmt, "resume");
+       break;
+      case kikkcpENQ:
+       STRCAT(fmt, "enque");
+       break;
+      case kikkcpDEQ:
+       STRCAT(fmt, "deque");
+       break;
+      case kikkcpDEQALL:
+       STRCAT(fmt, "deque all");
+       break;
+      case kikkcpWAIT:
+       STRCAT(fmt, "wait");
+       break;
+      case kikkcpADDRESS:
+       STRCAT(fmt, "address");
+       break;
+      case kikkcpASSIGN:
+       STRCAT(fmt, "assign");
+       break;
+      case kikkcpASKTIME:
+       STRCAT(fmt, "ask time");
+       break;
+      case kikkcpFMTTIME:
+       STRCAT(fmt, "format time");
+       break;
+      case kikkcpDELAY:
+       STRCAT(fmt, "delay");
+       break;
+      case kikkcpSIGNOFF:
+       STRCAT(fmt, "sign off");
+       break;
+      case kikkcpSYNCPOINT:
+       STRCAT(fmt, "syncpoint");
+       break;
+      case kikkcpTRANEND:
+       STRCAT(fmt, "(internal)"); // transend
+       break;
+      case kikkcpTRANSTRT:
+       STRCAT(fmt, "(internal)"); // transtart
+       break;
+      case -1:
+       STRCAT(fmt, "exit");
+       break;
+      default:
+       STRCAT(fmt, "unknown command");
+     }
+     break;
+    case 'P': // pcp
+     STRCPY(fmt, " Program Control, ");
+     tx = Get2Hex(bx);
+     switch (tx)
+     {
+      case kikpcpINIT:
+       STRCAT(fmt, "startup");
+       break;
+      case kikpcpTERM:
+       STRCAT(fmt, "shutdown");
+       break;
+      case kikpcpLOAD:
+       STRCAT(fmt, "load");
+       break;
+      case kikpcpLINK:
+       STRCAT(fmt, "link");
+       break;
+      case kikpcpXCTL:
+       STRCAT(fmt, "xctl");
+       break;
+      case kikpcpRETN:
+       STRCAT(fmt, "return");
+       break;
+      case kikpcpDELE:
+       STRCAT(fmt, "release");
+       break;
+      case kikpcpABND:
+       STRCAT(fmt, "abend (might be trapped)");
+       break;
+      case kikpcpABND2:
+       STRCAT(fmt, "abend (final)");
+       break;
+      case kikpcpDUMP:
+       STRCAT(fmt, "dump");
+       break;
+      case kikpcpENTR:
+       STRCAT(fmt, "enter");      // not used, see below (-3)
+       break;
+      case kikpcpTRANEND:
+       STRCAT(fmt, "(internal)"); // transend
+       break;
+      case kikpcpTRANSTRT:
+       STRCAT(fmt, "(internal)"); // transtart
+       break;
+      case -1:
+       STRCAT(fmt, "exit");
+       break;
+      case -3:
+       STRCAT(fmt, "enter (user data)");
+       break;
+      default:
+       STRCAT(fmt, "unknown command");
+     }
+     break;
+    case 'S': // scp
+     STRCPY(fmt, " Storage Control, ");
+     tx = Get2Hex(bx);
+     switch (tx)
+     {
+      case kikscpINIT:
+       STRCAT(fmt, "startup");
+       break;
+      case kikscpTERM:
+       STRCAT(fmt, "shutdown");
+       break;
+      case kikscpGETMAIN:
+       STRCAT(fmt, "getmain");
+       break;
+      case kikscpFREEMAIN:
+       STRCAT(fmt, "freemain");
+       break;
+      case kikscpTRANEND:
+       STRCAT(fmt, "(internal)"); // transend
+       break;
+      case kikscpTRANSTRT:
+       STRCAT(fmt, "(internal)"); // transtart
+       break;
+      case -1:
+       STRCAT(fmt, "exit");
+       break;
+      default:
+       STRCAT(fmt, "unknown command");
+     }
+     break;
+    case 'T': // tcp
+     STRCPY(fmt, " Terminal Control, ");
+     tx = Get2Hex(bx);
+     switch (tx)
+     {
+      case kiktcpINIT:
+       STRCAT(fmt, "startup");
+       break;
+      case kiktcpTERM:
+       STRCAT(fmt, "shutdown");
+       break;
+      case kiktcpSEND:
+       STRCAT(fmt, "send");
+       break;
+      case kiktcpRECV:
+       STRCAT(fmt, "receive");
+       break;
+      case kiktcpCHEK:
+       STRCAT(fmt, "check");
+       break;
+      case kiktcpWTO:
+       STRCAT(fmt, "wto");
+       break;
+      case kiktcpWTOR:
+       STRCAT(fmt, "wtor");
+       break;
+      case kiktcpTRANEND:
+       STRCAT(fmt, "(internal)"); // transend
+       break;
+      case kiktcpTRANSTRT:
+       STRCAT(fmt, "(internal)"); // transtart
+       break;
+      case -1:
+       STRCAT(fmt, "exit");
+       break;
+      default:
+       STRCAT(fmt, "unknown command");
+     }
+     break;
+    case 'U': // user
+     STRCPY(fmt, " User trace entry");
+     break;
+    case 'X': // tsp
+     STRCPY(fmt, " TempSto Control, ");
+     tx = Get2Hex(bx);
+     switch (tx)
+     {
+      case kiktspINIT:
+       STRCAT(fmt, "startup");
+       break;
+      case kiktspTERM:
+       STRCAT(fmt, "shutdown");
+       break;
+      case kiktspDELETEQ:
+       STRCAT(fmt, "delete TS queue");
+       break;
+      case kiktspREADQ:
+       STRCAT(fmt, "read TS queue");
+       break;
+      case kiktspWRITEQ:
+       STRCAT(fmt, "write TS queue");
+       break;
+      case kiktspTRANEND:
+       STRCAT(fmt, "(internal)"); // transend
+       break;
+      case kiktspTRANSTRT:
+       STRCAT(fmt, "(internal)"); // transtart
+       break;
+      case -1:
+       STRCAT(fmt, "exit");
+       break;
+      default:
+       STRCAT(fmt, "unknown command");
+     }
+     break;
+    default:
+     STRCPY(fmt, " Unknown trace entry type");
+    }
+}
+
+

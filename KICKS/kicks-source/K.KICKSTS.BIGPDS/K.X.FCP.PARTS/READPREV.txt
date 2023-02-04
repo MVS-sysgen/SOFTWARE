@@ -1,0 +1,250 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+ /////////////////////////////////////////////////////////////
+ //
+ // READ PREVIOUS RECORD FUNCTION
+ //
+ /////////////////////////////////////////////////////////////
+
+ // READPREV can be used repeatedly to read records in reverse sequential
+ // order from a VSAM file.
+
+ // Such a series of sequential read commands is known as a browse of the
+ // file. A browse may also consist of a sequence of READNEXT and READPREV
+ // commands in any order. A browse must be initiated with the STARTBR
+ // command, to identify the start of the browse, and terminated with the
+ // ENDBR command.
+ // You must provide, in the RIDFLD option, a data area that is sufficiently
+ // large to contain a complete identifier (full key, RBA, or RRN) of records
+ // in the file. This data area is used both as an output and as an input
+ // parameter.
+
+ // It is used as an output parameter when CICS, on completion of each
+ // READPREV command, places the complete identifier of the record just
+ // retrieved into the RIDFLD data area. CICS then holds this identifier
+ // to mark the point from which the subsequent READPREV is to continue.
+
+ // It may also be used as an input parameter. Modifying the RIDFLD before
+ // issuing the next READPREV command causes that command to reposition the
+ // browse to the new identifier, from which it continues in the usual way.
+ // The modified record identifier must always be a full key, RBA, or RRN.
+ // A generic key may not be specified, nor may a browse that was started
+ // with the GENERIC option include a READPREV command.
+
+ // If you include a READPREV command immediately following a STARTBR command,
+ // your STARTBR command RIDFLD must specify the key of a record that exists
+ // on the data set; otherwise the NOTFND condition will occur.
+
+ // A READPREV command following a READNEXT, or a STARTBR or RESETBR that did
+ // not specify a 'last' key value, is treated as though the RIDFLD value had
+ // been modified and results in a reposition (as above).
+
+
+ int readprev(fcte *f, short reqID, int flags,
+              char *into, short *length,
+              char *ridfld, short keylen) {
+
+ //file name = arg1; // (Ir) file
+ //flags     = arg2  // (Ir) flags
+                        // rba
+                        // rrn
+ //into      = arg3; // (Or) into/from
+ //length    = arg4; // (Io) length (-1 if missing)
+ //ridfld    = arg5; // (Io) ridfld (null if missing)
+ //keylen    = arg6; // (Io) keylen (-1 if missing)
+ //reqid     = arg7; // (Ir) reqid  (+0 if 'missing')
+
+ ifgrpl *r = &f->reqids[0].rpl; // assume no reqID to start...
+ int lastwas, Len, Len2, i, howlong, reqid=0, rba;
+ char *aArea, *aRfld, *aArg, high[256];
+
+ // turn off pending update
+ f->flag1 &= ~FCTEflag1pendupdt;
+
+ // turn user's reqid into subscript for fcte rpl table
+ reqid = mapReqId(f, reqID);
+ if (reqid < 0) {
+  f->resp = KIKRESP$INVREQ;
+  f->resp2= 41;  // this is cics resp2 for reqid nf...
+  return 8; // logical error
+  }
+ f->lastreqid = reqid;
+ lastwas = f->reqids[reqid].lastop;
+ f->reqids[reqid].lastop = FCTElastopreadprev;
+ if ((f->reqids[reqid].flagsb & FCTEflagsbactive) == 0) {
+   // can't readprev, reqid (startbr) not active!
+  f->resp = KIKRESP$INVREQ;
+  f->resp2= 41;  // this is cics resp2 for reqid nf...
+  return 8; // logical error
+  }
+ r = &f->reqids[reqid].rpl; // change to correct rpl
+
+ // validate rrn, rba match startbr
+ if((flags & FCTEflagsbrrn ) !=
+    (f->reqids[reqid].flagsb & FCTEflagsbrrn)) {
+  f->resp = KIKRESP$INVREQ;
+  f->resp2= 37;  // this is cics resp2 ...
+  return 8; // logical error
+  }
+ if((flags & FCTEflagsbrba ) !=
+    (f->reqids[reqid].flagsb & FCTEflagsbrba)) {
+  f->resp = KIKRESP$INVREQ;
+  f->resp2= 37;  // this is cics resp2 ...
+  return 8; // logical error
+  }
+
+ // make sure keylength not given with rba or rrn
+ if((((flags & FCTEflagsbrrn) > 0) || ((flags & FCTEflagsbrba) > 0)) &&
+  (keylen == 4)) keylen = -1; // but tolerate keylen=4
+ if((((flags & FCTEflagsbrrn) > 0) || ((flags & FCTEflagsbrba) > 0)) &&
+  (keylen != -1)) {
+   f->resp = KIKRESP$INVREQ;
+   //                      resp2 I define for 'keylen w/rrn or rba' - 905
+   f->resp2= 905; // ****************************************************
+   return 8; // logical error
+  }
+
+ // check some keylength/generic conditions
+ if((flags & FCTEflagsbgeneric) > 0) {
+   // 'generic' not allowed for readprev...
+   f->resp = KIKRESP$INVREQ;
+   f->resp2= 24;
+   return 8; // logical error
+   }
+ if (keylen != -1) { // these are real cic resp/resp2 's
+   if (keylen != f->keylen) {
+    // given keylen <> real keylen!
+    f->resp = KIKRESP$INVREQ;
+    f->resp2= 26;
+    return 8; // logical error
+    }
+   }
+
+ // qualify record length
+ Len = *length;
+ if (Len == -1) Len = f->lrecl;
+ if (Len > f->lrecl) Len = f->lrecl;
+ if (Len < 0) Len = 0;
+
+ // qualify keylen
+ if (keylen == -1) keylen = f->reqids[reqid].keylen;
+ if((flags & (FCTEflagsbrba | FCTEflagsbrrn)) > 0) keylen = 4;
+
+ // make sure rpl points to the key
+ //MEMCPY((char*)&r->rplarg, (char*)&f->reqids[reqid].keys, 4);
+ //r->rplkeyle = keylen;
+ aRfld = (char*)f->reqids[reqid].keys;
+ sw2vsam();
+ __asm__ (
+  "L 2,%0\n\t"
+  "L 3,%1\n\t"
+  "MODCB RPL=(2),ARG=(3)\n\t"
+  "L  2,%0\n\t"
+  "XR 3,3\n\t"
+  "LH 3,%2\n\t"
+  "MODCB RPL=(2),KEYLEN=(3)"
+  : /* no output */
+  : "m"(r),"m"(aRfld),"m"(keylen)
+  : "0","1","2","3","14","15"
+ );
+ sw2kicks();
+
+ // do POINT if last op wasn't same as this
+ //if((lastwas != FCTElastopstartbr) &&
+ //   (lastwas != FCTElastopreadprev)) {
+ if  ((lastwas != FCTElastopreadprev)) {
+  flags |= FCTEflagsnextprev; // turn on BWD
+  point(f, reqid, flags);
+ }
+
+ // get the previous record
+ sw2vsam();
+ __asm__ (
+  "L 2,%0\n\t"
+  "GET RPL=(2)"
+  : /* no output */
+  : "m"(r)
+  : "0","1","2","14","15"
+ );
+ sw2kicks();
+
+ // stop now if bad read...
+ // set tentative return code
+ maprtn(f, reqID);
+
+ // stop now if bad read...
+ if (f->rcode[2] > 0) return (f->rcode[2]);
+
+ // move rpl record length read back to user 'length'
+ Len2 = showcb((char*)r, showcb_rpl, showcb_field_reclen);
+ *length = Len2;
+
+ // move the rpl buffer into 'into' for 'Len'
+ aArea = (char*)showcb((char*)r, showcb_rpl, showcb_field_area);
+ MEMCPY(into, aArea, Len);
+
+ // now copy search key to hold area
+ if(((f->flag1 & FCTEflag1ksds) > 0) ||
+   (((f->flag1 & FCTEflag1esds) > 0) &&
+    ((f->flag1 & FCTEflag1path) > 0))) {
+  // it's either a base ksds or an alternate index path
+  MEMCPY(f->reqids[reqid].keys, aArea + f->rkp, f->keylen);
+  }
+ if(((f->flag1 & FCTEflag1esds) > 0) &&
+    ((f->flag1 & FCTEflag1path) ==0)) {
+  // it's base esds
+  rba = showcb((char*)r, showcb_rpl, showcb_field_rba);
+  MEMCPY(f->reqids[reqid].keys, (char*)&rba, 4);
+  }
+ if ((f->flag1 & FCTEflag1rrds) > 0) {
+  // it's an rrds; rplarg has gotten rrn
+  aArg = (char*)showcb((char*)r, showcb_rpl, showcb_field_arg);
+  MEMCPY(f->reqids[reqid].keys, aArg, 4);
+  }
+
+ // move rpl key to 'ridfld' for 'f->keylen'
+ if (ridfld != NULL) {
+  if(((f->flag1 & FCTEflag1ksds) > 0) ||
+    (((f->flag1 & FCTEflag1esds) > 0) &&
+     ((f->flag1 & FCTEflag1path) > 0))) {
+   // it's either a base ksds or an alternate index path
+   MEMCPY(ridfld, aArea + f->rkp, f->keylen);
+   }
+  else
+   // it's an esds or rrds, gets 4 byte rba or rrn
+   MEMCPY(ridfld, f->reqids[reqid].keys, 4);
+  }
+
+ // check for LENGERR
+ if (Len2 > Len) {
+  f->resp = KIKRESP$LENGERR;
+  f->resp2= 11;  // this is cics resp2 ...
+  f->rcode[1] = f->resp;
+  return 8; // logical error
+  }
+
+ // map return, check for DUPKEY
+ maprtn(f, reqID);
+ if (f->rcode[3] == 8) { // aka rplerrcd
+  f->resp = KIKRESP$DUPKEY;
+  f->resp2= 140;  // this is cics resp2 ...
+  f->rcode[1] = f->resp;
+  return 8; // logical error
+  }
+
+ // goback
+ return (f->rcode[2]);
+ }
+

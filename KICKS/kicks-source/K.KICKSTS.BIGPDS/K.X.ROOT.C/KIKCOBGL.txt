@@ -1,0 +1,882 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+ // -----------------------------------------------------------------
+ // This might look like a normal 'C' program, but it is not. It is a
+ // 'glue' routine providing the linkage between Cobol KICKS apps and
+ // the 'C' guts of KICKS. That magic is not in the 'C' code, but in
+ // special versions of the PDPCLIB headers included in the JCL...
+ // -----------------------------------------------------------------
+
+#include <stdio.h>
+
+#include "kicks.h"
+
+#define MAXAIDS 30
+#define MAXCONDS 100
+
+#define NORMALCOND 0
+#define ERRORCOND 1
+
+#ifdef DOEDF
+#include "kedfcomm.h"
+#endif
+
+#ifdef FORGCC
+int kikgccgl (KIKEIB *eib, int *version,
+#else
+int kikcobgl (KIKEIB *eib, int *version,
+#endif
+   // int *mgtpgm, int *type_of,
+   char *arg1, char *arg2, char *arg3, char *arg4,
+   char *arg5, char *arg6, char *arg7, char *arg8,
+   char *arg9, char *arg10, char *arg11, char *arg12) {
+
+ KIKCSA *csa;
+ KIKTCA *tca;
+
+ char ac, *p, ent_pgmmask;
+ int MGTPGM, *mgtpgm=&MGTPGM;
+ int TYPEOF, *type_of=&TYPEOF;
+ int aptr, *gotovar, i, numacs, r13, resp, SJrtn, mkvrm, vers;
+ int acs, acs14, acs58, acs9c, acsdg, aid_iptr, cond_iptr;
+
+ savearea *sa;
+
+ static int dodump=0, suppress=1;
+
+ static MYjmp_buf aid_rtntos[MAXAIDS];
+ static int *aid_gotovars[MAXAIDS], aid_pgmmask[MAXAIDS];
+ static char aid_gotovals[MAXAIDS], aid_match[MAXAIDS];
+
+ static MYjmp_buf cond_rtntos[MAXCONDS];
+ static int *cond_gotovars[MAXCONDS], cond_pgmmask[MAXCONDS];
+ static char cond_gotovals[MAXCONDS], cond_match[MAXCONDS];
+
+ static FiniAbend FA;
+
+ static short eibfntbl[] =
+    {0, 0, 0,                          // special case for initial call
+   514, kikkcpADDRESS, kikkcpTYPE,
+   516, kikpcpHANDLECOND, kikpcpTYPE,
+   516, kikpcpCANCELCOND, kikpcpTYPE,  // SAME CODE AS HANDLE COND
+   518, kikbmsHANDLEAID, kikbmsTYPE,
+   518, kikbmsCANCELAID, kikbmsTYPE,   // SAME CODE AS HANDLE AID
+   520, kikkcpASSIGN, kikkcpTYPE,
+   522, kikpcpIGNORECOND, kikpcpTYPE,
+  1026, kikbmsRTXT, kikbmsTYPE,
+  1538, kikfcpREAD, kikfcpTYPE,
+  1540, kikfcpWRIT, kikfcpTYPE,
+  1542, kikfcpREWR, kikfcpTYPE,
+  1544, kikfcpDELE, kikfcpTYPE,
+  1546, kikfcpUNLK, kikfcpTYPE,
+  1548, kikfcpSTBR, kikfcpTYPE,
+  1550, kikfcpREDN, kikfcpTYPE,
+  1552, kikfcpREDP, kikfcpTYPE,
+  1554, kikfcpENDB, kikfcpTYPE,
+  1556, kikfcpREBR, kikfcpTYPE,
+  2050, kikdcpWRITEQ, kikdcpTYPE,
+  2052, kikdcpREADQ, kikdcpTYPE,
+  2054, kikdcpDELETEQ, kikdcpTYPE,
+  2562, kiktspWRITEQ, kiktspTYPE,
+  2564, kiktspREADQ, kiktspTYPE,
+  2566, kiktspDELETEQ, kiktspTYPE,
+  3074, kikscpGETMAIN, kikscpTYPE,
+  3076, kikscpFREEMAIN, kikscpTYPE,
+  3586, kikpcpLINK, kikpcpTYPE,
+  3588, kikpcpXCTL, kikpcpTYPE,
+  3590, kikpcpLOAD, kikpcpTYPE,
+  3592, kikpcpRETN, kikpcpTYPE,
+  3594, kikpcpDELE, kikpcpTYPE,
+  3596, kikpcpABND2, kikpcpTYPE,
+  3598, kikpcpHANDLEABEND, kikpcpTYPE,
+  4098, kikkcpASKTIME, kikkcpTYPE,
+  4100, kikkcpDELAY, kikkcpTYPE,
+  4612, kikkcpENQ, kikkcpTYPE,
+  4614, kikkcpDEQ, kikkcpTYPE,
+  4616, kikkcpSUSPND, kikkcpTYPE,
+ 22018, kikdcpSPOOLOPEN, kikdcpTYPE,   // was 5602, s.b. x'5602', or 22018
+ 22022, kikdcpSPOOLWRITE, kikdcpTYPE,  // was 5606, s.b. x'5606', or 22022
+ 22032, kikdcpSPOOLCLOSE, kikdcpTYPE,  // was 5610, s.b. x'5610', or 22032
+  5634, kikkcpSYNCPOINT, kikkcpTYPE,
+  6146, kikbmsRECV, kikbmsTYPE,
+  6148, kikbmsSEND, kikbmsTYPE,
+  6150, kikbmsSTXT, kikbmsTYPE,
+  6162, kikbmsSTXT, kikbmsTYPE,        // SEND_CONTROL VERSION OF 6150
+ 18434, kikpcpENTR, kikpcpTYPE,        // was 6660, s.b. x'4802', or 18434
+  7170, kikpcpDUMP, kikpcpTYPE,
+ 18946, kikkcpASKTIME, kikkcpTYPE,     // ABSOLUTE VERSION OF 4098
+ 18948, kikkcpFMTTIME, kikkcpTYPE,
+ 27650, kiktcpWTO, kiktcpTYPE,
+ 27650, kiktcpWTOR, kiktcpTYPE,        // SPECIAL CASE OF TCPWTO (SAME CODE)
+ 29700, kikkcpSIGNOFF, kikkcpTYPE};
+
+ static int eibfntbl_max=sizeof(eibfntbl)/sizeof(short);
+
+ // grab regs
+ GETR13(r13); sa=(savearea*)r13; sa = sa->bp;
+
+ // save program mask, clear in KICKS
+ GETPMASK(ent_pgmmask);
+ SETPMASK(dodump); // ie, zero
+
+ // get csa addressing
+ p = ((char*)eib) - 8;         // backup into eib preface
+ csa = (KIKCSA *) *((int*)p);  // pull out the csa pointer
+ tca = csa->tca;               // put tca for easy access to eibp
+
+ // turn off AICA
+ csa->AICAtime = -1;
+
+ // set eibp fields marking re-entry to C (in case of abend)
+ tca->kikeibp.gluR13 = (char*)r13;
+ tca->kikeibp.useR13 = 1;
+ tca->abenv1.regs[14] = 0;
+
+ // check nucleus version matches glue (3 byte check)
+ mkvrm = MKVER(V, R, M, E);
+ if ((mkvrm & 0xffffff00) - (csa->version & 0xffffff00) != 0) {
+  //
+  // this - calling KIKPCP - may not be a good idea. How do I know
+  // I'll get the KICKS abend I want if the versions don't match??
+  //
+  KIKPCP(csa, kikpcpABND2, "VER1", &suppress);
+  }
+
+ // check app compile matches glue (all 4 bytes)
+ vers = *version;
+ resp = false;
+ if (vers < 0) { // version neg means 'RESP' given...
+  vers = -1 * vers;
+  resp = true;
+  }
+ if (vers != mkvrm)
+      KIKPCP(csa, kikpcpABND2, "VER2", &suppress);
+
+ // save last glue regs
+ MEMCPY(&tca->lastglueregs, sa, 72);
+
+ // fixup depreciated eibfn's
+ if(*(short*)&eib->eibfn == 5602) *(short*)&eib->eibfn =0x5602;
+ if(*(short*)&eib->eibfn == 5606) *(short*)&eib->eibfn =0x5606;
+ if(*(short*)&eib->eibfn == 5610) *(short*)&eib->eibfn =0x5610;
+ if(*(short*)&eib->eibfn == 6660) *(short*)&eib->eibfn =18434;
+
+ // obtain mgtpgm & typeof from eibfn
+ for (i=0, MGTPGM=-1; i<eibfntbl_max; i+=3) {
+  if (*(short*)&eib->eibfn == eibfntbl[i]) {
+   MGTPGM = eibfntbl[i+2];
+   TYPEOF = eibfntbl[i+1];
+   break;
+   }
+  }
+ // die if eibfn invalid
+ if (*mgtpgm < 0) {
+  KIKPCP(csa, kikpcpABND2, "VER3", &suppress);
+  }
+ // handle WRITE OPERATOR (REPLY) special case...
+ if((*(short*)&eib->eibfn == 27650) && (*(int*)arg5 > 16))
+   TYPEOF = kiktcpWTOR;
+ // handle HANDLECOND special case...
+ if((*(short*)&eib->eibfn == 516) && (*(int*)arg1 > 0))
+   TYPEOF = kikpcpCANCELCOND;
+ // handle HANDLEAID  special case...
+ if((*(short*)&eib->eibfn == 518) && (*(int*)arg1 > 0))
+   TYPEOF = kikbmsCANCELAID;
+
+ // no kedf tracing for initial call
+ if (*mgtpgm == 0) {
+
+  // if using LE register handler
+  if (*(short*)(arg1) == 0) { // glue says CB2...
+   int ceehdlr;
+   __asm__ (
+     "B P%=\n"
+    "C%= DC V(KCEEHDLR)\n\t"
+     "WXTRN KCEEHDLR\n"
+    "P%= EQU *\n\t"
+     "L 1,C%=\n\t"
+     "ST 1,%0"
+    : "=m"(ceehdlr)
+    : /* no input */
+    : "1"
+    );
+   if (ceehdlr != 0) ((SubPtr)ceehdlr)(csa);
+   }
+
+  // capture fini's
+  FA.fini_rtntos.regs[0]=sa->gr0;   FA.fini_rtntos.regs[1]=sa->gr1;
+  FA.fini_rtntos.regs[2]=sa->gr2;   FA.fini_rtntos.regs[3]=sa->gr3;
+  FA.fini_rtntos.regs[4]=sa->gr4;   FA.fini_rtntos.regs[5]=sa->gr5;
+  FA.fini_rtntos.regs[6]=sa->gr6;   FA.fini_rtntos.regs[7]=sa->gr7;
+  FA.fini_rtntos.regs[8]=sa->gr8;   FA.fini_rtntos.regs[9]=sa->gr9;
+  FA.fini_rtntos.regs[10]=sa->gr10; FA.fini_rtntos.regs[11]=sa->gr11;
+  FA.fini_rtntos.regs[12]=sa->gr12; FA.fini_rtntos.regs[13]=(int)sa;
+  FA.fini_rtntos.regs[14]=sa->gr14; FA.fini_rtntos.regs[15]=sa->gr15;
+  FA.fini_rtntos.val=0;
+  FA.fini_gotovars=(int*)arg1;
+  FA.fini_pgmmask = ent_pgmmask;
+  // init other vars
+  aid_iptr = 0;
+  cond_iptr = 0;
+  for (i=0; i<16; i++) FA.abend_rtntos.regs[i] = 0;
+  FA.abend_rtntos.val=0;
+  FA.abend_gotovars = NULL;
+  // chain fini_abends
+  FA.next = csa->tca->next_FA;
+  csa->tca->next_FA = &FA;
+  // init other first time stuff
+  for (; cond_iptr<MAXCONDS; cond_iptr++) {
+   for (i=0; i<16; i++) cond_rtntos[cond_iptr].regs[i]=0;
+   cond_rtntos[cond_iptr].val=0;
+   cond_gotovars[cond_iptr]=0;
+   cond_gotovals[cond_iptr]=0;
+   cond_match[cond_iptr]=0;
+   cond_pgmmask[cond_iptr] = 0;
+   }
+  for (; aid_iptr<MAXAIDS; aid_iptr++) {
+   for (i=0; i<16; i++) aid_rtntos[aid_iptr].regs[i]=0;
+   cond_rtntos[aid_iptr].val=0;
+   aid_gotovars[aid_iptr]=0;
+   aid_gotovals[aid_iptr]=0;
+   aid_match[aid_iptr]=0;
+   aid_pgmmask[aid_iptr] = 0;
+   }
+  // set normal (not exiting) return
+  *(short*)(arg1) = 0;
+  // set eibp field marking re-entry to Cobol (in case of abend)
+  tca->kikeibp.useR13 = 0;
+  tca->abenv1.regs[14] = 0;
+  // reset AICA timer (and reestablish STIMER in case it got killed)
+  csa->AICAtime = csa->AICAmax;
+  KIKAICA();
+  // restore program mask
+  SETPMASK(ent_pgmmask);
+  return;
+  }
+
+ // pgmmask 'follows' the code instead of being whatever
+ // was present at 'initial' call...
+ //
+ // if this works I'll need to handle the saved values at
+ // for handle cond / handle aid also -- and just use
+ // ent_pgmmask...
+ FA.fini_pgmmask = ent_pgmmask;
+ FA.abend_pgmmask = ent_pgmmask;
+
+#ifdef DOEDF
+ // if EDF is turned on, call the debugger
+ EntrKEDF(1, *mgtpgm, *type_of);
+#endif
+
+ switch (*mgtpgm)
+  {
+
+  case kikkcpTYPE:   // kcp
+
+      // setup the abend trap
+      SJrtn = MYsetjmp(tca->abenv1);
+      if (SJrtn != 0) {
+       // we get here on error return from KIKKCP call below
+       // -- eib.eibresp should be set to show cause
+       // -- just break out, let 'global' exit handle it...
+       break;
+       }
+
+      // we get here after the setjmp call (ie, SJrtn==0)
+      KIKKCP(csa, *type_of, arg1, arg2, arg3, arg4,
+                           arg5, arg6, arg7, arg8,
+                           arg9, arg10, arg11, arg12);
+
+      // we get here with normal (no error) return
+      break;
+
+  case kikpcpTYPE:   // pcp
+
+      if (*type_of == kikpcpHANDLEABEND) {
+       eib->eibresp  = 0; // need to set here since this is
+       eib->eibresp2 = 0; // handled here, not in mgt pgm...
+       // do handle abend processing in the glue
+       // arg1 - address of goto control var
+       //      - inbound 0=set, 1=cancel, 2=reset
+       gotovar = (int*)arg1;
+
+       switch (*(short*)(gotovar)) {
+        case 0: // set
+         FA.abend_rtntos.regs[0]=sa->gr0;   FA.abend_rtntos.regs[1]=sa->gr1;
+         FA.abend_rtntos.regs[2]=sa->gr2;   FA.abend_rtntos.regs[3]=sa->gr3;
+         FA.abend_rtntos.regs[4]=sa->gr4;   FA.abend_rtntos.regs[5]=sa->gr5;
+         FA.abend_rtntos.regs[6]=sa->gr6;   FA.abend_rtntos.regs[7]=sa->gr7;
+         FA.abend_rtntos.regs[8]=sa->gr8;   FA.abend_rtntos.regs[9]=sa->gr9;
+         FA.abend_rtntos.regs[10]=sa->gr10; FA.abend_rtntos.regs[11]=sa->gr11;
+         FA.abend_rtntos.regs[12]=sa->gr12; FA.abend_rtntos.regs[13]=(int)sa;
+         FA.abend_rtntos.regs[14]=sa->gr14; FA.abend_rtntos.regs[15]=sa->gr15;
+         FA.abend_rtntos.val=0;
+         FA.abend_gotovars=gotovar;
+         FA.abend_pgmmask = ent_pgmmask;
+         break;
+        case 1: // cancel
+         if (FA.abend_rtntos.regs[13] > 0) FA.abend_rtntos.regs[13] *= -1;
+         break;
+        case 2: // reset
+         if (FA.abend_rtntos.regs[13] < 0) FA.abend_rtntos.regs[13] *= -1;
+         break;
+       }
+       *(short*)(gotovar) = 0; // don't take branch after handle call!
+       break;
+       }
+
+      if (*type_of == kikpcpHANDLECOND) {
+       eib->eibresp  = 0; // need to set here since this is
+       eib->eibresp2 = 0; // handled here, not in mgt pgm...
+       // do handle/ignore/cancel condition processing in the glue
+       //    this one does 'handle' only
+       // arg1 - address of goto control var
+       // arg2 - num aid bytes following 1-16
+       // arg3 - first 4 conditions ( 0x44332211 )
+       // arg4 - next  4 conditions ( 0x88776655 )
+       // arg5 - next  4 conditions ( 0xccbbaa99 )
+       // arg6 - next  4 conditions ( 0xggffeedd )
+       gotovar = (int*)arg1;
+       *(short*)(gotovar) = 0; // don't take branch after handle call!
+       numacs = *(int*)arg2;
+       acs14 = *(int*)arg3; acs58 = *(int*)arg4;
+       acs9c = *(int*)arg5; acsdg = *(int*)arg6;
+       for(aptr=0; aptr<numacs; aptr++) {
+        acs = acs14;
+        if (aptr>3) acs = acs58;
+        if (aptr>7) acs = acs9c;
+        if (aptr>11) acs = acsdg;
+        ac = (acs>>((aptr%4)*8))&255;
+        // try to find aid already in table
+        for (cond_iptr=0; cond_iptr<MAXCONDS; cond_iptr++) {
+         if (ac == cond_match[cond_iptr]) break;
+         }
+        if(cond_iptr == MAXCONDS) {
+         // failing that look for empty slot
+         for (cond_iptr=0; cond_iptr<MAXCONDS; cond_iptr++) {
+          if (cond_match[cond_iptr] == 0) break;
+          }
+         }
+        if(cond_iptr == MAXCONDS) {
+         // no slots - time to die
+         cond_iptr=0; // dump not suppressed
+         KIKPCP(csa, kikpcpABND2, "KCG2", &cond_iptr);
+         }
+        cond_rtntos[cond_iptr].regs[0]=sa->gr0;
+        cond_rtntos[cond_iptr].regs[1]=sa->gr1;
+        cond_rtntos[cond_iptr].regs[2]=sa->gr2;
+        cond_rtntos[cond_iptr].regs[3]=sa->gr3;
+        cond_rtntos[cond_iptr].regs[4]=sa->gr4;
+        cond_rtntos[cond_iptr].regs[5]=sa->gr5;
+        cond_rtntos[cond_iptr].regs[6]=sa->gr6;
+        cond_rtntos[cond_iptr].regs[7]=sa->gr7;
+        cond_rtntos[cond_iptr].regs[8]=sa->gr8;
+        cond_rtntos[cond_iptr].regs[9]=sa->gr9;
+        cond_rtntos[cond_iptr].regs[10]=sa->gr10;
+        cond_rtntos[cond_iptr].regs[11]=sa->gr11;
+        cond_rtntos[cond_iptr].regs[12]=sa->gr12;
+        cond_rtntos[cond_iptr].regs[13]=(int)sa;
+        cond_rtntos[cond_iptr].regs[14]=sa->gr14;
+        cond_rtntos[cond_iptr].regs[15]=sa->gr15;
+        cond_rtntos[cond_iptr].val=0;
+        cond_gotovars[cond_iptr]=gotovar;
+        cond_gotovals[cond_iptr]=aptr+1;
+        cond_match[cond_iptr]=ac;
+        cond_pgmmask[cond_iptr] = ent_pgmmask;
+        }
+       break;
+       }
+
+      if (*type_of == kikpcpIGNORECOND) {
+       eib->eibresp  = 0; // need to set here since this is
+       eib->eibresp2 = 0; // handled here, not in mgt pgm...
+       // do handle/ignore/cancel condition processing in the glue
+       //    this one does 'ignore' only
+       // arg1-6 same as 'handle' case...
+       numacs = *(int*)arg2;
+       acs14 = *(int*)arg3; acs58 = *(int*)arg4;
+       acs9c = *(int*)arg5; acsdg = *(int*)arg6;
+       for(aptr=0; aptr<numacs; aptr++) {
+        acs = acs14;
+        if (aptr>3) acs = acs58;
+        if (aptr>7) acs = acs9c;
+        if (aptr>11) acs = acsdg;
+        ac = (acs>>((aptr%4)*8))&255;
+        // try to find aid already in table
+        for (cond_iptr=0; cond_iptr<MAXCONDS; cond_iptr++) {
+         if (ac == cond_match[cond_iptr]) break;
+         }
+        if(cond_iptr == MAXCONDS) {
+         // failing that look for empty slot
+         for (cond_iptr=0; cond_iptr<MAXCONDS; cond_iptr++) {
+          if (cond_match[cond_iptr] == 0) break;
+          }
+         }
+        if(cond_iptr == MAXCONDS) {
+         // no slots - time to die
+         cond_iptr=0; // dump not suppressed
+         KIKPCP(csa, kikpcpABND2, "KCG3", &cond_iptr);
+         }
+        for (i=0; i<16; i++) cond_rtntos[cond_iptr].regs[i]=0;
+        cond_rtntos[cond_iptr].val=0;
+        cond_gotovars[cond_iptr]=0;
+        cond_gotovals[cond_iptr]=0;
+        cond_match[cond_iptr]=ac;
+        }
+       break;
+       }
+
+      if (*type_of == kikpcpCANCELCOND) {
+       eib->eibresp  = 0; // need to set here since this is
+       eib->eibresp2 = 0; // handled here, not in mgt pgm...
+       // do handle/ignore/cancel condition processing in the glue
+       //    this one does 'cancel' only
+       // arg1-6 same as 'handle' case...
+       numacs = *(int*)arg2;
+       acs14 = *(int*)arg3; acs58 = *(int*)arg4;
+       acs9c = *(int*)arg5; acsdg = *(int*)arg6;
+       for(aptr=0; aptr<numacs; aptr++) {
+        acs = acs14;
+        if (aptr>3) acs = acs58;
+        if (aptr>7) acs = acs9c;
+        if (aptr>11) acs = acsdg;
+        ac = (acs>>((aptr%4)*8))&255;
+        // try to find aid already in table
+        for (cond_iptr=0; cond_iptr<MAXCONDS; cond_iptr++) {
+         if (ac == cond_match[cond_iptr]) {
+          for (i=0; i<16; i++) cond_rtntos[cond_iptr].regs[i]=0;
+          cond_rtntos[cond_iptr].val=0;
+          cond_gotovars[cond_iptr]=0;
+          cond_gotovals[cond_iptr]=0;
+          cond_match[cond_iptr]=0;
+          }
+         }
+        }
+       break;
+       }
+
+      // setup the abend trap
+      SJrtn = MYsetjmp(tca->abenv1);
+      if (SJrtn != 0) {
+       // we get here on error return from KIKPCP call below
+       if (*type_of == kikpcpLINK) {  // coming back from LINK
+         *(short*)&eib->eibfn = 3586; // need to restore some
+         tca->kikeibp.gluR13 = (char*)r13; // EIB context...
+        }
+       // -- eib.eibresp should be set to show cause
+       // -- just break out, let 'global' exit handle it...
+       break;
+       }
+
+      // we get here after the setjmp call (ie, SJrtn==0)
+      KIKPCP(csa, *type_of, arg1, arg2, arg3, arg4,
+                           arg5, arg6, arg7, arg8,
+                           arg9, arg10, arg11, arg12);
+
+      // we get here with normal (no error) return
+      if (*type_of == kikpcpLINK) {   // coming back from LINK
+        *(short*)&eib->eibfn = 3586;  // need to restore some
+        tca->kikeibp.gluR13 = (char*)r13;  // EIB context...
+       }
+      break;
+
+  case kikfcpTYPE:   // fcp
+
+      // setup the abend trap
+      SJrtn = MYsetjmp(tca->abenv1);
+      if (SJrtn != 0) {
+       // we get here on error return from KIKFCP call below
+       // -- eib.eibresp should be set to show cause
+       // -- just break out, let 'global' exit handle it...
+       break;
+       }
+
+      // we get here after the setjmp call (ie, SJrtn==0)
+      KIKFCP(csa, *type_of, arg1, arg2, arg3, arg4,
+                           arg5, arg6, arg7, arg8,
+                           arg9, arg10, arg11, arg12);
+
+      // we get here with normal (no error) return
+      break;
+
+  case kiktcpTYPE:   // tcp
+
+      // setup the abend trap
+      SJrtn = MYsetjmp(tca->abenv1);
+      if (SJrtn != 0) {
+       // we get here on error return from KIKTCP call below
+       // -- eib.eibresp should be set to show cause
+       // -- just break out, let 'global' exit handle it...
+       break;
+       }
+
+      // we get here after the setjmp call (ie, SJrtn==0)
+      KIKTCP(csa, *type_of, arg1, arg2, arg3, arg4,
+                           arg5, arg6, arg7, arg8,
+                           arg9, arg10, arg11, arg12);
+
+      // we get here with normal (no error) return
+      break;
+
+  case kikbmsTYPE:   // bms
+
+      if (*type_of == kikbmsHANDLEAID) {
+       eib->eibresp  = 0; // need to set here since this is
+       eib->eibresp2 = 0; // handled here, not in mgt pgm...
+       // do handle/cancel aid processing in the glue
+       //    this one does 'handle' only
+       // arg1 - address of goto control var
+       // arg2 - num aid bytes following 1-16
+       // arg3 - first 4 aids ( 0x44332211 )
+       // arg4 - next  4 aids ( 0x88776655 )
+       // arg5 - next  4 aids ( 0xccbbaa99 )
+       // arg6 - next  4 aids ( 0xggffeedd )
+       gotovar = (int*)arg1;
+       *(short*)(gotovar) = 0; // don't take branch after handle call!
+       numacs = *(int*)arg2;
+       acs14 = *(int*)arg3; acs58 = *(int*)arg4;
+       acs9c = *(int*)arg5; acsdg = *(int*)arg6;
+       for(aptr=0; aptr<numacs; aptr++) {
+        acs = acs14;
+        if (aptr>3) acs = acs58;
+        if (aptr>7) acs = acs9c;
+        if (aptr>11) acs = acsdg;
+        ac = (acs>>((aptr%4)*8))&255;
+        // try to find aid already in table
+        for (aid_iptr=0; aid_iptr<MAXAIDS; aid_iptr++) {
+         if (ac == aid_match[aid_iptr]) break;
+         }
+        if(aid_iptr == MAXAIDS) {
+         // failing that look for empty slot
+         for (aid_iptr=0; aid_iptr<MAXAIDS; aid_iptr++) {
+          if (aid_match[aid_iptr] == 0) break;
+          }
+         }
+        if(aid_iptr == MAXAIDS) {
+         // no slots - time to die
+         aid_iptr=0; // dump not suppressed
+         KIKPCP(csa, kikpcpABND2, "KCG1", &aid_iptr);
+         }
+        aid_rtntos[aid_iptr].regs[0]=sa->gr0;
+        aid_rtntos[aid_iptr].regs[1]=sa->gr1;
+        aid_rtntos[aid_iptr].regs[2]=sa->gr2;
+        aid_rtntos[aid_iptr].regs[3]=sa->gr3;
+        aid_rtntos[aid_iptr].regs[4]=sa->gr4;
+        aid_rtntos[aid_iptr].regs[5]=sa->gr5;
+        aid_rtntos[aid_iptr].regs[6]=sa->gr6;
+        aid_rtntos[aid_iptr].regs[7]=sa->gr7;
+        aid_rtntos[aid_iptr].regs[8]=sa->gr8;
+        aid_rtntos[aid_iptr].regs[9]=sa->gr9;
+        aid_rtntos[aid_iptr].regs[10]=sa->gr10;
+        aid_rtntos[aid_iptr].regs[11]=sa->gr11;
+        aid_rtntos[aid_iptr].regs[12]=sa->gr12;
+        aid_rtntos[aid_iptr].regs[13]=(int)sa;
+        aid_rtntos[aid_iptr].regs[14]=sa->gr14;
+        aid_rtntos[aid_iptr].regs[15]=sa->gr15;
+        aid_rtntos[aid_iptr].val=0;
+        aid_gotovars[aid_iptr]=gotovar;
+        aid_gotovals[aid_iptr]=aptr+1;
+        aid_match[aid_iptr]=ac;
+        aid_pgmmask[aid_iptr] = ent_pgmmask;
+        }
+       break;
+       }
+
+      if (*type_of == kikbmsCANCELAID) {
+       // do handle/cancel aid processing in the glue
+       //    this one does 'cancel' only
+       // arg1-6 same as 'handle' case...
+       if (aid_iptr == 0) { break; }
+       numacs = *(int*)arg2;
+       acs14 = *(int*)arg3; acs58 = *(int*)arg4;
+       acs9c = *(int*)arg5; acsdg = *(int*)arg6;
+       for(aptr=0; aptr<numacs; aptr++) {
+        acs = acs14;
+        if (aptr>3) acs = acs58;
+        if (aptr>7) acs = acs9c;
+        if (aptr>11) acs = acsdg;
+        ac = (acs>>((aptr%4)*8))&255;
+        // try to find aid already in table
+        for (aid_iptr=0; aid_iptr<MAXAIDS; aid_iptr++) {
+         if (ac == aid_match[aid_iptr]) {
+          for (i=0; i<16; i++) aid_rtntos[aid_iptr].regs[i]=0;
+          aid_rtntos[aid_iptr].val=0;
+          aid_gotovars[aid_iptr]=0;
+          aid_gotovals[aid_iptr]=0;
+          aid_match[aid_iptr]=0;
+          }
+         }
+        }
+       break;
+       }
+
+      // setup the abend trap
+      SJrtn = MYsetjmp(tca->abenv1);
+      if (SJrtn != 0) {
+       // we get here on error return from KIKBMS call below
+       // -- eib.eibresp should be set to show cause
+
+       // see if need to do handle aid stuff ...
+       if (*type_of != kikbmsRECV) break; // for recieve map
+       if (eib->eibresp != 36)  break;    // and mapfail
+       if ((eib->eibaid == '\x6d') |  // clear
+           (eib->eibaid == '\x6c') |  // pa1
+           (eib->eibaid == '\x6e') |  // pa2
+           (eib->eibaid == '\x6b')) { // pa3 have no data...
+        // handle aid BEFORE abend processing!!!
+        for (aptr=0; aptr<MAXAIDS; aptr++) {
+         if (eib->eibaid == aid_match[aptr]) break; // out of the 'for'
+         }
+        if(aptr == MAXAIDS) break; // out of the case
+
+#ifdef DOEDF
+ // if EDF is turned on, call the debugger
+ // -- done here 'cause we are skipping the one below...
+ EntrKEDF(2, *mgtpgm, *type_of);
+#endif
+
+        *(short*)(aid_gotovars[aptr]) = aid_gotovals[aptr];
+        ent_pgmmask =  aid_pgmmask[aptr];
+        SETPMASK(ent_pgmmask);
+        tca->kikeibp.useR13 = 0;
+        tca->abenv1.regs[14] = 0;
+        csa->AICAtime = csa->AICAmax;
+        KIKAICA();
+        MYlongjmp(aid_rtntos[aptr], 1);
+        }
+
+       // -- just break out, let 'global' exit handle it...
+       break;
+       }
+
+      // we get here after the setjmp call (ie, SJrtn==0)
+      KIKBMS(csa, *type_of, arg1, arg2, arg3, arg4,
+                           arg5, arg6, arg7, arg8,
+                           arg9, arg10, arg11, arg12);
+
+      // we get here with normal (no error) return
+      if((*type_of == kikbmsRECV) || (*type_of == kikbmsRTXT)) {
+       // do handle aid RECV post-processing in the glue
+       for (aptr=0; aptr<MAXAIDS; aptr++) {
+        if (eib->eibaid == aid_match[aptr]) break; // out of the 'for'
+        }
+       if(aptr == MAXAIDS) break; // out of the case
+
+#ifdef DOEDF
+ // if EDF is turned on, call the debugger
+ // -- done here 'cause we are skipping the one below...
+ EntrKEDF(2, *mgtpgm, *type_of);
+#endif
+
+       *(short*)(aid_gotovars[aptr]) = aid_gotovals[aptr];
+       ent_pgmmask =  aid_pgmmask[aptr];
+       SETPMASK(ent_pgmmask);
+       tca->kikeibp.useR13 = 0;
+       tca->abenv1.regs[14] = 0;
+       csa->AICAtime = csa->AICAmax;
+       KIKAICA();
+       MYlongjmp(aid_rtntos[aptr], 1);
+       }
+      break;
+
+  case kikdcpTYPE:   // dcp
+
+      // setup the abend trap
+      SJrtn = MYsetjmp(tca->abenv1);
+      if (SJrtn != 0) {
+       // we get here on error return from KIKDCP call below
+       // -- eib.eibresp should be set to show cause
+       // -- just break out, let 'global' exit handle it...
+       break;
+       }
+
+      // we get here after the setjmp call (ie, SJrtn==0)
+      KIKDCP(csa, *type_of, arg1, arg2, arg3, arg4,
+                           arg5, arg6, arg7, arg8,
+                           arg9, arg10, arg11, arg12);
+
+      // we get here with normal (no error) return
+      break;
+
+  case kikscpTYPE:   // scp
+
+      // setup the abend trap
+      SJrtn = MYsetjmp(tca->abenv1);
+      if (SJrtn != 0) {
+       // we get here on error return from KIKDCP call below
+       // -- eib.eibresp should be set to show cause
+       // -- just break out, let 'global' exit handle it...
+       break;
+       }
+
+      // we get here after the setjmp call (ie, SJrtn==0)
+      KIKSCP(csa, *type_of, arg1, arg2, arg3, arg4,
+                           arg5, arg6, arg7, arg8,
+                           arg9, arg10, arg11, arg12);
+
+      // we get here with normal (no error) return
+      break;
+
+  case kiktspTYPE:   // tsp
+
+      // setup the abend trap
+      SJrtn = MYsetjmp(tca->abenv1);
+      if (SJrtn != 0) {
+       // we get here on error return from KIKDCP call below
+       // -- eib.eibresp should be set to show cause
+       // -- just break out, let 'global' exit handle it...
+       break;
+       }
+
+      // we get here after the setjmp call (ie, SJrtn==0)
+      KIKTSP(csa, *type_of, arg1, arg2, arg3, arg4,
+                           arg5, arg6, arg7, arg8,
+                           arg9, arg10, arg11, arg12);
+
+      // we get here with normal (no error) return
+      break;
+
+  default:           // bad calls get here
+      KIKPCP(csa, kikpcpABND2, "KCG4", &dodump);
+  }
+
+
+#ifdef DOEDF
+ // if EDF is turned on, call the debugger
+ EntrKEDF(2, *mgtpgm, *type_of);
+#endif
+
+
+ // check eibresp incase we need special handling
+ while (eib->eibresp != 0) {
+  // if RESP is set treat as no error
+  if (resp) break;
+  // check for handle/ignore condition set
+  for (aptr=0; aptr<MAXCONDS; aptr++) {
+   if (eib->eibresp == cond_match[aptr]) break; // out of the for
+   }
+  if(aptr == MAXCONDS) {
+   // no handle or ignore for this specific condition
+   // so see if there is any for 'ERROR'
+   for (aptr=0; aptr<MAXCONDS; aptr++) {
+    if (cond_match[aptr] == ERRORCOND) break; // out of the for
+    }
+   }
+
+  // check for certain 'non-abend' conditions
+  if (*(short*)&eib->eibfn == 4612) { // ENQ, enqbusy, nosuspend
+   if ((eib->eibresp == 55) && (eib->eibresp2 == 0)) break;
+   }
+  if (*(short*)&eib->eibfn == 3074) { // GETMAIN, nostg
+   if ((eib->eibresp == 42) && (eib->eibresp2 == 2)) break;
+   }
+
+  // continue abend if no escape by now...
+  if(aptr == MAXCONDS) {
+   // no handle or ignore for this condition, just
+   //  continue the abend...
+   int maybe = SJrtn-1;
+   KIKPCP(csa, kikpcpABND2, tca->abcode, &maybe);
+   break;
+   }
+  if (cond_gotovars[aptr] != NULL) {
+   // if HANDLE condition is set return as directed
+   *(short*)(cond_gotovars[aptr]) = cond_gotovals[aptr];
+   ent_pgmmask =  cond_pgmmask[aptr];
+   SETPMASK(ent_pgmmask);
+   tca->kikeibp.useR13 = 0;
+   tca->abenv1.regs[14] = 0;
+   csa->AICAtime = csa->AICAmax;
+   KIKAICA();
+   MYlongjmp(cond_rtntos[aptr], 1);
+   }
+  // if IGNORE condition is set treat as no error
+  break;
+  }
+
+ // set eibp field marking re-entry to Cobol (in case of abend)
+ tca->kikeibp.useR13 = 0;
+ tca->abenv1.regs[14] = 0;
+
+ // reset AICA timer (and reestablish STIMER in case it got killed)
+ csa->AICAtime = csa->AICAmax;
+ KIKAICA();
+
+ // restore program mask
+ SETPMASK(ent_pgmmask);
+}
+
+#ifdef FORGCC
+int kikgccgz (KIKEIB *eib, int *version,
+#else
+int kikcobgz (KIKEIB *eib, int *version,
+#endif
+   // int *mgtpgm, int *type_of,
+   char *arg1, char *arg2, char *arg3, char *arg4,
+   char *arg5, char *arg6, char *arg7, char *arg8,
+   char *arg9, char *arg10, char *arg11, char *arg12) {
+
+#ifdef DOEDF
+ KIKCSA *csa;
+ KIKTCA *tca;
+
+ char *p, ent_pgmmask;
+ int MGTPGM, *mgtpgm=&MGTPGM;
+ int TYPEOF, *type_of=&TYPEOF;
+ int mkvrm, r13;
+
+ static int dodump=0, suppress=1;
+
+ // grab regs
+ GETR13(r13);
+
+ // save program mask, clear in KICKS
+ GETPMASK(ent_pgmmask);
+ SETPMASK(dodump); // ie, zero
+
+ // get csa addressing
+ p = ((char*)eib) - 8;         // backup into eib preface
+ csa = (KIKCSA *) *((int*)p);  // pull out the csa pointer
+ tca = csa->tca;               // put tca for easy access to eibp
+
+ // turn off AICA
+ csa->AICAtime = -1;
+
+ // set eibp fields marking re-entry to C (in case of abend)
+ tca->kikeibp.gluR13 = (char*)r13;
+ tca->kikeibp.useR13 = 1;
+ tca->abenv1.regs[14] = 0;
+
+ // no version checking 'cause kikcobgz is always called
+ // after kikcobgl, so the check has already happened once.
+
+ // setup mgtpgm/type_of
+ MGTPGM = kikpcpTYPE; TYPEOF = 256;
+
+ // if EDF is turned on, call the debugger
+ EntrKEDF(1, *mgtpgm, *type_of);
+
+ // set eibp field marking re-entry to Cobol (in case of abend)
+ tca->kikeibp.useR13 = 0; tca->abenv1.regs[14] = 0;
+
+ // reset AICA timer (and reestablish STIMER in case it got killed)
+ csa->AICAtime = csa->AICAmax;
+ KIKAICA();
+
+ // restore program mask, CAA
+ SETPMASK(ent_pgmmask);
+#endif
+}
+

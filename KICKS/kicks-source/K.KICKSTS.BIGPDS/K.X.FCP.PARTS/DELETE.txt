@@ -1,0 +1,265 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+ /////////////////////////////////////////////////////////////
+ //
+ // DELETE FUNCTION
+ //
+ /////////////////////////////////////////////////////////////
+
+ // DELETE deletes a record from a file on a KSDS, a path over a KSDS,
+ // or an RRDS. You cannot delete from a VSAM ESDS
+
+ // You can delete a group of records in a similar way with a single
+ // invocation of this command, identifying the group by the GENERIC
+ // option (not available for RRDS).
+
+ // You can also use this command to delete a single record that has
+ // previously been retrieved for update (by a READ UPDATE command). In
+ // this case, you must not specify the RIDFLD option.
+
+
+int delete(fcte *f, int flags,
+             char *ridfld, short keylen,
+             short *numrec) {
+
+ //file name = arg1; // (Ir) file
+ //flags     = arg2  // (Ir) flags
+                        // generic
+                        // rba
+                        // rrn
+ // - null - = arg3; //
+ // - null - = arg4; //
+ //ridfld    = arg5; // (Io) ridfld (null if missing)
+ //keylen    = arg6; // (Io) keylen (-1 if missing)
+ //numrec    = arg7; // (Ir) numrec (+1 if 'missing')
+
+ ifgacb *a = &f->acb;
+ ifgrpl *r = &f->reqids[0].rpl;
+ int before, after;
+
+ int i, Len, Len2, rba;
+ char *aArea, *aArg;
+
+ // reset some stuff...
+ f->lastreqid = 0;
+ f->reqids[0].lastop = FCTElastopdelete;
+
+ // esds never allowed
+ if ((f->flag1 & FCTEflag1esds) > 0) {
+  f->resp = KIKRESP$INVREQ;
+  f->resp2=21;
+  f->flag1 &= ~FCTEflag1pendupdt;
+  return 8; // logical error
+  }
+
+ // check for contradictory things
+ if(((flags & FCTEflagsbrrn) > 0) && ((flags & FCTEflagsbrba) > 0)) {
+   f->resp = KIKRESP$INVREQ;
+   f->resp2= 902;
+   return 8; //
+  }
+ if(((flags & FCTEflagsbequal) > 0) && ((flags & FCTEflagsbgteq) > 0)) {
+   f->resp = KIKRESP$INVREQ;
+   f->resp2= 902;
+   return 8; //
+  }
+
+ // if 'rba' then rrds not allowed
+ if ((flags & FCTEflagsbrba) > 0)
+  if ((f->flag1 & FCTEflag1rrds) > 0) {
+   f->resp = KIKRESP$INVREQ;
+   f->resp2= 903;
+   return 8; // logical error
+   }
+
+ // if 'rrn' then ksds & esds not allowed
+ // -- 'course esds not allowed anyway...
+ if ((flags & FCTEflagsbrrn) > 0)
+  if(((f->flag1 & FCTEflag1ksds) > 0) ||
+     ((f->flag1 & FCTEflag1esds) > 0)) {
+   f->resp = KIKRESP$INVREQ;
+   f->resp2= 904;
+   return 8; // logical error
+   }
+
+ // if generic then rrds, esds not allowed
+ // -- 'course esds not allowed anyway...
+ if ((flags & FCTEflagsbgeneric) > 0)
+  if(((f->flag1 & FCTEflag1rrds) > 0) ||
+     ((f->flag1 & FCTEflag1esds) > 0)) {
+   f->resp = KIKRESP$INVREQ;
+   f->resp2= 22;
+   return 8; // logical error
+   }
+
+ // check some keylength/generic conditions
+ if (keylen != -1) // these are real cics resp/resp2 's
+  if((flags & FCTEflagsbgeneric) > 0) {
+   if (keylen >= f->keylen) {
+    // 'generic' and keylen given, but
+    // given keylen is greater than real keylen!
+    f->resp = KIKRESP$INVREQ;
+    f->resp2= 25;
+    return 8; // logical error
+    }
+   if (keylen < 0) {
+    // 'generic' and keylen given, but keylen < 0
+    f->resp = KIKRESP$INVREQ;
+    f->resp2= 42;
+    return 8; // logical error
+    }
+   } else { // not generic
+   if (keylen != f->keylen) {
+    // 'generic' not given, keylen given, but
+    // given keylen <> real keylen!
+    f->resp = KIKRESP$INVREQ;
+    f->resp2= 26;
+    return 8; // logical error
+    }
+   }
+
+ // obtain nlogr (data record count) before delete(s)
+ before = showcb((char*)a, showcb_acb, showcb_field_nlogr);
+
+ // check for ridfld
+ if (ridfld == NULL) {
+
+  // if none, check that we did a read update...
+  if ((f->flag1 & FCTEflag1pendupdt) == 0) {
+   f->resp = KIKRESP$INVREQ;
+   f->resp2=31;
+   return 8; // logical error
+   }
+  f->flag1 &= ~FCTEflag1pendupdt;
+
+  // delete the record read for update
+ sw2vsam();
+  __asm__ (
+   "L 2,%0\n\t"
+   "ERASE RPL=(2)"
+   : /* no output */
+   : "m"(r)
+   : "0","1","2","14","15"
+  );
+ sw2kicks();
+
+  // obtain nlogr (data record count) after delete
+  after = showcb((char*)a, showcb_acb, showcb_field_nlogr);
+  if (numrec != 0) *numrec = before - after;
+
+  // note current op as last, map return, goback
+  maprtn(f, 0);
+
+  return (f->rcode[2]);
+
+ } else {  // ridfld given, so must read for update here...
+
+  int flag2, i=0, ii, re, re2, retcode;
+  short len2, keyl2;
+  char *in2, *rid2;
+
+  // refresh fields from the RPL
+  Len2 = showcb((char*)r, showcb_rpl, showcb_field_reclen);
+  aArea = (char*)showcb((char*)r, showcb_rpl, showcb_field_area);
+  rba = showcb((char*)r, showcb_rpl, showcb_field_rba);
+  aArg = (char*)&r->rplarg;
+
+  // qualify keylen
+  if (keylen == -1) keylen = f->keylen;
+  if (keylen > f->keylen) keylen = f->keylen;
+  if (keylen < 0) keylen = 0;
+  if((flags & (FCTEflagsbrba | FCTEflagsbrrn)) > 0) keylen = 4;
+
+  // get a temporary buffer for the key
+  rid2 = (char*)MALLOC(4+(f->keylen));
+  if (rid2 == NULL) {
+   f->resp = KIKRESP$ILLOGIC;
+   f->resp2= 906;
+   return 8; // logical error
+   }
+  MEMSET(rid2, 0, 4+(f->keylen));
+  //MCPY((char*)&r->rplarg, (char*)&rid2, 4);
+  MEMCPY(aArg, (char*)&rid2, 4);
+
+  // loop reading (for update) all matching records
+  while (1) {
+
+   flag2 = flags | FCTEflagsbequal | FCTEflagsbupdate;
+   in2 = aArea;
+   len2 = f->lrecl;
+   MEMCPY(rid2, ridfld, keylen);
+   keyl2 = keylen;
+   f->flag1 &= ~FCTEflag1pendupdt;
+   ii = read(f, flag2, in2, &len2, rid2, keyl2);
+
+   if (ii != 0) break;
+   i++; // if i > 0 there was at least 1 good read...
+
+   // setup RPL
+   // -- for ksds, rrds
+   sw2vsam();
+   __asm__ (
+    "L 2,%0\n\t"
+    "MODCB RPL=(2),OPTCD=(KEY,DIR,SYN,NUP,MVE,FKS,KEQ,FWD)"
+    : /* no output */
+    : "m"(r)
+    : "0","1","2","14","15"
+    );
+   // -- for rba specified
+   if ((flags & FCTEflagsbrba) > 0)
+    __asm__ (
+     "L 2,%0\n\t"
+     "MODCB RPL=(2),OPTCD=(ADR,DIR,SYN,NUP,MVE,FKS,KEQ)"
+     : /* no output */
+     : "m"(r)
+     : "0","1","2","14","15"
+     );
+
+   // erase the record(s)
+   __asm__ (
+    "L 2,%0\n\t"
+    "ERASE RPL=(2)"
+    : /* no output */
+    : "m"(r)
+    : "0","1","2","14","15"
+    );
+   sw2kicks();
+
+   // set codes, maybe return
+   maprtn(f, 0);
+   re = f->resp; re2 = f->resp2;
+   retcode = f->rcode[2];
+   if(retcode != 0) break;
+   }
+
+  // free the temporary key buffer
+  FREE(rid2);
+  //MSET((char*)&r->rplarg, 0, 4);
+  MEMSET(aArg, 0, 4);
+
+  // obtain nlogr (data record count) after delete
+  after = showcb((char*)a, showcb_acb, showcb_field_nlogr);
+  if (numrec != 0) *numrec = before - after;
+
+  if (i == 0) { // no good reads, so use (bad) return from read
+   retcode = f->rcode[2];
+  } else {      // 1 or more good reads so use last 'erase' return
+   f->resp = re; f->resp2 = re2;
+  }
+
+  return (retcode);
+  }
+ }
+

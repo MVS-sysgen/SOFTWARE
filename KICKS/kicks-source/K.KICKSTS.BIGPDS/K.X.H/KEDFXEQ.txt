@@ -1,0 +1,373 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+ // main include for KEDFXEQ
+
+#ifndef __kedfxeq__
+#define __kedfxeq__
+
+
+#include <stdio.h>
+#include <time.h>
+
+#include "kicks.h"
+
+#include "kikaid.h"
+
+#include "kedfcomm.h"
+
+#include "bmsfld.h"
+#include "bmsmap.h"
+#include "bmsms.h"
+
+#include "ppthdr.h"
+#include "pptent.h"
+
+
+
+#define NUMBKP 15
+
+ typedef struct _DIRREC {
+   char  srk_progid[8];     // program (key)
+   char  srk_linenum[6];    // line number (key) (sb zeros)
+   short sr_grp;            // lines in group (sb zero)
+   int   sr_line;           // line number of 1st in group (sb zero)
+   char  cf_pgmid[8];       // program
+   char  cff1;       // cff1, 2, 3, 4, 5 are low-value fillers
+   char  cf_wcdate[20];     // when compiled
+   char  cff2;
+   char  cf_numlines[6];    // number of lines
+   char  cff3;
+   char  cf_lang[3];        // language (COB or GCC)
+   char  cff4;
+   char  cf_numnums[6];     // number of breakables
+   char  cff5;
+   char  sr_main[24];       // filler
+  } DIRREC;
+
+ typedef struct _SRCREC {
+   char  srk_progid[8];     // program (key)
+   char  srk_linenum[6];    // line number (key)
+   short sr_grp;            // lines in group
+   int   sr_line;           // line number of 1st in group
+   char  sr_main[72];       // card image to display
+  } SRCREC;
+
+
+
+#ifdef KEDFXEQFLAG
+
+KIKCSA *csa;
+KIKEIB eibSave;
+KIKTCTTE tctteSave;
+
+char tioaSave[TIOASIZE];
+char lotioaSave[TIOASIZE];
+
+int zero=0, one=1, bot=24;
+int which=0, pwhich=0, helpv=1;
+int offset=0;    // used for pf7/pf8 (etc)
+int ttype=0;     // used for DoDumpTrc for hex or explain
+int skiptran=0;  // used for PF3 'goto bkup'
+
+int sba_1632=16, tioau;
+
+char transkip[4]; // used in conjuction with skiptran
+char timebuf[20], pname[10];
+int cobarg[13], poff, padd, psiz;
+
+int sourct=-1;   // filter sets to 1 if source tracing active, else -1
+int srcapi=-1;   // PF13 toggles; -1 display api, +1 display source
+
+int  bkpline [NUMBKP];     // breakpoint line numbers (neg if temp)
+char bkpprog [NUMBKP][8];  // breakpoint program names
+char bkpwc   [NUMBKP][20]; // breakpoint compile dates
+
+#else
+
+extern KIKCSA *csa;
+extern KIKEIB eibSave;
+extern KIKTCTTE tctteSave;
+
+extern char tioaSave[TIOASIZE];
+extern char lotioaSave[TIOASIZE];
+
+extern int zero, one, bot;
+extern int which, pwhich, helpv;
+extern int offset;
+extern int ttype;
+extern int skiptran;
+extern int sba_1632, tioau;
+
+extern char transkip[4];
+extern char timebuf[20], pname[10];
+extern int cobarg[13], poff, padd, psiz;
+
+extern int sourct;
+extern int srcapi;
+extern int  bkpline [NUMBKP];
+extern char bkpprog [NUMBKP][8];
+extern char bkpwc   [NUMBKP][20];
+
+ // these externs are from encode3270,c
+ // which is included in the mainline.
+extern int sba_maxcol, sba_maxrow, sba_use14;
+
+#endif
+
+#define dothedump zero
+#define suppress one
+
+ /////////////////// function templates ////////////////////
+
+int  DoFilter(KIKEIB *eib, DEBUGGERCA *comm);
+void DoSTog(KIKEIB *eib, DEBUGGERCA *comm);
+int  GetMapDsectSize(char *mapsetname, char *mapname);
+void DoDump(char *begin, int size, int offset, int top, int dolines);
+
+void DoTop(KIKEIB *eib, DEBUGGERCA *comm);
+void DoBottom(KIKEIB *eib, DEBUGGERCA *comm);
+void DoMain(KIKEIB *eib, DEBUGGERCA *comm);
+
+
+ ////////////////////// BMS api calls //////////////////////
+
+#define API_HANDLE_AID API_H2NDLE_AID
+void API_HANDLE_AID(KIKEIB *eib, DEBUGGERCA *comm);
+#define API_RECEIVE_MAP API_RECEIVE
+#define API_SEND_MAP API_RECEIVE
+#define API_SEND_TEXT API_RECEIVE
+#define API_SEND_CONTROL API_RECEIVE
+void API_RECEIVE(KIKEIB *eib, DEBUGGERCA *comm);
+
+
+ ////////////////////// DCP api calls /////////////////////
+
+#define API_DELETEQ_TD API_RTDDQ_TD
+#define API_WRITEQ_TD API_RTDDQ_TD
+#define API_READQ_TD API_RTDDQ_TD
+void API_RTDDQ_TD(KIKEIB *eib, DEBUGGERCA *comm);
+#define API_SPOOLCLOSE API_SPOOLOPEN
+#define API_SPOOLWRITE API_SPOOLOPEN
+void API_SPOOLOPEN(KIKEIB *eib, DEBUGGERCA *comm);
+
+
+ ////////////////////// FCP api calls //////////////////////
+
+#define API_WRITE API_READ
+#define API_READNEXT API_READ
+#define API_READPREV API_READ
+void API_READ(KIKEIB *eib, DEBUGGERCA *comm);
+void API_REWRITE(KIKEIB *eib, DEBUGGERCA *comm);
+void API_DELETE(KIKEIB *eib, DEBUGGERCA *comm);
+void API_UNLOCK(KIKEIB *eib, DEBUGGERCA *comm);
+#define API_RESETBR API_STARTBR
+void API_STARTBR(KIKEIB *eib, DEBUGGERCA *comm);
+void API_ENDBR(KIKEIB *eib, DEBUGGERCA *comm);
+
+
+ ////////////////////// KCP api calls //////////////////////
+
+void API_SUSPEND(KIKEIB *eib, DEBUGGERCA *comm);
+void API_ADDRESS(KIKEIB *eib, DEBUGGERCA *comm);
+void API_ASSIGN(KIKEIB *eib, DEBUGGERCA *comm);
+#define API_ASKTIME_ABSTIME API_ASKTIME
+void API_ASKTIME(KIKEIB *eib, DEBUGGERCA *comm);
+void API_DELAY(KIKEIB *eib, DEBUGGERCA *comm);
+void API_FORMATTIME(KIKEIB *eib, DEBUGGERCA *comm);
+void API_SIGNOFF(KIKEIB *eib, DEBUGGERCA *comm);
+void API_SYNCPOINT(KIKEIB *eib, DEBUGGERCA *comm);
+#define API_DEQ API_ENQ
+void API_ENQ(KIKEIB *eib, DEBUGGERCA *comm);
+
+
+ ////////////////////// PCP api calls //////////////////////
+
+#define API_IGNORE_CONDITION API_HANDLE_CONDITION
+void API_HANDLE_CONDITION(KIKEIB *eib, DEBUGGERCA *comm);
+void API_LOAD(KIKEIB *eib, DEBUGGERCA *comm);
+#define API_XCTL API_LINK
+void API_LINK(KIKEIB *eib, DEBUGGERCA *comm);
+void API_RETURN(KIKEIB *eib, DEBUGGERCA *comm);
+void API_RELEASE(KIKEIB *eib, DEBUGGERCA *comm);
+#define API_ABEND API_DUMP
+void API_DUMP(KIKEIB *eib, DEBUGGERCA *comm);
+void API_ENTER(KIKEIB *eib, DEBUGGERCA *comm);
+
+
+ ////////////////////// SCP api calls //////////////////////
+
+#define API_FREEMAIN API_GETMAIN
+void API_GETMAIN(KIKEIB *eib, DEBUGGERCA *comm);
+
+
+ ////////////////////// TCP api calls //////////////////////
+
+void API_WRITE_OPERATOR(KIKEIB *eib, DEBUGGERCA *comm);
+
+
+ ////////////////////// TSP api calls //////////////////////
+
+#define API_DELETEQ_TS API_RTSDQ_TS
+#define API_WRITEQ_TS API_RTSDQ_TS
+#define API_READQ_TS API_RTSDQ_TS
+void API_RTSDQ_TS(KIKEIB *eib, DEBUGGERCA *comm);
+
+
+ ////// API router (calls above API display routines) //////
+
+void API_top(KIKEIB *eib, DEBUGGERCA *comm);
+void Source_Trace(KIKEIB *eib, DEBUGGERCA *comm);
+void API_resp(KIKEIB *eib, DEBUGGERCA *comm);
+void API(KIKEIB *eib, DEBUGGERCA *comm);
+
+
+ ////////////////// Control Block Display //////////////////
+
+void DoUSR(KIKEIB *eib, DEBUGGERCA *comm);
+void DoCWA(KIKEIB *eib, DEBUGGERCA *comm);
+void DoTWA(KIKEIB *eib, DEBUGGERCA *comm);
+void DoTCTTEUA(KIKEIB *eib, DEBUGGERCA *comm);
+void DoTrace(KIKEIB *eib, DEBUGGERCA *comm);
+void DoEIB(KIKEIB *eib, DEBUGGERCA *comm);
+void DoComm(KIKEIB *eib, DEBUGGERCA *comm);
+void DoWS(KIKEIB *eib, DEBUGGERCA *comm);
+void DoScreen(KIKEIB *eib, DEBUGGERCA *comm);
+
+
+ //////////////////////// mainline /////////////////////////
+
+ void KEDFXEQ (KIKEIB *eib, DEBUGGERCA *comm);
+
+
+ /////////////////////// api macros ////////////////////////
+
+#undef  ENDBR
+#undef  LOAD
+#undef  READNEXT
+#undef  STARTBR
+#undef  CLOSE
+ // above undefs needed to release the copy of the macros
+ // from KIKMACS.H -- which can't be used here due to their
+ // setting of csa->trc.trcflags
+
+#define ENDBR(file,flags,reqid)                                \
+{                                                              \
+int SJrtn;                                                     \
+MYjmp_buf abenv2;                                              \
+MEMCPY(&abenv2, &csa->tca->abenv1, sizeof(MYjmp_buf));         \
+while (1) {                                                    \
+ SJrtn = MYsetjmp(csa->tca->abenv1);                           \
+ if (SJrtn != 0) break;                                        \
+ KIKFCP(csa,kikfcpENDB,file,&flags,0,0,0,0,&reqid);            \
+ break;                                                        \
+ }                                                             \
+MEMCPY(&csa->tca->abenv1, &abenv2, sizeof(MYjmp_buf));         \
+}
+
+#define LOAD(pgm,addr,size)                                    \
+{                                                              \
+MYjmp_buf abenv2;                                              \
+int SJrtn, two=2;                                              \
+MEMCPY(&abenv2, &csa->tca->abenv1, sizeof(MYjmp_buf));         \
+while (1) {                                                    \
+ SJrtn = MYsetjmp(csa->tca->abenv1);                           \
+ if (SJrtn != 0) break;                                        \
+ KIKPCP(csa, kikpcpLOAD, pgm, &addr, &size, &two);             \
+ break;                                                        \
+ }                                                             \
+MEMCPY(&csa->tca->abenv1, &abenv2, sizeof(MYjmp_buf));         \
+}
+
+#define DUMP(code,flag,from,fromlength)                        \
+{                                                              \
+MYjmp_buf abenv2;                                              \
+int SJrtn, two=2;                                              \
+MEMCPY(&abenv2, &csa->tca->abenv1, sizeof(MYjmp_buf));         \
+while (1) {                                                    \
+ SJrtn = MYsetjmp(csa->tca->abenv1);                           \
+ if (SJrtn != 0) break;                                        \
+ KIKPCP(csa, kikpcpDUMP, code, &flag, from, &fromlength);      \
+ break;                                                        \
+ }                                                             \
+MEMCPY(&csa->tca->abenv1, &abenv2, sizeof(MYjmp_buf));         \
+}
+
+#define READNEXT(file,flags,into,length,ridfld,keylen,reqid)   \
+{                                                              \
+int SJrtn;                                                     \
+MYjmp_buf abenv2;                                              \
+MEMCPY(&abenv2, &csa->tca->abenv1, sizeof(MYjmp_buf));         \
+while (1) {                                                    \
+ SJrtn = MYsetjmp(csa->tca->abenv1);                           \
+ if (SJrtn != 0) break;                                        \
+ KIKFCP(csa,kikfcpREDN,file,&flags,into,&length,ridfld,&keylen,&reqid); \
+ break;                                                        \
+ }                                                             \
+MEMCPY(&csa->tca->abenv1, &abenv2, sizeof(MYjmp_buf));         \
+}
+
+#define STARTBR(file,flags,ridfld,keylen,reqid)                \
+{                                                              \
+int SJrtn;                                                     \
+MYjmp_buf abenv2;                                              \
+MEMCPY(&abenv2, &csa->tca->abenv1, sizeof(MYjmp_buf));         \
+while (1) {                                                    \
+ SJrtn = MYsetjmp(csa->tca->abenv1);                           \
+ if (SJrtn != 0) break;                                        \
+ KIKFCP(csa,kikfcpSTBR,file,&flags,0,0,ridfld,&keylen,&reqid); \
+ break;                                                        \
+ }                                                             \
+MEMCPY(&csa->tca->abenv1, &abenv2, sizeof(MYjmp_buf));         \
+}
+
+#define CLOSE(file)                                            \
+{                                                              \
+int SJrtn;                                                     \
+MYjmp_buf abenv2;                                              \
+MEMCPY(&abenv2, &csa->tca->abenv1, sizeof(MYjmp_buf));         \
+while (1) {                                                    \
+ SJrtn = MYsetjmp(csa->tca->abenv1);                           \
+ if (SJrtn != 0) break;                                        \
+ KIKFCP(csa,kikfcpCLOSE,file);                                 \
+ break;                                                        \
+ }                                                             \
+MEMCPY(&csa->tca->abenv1, &abenv2, sizeof(MYjmp_buf));         \
+}
+
+ // macros to simplify adding text and
+ // commands to the 3270 output buffer
+
+#define APPEND_MSG(txt)           \
+{ int ltxt;                       \
+ ltxt=STRLEN(txt);                \
+ MEMCPY(&tioa[tioau], txt, ltxt); \
+ tioau += ltxt;                   \
+}
+
+#define APPEND_MSGN(txt,n)        \
+{ MEMCPY(&tioa[tioau], txt, n);   \
+ tioau += n;                      \
+}
+
+#define PUT_SBA(r,c)                    \
+{ short sbuf;                           \
+ sbuf=encode_sba(r,c);                  \
+ MEMCPY(&tioa[tioau], "\x11", 1);       \
+ tioau++;                               \
+ MEMCPY(&tioa[tioau], (char*)&sbuf, 2); \
+ tioau += 2;                            \
+}
+
+#endif

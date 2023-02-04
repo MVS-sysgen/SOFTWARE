@@ -1,0 +1,542 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+void Do_SEND() {
+// send data to a remote process
+// EXEC CICS SEND [CONVID(name) | SESSION(name)] [ATTACHID(name)]
+//       [FROM(data-area) [LENGTH(data-area) |
+//       FLENGTH(data-area)]] [INVITE | LAST] [CONFIRM | WAIT]
+//       [STATE(data-area)] END-EXEC.
+// -- or --
+// send data to a terminal
+// EXEC CICS SEND FROM(data-area) [LENGTH(data-area) | FLENGTH(data-area)]
+//       [DEST(name)] [WAIT] [INVITE | LAST] [DEFRESP] [STRFIELD]
+//       [ERASE] [CTLCHAR(data-area)] END-EXEC.
+// -- or --
+// send device control instructions to a terminal
+// EXEC CICS SEND CONTROL [ERASEAUP | ERASE] [ALARM] [FREEKB] [FRSET]
+//       [CURSOR(data-value)] [PRINT] [FORMFEED] [ACCUM] [PAGING |
+//       TERMINAL [WAIT] [LAST]] [L40 | L64 | L80 | HONEOM]
+//       [REQID(name)] END-EXEC.
+// -- or --
+// send data to a terminal via BMS
+// EXEC CICS SEND MAP(name) [MAPSET(name)] [FROM(data-area)]
+//       [LENGTH(data-value)]
+//       [DATAONLY | MAPONLY] [ERASEAUP | ERASE] [ALARM] [FREEKB]
+//       [FRSET]
+//       [CURSOR(data-value)] [PRINT] [FORMFEED] [NLEOM] [ACCUM]
+//       [PAGING |
+//       TERMINAL [WAIT]] [LAST] [L40 | L64 | L80 | HONEOM]
+//       [REQID(name)] END-EXEC.
+// -- or --
+// write the last page of a BMS message to temporary storage
+// EXEC CICS SEND PAGE [RELEASE [TRANSID(name)] | RETAIN]
+//        [AUTOPAGE | NOAUTOPAGE]
+//        [OPERPURGE] [TRAILER(data-area)] END-EXEC.
+// -- or --
+// send data to a terminal letting BMS automatically format the data
+// EXEC CICS SEND TEXT FROM(data-area) [LENGTH(data-value)] [ERASE] [ALARM]
+//        [FREEKB]
+//        [CURSOR(data-value)] [PRINT] [FORMFEED] [NLEOM] [ACCUM] [PAGING |
+//        TERMINAL
+//        [WAIT]] [LAST] [HEADER(data-area)] [TRAILER(data-area)]
+//        [JUSTIFY(datavalue) |
+//        JUSFIRST | JUSLAST] [L40 | L64 | L80 | HONEOM] [REQID(name)] END-EXEC.
+// -- or --
+// send data to a terminal similar to terminal control but can direct to
+//       temporary storage using paging option
+// EXEC CICS SEND TEXT NOEDIT FROM(data-area) [LENGTH(data-value)] [ERASE]
+//        [ALARM] [FREEKB]
+//        [PRINT] [PAGING | TERMINAL [WAIT] [LAST]] [L40 | L64 | L80 |
+//        HONEOM] [REQID(name)] END-EXEC.
+
+// *** SEND CONVID not supported
+// *** SEND PAGE not supported
+// *** SEND TEXT NOEDIT not supported
+
+char err[100], saveblocks[4000];
+
+char op[100], ops[30][100], *ip;
+int  i, numops=0;
+
+char cursor[80]="", map[80]="", mapset[80]="", from[80]="";
+int alarm=0, alternate=0, deFault=0, erase=0, eraseaup=0, strfield=0;
+int freekb=0, frset=0, length=0, maponly=0, sopt=0, swcc=0;
+int symcursor=0, dataonly=0;
+
+if (MYbegstr(blk_op2, "CONTROL")) {
+
+// EXEC CICS SEND CONTROL [ERASEAUP | ERASE] [ALARM] [FREEKB] [FRSET]
+//       [CURSOR(data-value)] [PRINT] [FORMFEED] [ACCUM] [PAGING |
+//       TERMINAL [WAIT] [LAST]] [L40 | L64 | L80 | HONEOM]
+//       [REQID(name)] ;.
+
+// *** DO NOT SUPPORT PRINT, FORMFEED, ACCUM, PAGING, TERMINAL,
+//     WAIT, LAST, L40, L64, L80, HONEOM, or REQID
+
+// really just a special case of SEND TEXT (LENGTH=0)
+
+// *** added ALTERNATE support..,
+
+ // break up string my way
+ numops = 0;
+ strcpy(saveblocks, cicsblks);
+ ip = SPCLTOK(saveblocks, " ");   // EXEC
+ while (ip=SPCLTOK(0, " ")) {     // KICKS, verb, ... END-EXEC
+  strcpy(ops[numops], ip);
+  numops++;
+  }
+
+ // march thru the args
+ for (i=0; i<numops; i++) {
+  strcpy(op, ops[i]);
+  if(strlen(op)==0) { continue; }
+  if(MYbegstr(op,".")) { continue; }
+  if(MYbegstr(op,"RESP")) { continue; }
+  if(MYbegstr(op,"RESP2")) { continue; }
+  if(MYbegstr(op,"NOHANDLE")) { continue; }
+  if(MYbegstr(op,"EXEC")) { continue; }
+  if(MYbegstr(op,"KICKS")) { continue; }
+  if(MYbegstr(op,"SEND")) { continue; }
+  if(MYbegstr(op,"CONTROL")) { continue; }
+  if(MYbegstr(op,"END-EXEC") || MYbegstr(op,";")) { continue; }
+  if(MYbegstr(op,"CURSOR")) {
+   ip = strtok(op, "()");   // CURSOR
+   ip = strtok(0, "()");    // the cursor location
+   if (ip == NULL) {
+    // send text can't have symbolic cursor...
+    sprintf(err,
+    "malformed argument %s of SEND CONTROL", op);
+    prt_error(err, 8);
+    No_Code();
+    return;
+    }
+   parrensDown(ip);
+   strcpy(cursor, ip);
+   continue;
+   }
+  if(MYbegstr(op,"ERASE")) { erase = 1; continue; }
+  if(MYbegstr(op,"ALTERNATE")) { alternate = 1; continue; }
+  if(MYbegstr(op,"DEFAULT")) { deFault = 1; continue; }
+  if(MYbegstr(op,"ALARM")) { alarm = 1; continue; }
+  if(MYbegstr(op,"FREEKB")) { freekb = 1; continue; }
+  if(MYbegstr(op,"ERASEAUP")) { eraseaup = 1; continue; }
+  if(MYbegstr(op,"FRSET")) { frset = 1; continue; }
+
+  sprintf(err,
+  "unknown/unsupported argument %s of SEND CONTROL", op);
+  prt_error(err, 8);
+  No_Code();
+  return;
+  }
+
+ if (erase == 00) {
+  if ((alternate > 0) || (deFault > 0)) {
+  prt_error("ALTERNATE (or DEFAULT) only make sense if ERASE specified ", 8);
+  No_Code();
+  return;
+   }
+  }
+
+ if ((erase) > 0) { sopt = 0xf5; }
+ if ((erase * alternate) > 0) { sopt = 0x7e; }
+ if ((eraseaup) > 0) { sopt = 0x6f; }
+ if (frset > 0) { swcc = swcc + 1; }
+ if (freekb > 0) { swcc = swcc + 2; }
+ if (alarm > 0) { swcc = swcc + 4; }
+ sopt += 256 * swcc;
+ sopt *= 256;
+
+ if(strlen(cursor) > 0) { sopt = sopt + 4; }
+
+#ifdef PPCOB
+ fprintf(stdout, "           MOVE 6162 TO EIBFN-2\n");
+ fprintf(stdout, "           MOVE %d TO KIK-FLAGS\n", sopt);
+ fprintf(stdout, "           CALL 'KIKCOBGL' USING KIKEIB,\n");
+ if (!strcmp(respvar, ""))
+  fprintf(stdout, "                 KIK-V1,\n");
+ else
+  fprintf(stdout, "                 KIK-V2,\n");
+ fprintf(stdout, "                 KIK-NULL, KIK-NULL, KIK-NULL,\n");
+ if(strlen(cursor)==0) {
+         fprintf(stdout, "                 KIK-NULL, KIK-FLAGS"); }
+ else {
+         fprintf(stdout, "                 %s, KIK-FLAGS", cursor); }
+#endif
+#ifdef PPGCC
+
+  // ??????????????
+  else { strcpy(cursor, "0"); }
+
+
+ fprintf(stdout, "\t{ short *eibfn2 = (short*)&__KIKEIB->eibfn;\n");
+ fprintf(stdout, "\t\t*eibfn2 = 6162;\n");
+ if (!strcmp(respvar, ""))
+  fprintf(stdout, "\t  int *z=&KIK_NULL, *v=&KIK_V1;\n");
+ else
+  fprintf(stdout, "\t  int *z=&KIK_NULL, *v=&KIK_V2;\n");
+ fprintf(stdout, "\t int sopt=%d, *SOPT=&sopt;\n", sopt);
+ fprintf(stdout, "\t int cursor=%s, *CURSOR=&cursor;\n", cursor);
+ fprintf(stdout, "\t kikgccgl(__KIKEIB, v, z, z, z,\n");
+ fprintf(stdout, "\t\tCURSOR, SOPT);\n");
+#endif
+ return;
+ }
+
+if (MYbegstr(blk_op2, "MAP")) {
+
+// EXEC CICS SEND MAP(name) [MAPSET(name)] [FROM(data-area)]
+//       [LENGTH(data-value)]
+//       [DATAONLY | MAPONLY] [ERASEAUP | ERASE] [ALARM] [FREEKB]
+//       [FRSET]
+//       [CURSOR(data-value)] [PRINT] [FORMFEED] [NLEOM] [ACCUM]
+//       [PAGING |
+//       TERMINAL [WAIT]] [LAST] [L40 | L64 | L80 | HONEOM]
+//       [REQID(name)] END-EXEC.
+
+// *** DATAONLY, PAGING, TERMINAL, WAIT, LAST, L40,
+// ***     L64, L80, HONEOM, REQID, NLEOM, ACCUM all unsupported
+
+ // break up string my way
+ numops = 0;
+ strcpy(saveblocks, cicsblks);
+ ip = SPCLTOK(saveblocks, " ");   // EXEC
+ while (ip=SPCLTOK(0, " ")) {     // KICKS, verb, ... END-EXEC
+  strcpy(ops[numops], ip);
+  numops++;
+  }
+
+ // march thru the args
+ for (i=0; i<numops; i++) {
+  strcpy(op, ops[i]);
+  if(strlen(op)==0) { continue; }
+  if(MYbegstr(op,".")) { continue; }
+  if(MYbegstr(op,"RESP")) { continue; }
+  if(MYbegstr(op,"RESP2")) { continue; }
+  if(MYbegstr(op,"NOHANDLE")) { continue; }
+  if(MYbegstr(op,"EXEC")) { continue; }
+  if(MYbegstr(op,"KICKS")) { continue; }
+  if(MYbegstr(op,"SEND")) { continue; }
+  if(MYbegstr(op,"END-EXEC") || MYbegstr(op,";")) { continue; }
+  if(MYbegstr(op,"MAPSET")) {
+   ip = strtok(op, "()");   // MAPSET
+   ip = strtok(0, "()");    // the name of the mapset
+   if (ip == NULL) {
+    sprintf(err,
+    "malformed argument %s of SEND MAP", op);
+    prt_error(err, 8);
+    No_Code();
+    return;
+    }
+   parrensDown(ip);
+   strcpy(mapset, ip);
+   fixXNAME(mapset, 8);
+   continue;
+   }
+  if(MYbegstr(op,"MAP")) {
+   ip = strtok(op, "()");   // MAP
+   ip = strtok(0, "()");    // the name of the map
+   if (ip == NULL) {
+    sprintf(err,
+    "malformed argument %s of SEND MAP", op);
+    prt_error(err, 8);
+    No_Code();
+    return;
+    }
+   parrensDown(ip);
+   strcpy(map, ip);
+   if(strlen(from)==0) {
+    strncpy(from, ip+1, strlen(ip)-2); // drop the 'tic' marks...
+#ifdef PPCOB
+    strcat(from, "O");
+#endif
+#ifdef PPGCC
+    strcat(from, ".");
+    strncat(from, ip+1, strlen(ip)-2);
+    if ((from[0] >= 'a') && (from[0] <= 'z'))
+     strcat(from, "o");
+    else
+     strcat(from, "O");
+#endif
+    }
+   fixXNAME(map, 8);
+   continue;
+   }
+  if(MYbegstr(op,"FROM")) {
+   ip = strtok(op, "()");   // FROM
+   ip = strtok(0, "()");    // the name of the var to get data
+   if (ip == NULL) {
+    sprintf(err,
+    "malformed argument %s of SEND MAP", op);
+    prt_error(err, 8);
+    No_Code();
+    return;
+    }
+   parrensDown(ip);
+   strcpy(from, ip);
+   continue;
+   }
+  if(MYbegstr(op,"CURSOR")) {
+   ip = strtok(op, "()");   // CURSOR
+   ip = strtok(0, "()");    // the cursor location
+   if (ip == NULL) { symcursor = 1; continue; }
+   parrensDown(ip);
+   strcpy(cursor, ip);
+   continue;
+   }
+  if(MYbegstr(op,"ALARM")) { alarm = 1; continue; }
+  if(MYbegstr(op,"ALTERNATE")) { alternate = 1; continue; }
+  if(MYbegstr(op,"DEFAULT")) { deFault = 1; continue; }
+  if(MYbegstr(op,"ERASE")) { erase = 1; continue; }
+  if(MYbegstr(op,"ERASEAUP")) { eraseaup = 1; continue; }
+  if(MYbegstr(op,"FREEKB")) { freekb = 1; continue; }
+  if(MYbegstr(op,"FRSET")) { frset = 1; continue; }
+  if(MYbegstr(op,"MAPONLY")) { maponly = 1; continue; }
+  if(MYbegstr(op,"DATAONLY")) { dataonly = 1; continue; }
+  sprintf(err,
+  "unknown/unsupported argument %s of SEND MAP", op);
+  prt_error(err, 8);
+  No_Code();
+  return;
+  }
+
+ if (erase == 00) {
+  if ((alternate > 0) || (deFault > 0)) {
+  prt_error("ALTERNATE (or DEFAULT) only make sense if ERASE specified ", 8);
+  No_Code();
+  return;
+   }
+  }
+
+ if ((erase) > 0) { sopt = 0xf5; }
+ if ((erase * alternate) > 0) { sopt = 0x7e; }
+ if ((eraseaup) > 0) { sopt = 0x6f; }
+ if (frset > 0) { swcc = swcc + 1; }
+ if (freekb > 0) { swcc = swcc + 2; }
+ if (alarm > 0) { swcc = swcc + 4; }
+ sopt += 256 * swcc;
+ sopt *= 256;
+ if(maponly > 0) { sopt = sopt + 1; }
+ if(symcursor > 0) { sopt = sopt + 2; }
+
+#ifdef PPCOB
+ if(strlen(cursor) > 0) { sopt = sopt + 4; }
+ if(dataonly > 0) { sopt = sopt + 8; }
+ fprintf(stdout, "           MOVE 6148 TO EIBFN-2\n");
+ fprintf(stdout, "           MOVE %s TO KIK-MAPNAME\n", map);
+ fprintf(stdout, "           MOVE %s TO KIK-MAPSETNAME\n", mapset);
+ fprintf(stdout, "           MOVE %d TO KIK-FLAGS\n", sopt);
+ fprintf(stdout, "           CALL 'KIKCOBGL' USING KIKEIB,\n");
+ if (!strcmp(respvar, ""))
+  fprintf(stdout, "                 KIK-V1,\n");
+ else
+  fprintf(stdout, "                 KIK-V2,\n");
+ fprintf(stdout, "                 KIK-MAPSETNAME, KIK-MAPNAME, %s\n", from);
+ if(strlen(cursor)==0) {
+         fprintf(stdout, "                 KIK-NULL, KIK-FLAGS"); }
+ else {
+         fprintf(stdout, "                 %s, KIK-FLAGS", cursor); }
+#endif
+#ifdef PPGCC
+ if(strlen(cursor) > 0) { sopt = sopt + 4; }
+  else { strcpy(cursor, "0"); }
+ if(dataonly > 0) { sopt = sopt + 8; }
+ fprintf(stdout, "\t{ short *eibfn2 = (short*)&__KIKEIB->eibfn;\n");
+ fprintf(stdout, "\t\t*eibfn2 = 6148;\n");
+ if (!strcmp(respvar, ""))
+  fprintf(stdout, "\t  int *v=&KIK_V1;\n");
+ else
+  fprintf(stdout, "\t  int *v=&KIK_V2;\n");
+ fprintf(stdout, "\t int sopt=%d, *SOPT=&sopt;\n", sopt);
+ fprintf(stdout, "\t int cursor=%s, *CURSOR=&cursor;\n", cursor);
+ fprintf(stdout, "\t kikgccgl(__KIKEIB, v, %s, %s,\n\t\t &%s, CURSOR, SOPT);\n",
+         UP(mapset), UP(map), from);
+#endif
+ return;
+ }
+
+if (MYbegstr(blk_op2, "TEXT") || MYbegstr(blk_op2, "FROM")) {
+
+// EXEC CICS SEND TEXT FROM(data-area) [LENGTH(data-value)] [ERASE] [ALARM]
+//        [FREEKB]
+//        [CURSOR(data-value)] [PRINT] [FORMFEED] [NLEOM] [ACCUM] [PAGING |
+//        TERMINAL
+//        [WAIT]] [LAST] [HEADER(data-area)] [TRAILER(data-area)]
+//        [JUSTIFY(datavalue) |
+//        JUSFIRST | JUSLAST] [L40 | L64 | L80 | HONEOM] [REQID(name)] END-EXEC.
+// -- or --
+// EXEC CICS SEND FROM(data-area) [LENGTH(data-area) | FLENGTH(data-area)]
+//       [DEST(name)] [WAIT] [INVITE | LAST] [DEFRESP] [STRFIELD]
+//       [ERASE] [CTLCHAR(data-area)] END-EXEC.
+
+// *** DO NOT SUPPORT PRINT, FORMFEED, NLEOM, ACCUM, PAGING, TERMINAL,
+//     WAIT, LAST, HEADER, TRAILER, JUSTIFY, JUSFIRST, JUSLAST, DEST.
+//     INVITE, DEFRESP, CTLCHAR, L40, L64, L80, HONEOM, or REQID
+
+// *** added ALTERNATE/DEFAULT, STRFIELD support..,
+// *** added FLENGTH as alternate to LENGTH
+// *** made 'TEXT' optional, thus SEND FROM, SEND TEXT FROM both supported
+char length[100]="";
+
+ // break up string my way
+ numops = 0;
+ strcpy(saveblocks, cicsblks);
+ ip = SPCLTOK(saveblocks, " ");   // EXEC
+ while (ip=SPCLTOK(0, " ")) {     // KICKS, verb, ... END-EXEC
+  strcpy(ops[numops], ip);
+  numops++;
+  }
+
+ // march thru the args
+ for (i=0; i<numops; i++) {
+  strcpy(op, ops[i]);
+  if(strlen(op)==0) { continue; }
+  if(MYbegstr(op,".")) { continue; }
+  if(MYbegstr(op,"RESP")) { continue; }
+  if(MYbegstr(op,"RESP2")) { continue; }
+  if(MYbegstr(op,"NOHANDLE")) { continue; }
+  if(MYbegstr(op,"EXEC")) { continue; }
+  if(MYbegstr(op,"KICKS")) { continue; }
+  if(MYbegstr(op,"SEND")) { continue; }
+  if(MYbegstr(op,"TEXT")) { continue; }
+  if(MYbegstr(op,"END-EXEC") || MYbegstr(op,";")) { continue; }
+  if(MYbegstr(op,"FROM")) {
+   ip = strtok(op, "()");   // FROM
+   ip = strtok(0, "()");    // the name of the var to get data
+   if (ip == NULL) {
+    sprintf(err,
+    "malformed argument %s of SEND (TEXT)", op);
+    prt_error(err, 8);
+    No_Code();
+    return;
+    }
+   parrensDown(ip);
+   strcpy(from, ip);
+   continue;
+   }
+  if(MYbegstr(op,"CURSOR")) {
+   ip = strtok(op, "()");   // CURSOR
+   ip = strtok(0, "()");    // the cursor location
+   if (ip == NULL) {
+    // send text can't have symbolic cursor...
+    sprintf(err,
+    "malformed argument %s of SEND (TEXT)", op);
+    prt_error(err, 8);
+    No_Code();
+    return;
+    }
+   parrensDown(ip);
+   strcpy(cursor, ip);
+   continue;
+   }
+  if(MYbegstr(op,"LENGTH") || MYbegstr(op,"FLENGTH")) {
+   ip = strtok(op, "()");   // LENGTH
+   ip = strtok(0, "()");    // the length of message
+   if (ip == NULL) {
+    sprintf(err,
+    "malformed argument %s of SEND (TEXT)", op);
+    prt_error(err, 8);
+    No_Code();
+    return;
+    }
+   parrensDown(ip);
+   strcpy(length, ip);
+   continue;
+   }
+  if(MYbegstr(op,"ERASE")) { erase = 1; continue; }
+  if(MYbegstr(op,"ALTERNATE")) { alternate = 1; continue; }
+  if(MYbegstr(op,"DEFAULT")) { deFault = 1; continue; }
+  if(MYbegstr(op,"ALARM")) { alarm = 1; continue; }
+  if(MYbegstr(op,"FREEKB")) { freekb = 1; continue; }
+  if(MYbegstr(op,"STRFIELD")) { strfield = 1; continue; }
+  sprintf(err,
+  "unknown/unsupported argument %s of SEND (TEXT)", op);
+  prt_error(err, 8);
+  No_Code();
+  return;
+  }
+
+ if (strfield > 0) {
+  if ((erase > 0)     ||
+      (freekb > 0)    ||
+      (alternate > 0) ||
+      (deFault > 0) ||
+      (alarm > 0)     ||
+      (strlen(cursor) > 0)) {
+  prt_error("STRFIELD may not be used with other options ", 8);
+  No_Code();
+  return;
+   }
+  }
+
+ if (erase == 00) {
+  if ((alternate > 0) || (deFault > 0)) {
+  prt_error("ALTERNATE (or DEFAULT) only make sense if ERASE specified ", 8);
+  No_Code();
+  return;
+   }
+  }
+
+ if ((erase) > 0) { sopt = 0xf5; }
+ if ((erase * alternate) > 0) { sopt = 0x7e; }
+ if (freekb > 0) { swcc = swcc + 2; }
+ if (alarm > 0) { swcc = swcc + 4; }
+ sopt += 256 * swcc;
+ sopt *= 256;
+ if(strlen(cursor) > 0) { sopt = sopt + 4; }
+#ifdef PPGCC
+  else { strcpy(cursor, "0"); }
+#endif
+ if (strfield > 0) { sopt = -1; }
+
+#ifdef PPCOB
+ fprintf(stdout, "           MOVE 6150 TO EIBFN-2\n");
+ COBLEN(length, "\0", from, "", "KIK-FLEN");
+ fprintf(stdout, "           MOVE %d TO KIK-FLAGS\n", sopt);
+ fprintf(stdout, "           CALL 'KIKCOBGL' USING KIKEIB,\n");
+ if (!strcmp(respvar, ""))
+  fprintf(stdout, "                 KIK-V1,\n");
+ else
+  fprintf(stdout, "                 KIK-V2,\n");
+ fprintf(stdout, "                 %s, KIK-FLEN, KIK-NULL,\n", from);
+ if(strlen(cursor)==0) {
+         fprintf(stdout, "                 KIK-NULL, KIK-FLAGS"); }
+ else {
+         fprintf(stdout, "                 %s, KIK-FLAGS", cursor); }
+#endif
+#ifdef PPGCC
+ fprintf(stdout, "\t{ short *eibfn2 = (short*)&__KIKEIB->eibfn;\n");
+ fprintf(stdout, "\t\t*eibfn2 = 6150;\n");
+ if (!strcmp(respvar, ""))
+  fprintf(stdout, "\t  int *z=&KIK_NULL, *v=&KIK_V1;\n");
+ else
+  fprintf(stdout, "\t  int *z=&KIK_NULL, *v=&KIK_V2;\n");
+ fprintf(stdout, "\t int sopt=%d, *SOPT=&sopt;\n", sopt);
+ fprintf(stdout, "\t int cursor=%s, *CURSOR=&cursor;\n", cursor);
+ // (length[0] == '\0') sprintf(length, "strlen(%s)", from);
+ // (length[0] == '\0') sprintf(length, "sizeof(%s)", from);
+ fprintf(stdout, "\t  int KIK_FLEN;\n");
+ GCCLEN(length, "\0", from, "", "KIK_FLEN");
+ fprintf(stdout, "\t int len=%s, *LEN=&len;\n", length);
+ fprintf(stdout, "\t kikgccgl(__KIKEIB, v, &%s, LEN, z, CURSOR, SOPT);\n",
+         from);
+#endif
+ return;
+ }
+
+sprintf(err,
+" %s %s not yet implemented!", blk_op1, blk_op2);
+prt_error(err, 8);
+No_Code();
+}

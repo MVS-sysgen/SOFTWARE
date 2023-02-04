@@ -1,0 +1,181 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+void Do_ENTER() {
+// write a user trace entry into the CICS trace table
+// EXEC CICS ENTER {TRACENUM(data-value) | TRACEID(data-value) }
+//       [FROM(data-area) [FROMLENGTH(data-area)]] [RESOURE(data-area)]
+//       [EXCEPTION] END-EXEC.
+// *** TRACENUM/TRACEID taken as synonyms, RESOURCE & EXCEPTION
+// *** supported here but probably do nothing when invoked.
+
+// Following note refers to Source Trace...
+// *** note that EXCEPTION is passed to KIKPCP as bit 1 of flags,
+// ***      but that this same KIKPCP call is used for other things
+// ***      indicated by non-zero bits (besides 1) in flags, so
+// ***      care should be used in future mods to Do_ENTER --
+// ***      Especially check the glue routine(s) & KEDF...
+
+
+ char err[100], saveblocks[4000];
+
+ char op[100], ops[30][100], *ip;
+ int  i, numops=0;
+
+ char tracenum[100]="", from[100]="";
+ char resource[100];
+ char fromlength[100]="-1";
+ int exception=0;
+
+ strcpy(resource, kiknull);
+
+ // break up string my way
+ numops = 0;
+ strcpy(saveblocks, cicsblks);
+ ip = SPCLTOK(saveblocks, " ");   // EXEC
+ while (ip=SPCLTOK(0, " ")) {     // KICKS, verb, ... END-EXEC
+  strcpy(ops[numops], ip);
+  numops++;
+  }
+
+ // march thru the args
+ for (i=0; i<numops; i++) {
+  strcpy(op, ops[i]);
+  if(strlen(op)==0) { continue; }
+  if(MYbegstr(op,".")) { continue; }
+  if(MYbegstr(op,"RESP")) { continue; }
+  if(MYbegstr(op,"RESP2")) { continue; }
+  if(MYbegstr(op,"NOHANDLE")) { continue; }
+  if(MYbegstr(op,"EXEC")) { continue; }
+  if(MYbegstr(op,"KICKS")) { continue; }
+  if(MYbegstr(op,"ENTER")) { continue; }
+  if(MYbegstr(op,"END-EXEC") || MYbegstr(op,";")) { continue; }
+
+  if ((MYbegstr(op, "TRACENUM")) ||
+    (MYbegstr(op, "TRACEID"))) {
+   ip = strtok(op, "()");   // TRACENUM
+   ip = strtok(0, "()");    // the name of the var to get data
+   if (ip == NULL) {
+    sprintf(err,
+    "malformed argument %s of ENTER", op);
+    prt_error(err, 8);
+    No_Code();
+    return;
+    }
+   parrensDown(ip);
+   strcpy(tracenum, ip);
+   continue;
+   }
+  if(MYbegstr(op,"FROMLENGTH")) {
+   ip = strtok(op, "()");   // FROMLENGTH
+   ip = strtok(0, "()");    // the name of the var to get data
+   if (ip == NULL) {
+    sprintf(err,
+    "malformed argument %s of ENTER", op);
+    prt_error(err, 8);
+    No_Code();
+    return;
+    }
+   parrensDown(ip);
+   strcpy(fromlength, ip);
+   continue;
+   }
+  if(MYbegstr(op,"FROM")) {
+   ip = strtok(op, "()");   // FROM
+   ip = strtok(0, "()");    // the name of the var to get data
+   if (ip == NULL) {
+    sprintf(err,
+    "malformed argument %s of ENTER", op);
+    prt_error(err, 8);
+    No_Code();
+    return;
+    }
+   parrensDown(ip);
+   strcpy(from, ip);
+   continue;
+   }
+  if(MYbegstr(op,"RESOURCE")) {
+   ip = strtok(op, "()");   // RESOURCE
+   ip = strtok(0, "()");    // the name of the var to get data
+   if (ip == NULL) {
+    sprintf(err,
+    "malformed argument %s of ENTER", op);
+    prt_error(err, 8);
+    No_Code();
+    return;
+    }
+   parrensDown(ip);
+   strcpy(resource, ip);
+   continue;
+   }
+
+  if(MYbegstr(op,"EXCEPTION")) { exception = 1; continue; }
+
+  sprintf(err,
+  "unknown/unsupported argument %s of ENTER", op);
+  prt_error(err, 8);
+  No_Code();
+  return;
+  }
+
+ if (strlen(tracenum) == 0) {
+  prt_error("TRACENUM/TRACEID missing, always required", 8);
+  No_Code();
+  return;
+  }
+
+#ifdef PPCOB
+ fprintf(stdout, "           MOVE 18434 TO EIBFN-2\n");
+ //
+ // NOTE off label use of KIK-AIDS1 as tracenum
+ //
+ fprintf(stdout, "           MOVE %s TO KIK-AIDS1\n", tracenum);
+ fprintf(stdout, "           MOVE %d TO KIK-FLAGS\n", exception);
+ if (from[0]=='\'') {
+  fprintf(stdout, "           MOVE %s TO KIK-MSG\n", from);
+  }
+ COBLEN(fromlength, "-", from, "", "KIK-FLEN");
+ fprintf(stdout, "           CALL 'KIKCOBGL' USING KIKEIB,\n");
+ if (!strcmp(respvar, ""))
+  fprintf(stdout, "                 KIK-V1,\n");
+ else
+  fprintf(stdout, "                 KIK-V2,\n");
+ fprintf(stdout, "                 KIK-AIDS1,\n");
+ fprintf(stdout, "                 KIK-FLAGS,\n");
+ if (from[0]=='\'') {
+  fprintf(stdout, "                 KIK-MSG,\n");
+  }
+ else {
+  fprintf(stdout, "                 %s,\n", from);
+  }
+ fprintf(stdout, "                 KIK-FLEN,\n");
+ fprintf(stdout, "                 %s", resource);
+#endif
+#ifdef PPGCC
+ fprintf(stdout, "\t{ short *eibfn2 = (short*)&__KIKEIB->eibfn;\n");
+ fprintf(stdout, "\t\t*eibfn2 = 18434;\n");
+ if (!strcmp(respvar, ""))
+  fprintf(stdout, "\t  int *v=&KIK_V1;\n");
+ else
+  fprintf(stdout, "\t  int *v=&KIK_V2;\n");
+ fprintf(stdout, "\t  int tn=%s, *TN=&tn;\n", tracenum);
+ fprintf(stdout, "\t  char *FROM=(char*)%s;\n", from);
+ fprintf(stdout, "\t  int KIK_FLEN;\n");
+ GCCLEN(fromlength, "-", from, "", "KIK_FLEN");
+ fprintf(stdout, "\t  int fl=%s, *FL=&fl;\n", fromlength);
+ fprintf(stdout, "\t  int except=%d, *EXCEPT=&except;\n", exception);
+ fprintf(stdout, "\t kikgccgl(__KIKEIB, v, TN, EXCEPT,\n");
+ fprintf(stdout, "\t\tFROM, FL, &%s);\n", resource);
+#endif
+}

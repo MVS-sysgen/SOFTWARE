@@ -1,0 +1,18 @@
+#ifndef __IHAXTLST__
+#define __IHAXTLST__
+
+ // from SYS1.AMODGEN(IHAXTLST) on MVS 3.8J 'MVS380' system
+
+ typedef struct __ihaxtlst__
+ {
+  int  xtllnth;            // +000 number of bytes in extent list (=16)
+  int  xtlnrfac;           // +004 number of relocation factors (=1)
+  int  xtlmsbla;           // +008 length of main storage block (hi x'80')
+  int  xtlmsbaa;           // +012 address of main storage block (hi x'00')
+ } ihaxtlst;
+
+#define xtlmsbln xtlmsbla
+#define xtlmsbad xtlmsbaa
+
+#endif
+

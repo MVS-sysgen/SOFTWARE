@@ -1,0 +1,91 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+#ifndef __KIKTCTTE__
+#define __KIKTCTTE__
+
+typedef struct _KIKTCTTE
+{
+
+ char  trmid[8];           // terminal id
+ char  sysid[8];           // 8 char system sys id
+ char  trmid4[4];          // 4 char terminal id
+
+ short PRMlines;           // primary & alt screen size
+ short PRMcols;            //  & attributes
+ short ALTlines;           //  (from GTTERM)
+ short ALTcols;
+ int   termattr;           // attributes - always 'C1' in TK3 w/zp600009
+                           // X'C1' -> vtam, no break, read partition sup
+
+ char *tioa;               // address of tioa
+ int   tioacnt;            // flag (=0) if lotioa if valid
+ int   tioasize;           // size of tioa buffer
+ int   tioaused;           // number of tioa bytes used
+
+ // lotioa is used to restore the screen, mostly for EDF ...
+ char *lotioa;             // address of copy of last output tioa
+ int   lotioacnt;          // sequential counter for last output tioa
+ int   lotioaused;         // number of lotioa bytes used
+
+ char *tctteuaa;           // address of tctteua
+ int   tctteual;           // length  of tctteua
+
+ char  aid;                // aid byte from last input
+ short cposn;              // cursor position
+ short calen;              // length of commarea
+ char  trnid[4];           // return transid
+
+ char *pptent;             // address ppt ent last loaded pgm
+
+ char  usrid[8];           // user id
+
+ int  flags;               // mostly set/used by tcp...
+
+#define tctteflag$suppressonce 0x0001
+#define tctteflag$kedfon       0x0002
+#define tctteflag$use14bitsba  0x0004
+#define tctteflag$lastrecv     0x0008
+#define tctteflag$crlpinNdumy  0x0010
+#define tctteflag$crlpoutNdumy 0x0020
+#define tctteflag$crlpineof    0x0040
+#define tctteflag$crlpinuse    0x0080
+#define tctteflag$crlptrimline 0x0100
+#define tctteflag$crlpshowbord 0x0200
+#define tctteflag$crlpechoi    0x0400
+#define tctteflag$crlpdisplayt 0x0800
+#define tctteflag$crlpdisplayi 0x1000
+#define tctteflag$crlppure     0x2000
+#define tctteflag$usingalt     0x8000
+
+                           // x'0001' -> suppress tcpRECV (once)
+                           // x'0002' -> kedf on (set)
+                           // x'0004' -> (can) use 14 bit sba's
+                           // x'0008' -> last i/o was recv
+                           // x'0010' -> crlp in  not dummy
+                           // x'0020' -> crlp out not dummy
+                           // x'0040' -> crlp in  at  eof
+                           // x'0080' -> crlp terminal in use
+                           // x'0100' -> crlp - trim lines
+                           // x'0200' -> crlp - show borders
+                           // x'0400' -> crlp - echo crlp input
+                           // x'0800' -> crlp - display tioa
+                           // x'1000' -> crlp - display input screen
+                           // x'2000' -> crlp - single line ('pure') mode
+                           // x'4000' reserved
+                           // x'8000' -> using alt screen size
+
+} KIKTCTTE;
+
+#endif

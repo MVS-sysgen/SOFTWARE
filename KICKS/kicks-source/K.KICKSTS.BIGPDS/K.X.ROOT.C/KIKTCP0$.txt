@@ -1,0 +1,343 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+#include <stdio.h>
+
+#include "kicks.h"
+
+
+#include "kikaid.h"
+
+KIKCSA *csa = (KIKCSA*)&csa;
+
+ // macro to set useingalt based on cmd in tioa
+#define SetUsingAlt                         \
+ {                                          \
+ if (csa->tctte->tioa[1] == 0xf5)           \
+  csa->tctte->flags &= ~tctteflag$usingalt; \
+ if (csa->tctte->tioa[1] == 0x7e)           \
+  csa->tctte->flags |=  tctteflag$usingalt; \
+ }
+
+
+ ///////////////////////////////////////////////////////////////
+ //
+ //  function prototypes
+ //
+ ///////////////////////////////////////////////////////////////
+
+void ETRACE(int type_of, char *more, int intense);
+void XTRACE(int retcode, int intense);
+void MergeOutputTIOA(void);
+void MergeInputTIOA (void);
+
+
+void InitCRLP(void);
+void FiniCRLP(void);
+void DoCRLPout(void);
+void DoCRLPin(void);
+
+
+ ///////////////////////////////////////////////////////////////
+ //
+ //  kiktcp mainline
+ //
+ ///////////////////////////////////////////////////////////////
+
+int kiktcp (KIKCSA *kikcsa, int type_of,
+   char *arg1, char *arg2, char *arg3, char *arg4,
+   char *arg5, char *arg6, char *arg7, char *arg8, char *arg9
+   ) {
+
+ char *tioa;
+ int i, istat, rc, tioaSIZE;
+
+ int dodump=0, suppress=1;
+
+#define firstnl arg1
+
+ static int batchflag=1; // = 0 means interactive,
+                         // = 1 means batch (hence CRLP only choice)
+
+ switch (type_of)
+  {
+  case kiktcpINIT:    // startup
+
+      csa = kikcsa;
+      ETRACE(type_of, "", 0);
+      //
+      //no arguments
+
+      // preset defaults
+      csa->tctte->PRMlines = 24;
+      csa->tctte->PRMcols  = 80;
+      csa->tctte->ALTlines = 24;
+      csa->tctte->ALTcols  = 80;
+      csa->tctte->termattr = 0;
+
+      // obtain user stuff
+
+      // -- terminal id
+      MEMCPY(csa->tctte->trmid, "btchCRLP", 8);
+      MEMCPY(&csa->tctte->trmid4[0], csa->tctte->trmid+4, 4);
+
+      // -- sysid / smfid
+      MEMSET(csa->tctte->sysid, ' ', 8);
+
+      // do CRLP init
+      InitCRLP();
+
+      // no CRLP, die
+      if ((csa->tctte->flags & tctteflag$crlpinuse) == 0) {
+       FPRINTF(csa->csastderr,"%s", firstnl); firstnl[0]=0;
+       FPRINTF(csa->csastderr,"CRLP files missing in batch mode!\n");
+       EXIT (999);
+       }
+
+      // turn on can use 14 bit sba's
+      csa->tctte->flags |= tctteflag$use14bitsba;  // on
+
+      // goback
+      XTRACE(0, 0);
+      return (0);
+
+  case kiktcpTERM:    // shutdown
+
+       ETRACE(type_of, "", 0);
+      //
+      //no arguments
+
+      FiniCRLP();
+
+      XTRACE(0, 0);
+      return (0);
+      //break;
+
+  case kiktcpSEND:
+
+      ETRACE(type_of, "", 0);
+      //
+      //no arguments
+
+      // turn off tcpRECV suppress
+      csa->tctte->flags &= ~tctteflag$suppressonce;
+      tioa = csa->tctte->tioa;
+      tioaSIZE = csa->tctte->tioaused;
+
+      // maybe force FREEKB in WCC
+      if(csa->ffreekb == 0) tioa[2] |= 2;
+
+      // capture normal/alt screen size for clears
+      SetUsingAlt;
+
+      // if default size = alternate size override alt
+      // *** PROTECT AGAINST UNDECLARED MOD5'S (ETAL) ***
+      if (tioa[1] == 0x7e)
+       if (csa->tctte->PRMlines == csa->tctte->ALTlines)
+        if (csa->tctte->PRMcols == csa->tctte->ALTcols)
+         tioa[1] = 0xf5;
+
+      // put tioa into a virtual screen and dump to printer
+      MergeOutputTIOA(); // always in front of CRLP...
+      DoCRLPout();
+
+      XTRACE(0, 0);
+      return (0);
+      //break;
+
+  case kiktcpRECV:
+
+      ETRACE(type_of, "", 0);
+      //
+      //no arguments
+      {
+      tioa = csa->tctte->tioa;
+      istat = 0;
+
+      if ((csa->tctte->flags & tctteflag$suppressonce) == 0) {
+
+       tioaSIZE = csa->tctte->tioasize;
+
+       // get tioa from a card reader
+       DoCRLPin();
+       tioaSIZE = STRLEN(tioa); // OK 'cause CRLP only uses 12 bit sbas
+
+       // OK to use STRLEN here since there won't
+       // be any nulls in an input tioa...            **** WRONG! ****
+       csa->tca->kikeib.eibaid = tioa[0];
+       //a->tctte->tioaused = STRLEN(tioa);
+       csa->tctte->tioaused = tioaSIZE;
+
+       // now copy to 'last input tioa'
+       MergeInputTIOA();
+       }
+
+      // turn off tcpRECV suppress
+      csa->tctte->flags &= ~tctteflag$suppressonce;
+      XTRACE(istat, 0);
+      }
+      return (istat);
+      //break;
+
+  case kiktcpCHEK:
+
+      // note this as 'intense' tracing unit
+      ETRACE(type_of, "", 1);
+      //
+      //no arguments
+
+      // turn off tcpRECV suppress
+      csa->tctte->flags &= ~tctteflag$suppressonce;
+      tioa = csa->tctte->tioa;
+      tioaSIZE = csa->tctte->tioasize;
+      istat = 0; // preset ready...
+
+      // crlp, say not ready if eof flag set...
+      if ((csa->tctte->flags & tctteflag$crlpineof) > 0) istat = 4;
+
+      tioa[0] = 'R';       // make aid say Ready
+      if(istat == 4) tioa[0] = 'N'; // not Not
+      XTRACE(istat, 1);
+      return (istat);
+      //break;
+
+  case kiktcpWTO:    // WTO
+  case kiktcpWTOR:   // WTOR
+
+      ETRACE(type_of, "", 0);
+      //
+      //arg1 - msg               char[]
+      //arg2 - msg length        int
+      //arg3 - routcodes         char[]
+      //arg4 - numroutes         int
+      //arg5 - action            int
+      {
+      char *msg, *routes, *reply;
+      int  action, msgL, numroutes, *replyL, maxL, time;
+      int  i, j;
+      short rbuf=0;
+
+      msg = arg1; msgL = *(int*)arg2;
+      routes = arg3; numroutes = *(int*)arg4;
+      action = *(int*)arg5;
+      action &= 15; // clean wto/wtor flag off action
+
+      // validate numroutes
+      if ((numroutes < 0) || (numroutes > 16)) {
+       csa->tca->kikeib.eibresp  = 16;  // invreq
+       csa->tca->kikeib.eibresp2 = 2;
+       KIKPCP(csa, kikpcpABND, "ATC2", &dodump);
+       }
+
+      // validate routes, get into rbuf
+      if (numroutes == 0) rbuf = 0x4000; // route=2
+      else
+      for (i=0; i<numroutes; i++) {
+       j = routes[i];
+       if ((j < 1) || (j > 16)) {
+        csa->tca->kikeib.eibresp  = 16;  // invreq
+        csa->tca->kikeib.eibresp2 = 3;
+        KIKPCP(csa, kikpcpABND, "ATC3", &dodump);
+        }
+       rbuf |= (1 << (16-j));
+       }
+
+      // validate desc code
+      if((action != 2) &&
+         (action != 3) &&
+         (action != 11)) {
+        csa->tca->kikeib.eibresp  = 16;  // invreq
+        csa->tca->kikeib.eibresp2 = 6;
+        KIKPCP(csa, kikpcpABND, "ATC4", &dodump);
+       }
+
+      // if WTO only do it
+      //if (type_of == kiktcpWTO) { // begin wto-only code
+      // CMS always does just the WTO...
+
+      // build wto list
+      // --- WTO  list format is ---
+      //     DS   XL2(L'MSG)  msg length (including desc, rout codes)
+      //     DS   XL2         flag bytes
+      // MSG DS   CLN         message
+      //     DS   XL2         desc code
+      //     DS   XL2         rout code
+      char w[200], *wp = &w[8+0];
+      int *wip; short *wsp;
+      // *** setup wto part
+      MEMSET (w, 0, 200);
+      w[8+2] = 0x80;                       // flag route/desc
+      if (msgL > 160) msgL = 160;
+      MEMCPY (&w[8+4], msg, msgL);         // set msg
+      wsp = (short*)wp; *wsp = msgL+4;     // set msg length
+      wp = &w[8+msgL+4];
+      wsp = (short*)wp; *wsp++ = action;   // set desc
+      *wsp = rbuf;                         // set route(s)
+
+      // do the WTO
+      __asm__ (
+       "L 1,%0\n\t"
+       "WTO MF=(E,(1))"
+       : /* no output */
+       : "m"(&w[8])
+       : "0", "1", "15"
+       );
+
+      if (type_of == kiktcpWTOR) {
+       csa->tca->kikeib.eibresp  = 31;  // expired
+       csa->tca->kikeib.eibresp2 = 7;   // timeout
+       KIKPCP(csa, kikpcpABND, "ATC5", &dodump);
+       }
+
+      // and goback
+      XTRACE(0, 0);
+      return (0);
+
+      }                           // end of all wto/wtor code
+
+  default:    // bad calls get here
+
+      ETRACE(type_of, "", 0);
+      {
+      if ((csa->trc.trcflags & 4) > 0) {
+        FCLOSE((FILE*)kikcsa->auxtrc);
+        csa->trc.trcflags &= ~4; // show closed
+       }
+      ABEND(kiktcpTYPE, type_of);
+      }
+  }
+}
+
+
+ void ETRACE(int type_of, char *more, int intense)
+ { char tmsg[20]; int t; t = csa->tca->tasknum;
+   csa->AICAtime = -1;
+   csa->tca->kikeib.eibresp = csa->tca->kikeib.eibresp2 = 0;
+   if (more == NULL)
+   SPRINTF(tmsg, "T%2.2X%4.4s     %4.4X", type_of, "", t);
+   else
+   SPRINTF(tmsg, "T%2.2X%4.4s     %4.4X", type_of, more, t);
+   ((SubPtr)csa->trc_addr)(tmsg, intense);
+ }
+
+
+ void XTRACE(int retcode, int intense)
+ { char tmsg[20]; int t; t = csa->tca->tasknum;
+   SPRINTF(tmsg, "TX%03.3d       %4.4X", retcode, t);
+   ((SubPtr)csa->trc_addr)(tmsg, intense);
+   //return(retcode);
+   csa->AICAtime = csa->AICAmax;
+ }
+
+

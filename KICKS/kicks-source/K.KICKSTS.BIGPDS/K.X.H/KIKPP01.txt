@@ -1,0 +1,618 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+ // main include for Cobol and GCC preprocessors
+
+#ifndef __KIKPP01__
+#define __KIKPP01__
+
+#define true  1
+#define false 0
+
+ // define quote (single apostrophe) in ascii & ebcdic
+#ifdef __i386__
+#define QUOTE 39
+#define __KFT__ "'KICKS for PC '"
+#endif
+#ifdef __MVS__
+#define QUOTE 125
+#define __KFT__ "'KICKS for TSO'"
+#endif
+#ifdef __CMS__
+#define QUOTE 125
+#define __KFT__ "'KICKS for CMS'"
+#endif
+
+#ifdef PPCOBFLAG
+
+ char *cob_verbs[] = {"ACCEPT", "ADD", "ALTER", "CALL", "CANCEL",
+  "CLOSE", "COMMIT", "COMPUTE", "CONTINUE", "DELETE", "DISPLAY",
+  "DIVIDE", "ENTRY", "EVALUATE", "EXAMINE", "EXHIBIT", "GENERATE",
+  "GO", "GOBACK", "IF", "INITIALIZE", "INITIATE", "INSPECT", "INVOKE",
+  "MERGE", "MOVE", "MULTIPLY", "NEXT", "OPEN", "PERFORM", "READ",
+  "RELEASE", "RETURN", "REWRITE", "ROLLBACK", "SEARCH", "SERVICE",
+  "SET", "SORT", "START", "STOP", "STRING", "SUBTRACT", "TERMINATE",
+  "TRANSFORM", "UNSTRING", "WRITE", "XML", "ZZZ"};
+
+ int cob_max=sizeof(cob_verbs)/sizeof(char*);
+
+ // EXIT is handled as a special case.
+
+ // a few that (like a period) if last on line signify
+ // the next line is probably traceable.
+ //  - ELSE END-xxx OTHERWISE THEN
+
+ // a few more that are *NOT* valid (they occur in the middle of a
+ // statement) - AND FROM GREATER LESS NOT OR TO UNTIL VARYING WHEN
+
+
+ char *exec_verbs[] = {"ABEND", "ADDRESS", "ALLOCATE", "ASKTIME",
+  "ASSIGN", "BIF", "BUILD", "CANCEL", "CHANGE", "CONNECT",
+  "CONVERSE", "DELAY", "DELETEQ", "DELETE", "DEQ", "DUMP", "ENDBR",
+  "ENQ", "ENTER", "EXTRACT", "FORMATTIME", "FREEMAIN", "FREE",
+  "GETMAIN", "HANDLE", "IGNORE", "LINK", "LOAD", "POP", "POST",
+  "PURGE", "PUSH", "READNEXT", "READPREV", "READQ", "READ",
+  "RECEIVE", "RELEASE", "RESETBR", "RETRIEVE", "RETURN",
+  "REWRITE", "ROUTE", "SEND", "SIGNOFF", "SIGNON", "SPOOLCLOSE",
+  "SPOOLOPEN", "SPOOLREAD", "SPOOLWRITE", "STARTBR", "START",
+  "SUSPEND", "SYNCPOINT", "UNLOCK", "WAIT", "WRITEQ", "WRITE",
+  "XCTL", "ZZZ"};
+
+ int ev_max=sizeof(exec_verbs)/sizeof(char*);  // 56
+
+ enum ExecVerbs {ABEND, ADDRESS, ALLOCATE, ASKTIME, ASSIGN, BIF,
+        BUILD, CANCEL, CHANGE, CONNECT, CONVERSE, DELAY, DELETEQ,
+        DELETE, DEQ, DUMP, ENDBR, ENQ, ENTER, EXTRACT, FORMATTIME,
+        FREEMAIN, FREE, GETMAIN, HANDLE, IGNORE, LINK, LOAD, POP,
+        POST, PURGE, PUSH, READNEXT, READPREV, READQ, READ, RECEIVE,
+        RELEASE, RESETBR, RETRIEVE, RETURN, REWRITE, ROUTE, SEND,
+        SIGNOFF, SIGNON, SPOOLCLOSE, SPOOLOPEN, SPOOLREAD,
+        SPOOLWRITE, STARTBR, START, SUSPEND, SYNCPOINT,
+        UNLOCK, WAIT, WRITEQ, WRITE, XCTL};
+
+
+ char *resp_text[] = {"NORMAL", "ERROR", "RDATT", "WRBRK", "EOF",
+ "EODS", "EOC", "INBFMH", "ENDINPT", "NONVAL", "NOSTART", "TERMIDERR",
+ "FILENOTFOUND", "DSIDERR", "NOTFND", "DUPREC", "DUPKEY", "INVREQ",
+ "IOERR", "NOSPACE", "NOTOPEN", "ENDFILE", "ILLOGIC", "LENGERR",
+ "QZERO", "SIGNAL", "QBUSY", "ITEMERR", "PGMIDERR", "TRANSIDERR",
+ "ENDDATA", "INVTSREQ", "EXPIRED", "RETPAGE", "RTEFAIL", "RTESOME",
+ "TSIOERR", "MAPFAIL", "INVERRTERM", "INVMPSZ", "IGREQID", "OVERFLOW",
+ "INVLDC", "NOSTG", "JIDERR", "QIDERR", "NOJBUFSP", "DSSTAT",
+ "SELNERR", "FUNCERR", "UNEXPIN", "NOPASSBKRD", "NOPASSBKWR",
+ "SYSIDERR", "ISCINVREQ", "ENQBUSY", "ENVDEFERR", "IGREQCD",
+ "SESSIONERR", "SYSBUSY", "SESSBUSY", "NOTALLOC", "CBIDERR",
+ "INVEXITREQ", "INVPARTNSET", "INVPARTN", "PARTNFAIL", "USERIDERR",
+ "NOTAUTH", "SUPPRESSED", "TERMERR", "ROLLEDBACK", "DISABLED",
+ "OPENERR", "LOADING"};
+
+ int rt_max=sizeof(resp_text)/sizeof(char*);
+
+ int resp_codes[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 12, 13,
+ 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
+ 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47,
+ 48, 49, 50, 51, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65,
+ 66, 69, 70, 72, 81, 82, 84, 87, 94};
+
+
+ char *more_verbs[] = {"DEFINE", "DOCUMENT", "GDS", "GET", "ISSUE",
+  "JOURNAL", "MONITOR", "POINT", "QUERY", "REWIND", "UPDATE",
+  "VERIFY", "WAITCICS", "WEB", "ZZZ"};
+
+ int mv_max=sizeof(more_verbs)/sizeof(char*);  // 19
+
+ enum MoreVerbs {DEFINE, DOCUMENT, GDS, GET, ISSUE, JOURNAL, MONITOR,
+        POINT, QUERY, REWIND, UPDATE, VERIFY, WAITCICS, WEB};
+
+
+ char *address_areas[] = {"ACEE", "COMMAREA", "CSA", "CWA", "EIB",
+  "TCTUA", "TWA", "TIOA", "ZZZ"};
+
+ int aa_max=sizeof(address_areas)/sizeof(char*);  // 8
+
+ enum AddressAreas {ACEE, COMMAREA, CSA, CWA, EIB, TCTUA, TWA, TIOA};
+
+
+ char *aid_keys[] = {"PF1", "PF01", "PF2", "PF02", "PF3", "PF03",
+  "PF4", "PF04", "PF5", "PF05", "PF6", "PF06", "PF7", "PF07", "PF8",
+  "PF08", "PF9", "PF09", "PF10", "PF11", "PF12", "PF13", "PF14",
+  "PF15", "PF16", "PF17", "PF18", "PF19", "PF20", "PF21", "PF22",
+  "PF23", "PF24", "PA1", "PA2", "PA3", "CLEAR", "ENTER", "ZZZ"};
+
+ int ak_max=sizeof(aid_keys)/sizeof(char*);
+
+ int  AidKeyValues[] = {0xf1, 0xf1, 0xf2, 0xf2, 0xf3, 0xf3,
+        0xf4, 0xf4, 0xf5, 0xf5, 0xf6, 0xf6, 0xf7, 0xf7, 0xf8, 0xf8,
+        0xf9, 0xf9, 0x7a, 0x7b, 0x7c, 0xc1, 0xc2, 0xc3, 0xc4,
+        0xc5, 0xc6, 0xc7, 0xc8, 0xc9, 0x4a, 0x4b, 0x4c,
+        0x6c, 0x6e, 0x6b, 0x6d, 0x7d};
+
+
+ char *assign_options[] = {"ABCODE", "ABDUMP", "ABPROGRAM", "ACTIVITY",
+  "ACTIVITYID", "ALTSCRNHT", "ALTSCRNWD", "APLKYBD", "APLTEXT",
+  "APPLID", "ASRAINTRPT", "ASRAKEY", "ASRAPSW", "ASRAREGS", "ASRASPC",
+  "ASRASTG", "BRIDGE", "BTRANS", "CMDSEC", "COLOR", "CWALENG",
+  "DEFSCRNHT", "DEFSCRNWD", "DELIMITER", "DESTCOUNT", "DESTID",
+  "DESTIDLENG", "DS3270", "DSSCS", "EWASUPP", "EXTDS", "FACILITY",
+  "FCI", "GCHARS", "GCODES", "GMMI", "HILIGHT", "INITPARM",
+  "INITPARMLEN", "INPARTN", "INVOKINGPROG", "KATAKANA", "LANGINUSE",
+  "LDCMNEM", "LDCNUM",
+  "MAPCOLUMN", "MAPHEIGHT", "MAPLINE", "MAPWIDTH", "MSRCONTROL",
+  "NATLANGINUSE", "NETNAME", "NEXTTRANSID", "NUMTAB", "OPCLASS",
+  "OPERKEYS", "OPID", "OPSECURITY", "ORGABCODE", "OUTLINE", "PAGENUM",
+  "PARTNPAGE", "PARTNS", "PARTNSET", "PRINSYSID", "PROCESS",
+  "PROCESSTYPE", "PROGRAM", "PS", "QNAME", "RESSEC", "RESTART",
+  "RETURNPROG", "SCRNHT", "SCRNWD", "SIGDATA", "SOSI", "STARTCODE",
+  "STATIONID", "SYSID", "TASKPRIORITY", "TCTUALENG", "TELLERID",
+  "TERMCODE", "TERMPRIORITY", "TEXTKYBD", "TEXTPRINT", "TRANPRIORITY",
+  "TWALENG", "UNATTEND", "USERID", "USERNAME", "USERPRIORITY",
+  "VALIDATION", "TIOASIZE", "ZZZ"};
+
+ int as_max=sizeof(assign_options)/sizeof(char*);  // 94
+
+ enum AssignOptions {ABCODE, ABDUMP, ABPROGRAM, ACTIVITY, ACTIVITYID,
+  ALTSCRNHT, ALTSCRNWD, APLKYBD, APLTEXT, APPLID, ASRAINTRPT,
+  ASRAKEY, ASRAPSW, ASRAREGS, ASRASPC, ASRASTG, BRIDGE, BTRANS,
+  CMDSEC, COLOR, CWALENG, DEFSCRNHT, DEFSCRNWD, DELIMITER, DESTCOUNT,
+  DESTID, DESTIDLENG, DS3270, DSSCS, EWASUPP, EXTDS, FACILITY, FCI,
+  GCHARS, GCODES, GMMI, HILIGHT, INITPARM, INITPARMLEN, INPARTN,
+  INVOKINGPROG, KATAKANA, LANGINUSE, LDCMNEM, LDCNUM, MAPCOLUMN,
+  MAPHEIGHT, MAPLINE, MAPWIDTH, MSRCONTROL, NATLANGINUSE, NETNAME,
+  NEXTTRANSID, NUMTAB, OPCLASS, OPERKEYS, OPID, OPSECURITY,
+  ORGABCODE, OUTLINE, PAGENUM, PARTNPAGE, PARTNS, PARTNSET,
+  PRINSYSID, PROCESS, PROCESSTYPE, PROGRAM, PS, QNAME, RESSEC,
+  RESTART, RETURNPROG, SCRNHT, SCRNWD, SIGDATA, SOSI, STARTCODE,
+  STATIONID, SYSID, TASKPRIORITY, TCTUALENG, TELLERID, TERMCODE,
+  TERMPRIORITY, TEXTKYBD, TEXTPRINT, TRANPRIORITY, TWALENG, UNATTEND,
+  USERID, USERNAME, USERPRIORITY, VALIDATION, TIOASIZE};
+
+
+ // following are for InitDmap
+ typedef struct _dmapent {
+  short level, size;
+  char varname[28];
+  } dmapent;
+ typedef struct _dmaparray {
+  dmapent de[1];
+  } dmaparray;
+
+#define MAXDMAPNAMESOFS 5
+
+ typedef struct _namesfordmap {
+  short from2;           // subscript of last  to replace
+  short numofs;          // as above, '2'
+  char  partname[MAXDMAPNAMESOFS][36]; // ordered a, b, c ...
+  } namesfordmap;        // partnames wo subscripting markup...
+
+ dmaparray *dmap;
+ int dmapcnt=0;
+ //namesfordmap DMnames; // build by ExtractNameForDmap
+
+ // following are general globals
+ int currline=0, maxerror=0;
+
+ // following are global variables that can be overriden
+ int DFHmap=true;   // make DFH's into KIK's; CICS's into KICKS's?
+
+ int DOsyslib=true; // flag set unless syslib dd missing
+
+ int NOKICKS=false; // flag set to suppress gen of KICKS stuff...
+
+ int DOcb2=false;   // generate for cb2 instead of ansi cob?
+                    // (no bll init, no "value x'hh'",)
+
+ int DOdmap=0    ;  // process MVT COBOL dmap on DMAPIN, to generate
+                    // LENGTH's when necessary. implies DOcb2=false
+
+ int DOwc=true;     // translate 'WHEN-COMPILED' to current date/time
+                    // formated as 'hh.mm.ssMMM DD, YYYY'
+
+ int SDB=0, SDBX=0; // generate code to support source trace
+
+ FILE *sdbout1, *sdbout2;
+
+
+ // 40 entries of up to 100 chars each to hold
+ // names of '01' levels in the linkage section
+ char linkblock[40][100]; // 40 entries of up to 100 chars each
+ int  numlinks=0, numnums=0;
+
+ // 100 entries of up to 100 chars each to hold
+ // initially,
+ //        source lines of 'exec kicks' thru 'end-exec'
+ // after 'gen code' mangling, it becomes
+ //        space delineated arguments
+ char cicsblock[100][100]; // 100 entries of up to 100 chars each
+ int  numcicss=0;
+ char blk_op1[90], blk_op2[90];
+
+ // the input cicsblock as one long string
+ char cicsblks[4000]; // 50 lines of 80 chars...
+
+ char division[30], olddivision[30], section[30], oldsection[30];
+ char pgmid[16]="", wcdate[24], wxdate[24], ppv1[20], ppv2[20];
+ int commentoffremarks;
+
+ int nskip=0;
+ int pskip=0, npskip=0;
+ int gskip=0, ngskip=0;
+ int kskip=0, nkskip=0;
+ int tsoskip=0, ntsoskip=0;
+ int cmsskip=0, ncmsskip=0;
+ int cb2skip=0, ncb2skip=0;
+
+ char period[10]="", respvar[80]="", resp2var[80]="";
+
+#ifdef PPCOB
+ char kiknull[10]="KIK-NULL";
+#endif
+#ifdef PPGCC
+ char kiknull[10]="KIK_NULL";
+#endif
+
+ // COBOL exclusives...
+ int ppdummy=0; // suffix for dummy paragraph name labels
+ char chk_period_card[90]=".";
+
+ // GCC exclusives...
+ int mainflag=0;
+ char eibname[10]="", commname[10]="";
+
+ // globals 'owned' by trkfunc...
+ int quot=0;     // card is part of a quote
+ int mlc=0;      // card is part of a multi-line comment
+ int bracket=0;  // bracket level (1=function entry)
+ int lastc=0;    // last non-comment/non-quote on line
+ // first 15 chars of function name
+ char func[16]     = { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 };
+
+ // pseudo owned, ie, related to above,
+ // but not modified by trkfunc itself
+ int prevc=0;    // values from previous line
+ char prevfunc[16] = { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 };
+
+#else
+
+ extern char *cob_verbs[];
+ extern int cob_max;
+
+ extern char *exec_verbs[];
+ extern int ev_max;
+
+ enum ExecVerbs {ABEND, ADDRESS, ALLOCATE, ASKTIME, ASSIGN, BIF,
+        BUILD, CANCEL, CHANGE, CONNECT, CONVERSE, DELAY, DELETEQ,
+        DELETE, DEQ, DUMP, ENDBR, ENQ, ENTER, EXTRACT, FORMATTIME,
+        FREEMAIN, FREE, GETMAIN, HANDLE, IGNORE, LINK, LOAD, POP,
+        POST, PURGE, PUSH, READNEXT, READPREV, READQ, READ, RECEIVE,
+        RELEASE, RESETBR, RETRIEVE, RETURN, REWRITE, ROUTE, SEND,
+        SIGNOFF, SIGNON, SPOOLCLOSE, SPOOLOPEN, SPOOLREAD,
+        SPOOLWRITE, STARTBR, START, SUSPEND, SYNCPOINT,
+        UNLOCK, WAIT, WRITEQ, WRITE, XCTL};
+
+ extern char *resp_text[];
+ extern int rt_max;
+
+ extern int resp_codes[];
+
+ extern char *more_verbs[];
+ extern int mv_max;
+
+ enum MoreVerbs {DEFINE, DOCUMENT, GDS, GET, ISSUE, JOURNAL, MONITOR,
+        POINT, QUERY, REWIND, UPDATE, VERIFY, WAITCICS, WEB};
+
+ extern char *address_areas[];
+ extern int aa_max;
+
+ enum AddressAreas {ACEE, COMMAREA, CSA, CWA, EIB, TCTUA, TWA, TIOA};
+
+ extern char *aid_keys[];
+ extern int ak_max;
+
+ extern int  AidKeyValues[];
+
+ extern char *assign_options[];
+ extern int as_max;
+
+ enum AssignOptions {ABCODE, ABDUMP, ABPROGRAM, ACTIVITY, ACTIVITYID,
+  ALTSCRNHT, ALTSCRNWD, APLKYBD, APLTEXT, APPLID, ASRAINTRPT,
+  ASRAKEY, ASRAPSW, ASRAREGS, ASRASPC, ASRASTG, BRIDGE, BTRANS,
+  CMDSEC, COLOR, CWALENG, DEFSCRNHT, DEFSCRNWD, DELIMITER, DESTCOUNT,
+  DESTID, DESTIDLENG, DS3270, DSSCS, EWASUPP, EXTDS, FACILITY, FCI,
+  GCHARS, GCODES, GMMI, HILIGHT, INITPARM, INITPARMLEN, INPARTN,
+  INVOKINGPROG, KATAKANA, LANGINUSE, LDCMNEM, LDCNUM, MAPCOLUMN,
+  MAPHEIGHT, MAPLINE, MAPWIDTH, MSRCONTROL, NATLANGINUSE, NETNAME,
+  NEXTTRANSID, NUMTAB, OPCLASS, OPERKEYS, OPID, OPSECURITY,
+  ORGABCODE, OUTLINE, PAGENUM, PARTNPAGE, PARTNS, PARTNSET,
+  PRINSYSID, PROCESS, PROCESSTYPE, PROGRAM, PS, QNAME, RESSEC,
+  RESTART, RETURNPROG, SCRNHT, SCRNWD, SIGDATA, SOSI, STARTCODE,
+  STATIONID, SYSID, TASKPRIORITY, TCTUALENG, TELLERID, TERMCODE,
+  TERMPRIORITY, TEXTKYBD, TEXTPRINT, TRANPRIORITY, TWALENG, UNATTEND,
+  USERID, USERNAME, USERPRIORITY, VALIDATION, TIOASIZE};
+
+ // following are for InitDmap
+ typedef struct _dmapent {
+  short level, size;
+  char varname[28];
+  } dmapent;
+ typedef struct _dmaparray {
+  dmapent de[1];
+  } dmaparray;
+
+#define MAXDMAPNAMESOFS 5
+
+ typedef struct _namesfordmap {
+  short from2;           // subscript of last  to replace
+  short numofs;          // as above, '2'
+  char  partname[MAXDMAPNAMESOFS][36]; // ordered a, b, c ...
+  } namesfordmap;        // partnames wo subscripting markup...
+
+ extern dmaparray *dmap;
+ extern int dmapcnt;
+
+ // following are general globals
+ extern int currline, maxerror;
+
+ // following are global variables that can be overriden
+ extern int DFHmap;    // make DFH's into KIK's; CICS's into KICKS's?
+ extern int DOsyslib;  // flag set unless syslib dd missing
+ extern int NOKICKS;   // flag set to suppress gen of KICKS stuff...
+ extern int DOcb2;     // generate for cb2 instead of ansi cob?
+                       // (no bll init, no "value x'hh'",)
+ extern int DOdmap;    // process MVT COBOL dmap on DMAPIN, to generate
+                       // LENGTH's when necessary. implies DOcb2=false
+ extern int DOwc;      // translate 'WHEN-COMPILED' to current date/time
+                       // formated as 'hh.mm.ssMMM DD, YYYY'
+ extern int SDB, SDBX; // generate code to support source trace
+
+ extern FILE *sdbout1, *sdbout2;
+
+ // 40 entries of up to 100 chars each to hold
+ // names of '01' levels in the linkage section
+ extern char linkblock[40][100]; // 40 entries of up to 100 chars each
+ extern int  numlinks, numnums;
+
+ // 100 entries of up to 100 chars each to hold
+ // initially,
+ //        source lines of 'exec kicks' thru 'end-exec'
+ // after 'gen code' mangling, it becomes
+ //        space delineated arguments
+ extern char cicsblock[100][100]; // 100 entries of up to 100 chars
+ extern int  numcicss;
+ extern char blk_op1[90], blk_op2[90];
+
+ // the input cicsblock as one long string
+ extern char cicsblks[4000]; // 50 lines of 80 chars...
+
+ extern char division[30], olddivision[30];
+ extern char section[30], oldsection[30];
+ extern char pgmid[16], wcdate[24], wxdate[24], ppv1[20], ppv2[20];
+ extern int commentoffremarks;
+
+ extern int nskip;
+ extern int pskip, npskip;
+ extern int gskip, ngskip;
+ extern int kskip, nkskip;
+ extern int tsoskip, ntsoskip;
+ extern int cmsskip, ncmsskip;
+ extern int cb2skip, ncb2skip;
+
+ extern char period[10], respvar[80], resp2var[80];
+
+ extern char kiknull[10];
+
+ // COBOL exclusives...
+ extern int ppdummy; // suffix for dummy paragraph name labels
+ extern char chk_period_card[90];
+
+ // GCC exclusives...
+ extern int mainflag;
+ extern char eibname[10], commname[10];
+
+ // globals 'owned' by trkfunc...
+ extern int quot;     // card is part of a quote
+ extern int mlc;      // card is part of a multi-line comment
+ extern int bracket;  // bracket level (1=function entry)
+ extern int lastc;    // last non-comment/non-quote on line
+ // first 15 chars of function name
+ extern char func[16];
+
+ // pseudo owned, ie, related to above,
+ // but not modified by trkfunc itself
+ extern int prevc;    // values from previous line
+ extern char prevfunc[16];
+
+#endif
+
+ // following are function prototypes
+ char *currentdate(void);
+ char *currentwcdate(void);
+ char *currenttime(void);
+ int mkversion(void);
+ int INDEX(char *str1, char *str2);
+ char *UP(char *string);
+ void chop(char *string);
+ int tabchk(char *string);
+ char *rpad(char *string, int slong);
+ char *rtrim(char *string);
+ char *lpad(char *string, int slong);
+ char *ltrim(char *string);
+ char *pad(char *string, int slong);
+ char *trim(char *string);
+
+ void prt_error(char *line, int errr);
+ void prt_normal(char *line);
+ void prt_as_comment(char *line);
+
+ void Enter_Procedure_Division(void);
+ void Enter_Linkage_Section(void);
+ void Gen_Code(void);
+ void differParens(char *ip);
+ void parrensDown(char *ip);
+ int DoLengthOf(char *cardimage);
+ char *SPCLTOK(char *buf, char *targ);
+
+ int  DoCopy(char *cardimage);
+ void DoWithIt(char *cardimage);
+
+ void getdsns(char *ddname, char *dsnbuf, int *cnt);
+ void InitSysLib(void);
+
+ void InitDmap(void);
+ int  DmapLookup(char *from);
+ int  ExtractNameForDmap(char *from, namesfordmap *DMnames);
+
+ void No_Code(void);
+
+ void Do_ABEND(void);
+ void Do_ADDRESS(void);
+ void Do_ALLOCATE(void);
+ void Do_ASKTIME(void);
+ void Do_ASSIGN(void);
+ void Do_BIF(void);
+ void Do_BUILD(void);
+ void Do_CANCEL(void);
+ void Do_CHANGE(void);
+ void Do_CONNECT(void);
+ void Do_CONVERSE(void);
+ void Do_DELAY(void);
+ #define Do_DELETEQ Do_XELETEQ
+ void Do_DELETEQ(void);
+ void Do_DELETE(void);
+ void Do_DEQ(void);
+ void Do_DUMP(void);
+ void Do_ENDBR(void);
+ void Do_ENQ(void);
+ void Do_ENTER(void);
+ void Do_EXTRACT(void);
+ void Do_FORMATTIME(void);
+ void Do_FREEMAIN(void);
+ void Do_FREE(void);
+ void Do_GETMAIN(void);
+ void Do_HANDLE(void);
+ void Do_IGNORE(void);
+ void Do_LINK(void);
+ void Do_LOAD(void);
+ void Do_POP(void);
+ void Do_POST(void);
+ void Do_PURGE(void);
+ void Do_PUSH(void);
+ void Do_READNEXT(void);
+ void Do_READPREV(void);
+ void Do_READQ(void);
+ void Do_READ(void);
+ void Do_RECEIVE(void);
+ void Do_RELEASE(void);
+ void Do_RESETBR(void);
+ void Do_RETRIEVE(void);
+ void Do_RETURN(void);
+ void Do_REWRITE(void);
+ void Do_ROUTE(void);
+ void Do_SEND(void);
+ #define Do_SIGNOFF Do_XIGNOFF
+ void Do_SIGNOFF(void);
+ void Do_SIGNON(void);
+ #define Do_STARTBR Do_XTARTBR
+ void Do_STARTBR(void);
+ #define Do_SPOOLCLOSE Do_SPCOLCLOSE
+ void Do_SPOOLCLOSE(void);
+ void Do_SPOOLOPEN(void);
+ #define Do_SPOOLREAD Do_SPROLREAD
+ void Do_SPOOLREAD(void);
+ #define Do_SPOOLWRITE Do_SPWOLWRITE
+ void Do_SPOOLWRITE(void);
+ void Do_START(void);
+ void Do_SUSPEND(void);
+ void Do_SYNCPOINT(void);
+ void Do_UNLOCK(void);
+ void Do_WAIT(void);
+ #define Do_WRITEQ Do_XRITEQ
+ void Do_WRITEQ(void);
+ void Do_WRITE(void);
+ void Do_XCTL(void);
+
+
+ // macros for obtaining length of variable...
+ //  'kikfield is a string containing the name of the variable
+ //  to be set to the length computed as follows:
+ //    if base and basecomp are equal, the variable is set to 0
+ //   otherwise
+ //    if field and fieldcomp are equal the variable is set to
+ //    the length (sizeof) the base field
+ //   otherwise
+ //    the variable is set to the value of field
+ //   so --   COBLEN(length, "-1", from, "", "KIK-FLEN") says
+ //    if 'from' is blank (omitted?) set length to 0
+ //    if 'length' is -1 (omitted?) set length to sizeof(from)
+ //    if neither, use length as it is
+
+void COBLEN(char *field, char *fieldcomp,
+            char *base,  char *basecomp,  char *kikfield);
+#define COBLEN(field, fieldcomp, base, basecomp, kikfield)  \
+{ char buf[120], buf2[120]; int result;                     \
+if (!strcmp(base,  basecomp)) strcpy(field,"0");            \
+else                                                        \
+if (!strcmp(field, fieldcomp)) {                            \
+ sprintf(field,"LENGTH OF %s", base);                       \
+ }                                                          \
+sprintf(buf2, "           MOVE %s TO %s", field, kikfield); \
+strcpy(buf, buf2);                                          \
+result = DoLengthOf(buf2);                                  \
+switch (result) {                                           \
+case 0: /* note problem with current */                     \
+ prt_error("can't resolve LENGTH OF ...", 4);               \
+ break;                                                     \
+case 1: /* card as is */                                    \
+ break;                                                     \
+case 2: /* comment current, proceed with replacement */     \
+ prt_as_comment(buf);                                       \
+ break;                                                     \
+default:                                                    \
+ prt_error("invalid return from DoLengthOf ...", 12);       \
+ }                                                          \
+prt_normal (buf2);                                          \
+}
+
+ // the 'X' version of COBLEN is used for file control
+ // because I don't really want missing LENGTH & KEYLENGTH
+ // to generate a lenght, I want them '-1' to tell
+ // exec time code they are 'missing'
+ // *which causes the values from the file itself to be used*
+void COBLEX(char *field, char *fieldcomp,
+            char *base,  char *basecomp,  char *kikfield);
+#define COBLEX(field, fieldcomp, base, basecomp, kikfield)  \
+{ char buf2[120];                                           \
+sprintf(buf2, "           MOVE %s TO %s", field, kikfield); \
+prt_normal (buf2);                                          \
+}
+
+void GCCLEN(char *field, char *fieldcomp,
+            char *base,  char *basecomp,  char *kikfield);
+#define GCCLEN(field, fieldcomp, base, basecomp, kikfield)  \
+{                                                           \
+if (!strcmp(base,  basecomp)) strcpy(field,"0");            \
+else                                                        \
+if (!strcmp(field, fieldcomp)) {                            \
+ sprintf(field,"sizeof(%s)", base);                         \
+ }                                                          \
+fprintf(stdout, "\t  %s = %s;\n", kikfield, field);         \
+}
+
+ // the 'X' version of GCCLEN is used for file control...
+void GCCLEX(char *field, char *fieldcomp,
+            char *base,  char *basecomp,  char *kikfield);
+#define GCCLEX(field, fieldcomp, base, basecomp, kikfield)  \
+{ ;                                                         \
+}
+
+#endif

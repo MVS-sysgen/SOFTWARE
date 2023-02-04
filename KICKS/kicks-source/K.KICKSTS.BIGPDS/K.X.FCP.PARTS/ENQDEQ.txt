@@ -1,0 +1,548 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+#ifdef __CMS__
+
+
+ ///////////////////////////////////////////////////////////////
+ //
+ // FUNCTION to find arguments, skipping spaces
+ //
+ ///////////////////////////////////////////////////////////////
+
+int ascan (char *buf, int start) {
+ // starting at 'start' in 'buf',
+ //  find next space, then find next non-space
+ //  return index of non-space found
+ //  if end (ie, null) found return 0
+ if (buf[start] == 0) return 0; // safety
+ while (1) { // look for space
+  start++;
+  if (buf[start] == 0) return 0;
+  if (buf[start] == ' ') break;
+  }
+ while (1) { // look for non-space
+  start++;
+  if (buf[start] == 0) return 0;
+  if (buf[start] != ' ') break;
+  }
+ return start;
+ }
+
+
+ ///////////////////////////////////////////////////////////////
+ //
+ // FUNCTION to report memory usage
+ //
+ ///////////////////////////////////////////////////////////////
+
+ char mtbuf[80];
+
+
+void MTSCAN (char *where) {
+ //TRACEstring(where);
+ }
+
+
+ ///////////////////////////////////////////////////////////////
+ //
+ // FUNCTIONs to obtain/release storage key 0
+ //
+ ///////////////////////////////////////////////////////////////
+
+void KEYNUC () {
+   __asm__(
+  "DMSKEY NUCLEUS,NOSTACK"
+  : /* no output */
+  : /* no input  */
+  : "0","1","15"
+  );
+ }
+
+void KEYUSR () {
+   __asm__(
+  "DMSKEY USER,NOSTACK"
+  : /* no output */
+  : /* no input  */
+  : "0","1","15"
+  );
+ }
+
+
+ ///////////////////////////////////////////////////////////////
+ //
+ // FUNCTIONs to switch between KICKS and VSAM memory
+ //
+ ///////////////////////////////////////////////////////////////
+
+void sw2vsam() {
+ int bgcom;
+
+ if((csa->systype != csasystype$vm6pk) &&
+    (csa->systype != csasystype$vmsp)) return;
+
+ // make sure vsam mainhigh < current freelow
+ // before switching...
+ if (RVSAVE.MAINHIGH > *FREELOWE) {
+   // must die, vsam has been overwritten!!!
+   if ((csa->trc.trcflags & 4) > 0) {
+     FCLOSE((FILE*)csa->auxtrc);
+     csa->trc.trcflags &= ~4; // show closed
+    }
+   ABEND(kikfcpTYPE, 0x888);    // show vsam overwrite
+  }
+ // save kicks
+ RKSAVE.MAINLIST = *MAINLIST;
+ RKSAVE.MAINSTRT = *MAINSTRT;
+ RKSAVE.MAINHIGH = *MAINHIGH;
+ RKSAVE.LOCCNT   = *LOCCNT;
+ bgcom = *ABGCOM;
+ RKSAVE.PPEND    = *(int*)(bgcom+32);
+ RKSAVE.EOCADR   = *(int*)(bgcom+48);
+ // set  vsam
+ KEYNUC();
+ *MAINLIST = RVSAVE.MAINLIST;
+ *MAINSTRT = RVSAVE.MAINSTRT;
+ *MAINHIGH = RVSAVE.MAINHIGH;
+ *LOCCNT   = RVSAVE.LOCCNT;
+ *(int*)(bgcom+32) = RVSAVE.PPEND;
+ *(int*)(bgcom+48) = RVSAVE.EOCADR;
+ KEYUSR();
+ }
+
+void sw2kicks() {
+ int bgcom;
+
+ if((csa->systype != csasystype$vm6pk) &&
+    (csa->systype != csasystype$vmsp)) return;
+
+ // save vsam
+ RVSAVE.MAINLIST = *MAINLIST;
+ RVSAVE.MAINSTRT = *MAINSTRT;
+ RVSAVE.MAINHIGH = *MAINHIGH;
+ RVSAVE.LOCCNT   = *LOCCNT;
+ bgcom = *ABGCOM;
+ RVSAVE.PPEND    = *(int*)(bgcom+32);
+ RVSAVE.EOCADR   = *(int*)(bgcom+48);
+ // set kicks
+ KEYNUC();
+ *MAINLIST = RKSAVE.MAINLIST;
+ *MAINSTRT = RKSAVE.MAINSTRT;
+ *MAINHIGH = RKSAVE.MAINHIGH;
+ *LOCCNT   = RKSAVE.LOCCNT;
+ *(int*)(bgcom+32) = RKSAVE.PPEND;
+ *(int*)(bgcom+48) = RKSAVE.EOCADR;
+ KEYUSR();
+ }
+
+
+ ///////////////////////////////////////////////////////////////
+ //
+ // FUNCTION to LINK/ACCESS the CMS VSAM disk
+ //
+ ///////////////////////////////////////////////////////////////
+
+ int LnkAcc() {
+
+  fcth *fcthdr;
+  char catlnk1s[10], catlnk2s[10], catmode[10];
+  int bgcom, proposed, rc;
+
+  MTSCAN("LAB");
+
+  CMSlinkFLAG=0; // not holding LINK/ACCESS
+
+  fcthdr = (fcth *)csa->fcp_table_addr;
+
+  // get catlnk? shorts into string fmt
+  SPRINTF(catlnk1s,"%X", fcthdr->catlnk1);
+  while(STRLEN(catlnk1s)<8) STRCAT(catlnk1s," ");
+  SPRINTF(catlnk2s,"%X", fcthdr->catlnk2);
+  while(STRLEN(catlnk2s)<8) STRCAT(catlnk2s," ");
+  MEMSET(catmode, ' ', 10);
+  MEMCPY(catmode, fcthdr->catfm, 1);
+
+  // do the LINK
+  __asm__ (
+   "L  1,%1\n\t"
+   "MVC S%=+16(8),0(1)\n\t"
+   "L  1,%2\n\t"
+   "MVC S%=+24(8),0(1)\n\t"
+   "L  1,%3\n\t"
+   "MVC S%=+32(8),0(1)\n\t"
+   "L  1,%4\n\t"
+   "MVC S%=+48(8),0(1)\n\t"
+   "LA 1,S%=\n\t"
+   "SVC 202\n\t"
+   "DC AL4(*+4)\n\t"
+   "B X%=\n"
+  "S%= DS 0D\n\t"
+   "DC CL8'CP'\n\t"
+   "DC CL8'LINK'\n\t"
+   "DC CL8'  '    userid\n\t"
+   "DC CL8'  '    address owners system\n\t"
+   "DC CL8'  '    address users  system\n\t"
+   "DC CL8'W'\n\t"
+   "DC CL8'  '    write pw\n\t"
+   "DC 8X'FF'\n"
+  "X%= ST 15,%0"
+  : "=m"(rc)
+  : "m"(fcthdr->catuserid),"m"(catlnk1s),"m"(catlnk2s),"m"(fcthdr->catpasswd)
+  : "0", "1", "15"
+  );
+  if(rc != 0) return(rc); // 105 means retry, anything else **BAD**
+
+  // do the ACCESS
+  __asm__ (
+   "L  1,%1\n\t"
+   "MVC S%=+8(8),0(1)\n\t"
+   "L  1,%2\n\t"
+   "MVC S%=+16(8),0(1)\n\t"
+   "LA 1,S%=\n\t"
+   "SVC 202\n\t"
+   "DC AL4(*+4)\n\t"
+   "B X%=\n"
+  "S%= DS 0D\n\t"
+   "DC CL8'ACCESS'\n\t"
+   "DC CL8'  '    address users  system\n\t"
+   "DC CL8'  '    file mode\n\t"
+   "DC 8X'FF'\n"
+  "X%= ST 15,%0"
+  : "=m"(rc)
+  : "m"(catlnk2s),"m"(catmode)
+  : "0", "1", "15"
+  );
+  if(rc != 0) { RelDet(); return (rc); }
+
+  if((csa->systype == csasystype$vm6pk) ||
+     (csa->systype == csasystype$vmsp)) {
+   // check to see if proposed vsam region will be OK
+   proposed = *FREELOWE - 0x100000; // 1   meg just below cms stuff
+   //oposed = *FREELOWE - 0x180000; // 1.5 meg just below cms stuff
+   if (proposed < *MAINHIGH) { RelDet(); return(999); }
+
+   // save kicks MAINLIST, MAINSTRT, MAINHIGH, LOCCNT, PPEND, EOCADR
+   RKSAVE.MAINLIST = *MAINLIST;
+   RKSAVE.MAINSTRT = *MAINSTRT;
+   RKSAVE.MAINHIGH = *MAINHIGH;
+   RKSAVE.LOCCNT   = *LOCCNT;
+   bgcom = *ABGCOM;
+   RKSAVE.PPEND    = *(int*)(bgcom+32);
+   RKSAVE.EOCADR   = *(int*)(bgcom+48);
+
+   // set proposed into vsam environment block
+   RVSAVE.PROPOSED = proposed;
+
+   // init vsam MAINLIST, ...
+   KEYNUC();
+   *MAINLIST = 0;
+   *MAINSTRT = proposed;
+   *MAINHIGH = proposed;
+   *LOCCNT   = proposed;
+   *(int*)(bgcom+32) = 0;  // ppend
+   *(int*)(bgcom+48) = 0;  // eocadr
+   KEYUSR();
+   } // end of if (...6pk)
+
+  if((csa->systype != csasystype$vm6pk) &&
+     (csa->systype != csasystype$vmsp)) {
+   // replace lost dos syscat assgn by doing
+   // 'set dos on (vsam', 'assgn syscat o', 'set dos off'
+   __asm__ (
+    "L  1,%0\n\t"
+    "MVC A%=+16(8),0(1)\n\t"
+    "LA 1,O%=\n\t"
+    "SVC 202\n\t"
+    "DC AL4(*+4)\n\t"
+    "LA 1,A%=\n\t"
+    "SVC 202\n\t"
+    "DC AL4(*+4)\n\t"
+    "LA 1,F%=\n\t"
+    "SVC 202\n\t"
+    "DC AL4(*+4)\n\t"
+    "B X%=\n"
+   "O%= DS 0D\n\t"
+    "DC CL8'SET'\n\t"
+    "DC CL8'DOS'\n\t"
+    "DC CL8'ON'\n\t"
+    "DC CL8'('\n\t"
+    "DC CL8'VSAM'\n\t"
+    "DC 8X'FF'\n"
+   "A%= DS 0D\n\t"
+    "DC CL8'ASSGN'\n\t"
+    "DC CL8'SYSCAT'\n\t"
+    "DC CL8' '\n\t"
+    "DC 8X'FF'\n"
+   "F%= DS 0D\n\t"
+    "DC CL8'SET'\n\t"
+    "DC CL8'DOS'\n\t"
+    "DC CL8'OFF'\n\t"
+    "DC 8X'FF'\n"
+   "X%= EQU *"
+   : /* no output */
+   : "m"(catmode)
+   : "0", "1", "15"
+   );
+   }
+
+  // do a VSAM op to make VSAM load
+  MTSCAN(" VSAM*1*");
+  __asm__ (
+   "LA 2,A%=\n\t"
+   "TESTCB ACB=(2),OFLAGS=OPEN\n\t"
+   "B P%=\n"
+  "A%= ACB DDNAME=ANY,MACRF=(ADR)\n"
+  "P%= DS 0H"
+   : /* no output */
+   : /* no input  */
+   : "0","1","2","15"
+  );
+  MTSCAN(" VSAM*2*");
+
+
+  // back to kicks environment...
+  sw2kicks();
+
+
+  MTSCAN("LAA");
+
+  CMSlinkFLAG=1;          // holding LINK/ACCESS
+  return(rc); // 0 - linked/accessed; otherwise not
+ }
+
+
+ ///////////////////////////////////////////////////////////////
+ //
+ // SUBROUTINE to release/detach the CMS VSAM disk
+ //
+ ///////////////////////////////////////////////////////////////
+
+ void RelDet() {
+
+  fcth *fcthdr;
+  char catlnk1s[10], catlnk2s[10], catmode[10];
+  int proposed, rc;
+
+  MTSCAN("RDB");
+
+  if((csa->systype == csasystype$vm6pk) ||
+     (csa->systype == csasystype$vmsp)) {
+   // check to see if vsam region still OK
+   proposed = RVSAVE.PROPOSED;
+   if (proposed > 0) { // only deal with vsam if it's there...
+
+    if (*MAINHIGH > proposed) {
+     // must die, vsam has been overwritten!!!
+     if ((csa->trc.trcflags & 4) > 0) {
+       FCLOSE((FILE*)csa->auxtrc);
+       csa->trc.trcflags &= ~4; // show closed
+      }
+     ABEND(kikfcpTYPE, 0x889);    // show vsam overwrite
+     }
+   } // end of if (...6pk)
+
+    // switch to vsam
+    sw2vsam();
+
+    // turn off vsam
+    MTSCAN(" VSAM*3*");
+    __asm__ (
+      "LA 1,S%=\n\t"
+      "SVC 202\n\t"
+      "DC AL4(*+4)\n\t"
+      "B X%=\n"
+     "S%= DS 0D\n\t"
+      "DC CL8'DMSVSR'\n\t"
+      "DC 8X'FF'\n"
+     "X%= ST 15,%0"
+     : "=m"(rc)
+     : /* no input */
+     : "0", "1", "15"
+     );
+    MTSCAN(" VSAM*4*");
+
+    // switch back to kicks
+    sw2kicks();
+
+    // clear vsam save valid flag
+    RVSAVE.PROPOSED = 0;
+   }
+
+  // setup for release/detach
+  fcthdr = (fcth *)csa->fcp_table_addr;
+  SPRINTF(catlnk1s,"%X", fcthdr->catlnk1);
+  while(STRLEN(catlnk1s)<8) STRCAT(catlnk1s," ");
+  SPRINTF(catlnk2s,"%X", fcthdr->catlnk2);
+  while(STRLEN(catlnk2s)<8) STRCAT(catlnk2s," ");
+  MEMSET(catmode, ' ', 10);
+  MEMCPY(catmode, fcthdr->catfm, 1);
+
+  // "rel x (det" may be problematic
+  // in exec's it sometimes leads to i/o errors
+  // so I've replaced it with separate release / detach 's
+
+  // do a RELEASE
+  __asm__ (
+   "L  1,%1\n\t"
+    "MVC S%=+8(8),0(1)\n\t"
+    "LA 1,S%=\n\t"
+    "SVC 202\n\t"
+    "DC AL4(*+4)\n\t"
+    "B X%=\n"
+   "S%= DS 0D\n\t"
+    "DC CL8'RELEASE'\n\t"
+    "DC CL8'  '    file mode\n\t"
+    "DC 8X'FF'\n"
+   "X%= ST 15,%0"
+   : "=m"(rc)
+   : "m"(catmode)
+   : "0", "1", "15"
+   );
+
+  // do a DETACH
+  __asm__ (
+   "L  1,%1\n\t"
+   "MVC S%=+16(8),0(1)\n\t"
+   "LA 1,S%=\n\t"
+   "SVC 202\n\t"
+   "DC AL4(*+4)\n\t"
+   "B X%=\n"
+  "S%= DS 0D\n\t"
+   "DC CL8'CP'\n\t"
+   "DC CL8'DETACH'\n\t"
+   "DC CL8'  '    address users system\n\t"
+   "DC 8X'FF'\n"
+  "X%= ST 15,%0"
+  : "=m"(rc)
+  : "m"(catlnk2s)
+  : "0", "1", "15"
+  );
+
+  CMSlinkFLAG=0; // not holding LINK/ACCESS
+
+  MTSCAN("RDA");
+
+ }
+
+
+ ///////////////////////////////////////////////////////////////
+ //
+ // Dummy ENQ/DEQ functions for CMS
+ //
+ ///////////////////////////////////////////////////////////////
+ int enq(char *dsname) {
+  return(0);
+ }
+ void deq(char *dsname) {
+ }
+#endif
+
+
+#ifdef __MVS__
+ ///////////////////////////////////////////////////////////////
+ //
+ // FUNCTION to enqueue on a dataset name
+ //
+ ///////////////////////////////////////////////////////////////
+
+ int enq(char *dsname) {
+
+ char qname[8];
+ char rname[44];
+ int rtn;
+
+ MEMCPY(&qname[0], "KICKSFCP", 8);
+ MEMCPY(&rname[0], dsname, 44);
+
+ if (csa->enqscope[6] == 'S') {
+  __asm__ (
+    "L 2,%1\n\t"
+    "L 3,%2\n\t"
+    "ENQ ((2),(3),E,44,SYSTEMS),RET=USE\n\t"
+    "ST 15,%0"
+    : "=m"(rtn)
+    : "m"(qname),"m"(rname)
+    : "0","1","2","3","15"
+   );
+  }
+ else {
+  __asm__ (
+    "L 2,%1\n\t"
+    "L 3,%2\n\t"
+    "ENQ ((2),(3),E,44,SYSTEM),RET=USE\n\t"
+    "ST 15,%0"
+    : "=m"(rtn)
+    : "m"(qname),"m"(rname)
+    : "0","1","2","3","15"
+   );
+  }
+
+  return(rtn); // 0 - enqueued; not 0 - non enqueued
+ }
+
+
+ ///////////////////////////////////////////////////////////////
+ //
+ // SUBROUTINE to release enqueue on a dataset name
+ //
+ ///////////////////////////////////////////////////////////////
+
+ void deq(char *dsname) {
+
+ char qname[8];
+ char rname[44];
+ int rtn;
+
+ MEMCPY(&qname[0], "KICKSFCP", 8);
+ MEMCPY(&rname[0], dsname, 44);
+
+ if (csa->enqscope[6] == 'S') {
+   __asm__ (
+    "L 2,%1\n\t"
+    "L 3,%2\n\t"
+    "DEQ ((2),(3),44,SYSTEMS),RET=HAVE\n\t"
+    "ST 15,%0"
+    : "=m"(rtn)
+    : "m"(qname),"m"(rname)
+    : "0","1","2","3","15"
+   );
+  }
+ else {
+   __asm__ (
+    "L 2,%1\n\t"
+    "L 3,%2\n\t"
+    "DEQ ((2),(3),44,SYSTEM),RET=HAVE\n\t"
+    "ST 15,%0"
+    : "=m"(rtn)
+    : "m"(qname),"m"(rname)
+    : "0","1","2","3","15"
+   );
+  }
+ }
+
+
+ ///////////////////////////////////////////////////////////////
+ //
+ // Dummy switchs between KICKS and VSAM memory for MVS
+ //
+ ///////////////////////////////////////////////////////////////
+
+void sw2vsam() {
+ }
+
+void sw2kicks() {
+ }
+
+
+#endif

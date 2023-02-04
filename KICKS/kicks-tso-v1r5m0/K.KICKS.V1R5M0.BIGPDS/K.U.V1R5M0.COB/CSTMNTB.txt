@@ -1,0 +1,288 @@
+       IDENTIFICATION DIVISION.
+
+       PROGRAM-ID.  CSTMNTB.
+
+       ENVIRONMENT DIVISION.
+
+       DATA DIVISION.
+
+       WORKING-STORAGE SECTION.
+
+       01  WORK-FIELDS.
+
+           05  RESPONSE-CODE                   PIC S9(08) COMP.
+
+       01  COMMUNICATION-AREA.
+
+           05  CA-CONTEXT-FLAG                 PIC X(01).
+               88  PROCESS-KEY-MAP                        VALUE '1'.
+               88  PROCESS-ADD-CUSTOMER                   VALUE '2'.
+               88  PROCESS-CHANGE-CUSTOMER                VALUE '3'.
+               88  PROCESS-DELETE-CUSTOMER                VALUE '4'.
+           05  CA-ACTION-FLAG                  PIC X(01).
+               88  ADD-REQUEST                            VALUE '1'.
+               88  CHANGE-REQUEST                         VALUE '2'.
+               88  DELETE-REQUEST                         VALUE '3'.
+           05  CA-CUSTOMER-RECORD.
+               10  CA-CUSTOMER-NUMBER          PIC X(06).
+               10  CA-FIRST-NAME               PIC X(20).
+               10  CA-LAST-NAME                PIC X(30).
+               10  CA-ADDRESS                  PIC X(30).
+               10  CA-CITY                     PIC X(20).
+               10  CA-STATE                    PIC X(02).
+               10  CA-ZIP-CODE                 PIC X(10).
+           05  CA-SAVE-CUSTOMER-MASTER         PIC X(118).
+           05  CA-RETURN-CONDITION             PIC X(01).
+               88  PROCESS-OK                             VALUE '1'.
+               88  PROCESS-ERROR                          VALUE '2'.
+               88  PROCESS-SEVERE-ERROR                   VALUE '3'.
+           05  CA-RETURN-MESSAGE               PIC X(79).
+           05  CA-ERROR-PARAMETERS.
+               10  CA-ERR-RESP                 PIC S9(08) COMP.
+               10  CA-ERR-RESP2                PIC S9(08) COMP.
+               10  CA-ERR-RSRCE                PIC X(08).
+
+       COPY CUSTMAS.
+
+       LINKAGE SECTION.
+
+       01  KIKCOMMAREA                         PIC X(334).
+
+       PROCEDURE DIVISION.
+
+       0000-PROCESS-CUSTOMER-RECORD.
+
+           IF EIBCALEN NOT = LENGTH OF KIKCOMMAREA
+      *        SET PROCESS-SEVERE-ERROR TO TRUE
+               MOVE '3' TO CA-RETURN-CONDITION
+               PERFORM 9000-SET-ERROR-INFO
+           ELSE
+               MOVE KIKCOMMAREA TO COMMUNICATION-AREA
+               PERFORM XXXX-UNNESTED-1.
+
+           MOVE COMMUNICATION-AREA TO KIKCOMMAREA.
+           EXEC KICKS
+               RETURN
+           END-EXEC.
+
+       1000-PROCESS-CUSTOMER-KEY.
+
+           PERFORM 1100-READ-CUSTOMER-RECORD.
+      *    EVALUATE RESPONSE-CODE
+      *        WHEN KIKRESP(NORMAL)
+               IF RESPONSE-CODE EQUAL KIKRESP(NORMAL)
+                   PERFORM XXXX-UNNESTED-2
+      *        WHEN KIKRESP(NOTFND)
+               ELSE
+               IF RESPONSE-CODE EQUAL KIKRESP(NOTFND)
+                   PERFORM XXXX-UNNESTED-7
+      *        WHEN OTHER
+               ELSE
+      *            SET PROCESS-SEVERE-ERROR TO TRUE
+                   MOVE '3' TO CA-RETURN-CONDITION
+                   PERFORM 9000-SET-ERROR-INFO.
+      *    END-EVALUATE.
+
+       1100-READ-CUSTOMER-RECORD.
+
+           EXEC KICKS
+               READ FILE('CUSTMAS')
+                    INTO(CUSTOMER-MASTER-RECORD)
+                    RIDFLD(CA-CUSTOMER-NUMBER)
+                    RESP(RESPONSE-CODE)
+           END-EXEC.
+
+       2000-PROCESS-ADD-CUSTOMER.
+
+           MOVE CA-CUSTOMER-RECORD TO CUSTOMER-MASTER-RECORD.
+           PERFORM 2100-WRITE-CUSTOMER-RECORD.
+      *    EVALUATE RESPONSE-CODE
+      *        WHEN KIKRESP(NORMAL)
+               IF RESPONSE-CODE EQUAL KIKRESP(NORMAL)
+      *            SET PROCESS-OK TO TRUE
+                   MOVE '1' TO CA-RETURN-CONDITION
+                   MOVE 'Customer record added.' TO CA-RETURN-MESSAGE
+      *        WHEN KIKRESP(DUPREC)
+               ELSE
+               IF RESPONSE-CODE EQUAL KIKRESP(DUPREC)
+      *            SET PROCESS-ERROR TO TRUE
+                   MOVE '2' TO CA-RETURN-CONDITION
+                   MOVE 'Another user has added a record with that custo
+      -                 'mer number.' TO CA-RETURN-MESSAGE
+      *        WHEN OTHER
+               ELSE
+      *            SET PROCESS-SEVERE-ERROR TO TRUE
+                   MOVE '3' TO CA-RETURN-CONDITION
+                   PERFORM 9000-SET-ERROR-INFO.
+      *    END-EVALUATE.
+
+       2100-WRITE-CUSTOMER-RECORD.
+
+           EXEC KICKS
+               WRITE FILE('CUSTMAS')
+                     FROM(CUSTOMER-MASTER-RECORD)
+                     RIDFLD(CM-CUSTOMER-NUMBER)
+                     RESP(RESPONSE-CODE)
+           END-EXEC.
+
+       3000-PROCESS-CHANGE-CUSTOMER.
+
+           PERFORM 3100-READ-CUSTOMER-FOR-UPDATE.
+      *    EVALUATE RESPONSE-CODE
+      *        WHEN KIKRESP(NORMAL)
+               IF RESPONSE-CODE EQUAL KIKRESP(NORMAL)
+                   PERFORM XXXX-UNNESTED-3
+      *        WHEN KIKRESP(NOTFND)
+               ELSE
+               IF RESPONSE-CODE EQUAL KIKRESP(NOTFND)
+      *            SET PROCESS-ERROR TO TRUE
+                   MOVE '2' TO CA-RETURN-CONDITION
+                   MOVE 'Another user has deleted the record.'
+                      TO CA-RETURN-MESSAGE
+      *        WHEN OTHER
+               ELSE
+      *            SET PROCESS-SEVERE-ERROR TO TRUE
+                   MOVE '3' TO CA-RETURN-CONDITION
+                   PERFORM 9000-SET-ERROR-INFO.
+      *    END-EVALUATE.
+
+       3100-READ-CUSTOMER-FOR-UPDATE.
+
+           EXEC KICKS
+               READ FILE('CUSTMAS')
+                    INTO(CUSTOMER-MASTER-RECORD)
+                    RIDFLD(CA-CUSTOMER-NUMBER)
+                    UPDATE
+                    RESP(RESPONSE-CODE)
+           END-EXEC.
+
+       3200-REWRITE-CUSTOMER-RECORD.
+
+           EXEC KICKS
+               REWRITE FILE('CUSTMAS')
+                       FROM(CUSTOMER-MASTER-RECORD)
+                       RESP(RESPONSE-CODE)
+           END-EXEC.
+
+       4000-PROCESS-DELETE-CUSTOMER.
+
+           PERFORM 3100-READ-CUSTOMER-FOR-UPDATE.
+      *    EVALUATE RESPONSE-CODE
+      *        WHEN KIKRESP(NORMAL)
+               IF RESPONSE-CODE EQUAL KIKRESP(NORMAL)
+                   PERFORM XXXX-UNNESTED-4
+      *        WHEN KIKRESP(NOTFND)
+               ELSE
+               IF RESPONSE-CODE EQUAL KIKRESP(NOTFND)
+      *            SET PROCESS-ERROR TO TRUE
+                   MOVE '2' TO CA-RETURN-CONDITION
+                   MOVE 'Another user has deleted the record.'
+                       TO CA-RETURN-MESSAGE
+      *        WHEN OTHER
+               ELSE
+      *            SET PROCESS-SEVERE-ERROR TO TRUE
+                   MOVE '3' TO CA-RETURN-CONDITION
+                   PERFORM 9000-SET-ERROR-INFO.
+      *    END-EVALUATE.
+
+       4100-DELETE-CUSTOMER-RECORD.
+
+           EXEC KICKS
+               DELETE FILE('CUSTMAS')
+                      RESP(RESPONSE-CODE)
+           END-EXEC.
+
+       9000-SET-ERROR-INFO.
+
+           MOVE EIBRESP  TO CA-ERR-RESP.
+           MOVE EIBRESP2 TO CA-ERR-RESP2.
+           MOVE EIBRSRCE TO CA-ERR-RSRCE.
+
+       XXXX-UNNESTED SECTION.
+
+       XXXX-UNNESTED-1.
+      *        EVALUATE TRUE
+      *            WHEN PROCESS-KEY-MAP
+                   IF PROCESS-KEY-MAP
+                       PERFORM 1000-PROCESS-CUSTOMER-KEY
+      *            WHEN PROCESS-ADD-CUSTOMER
+                   ELSE
+                   IF PROCESS-ADD-CUSTOMER
+                       PERFORM 2000-PROCESS-ADD-CUSTOMER
+      *            WHEN PROCESS-CHANGE-CUSTOMER
+                   ELSE
+                   IF PROCESS-CHANGE-CUSTOMER
+                       PERFORM 3000-PROCESS-CHANGE-CUSTOMER
+      *            WHEN PROCESS-DELETE-CUSTOMER
+                   ELSE
+                   IF PROCESS-DELETE-CUSTOMER
+                       PERFORM 4000-PROCESS-DELETE-CUSTOMER.
+      *        END-EVALUATE.
+
+       XXXX-UNNESTED-2.
+                   IF ADD-REQUEST
+      *                SET PROCESS-ERROR TO TRUE
+                       MOVE '2' TO CA-RETURN-CONDITION
+                       MOVE 'That customer already exists.' TO
+                           CA-RETURN-MESSAGE
+                   ELSE
+      *                SET PROCESS-OK TO TRUE
+                       MOVE '1' TO CA-RETURN-CONDITION
+                       MOVE CUSTOMER-MASTER-RECORD TO CA-CUSTOMER-RECORD
+                       MOVE CUSTOMER-MASTER-RECORD TO
+                           CA-SAVE-CUSTOMER-MASTER
+                       MOVE SPACE TO CA-RETURN-MESSAGE.
+
+       XXXX-UNNESTED-3.
+                   IF CUSTOMER-MASTER-RECORD = CA-SAVE-CUSTOMER-MASTER
+                       MOVE CA-CUSTOMER-RECORD TO
+                           CUSTOMER-MASTER-RECORD
+                       PERFORM 3200-REWRITE-CUSTOMER-RECORD
+                       PERFORM XXXX-UNNESTED-5
+                   ELSE
+      *                SET PROCESS-ERROR TO TRUE
+                       MOVE '2' TO CA-RETURN-CONDITION
+                       MOVE 'Another user has updated the record. Try ag
+      -                    'ain.' TO CA-RETURN-MESSAGE.
+
+       XXXX-UNNESTED-4.
+                   IF CUSTOMER-MASTER-RECORD = CA-SAVE-CUSTOMER-MASTER
+                       PERFORM 4100-DELETE-CUSTOMER-RECORD
+                       PERFORM XXXX-UNNESTED-6
+                   ELSE
+      *                SET PROCESS-ERROR TO TRUE
+                       MOVE '2' TO CA-RETURN-CONDITION
+                       MOVE 'Another user has updated the record.  Try a
+      -                    'gain.' TO CA-RETURN-MESSAGE.
+
+       XXXX-UNNESTED-5.
+                       IF RESPONSE-CODE NOT = KIKRESP(NORMAL)
+      *                    SET PROCESS-SEVERE-ERROR TO TRUE
+                           MOVE '3' TO CA-RETURN-CONDITION
+                           PERFORM 9000-SET-ERROR-INFO
+                       ELSE
+      *                    SET PROCESS-OK TO TRUE
+                           MOVE '1' TO CA-RETURN-CONDITION
+                           MOVE 'Customer record updated.' TO
+                              CA-RETURN-MESSAGE.
+
+       XXXX-UNNESTED-6.
+                       IF RESPONSE-CODE NOT = KIKRESP(NORMAL)
+      *                    SET PROCESS-SEVERE-ERROR TO TRUE
+                           MOVE '3' TO CA-RETURN-CONDITION
+                           PERFORM 9000-SET-ERROR-INFO
+                       ELSE
+      *                    SET PROCESS-OK TO TRUE
+                           MOVE '1' TO CA-RETURN-CONDITION
+                           MOVE 'Customer record deleted.' TO
+                               CA-RETURN-MESSAGE.
+
+       XXXX-UNNESTED-7.
+                   IF ADD-REQUEST
+      *                SET PROCESS-OK TO TRUE
+                       MOVE '1' TO CA-RETURN-CONDITION
+                   ELSE
+      *                SET PROCESS-ERROR TO TRUE
+                       MOVE '2' TO CA-RETURN-CONDITION
+                       MOVE 'That customer does not exist.' TO
+                           CA-RETURN-MESSAGE.

@@ -1,0 +1,10 @@
+*// written as part of 'KICKS FOR TSO' port to VM/370
+*// © Copyright 2011-2014, Michael Noel, All Rights Reserved.
+*
+*// RETURNS NUMBER OF LINES IN CONSOLE STACK
+*// NUMFINRD SAME VM370 THRU ZVM 5.4 (AT LEAST)
+NUMFINRD START 0
+         USING *,15
+         LH    15,X'55C'
+         BR    14
+         END

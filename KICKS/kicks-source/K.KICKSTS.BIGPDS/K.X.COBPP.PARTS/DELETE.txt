@@ -1,0 +1,195 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+void Do_DELETE() {
+// remove a record from a file
+// EXEC CICS DELETE { DATASET(name) | FILE(name) }
+//       [RIDFLD(data-area) [KEYLENGTH(data-value)
+//       [GENERIC [NUMREC(data-area)]]]]
+//       [RBA | RRN] [SYSID(name)] END-EXEC.
+// *** RBA not supported?????????????
+
+ char err[100], saveblocks[4000];
+
+ char op[100], ops[30][100], *ip;
+ int  i, numops=0;
+
+ char file[100], ridfld[100];
+ char keylength[100]="-1", numrec[100]="1";
+ int generic=0, rba=0, rrn=0;
+
+ strcpy(ridfld, kiknull);
+
+ // break up string my way
+ numops = 0;
+ strcpy(saveblocks, cicsblks);
+ ip = SPCLTOK(saveblocks, " ");   // EXEC
+ while (ip=SPCLTOK(0, " ")) {     // KICKS, verb, ... END-EXEC
+  strcpy(ops[numops], ip);
+  numops++;
+  }
+
+ // march thru the args
+ for (i=0; i<numops; i++) {
+  strcpy(op, ops[i]);
+  if(strlen(op)==0) { continue; }
+  if(MYbegstr(op,".")) { continue; }
+  if(MYbegstr(op,"RESP")) { continue; }
+  if(MYbegstr(op,"RESP2")) { continue; }
+  if(MYbegstr(op,"NOHANDLE")) { continue; }
+  if(MYbegstr(op,"EXEC")) { continue; }
+  if(MYbegstr(op,"KICKS")) { continue; }
+  if(MYbegstr(op,"DELETE")) { continue; }
+  if((MYbegstr(op,"END-EXEC")) || (MYbegstr(op,";"))) { continue; }
+  if(MYbegstr(op,"FILE") || MYbegstr(op,"DATASET")) {
+   ip = strtok(op, "()");   // FILE
+   ip = strtok(0, "()");    // the name of the file
+   if (ip == NULL) {
+    sprintf(err,
+    "malformed argument %s of DELETE", op);
+    prt_error(err, 8);
+    No_Code();
+    return;
+    }
+   parrensDown(ip);
+   strcpy(file, ip);
+   fixXNAME(file, 8);
+   continue;
+   }
+  if(MYbegstr(op,"NUMREC")) {
+   ip = strtok(op, "()");   // NUMREC
+   ip = strtok(0, "()");
+   if (ip == NULL) {
+    sprintf(err,
+    "malformed argument %s of DELETE", op);
+    prt_error(err, 8);
+    No_Code();
+    return;
+    }
+   parrensDown(ip);
+   strcpy(numrec, ip);
+   continue;
+   }
+  if(MYbegstr(op,"RIDFLD")) {
+   ip = strtok(op, "()");   // RIDFLD
+   ip = strtok(0, "()");    // the name of the var holding the ridfld
+   if (ip == NULL) {
+    sprintf(err,
+    "malformed argument %s of DELETE", op);
+    prt_error(err, 8);
+    No_Code();
+    return;
+    }
+   parrensDown(ip);
+   strcpy(ridfld, ip);
+   continue;
+   }
+  if(MYbegstr(op,"KEYLENGTH")) {
+   ip = strtok(op, "()");   // KEYLENGTH
+   ip = strtok(0, "()");    // the name of the var holding the keylength
+   if (ip == NULL) {
+    sprintf(err,
+    "malformed argument %s of DELETE", op);
+    prt_error(err, 8);
+    No_Code();
+    return;
+    }
+   parrensDown(ip);
+   strcpy(keylength, ip);
+   continue;
+   }
+
+  if(MYbegstr(op,"GENERIC")) { generic = 1; continue; }
+  if(MYbegstr(op,"RBA")) { rba = 1; continue; }
+  if(MYbegstr(op,"RRN")) { rrn = 1; continue; }
+
+  sprintf(err,
+  "unknown/unsupported argument %s of DELETE", op);
+  prt_error(err, 8);
+  No_Code();
+  return;
+  }
+
+ if ((generic & 1) > 0) {
+  if (!strcmp(ridfld, kiknull)) {
+   prt_error("RIDFLD missing; required with GENERIC", 8);
+   No_Code();
+   return;
+   }
+  }
+
+ if (strcmp(numrec,"1")) {
+  if (!strcmp(ridfld, kiknull)) {
+   prt_error("RIDFLD missing; required with NUMREC", 8);
+   // 'cause read for update only does one!
+   No_Code();
+   return;
+   }
+  }
+
+ if (strcmp(numrec,"1")) {
+   if (rrn > 0) {
+    prt_error("NUMREC invalid with RRN", 8);
+    No_Code();
+    return;
+   }
+  }
+
+ if (!strcmp(ridfld, kiknull)) generic += 8388608;
+ generic += 2*rba + 4*rrn;
+
+#ifdef PPCOB
+ fprintf(stdout, "           MOVE 1544 TO EIBFN-2\n");
+ fprintf(stdout, "           MOVE %s TO KIK-FILENAME\n", file);
+ fprintf(stdout, "           MOVE %d TO KIK-FLAGS\n", generic);
+ COBLEX(keylength, "-1", ridfld, kiknull, "KIK-KEYLEN");
+ fprintf(stdout, "           MOVE %s TO KIK-NUMREC\n", numrec);
+ fprintf(stdout, "           CALL 'KIKCOBGL' USING KIKEIB,\n");
+ if (!strcmp(respvar, ""))
+  fprintf(stdout, "                 KIK-V1,\n");
+ else
+  fprintf(stdout, "                 KIK-V2,\n");
+ fprintf(stdout, "                 KIK-FILENAME,\n");
+ fprintf(stdout, "                 KIK-FLAGS,\n");
+ fprintf(stdout, "                 KIK-NULL,\n");
+ fprintf(stdout, "                 KIK-NULL,\n");
+ fprintf(stdout, "                 %s,\n", ridfld);
+ fprintf(stdout, "                 KIK-KEYLEN,\n");
+ fprintf(stdout, "                 KIK-NUMREC");
+ // ***************
+ // 'move after's are a bad thing because a HANDLE CONDITION
+ //  will not see the changed variable from the move, **BUT**
+ // ** following 'move after' is OK because
+ // ** numrec is not valid after *any* abend.
+ // ***************
+ if (strcmp(numrec,"1")) {
+  fprintf(stdout, "\n           MOVE KIK-NUMREC TO %s", numrec);
+  }
+#endif
+#ifdef PPGCC
+ fprintf(stdout, "\t{ short *eibfn2 = (short*)&__KIKEIB->eibfn;\n");
+ fprintf(stdout, "\t\t*eibfn2 = 1544;\n");
+ if (!strcmp(respvar, ""))
+  fprintf(stdout, "\t  int *z=&KIK_NULL, *v=&KIK_V1;\n");
+ else
+  fprintf(stdout, "\t  int *z=&KIK_NULL, *v=&KIK_V2;\n");
+ fprintf(stdout, "\t  int generic=%d, *GENERIC=&generic;\n", generic);
+ GCCLEX(keylength, "-1", ridfld, kiknull, "KIK-KEYLEN");
+ fprintf(stdout, "\t  short keylength=%s, *KEYLENGTH=&keylength;\n",
+         keylength);
+ fprintf(stdout, "\t  short numrec=%s, *NUMREC=&numrec;\n", numrec);
+ fprintf(stdout, "\t kikgccgl(__KIKEIB, v, %s, GENERIC,\n", file);
+ fprintf(stdout, "\t\tz, z, &%s, KEYLENGTH, NUMREC);\n", ridfld);
+#endif
+}

@@ -1,0 +1,1493 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+#include <stdio.h>
+#include <time.h>
+
+#include "kicks.h"
+
+KIKCSA *csa = (KIKCSA*)&csa;
+
+
+#include "pcthdr.h"
+#include "pctent.h"
+
+
+ char *natlanginuse[] = {
+  "A", "B", "C", "D", "E", "F", "G", "H", "I",
+  "J", "K", "L", "M", "N", "O", "P", "Q", "R",
+  "S", "T", "U", "V", "W", "X", "Y", "Z",
+  "1", "2", "3", "4", "5", "6", "7", "8", "9"
+ };
+ char *langinuse[] = {
+  "ENG", "PTB", "CHS", "DAN", "ENU", "FRA", "DEU", "KOR", "ITA",
+  "ISL", "JPN", "BGR", "MKD", "NOR", "ELL", "PTG", "ARA", "RUS",
+  "ESP", "CHT", "UKR", "SVE", "FIN", "HEB", "SHC", "THA",
+  "BEL", "CSY", "HRV", "HUN", "PLK", "ROM", "SHL", "TRK", "NLD"
+ };
+ int lang_max=sizeof(natlanginuse)/sizeof(char*); //both same size...
+
+ int timezone; // offset in seconds
+
+
+ ///////////////////////////////////////////////////////////////
+ //
+ //  function prototypes
+ //
+ ///////////////////////////////////////////////////////////////
+
+void ETRACE(int type_of, char *more, int intense);
+void XTRACE(int retcode, int intense);
+void TRACEstring(char *sometxt);
+void TRACEint(int someint);
+void mak_tca(char *tranid);
+
+int enq(char *name, int len);
+void deq(char *name, int len);
+
+void useTMAC (int *HH, int *MM);
+int  useSTCK (int *HH, int *MM, int *secs, char *result);
+int  GMT2LOC (char *result);
+
+ ///////////////////////////////////////////////////////////////
+ //
+ //  kikkcp mainline
+ //
+ ///////////////////////////////////////////////////////////////
+
+int kikkcp (KIKCSA *kikcsa, int type_of,
+   char *arg1, char *arg2, char *arg3, char *arg4,
+   char *arg5, char *arg6, char *arg7, char *arg8) {
+
+ int dodump=0, suppress=1, two=2;
+#define firstnl arg1
+
+ pcte *pctent;
+ pcth *pcthdr;
+ int i, j;
+ char *p;
+
+ switch (type_of)
+  {
+
+  case kikkcpINIT:     // startup
+      // first kcp call in normal startup
+      csa = kikcsa;
+      ETRACE(type_of, "", 0);
+      //
+      //no arguments
+
+#ifdef DEBUGIT
+      // message if debugging version
+      FPRINTF(csa->csastderr,"%s", firstnl); firstnl[0]=0;
+      FPRINTF(csa->csastderr,"*** DEBUGGING version of KCP *** *** ***\n");
+#endif
+
+      // check table version matches csa version
+      //  -- ALL 4 bytes of it...
+      //  -- at some point we may be able to relax that some
+      pcthdr = (pcth *)csa->kcp_table_addr;
+      if (MEMCMP((char *)&csa->version, &pcthdr->ver[0], 4)) {
+       FPRINTF(csa->csastderr,"%s", firstnl); firstnl[0]=0;
+       FPRINTF(csa->csastderr,"PCT version does not match CSA!\n");
+       FPRINTF(csa->csastderr,"This is a fatal error! Bye Bye!\n\n");
+       EXIT (999);
+       }
+
+       // obtain timezone offset
+
+#ifdef __MVS__
+
+      // MVS has valid CVTTZ that can be used.
+      // the CMS method (below) should also be usable but MVS380
+      //     has intermittent problems with aligning the minutes.
+
+       __asm__ (
+        "L     1,16            get cvt\n\t"
+        "LA    1,304(,1)       get cvttz\n\t"
+        "L     1,0(,1)         load cvttz\n\t"
+        "M     0,A%=           convert tz to seconds\n\t"
+        "D     0,B%=\n\t"
+        "ST    1,%0\n\t"
+        "B     B%=+4\n"
+       "A%=    DC    F'16384'\n"
+       "B%=    DC    F'15625'"
+        : "=m"(i)
+        : /* no input */
+        : "0", "1"
+        );
+       timezone = i;
+#endif
+#ifdef __CMS__
+
+      // CMS does not have (valid) CVTTZ, so the timezone is
+      // derived from the difference between what's in the
+      // TOD clock (GMT) and what's reported by the TIME macro (LOC).
+
+       { int tz=-100, ST_HH, ST_MM, TM_HH, TM_MM, secs;
+         int workarea[12]; char *where = (char*)&workarea[0];
+       while (tz < -99) {
+        i=useSTCK(&ST_HH, &ST_MM, &secs, where);
+        useTMAC(&TM_HH, &TM_MM);
+        if (i>0) {
+         FPRINTF(csa->csastderr,"%s", firstnl); firstnl[0]=0;
+         FPRINTF(csa->csastderr,
+          "TZ error, Current date outside allowed range\n");
+         FPRINTF(csa->csastderr,"This is a fatal error! Bye Bye!\n\n");
+         EXIT (999);
+         }
+        if (ST_MM != TM_MM) {
+         tz--;
+         STIMER(100);
+         if (tz > -105) continue;
+         FPRINTF(csa->csastderr,"%s", firstnl); firstnl[0]=0;
+         FPRINTF(csa->csastderr,"TZ error, Unable to align minutes\n");
+         FPRINTF(csa->csastderr,"This is a fatal error! Bye Bye!\n\n");
+         EXIT (999);
+         }
+        // now calculate the differnce (in hours) as TZ offset
+        tz = TM_HH - ST_HH; // local - gmt
+        if (tz < -12) tz += 24;
+        else
+        if (tz >  12) tz -= 24;
+        } // end while
+       timezone = tz * 3600;
+       }
+#endif
+
+      XTRACE(0, 0);
+      return(0);
+      //break;
+
+  case kikkcpTERM:     // shutdown
+      // last kcp call before normal shut
+      ETRACE(type_of, "", 0);
+      //
+      //no arguments
+
+      XTRACE(0, 0);
+      return(0);
+      //break;
+
+  case kikkcpTRANSTRT:   // transaction start
+                         //  -- probably irrelevent since 'attach'
+                         //     actually starts all transactions...
+      ETRACE(type_of, "", 1); // 'intense'
+      //
+      //no arguments
+
+      XTRACE(0, 1);           // 'intense'
+      return(0);
+      //break;
+
+  case kikkcpTRANEND:    // transaction end
+                         //  -- also probably irrelevent since 'attach'
+                         //     actually ends all transactions as well
+                         //     as starting them!!
+      ETRACE(type_of, "", 1); // 'intense
+      //
+      //no arguments
+
+      XTRACE(0, 1);           // 'intense'
+      return(0);
+      //break;
+
+  case kikkcpATTACH:   // attach & run new task
+      ETRACE(type_of, arg1, 0);
+      //
+      //tranid=arg1    // (Ir) tranid of task to attach
+
+      {
+      char *pgmaddr;
+      int SJrtn, pgmsize=0, r13, do_xctl=0, len;
+      KIKTCA *tca;
+      KIKTCTTE *tctte;
+      EnqueuedResouce *er, **back;
+      char *tioa, res[256];
+
+      // empty list
+      // create TCA/EIB
+      mak_tca(arg1); // arg1 is task name / tranid (I)
+      tca = csa->tca;
+      tctte = csa->tctte;
+      tioa  = csa->tctte->tioa;
+
+      // do any transaction startup stuff
+      //KBMS (csa, kikbmsTRANSTRT);
+      //KDCP (csa, kikdcpTRANSTRT);
+      //KFCP (csa, kikfcpTRANSTRT);
+      //KKCP (csa, kikkcpTRANSTRT);
+      //KPCP (csa, kikpcpTRANSTRT);
+      //KSCP (csa, kikscpTRANSTRT);
+      //KTCP (csa, kiktcpTRANSTRT);
+
+      // next call the SYNCPOINT exit
+      // -1 - transaction startup - **here** (below)
+      //  0 - commit              - syncpoint
+      //  1 - rollback            - syncpoint
+      //  2 - normal task end     - KCP attach
+      //  3 - task abend          - KCP attach
+      if (csa->syncpgm[0] != 0) { // exit exists?
+       int flag=-1, four=4;
+       LINK(csa->syncpgm, flag, four);
+       csa->tca->kikeib.eibresp  = csa->tca->kikeib.eibresp2 = 0;
+       }
+
+      // following label is to allow code falling out of the
+      // setjmp (ie, a return) to do another link, thus simulating
+      // an xctl
+
+ XCTL_LOOP:
+
+
+      // setup the first setjmp
+      SJrtn = MYsetjmp(tca->env[tca->jmpbufhi]);
+      if (SJrtn != 0) {
+       // we get here when the task needs to die, either
+       // normally (return from 1st call) or abend.
+       // in either case we are finished 'cause everything
+       // has already been done other than making the tca
+       // avail for the next guy...
+
+       // here to check for abends
+       if (tca->abendflags > 1) {
+        SPRINTF(tioa,
+          "\x27\xf1\xc3 Transaction Abend Code %4.4s ",
+          (char*)tca->abcode);
+        csa->tctte->tioaused = STRLEN(tioa);
+        KIKTCP(csa, kiktcpSEND);
+        // reset rtn trnid, comm-area, comm-area length
+        MEMSET(tctte->trnid, '\0', 4);
+        MEMSET(csa->usrcommarea, '\0', csa->maxcommsize);
+        tctte->calen = 0;
+        tca->xctlpgm = 0;
+        }
+
+       // here to check for xctl...
+       if (tca->xctlpgm != 0) {
+        pgmaddr = tca->xctlpgm;
+        tca->xctlpgm = 0;
+        tca->kikeibp.eibpca = tca->xctlca;
+        tctte->calen = tca->xctlcal;
+        tca->kikeibp.eibpcalen = tctte->calen;
+        tca->kikeib.eibcalen = tca->kikeibp.eibpcalen;
+        do_xctl = 1;
+        goto XCTL_LOOP;
+       }
+
+      // call SYNCPOINT exit
+      // -1 - transaction startup - KCP attach (above)
+      //  0 - commit              - syncpoint
+      //  1 - rollback            - syncpoint
+      //  2 - normal task end     - **here**
+      //  3 - task abend          - **here**
+      if (csa->syncpgm[0] != 0) { // exit exists?
+       int flag=2, four=4;
+       if (tca->abendflags > 1) flag=3;
+       LINK(csa->syncpgm, flag, four);
+       csa->tca->kikeib.eibresp  = csa->tca->kikeib.eibresp2 = 0;
+       }
+
+       // call any transaction shutdown routines. Some want to be
+       // called before TCA zeroed, Some after. Some not at all...
+
+       // -- NOT
+       //KBMS (csa, kikbmsTRANEND);
+       //KKCP (csa, kikkcpTRANEND); // ..will never exist..
+       //KTCP (csa, kiktcpTRANEND);
+
+       // -- BEFORE
+       KIKSCP (csa, kikscpTRANEND); // free gotten storaage
+
+       // make all the enqueue's go away - you'd think this
+       // would be  KIKKCP 'TRANEND' routine, but why 'call'
+       // another routine in this same source module???
+       back = &csa->tca->next_EQ;
+       er = *back;
+       while (er != NULL) {
+        len = er->size;
+        if (len > 0) MEMCPY(res, er->what, len);
+        // remove from list
+        *back = er->next;
+        // free storage
+        FREE(er);
+        // do mvs deq if len>0
+        if (len > 0) deq(res, len);
+        back = &csa->tca->next_EQ;
+        er = *back;
+        }
+
+       // kill the TCA...
+       MEMSET((char*)tca, 0, sizeof(KIKTCA));
+
+       // -- AFTER
+       KIKTSP (csa, kiktspTRANEND); // close temp storage
+       KIKDCP (csa, kikdcpTRANEND); // close intra & disp=shr extra dests
+       KIKFCP (csa, kikfcpTRANEND); // close disp=shr files
+       KIKPCP (csa, kikpcpTRANEND); // 'delete' cmdlvl pgms
+
+       // below shows setjmp return in trace
+       XTRACE(SJrtn, 0);
+
+       // back to wait for next task...
+       return(SJrtn);
+       }
+
+      // we get here after the setjmp call (ie, SJrtn==0)
+      tca->jmpbufhi++;
+
+      if (do_xctl == 0) {
+       // scan thru pct for requested transaction
+       pcthdr = (pcth *)csa->kcp_table_addr;
+       for (pctent = pcthdr->first; pctent != NULL; pctent=pctent->next) {
+        if (!MEMCMP(arg1, pctent->tranid, 4)) { break; }
+        }
+       if (pctent == NULL) {
+        KIKPCP(csa, kikpcpABND, "K002", &suppress); // abend, not in pct
+        }
+
+       // found, check for disabled
+       if (pctent->tskenableflag == 0) {
+        KIKPCP(csa, kikpcpABND, "K003", &suppress); // tranid disabled
+        }
+
+       // size & clear the twa (size in pct entry, storage in pct suffix)
+       tca->twaa = pcthdr->twastor;
+       tca->twal = pctent->twasize;
+       MEMSET(tca->twaa, 0, tca->twal);
+
+       // load the program
+       KIKPCP (csa, kikpcpLOAD, pctent->pgmname, &pgmaddr, &pgmsize, &two);
+
+       // make sure fcp/fct is ready to go
+       KIKFCP (csa, kikfcpTRANSTRT);
+
+       GETR13(r13);
+       tca->kikeibp.cobR13 = (char*)r13; // in case this is cobol!
+
+       }
+      else {
+       do_xctl = 0;
+       }
+
+      // call user routine with eib, comm-area
+      ((SubPtr)pgmaddr)(&tca->kikeib, tca->kikeibp.eibpca);
+
+      // if we ever get here it's because the top level pgm did
+      // a 'BR14' return instead of an 'exec kicks' type return.
+      // KIKPCP(csa, kikpcpABND, "BR14", &suppress);
+      // back to caller (maybe task control)
+
+      // this is also where 'fini's land...
+
+      tca->jmpbufhi--;
+      MYlongjmp(tca->env[tca->jmpbufhi], 1); // normal return
+
+      // dead code (can't get here, behind longjmp...)
+      }
+      //break;
+
+  case kikkcpDETACH:   // remove task                           NOT USED
+      ETRACE(type_of, "", 0);
+      //
+      //no arguments
+      XTRACE(0, 0);
+      return(0);
+      //break;
+
+  case kikkcpSUSPND:   // suspend task
+      //   << CALLED TO RESET AICA <<
+      ETRACE(type_of, "", 0);
+      //
+      //no arguments
+
+      XTRACE(0, 0);
+      return(0);
+      //break;
+
+  case kikkcpRESUME:   // resume task                           NOT USED
+      // ????????? - only one task!
+      ETRACE(type_of, "", 0);
+      //
+      //no arguments
+
+      XTRACE(0, 0);
+      return(0);
+      //break;
+
+  case kikkcpENQ:      // eng on text (or resource)
+      ETRACE(type_of, "", 0);
+      //
+      //arg1 - name of resource
+      //arg2 - length of resource name (-1 if absent)
+      //arg3 - maxlife (233=task, 246=luw)
+      //arg4 - suspend? (0-yes, 1-no)
+      {
+      char *res;
+      int   ersize, len, maxl, rtn, susp, waitsecs;
+      EnqueuedResouce *er;
+
+      KIKTCA *tca=csa->tca;
+      KIKEIB *eib;
+      eib = &tca->kikeib;
+
+      res = arg1; len = *(int*)arg2;
+      maxl = *(int*)arg3; susp = *(int*)arg4;
+
+      // validate maxl
+      // -- invreq (resp2=2) if not 233 or 246
+      if ((maxl != 233) && (maxl != 246)) {
+       KIKPCP(csa, kikpcpABND, "K011", &dodump);
+      }
+
+      // validate length
+      // -- lengerr (resp2=1) if not 1-255, or -1
+      if ((len == -1) || ((len > 0) && (len < 256))) ;
+      else {
+       KIKPCP(csa, kikpcpABND, "K012", &dodump);
+       }
+
+      // search list
+      er = csa->tca->next_EQ;
+      while (er != NULL) {
+       if (er->size == len)
+        if (len > 0) {
+         if (!STRNCMP(res, er->what, len)) {
+          // if already there just incr count
+          er->count++;
+          er->life = maxl; // and reset maxlife
+          break;
+          }
+         }
+        else {
+         if ((int)res == *(int*)er->what) {
+          // if already there just incr count
+          er->count++;
+          er->life = maxl; // and reset maxlife
+          break;
+          }
+         }
+       er = er->next;
+       }
+
+      // if not on list
+      if (er == NULL) {
+       rtn = 0;
+       // do mvs enqueue if len <> -1)
+       if (len > 0) {
+        waitsecs = csa->maxdelay;
+        while (1) {
+         rtn = enq(res, len);
+         if (rtn == 0) break;
+         if (susp > 0) break;
+         waitsecs--; if (waitsecs == 0) break;
+         STIMER(100);
+         }
+        }
+       if (rtn == 0) {
+        // good enq - add to enqueue list
+        ersize = len;
+        if (ersize < 0) ersize=4;
+        er = (EnqueuedResouce*)MALLOC(sizeof(EnqueuedResouce)+ersize);
+        if (er == NULL) {
+         // failed to obtain memory needed for enqueue
+         KIKPCP(csa, kikpcpABND, "K013", &dodump);
+         }
+        er->next  = csa->tca->next_EQ;
+        er->life  = maxl;
+        er->count = 1;
+        er->size  = len;
+        if (len > 0) MEMCPY(er->what, res, len);
+        else         *(int*)er->what = (int)res;
+        csa->tca->next_EQ = er;
+        }
+       else {
+        // bad enq - report it
+        eib->eibresp  = 55; // enqbusy
+        eib->eibresp2 = 0;  // will be turned into a non-abend
+        if (susp == 0) {
+         KIKPCP(csa, kikpcpABND, "K010", &dodump);
+         }
+        } // end "else"
+       }  // end "not on list"
+
+      }
+
+      // restore aica timer. our STIMER killed it...
+      KIKAICA();
+      XTRACE(0, 0);
+      return(0);
+      //break;
+
+  case kikkcpDEQ:      // release enq
+      ETRACE(type_of, "", 0);
+      //
+      //arg1 - name of resource
+      //arg2 - length of resource name (-1 if absent)
+      //arg3 - maxlife (233=task, 246=luw)
+      //arg4 - not used
+      {
+      char *res;
+      int   len, maxl;
+      EnqueuedResouce *er, **back;
+
+      res = arg1; len = *(int*)arg2;
+      maxl = *(int*)arg3;
+
+      // validate maxl
+      // -- invreq (resp2=2) if not 233 or 246
+      if ((maxl != 233) && (maxl != 246)) {
+       KIKPCP(csa, kikpcpABND, "K011", &dodump);
+      }
+
+      // validate length
+      // -- lengerr (resp2=1) if not 1-255, or -1
+      if ((len == -1) || ((len > 0) && (len < 256))) ;
+      else {
+       KIKPCP(csa, kikpcpABND, "K012", &dodump);
+       }
+
+      // search list
+      back = &csa->tca->next_EQ;
+      er = *back;
+      while (er != NULL) {
+       if (er->size == len)
+        if (len > 0) {
+         if (!STRNCMP(res, er->what, len)) {
+          // if already there just decr count
+          er->count--;
+          er->life = maxl; // and reset maxlife
+          break;
+          }
+         }
+        else {
+         if ((int)res == *(int*)er->what) {
+          // if already there just decr count
+          er->count--;
+          er->life = maxl; // and reset maxlife
+          break;
+          }
+         }
+       back = &er->next;
+       er = *back;
+       }
+
+      // if on list
+      if (er != NULL) {
+       if (er->count == 0) {
+        // remove from list
+        *back = er->next;
+        // free storage
+        FREE(er);
+        // do mvs deq if len>0
+        if (len > 0) deq(res, len);
+        }
+       }
+
+      }
+
+      XTRACE(0, 0);
+      return(0);
+      //break;
+
+  case kikkcpDEQALL:   // release all enqueues                  NOT USED
+                       // for syncpoint, task end...
+      ETRACE(type_of, "", 0);
+      //
+      //no arguments
+
+      XTRACE(0, 0);
+      return(0);
+      //break;
+
+  case kikkcpWAIT:     // wait (aka sleep, delay, etc)
+
+      // note this as 'intense' tracing unit
+      ETRACE(type_of, "", 1);
+      //
+      //huns=arg1      // (Ir) hundredths of a sec to wait
+
+      { int huns, oldaica;
+      huns =(int)arg1; // hundredths of a second...
+      STIMER(huns);
+      }
+      XTRACE(0, 1);
+      // restore aica timer. our STIMER killed it...
+      KIKAICA();
+      return(0);
+      //break;
+
+  case kikkcpADDRESS:   // return address requested
+      ETRACE(type_of, "", 0);
+      //
+      //arg1 - what to return
+      //arg2 - where to return it
+      {
+      int   what;
+      int  *where;
+
+      what = *(int*)arg1; where = (int*)arg2;
+
+      switch (what) {
+         //case 0: // ACEE
+         // break;
+           case 1: // COMMAREA
+            //here = (int)csa->usrcommarea;
+            *where = (int)csa->tca->kikeibp.eibpca;
+            break;
+           case 2: // CSA
+            // for KICKS the return is always ODD
+            // in real CICS the return is always EVEN
+            *where = -1;
+            break;
+           case 3: // CWA
+            *where = (int)csa->cwaa;
+            break;
+           case 4: // EIB
+            *where = (int)&csa->tca->kikeib;
+            break;
+           case 5: // TCTUA
+            *where = (int)csa->tctte->tctteuaa;
+            break;
+           case 6: // TWA
+            *where = (int)csa->tca->twaa;
+            break;
+           case 7: // TIOA
+            *where = (int)csa->tctte->tioa;
+            break;
+          default:
+            KIKPCP(csa, kikpcpABND, "K004", &dodump); // abend, invalid arg1
+       }
+
+      }
+      XTRACE(0, 0);
+      return(0);
+      //break;
+
+  case kikkcpASSIGN:   // return value requested
+      ETRACE(type_of, "", 0);
+      //
+      //arg1 - what to return
+      //arg2 - where to return it
+      {
+      int     i, what;
+      short  *value; char c, *picx;
+
+      what = *(int*)arg1; value = (short*)arg2; picx = arg2;
+
+      switch (what) {
+           case 0:  // ABCODE  (s.b. pic xxxx)
+            MEMCPY(picx, csa->tca->abcode, 4);
+            break;
+           case 5:  // ALTSCRNHT  (s.b. pic s9(4) comp)
+            *value = csa->tctte->ALTlines;
+            break;
+           case 6:  // ALTSCRNWD  (s.b. pic s9(4) comp)
+            *value = csa->tctte->ALTcols;
+            break;
+           case 19: // COLOR      (s.b. pic x, hi true, low false)
+            *picx = '\0';
+            if (csa->tctte->termattr != 0) *picx = 0xff;
+            break;
+           case 20: // CWALENG    (s.b. pic s9(4) comp)
+            *value = csa->cwal;
+            break;
+           case 21: // DEFSCRNHT  (s.b. pic s9(4) comp)
+            *value = csa->tctte->PRMlines;
+            break;
+           case 22: // DEFSCRNWD  (s.b. pic s9(4) comp)
+            *value = csa->tctte->PRMcols;
+            break;
+           case 29: // EWASUPP    (s.b. pic x, hi true, low false)
+            *picx = '\0';
+            if (csa->tctte->termattr != 0) *picx = 0xff;
+            break;
+           case 30: // EXTDS      (s.b. pic x, hi true, low false)
+            *picx = '\0';
+            if (csa->tctte->termattr != 0) *picx = 0xff;
+            break;
+           case 31: // FACILITY   (s.b. pic xxxx)
+            MEMCPY(picx, csa->tctte->trmid4, 4);
+            break;
+           case 32: // FCI        (s.b. pic x)
+            *picx = 1; // it's a terminal...
+            break;
+           case 36: // HILIGHT    (s.b. pic x, hi true, low false)
+            *picx = '\0';
+            if (csa->tctte->termattr != 0) *picx = 0xff;
+            break;
+           case 42: // LANGINUSE    (s.b. pic x(3))
+            MEMCPY(picx, "???", 3);
+            c = TOUPPER(csa->natlang);
+            for (i=0; i<lang_max; i++)
+             if (c == *natlanginuse[i]) MEMCPY(picx, langinuse[i], 3);
+            break;
+           case 50: // NATLANGINUSE    (s.b. pic x)
+            *picx = csa->natlang;
+            break;
+           case 51: // NETNAME    (s.b. pic x(8))
+            MEMCPY(picx, csa->tca->kikeib.eibnetid, 8);
+            break;
+           case 56: // OPID       (s.b. pic xxx)
+            MEMCPY(picx, csa->tca->kikeib.eibopid, 3);
+            break;
+           case 62: // PARTNS     (s.b. pic x, hi true, low false)
+            *picx = '\0';
+            if (csa->tctte->termattr != 0) *picx = 0xff;
+            break;
+           case 67: // PROGRAM    (s.b. pic x(8))
+            MEMCPY(picx, csa->tca->kikeib.eibpgmid, 8);
+            break;
+           case 68: // PS         (s.b. pic x, hi true, low false)
+            *picx = '\0';
+            if (csa->tctte->termattr != 0) *picx = 0xff;
+            break;
+           case 73: // SCRNHT     (s.b. pic s9(4) comp)
+            *value = csa->tctte->PRMlines;
+            if ((csa->tctte->flags & tctteflag$usingalt) > 0)
+             *value = csa->tctte->ALTlines;
+            break;
+           case 74: // SCRNWD     (s.b. pic s9(4) comp)
+            *value = csa->tctte->PRMcols;
+            if ((csa->tctte->flags & tctteflag$usingalt) > 0)
+             *value = csa->tctte->ALTcols;
+            break;
+           case 79: // SYSID      (s.b. pic x(8))
+            MEMCPY(picx, csa->tca->kikeib.eibsysid, 8);
+            break;
+           case 81: // TCTUALENG  (s.b. pic s9(4) comp)
+            *value = csa->tctte->tctteual;
+            break;
+           case 83: // TERMCODE  (s.b. pic s9(4) comp)
+            if ((csa->tctte->flags & tctteflag$crlpinuse) == 0) {
+             // normal tso 3270
+             *value = 0x9902; // 3277 local, model 2
+             } else {
+             // crlp only other choice (now, maybe console later)
+             //alue = 0x08xx; // console
+             *value = 0x1800; // crlp
+             }
+            break;
+           case 88: // TWALENG    (s.b. pic s9(4) comp)
+            *value = csa->tca->twal;
+            break;
+           case 90: // USERID     (s.b. pic x(8))
+            MEMCPY(picx, csa->tca->kikeib.eibusrid, 8);
+            break;
+           case 94: // TIOASIZE  (s.b. pic s9(4) comp)
+            *value = csa->tctte->tioasize;
+            break;
+          default:
+            KIKPCP(csa, kikpcpABND, "K005", &dodump); // abend, invalid arg1
+       }
+
+      }
+      XTRACE(0, 0);
+      return(0);
+      //break;
+
+  case kikkcpASKTIME:   // return value requested
+      ETRACE(type_of, "", 0);
+      //
+      // updates eibdate, eibtime, returns optional arg1
+      // arg1 - flag - return abstime?
+      // arg2 - where to return it (s.b. pic s9(15) comp-3)
+      {
+      int dp[2], tp[2]; // need doubleword align (?)
+      int flag;
+      char *where;
+
+      flag = *(int*)arg1; where = arg2;
+
+      // obtain date/time and put into eib
+      dp[0]=0; tp[0]=0; TIMEMAC(dp[1], tp[1]);
+      csa->tca->kikeib.eibdate = dp[1];
+      csa->tca->kikeib.eibtime = (tp[1] >> 4) | 15;
+
+      // if arg1 != NULL return stck time
+       {
+       int TM_MM, TM_HH, ST_MM, ST_HH, secs;
+
+       if((flag & 1) != 0) {
+        i=useSTCK(&ST_HH, &ST_MM, &secs, where);
+        if (i>0) // means asktime not inrange for C conversion
+         KIKPCP(csa, kikpcpABND, "K008", &dodump);  // invreq
+        GMT2LOC(where);
+        }  // end if((flag & 1) ...
+       }   // end enclosing block
+
+      }    // end enclosing block for asktime
+
+      XTRACE(0, 0);
+      return(0);
+      //break;
+
+  case kikkcpFMTTIME:
+      ETRACE(type_of, "", 0);
+      //
+      // arg1 - abstime (s.b. pic s9(15) comp-3)
+      // arg2 - flags
+      // arg3 - into
+      // arg4 - datesep
+      // arg5 - timesep
+      {
+
+      char *abstime, *into, datesep[2], timesep[2];
+      int   flags, i, j, k, secs;
+
+      char unpktime[30], from[30];
+
+      abstime = arg1; into = arg3;
+      flags = *(int*)arg2;
+      MEMSET(datesep, 0, 2);
+      MEMSET(timesep, 0, 2);
+      if ((flags & 32) > 0) datesep[0] = *arg4;
+      if ((flags & 64) > 0) timesep[0] = *arg5;
+
+      // unpack abstime
+      __asm__ (
+       "L     1,%0\n\t"
+       "L     2,%1\n\t"
+       "UNPK  0(16,2),0(8,1)"
+       : /* no output */
+       : "m"(abstime),"m"(unpktime)
+       : "1", "2"
+       );
+
+      // verify abstime is numeric and positive
+      i = unpktime[15] >> 4;
+      if((i == 10) | (i == 12)) unpktime[15] |= '0';
+      for (i=0, j=0; i<16; i++) {
+       k = unpktime[i];
+       if((k < '0') | (k > '9')) j = 1;
+       }
+      if (j>0) KIKPCP(csa, kikpcpABND, "K008", &dodump); // invreq
+
+      // abstime is milliseconds since 00:00 01/01/1900 -- localtime
+      // make it into    seconds since 00:00 01/01/1970
+      __asm__ (
+       "XR   1,1\n\t"
+       "ST   1,%0\n\t"
+       "L    1,%2\n\t"
+       "ZAP  A%=,0(8,1)\n\t"
+       "MVO  A%=(8),A%=(7)\n\t"
+       "MVO  A%=(8),A%=(7)\n\t"
+       "MVO  A%=(8),A%=(7)\n\t"
+       "SP   A%=,B%=\n\t"
+       "CP   A%=,D%=\n\t"
+       "BC   2,X%=\n\t"
+       "CP   A%=,C%=\n\t"
+       "BC   4,X%=\n\t"
+       "CVB  1,A%=\n\t"
+       "ST   1,%1\n\t"
+       "B    D%=+6\n"
+      "X%=   LA   1,A%=         note bad result\n\t"
+       "ST   1,%0\n\t"
+       "B    D%=+6\n\t"
+       "CNOP 0,8\n"
+      "A%=  DS PL8              result\n"
+      "B%=  DC PL8'2208988800'  adjust to 1970\n"
+      "C%=  DC PL6'-2147483648' to little\n"
+      "D%=  DC PL6'2147483647'  to big"
+       : "=m"(i),"=m"(secs)
+       : "m"(abstime)
+       : "1"
+       );
+      // i=err code (0=good), secs='seconds since'
+      //         ie, same as 'secs = time(NULL)'
+
+      // following INVREQ is for abstime < 1902 or > 2037
+      if (i>0) KIKPCP(csa, kikpcpABND, "K008", &dodump); // invreq
+
+
+
+#define CPYIT(into, from, size) \
+{ \
+  int i; \
+  MEMSET(into, ' ', size); \
+  i = STRLEN(from); \
+  if (i > size) i = size; \
+  MEMCPY(into, from, i); \
+}
+
+
+      // now use strftime to turn secs into requested fmt
+      flags &= 31;
+      switch (flags) {
+            //
+            // GMTIME 'cause ABSTIME already LOCALTIME adjusted...
+            //
+           case 1:  // YYDDD
+            STRFTIME (unpktime, 90, "%y%%s%j", GMTIME (&secs));
+            SPRINTF (from, unpktime, datesep);
+            CPYIT(into, from, 6);
+            break;
+           case 2:  // YYYYDDD
+            STRFTIME (unpktime, 20, "%Y%%s%j", GMTIME (&secs));
+            SPRINTF (from, unpktime, datesep);
+            CPYIT(into, from, 8);
+            break;
+           case 3:  // YYMMDD
+            STRFTIME (unpktime, 20, "%y%%s%m%%s%d", GMTIME (&secs));
+            SPRINTF (from, unpktime, datesep, datesep);
+            CPYIT(into, from, 8);
+            break;
+           case 4:  // YYYYMMDD
+            STRFTIME (unpktime, 20, "%Y%%s%m%%s%d", GMTIME (&secs));
+            SPRINTF (from, unpktime, datesep, datesep);
+            CPYIT(into, from, 10);
+            break;
+           case 5:  // YYDDMM
+            STRFTIME (unpktime, 20, "%y%%s%d%%s%m", GMTIME (&secs));
+            SPRINTF (from, unpktime, datesep, datesep);
+            CPYIT(into, from, 8);
+            break;
+           case 6:  // YYYYDDMM
+            STRFTIME (unpktime, 20, "%Y%%s%d%%s%m", GMTIME (&secs));
+            SPRINTF (from, unpktime, datesep, datesep);
+            CPYIT(into, from, 10);
+            break;
+           case 7:  // DDMMYY
+            STRFTIME (unpktime, 20, "%d%%s%m%%s%y", GMTIME (&secs));
+            SPRINTF (from, unpktime, datesep, datesep);
+            CPYIT(into, from, 8);
+            break;
+           case 8:  // DDMMYYYY
+            STRFTIME (unpktime, 20, "%d%%s%m%%s%Y", GMTIME (&secs));
+            SPRINTF (from, unpktime, datesep, datesep);
+            CPYIT(into, from, 10);
+            break;
+           case 9:  // MMDDYY
+            STRFTIME (unpktime, 20, "%m%%s%d%%s%y", GMTIME (&secs));
+            SPRINTF (from, unpktime, datesep, datesep);
+            CPYIT(into, from, 8);
+            break;
+           case 10: // MMDDYYYY
+            STRFTIME (unpktime, 20, "%m%%s%d%%s%Y", GMTIME (&secs));
+            SPRINTF (from, unpktime, datesep, datesep);
+            CPYIT(into, from, 10);
+            break;
+           case 11: // DAYCOUNT
+            secs /= 86400; // seoonds to days
+            secs += 25568; // 1970 base to 1900 base
+            *(int*)into = secs;
+            break;
+           case 12: // DAYOFWEEK
+            //STRFTIME (unpktime, 20, "%u", GMTIME (&secs));
+            //SSCANF (unpktime, "%d", &secs);
+            //if (secs == 7) secs = 0;
+            // %u fmt doesn't work? so use daycount...
+            secs /= 86400; // seoonds to days
+            secs += 25568; // 1970 base to 1900 base
+            secs = secs % 7;
+            *(int*)into = secs;
+            break;
+           case 13: // DAYOFMONTH
+            STRFTIME (unpktime, 20, "%d", GMTIME (&secs));
+            SSCANF (unpktime, "%d", &secs);
+            *(int*)into = secs;
+            break;
+           case 14: // MONTHOFYEAR
+            STRFTIME (unpktime, 20, "%m", GMTIME (&secs));
+            SSCANF (unpktime, "%d", &secs);
+            *(int*)into = secs;
+            break;
+           case 15: // YEAR
+            STRFTIME (unpktime, 20, "%Y", GMTIME (&secs));
+            SSCANF (unpktime, "%d", &secs);
+            *(int*)into = secs;
+            break;
+           case 16: // TIME
+            STRFTIME (unpktime, 20, "%H%%s%M%%s%S", GMTIME (&secs));
+            SPRINTF (from, unpktime, timesep, timesep);
+            CPYIT(into, from, 8);
+            break;
+          default:
+            KIKPCP(csa, kikpcpABND, "K009", &dodump); // abend, invalid arg1
+       }
+
+      }
+      XTRACE(0, 0);
+      return(0);
+      //break;
+
+
+#undef CPYIT
+
+
+  case kikkcpDELAY:    // delay (abs or relative)
+      ETRACE(type_of, "", 0);
+      //
+      // arg1 - int, flag for abs (bit 0=0) or rel (bit 0=1)
+      // arg2 - binary value, number of seconds to delay
+      {
+      int flag, numsecs, huns;
+
+      flag = *(int*)arg1; numsecs = *(int*)arg2;
+      if ((flag & 1) == 0) {
+       // absolute wait (# seconds)
+       if (numsecs > csa->maxdelay) {
+        // no toleration for long waits!!!
+        KIKPCP(csa, kikpcpABND, "K006", &dodump);
+        }
+       huns = 100*numsecs;
+       STIMER(huns);
+      }
+      else {
+       // relative wait (until a certain time)
+       // get current time in binary
+       int cursecs, relsecs;
+       __asm__ (
+        "TIME BIN\n\t"
+        "LR   1,0\n\t"
+        "SR   0,0\n\t"
+        "D    0,A%=\n\t"
+        "ST   1,%0\n\t"
+        "B    A%=+4\n\t"
+        "CNOP 0,4\n"
+       "A%= DC F'100'"
+        : "=m"(cursecs)
+        : /* no input */
+        : "0", "1", "15"
+        );
+       relsecs = numsecs - cursecs;
+       if (relsecs < 0) {
+        // EXPIRED...
+        KIKPCP(csa, kikpcpABND, "K007", &dodump);
+        }
+       if (relsecs > csa->maxdelay) {
+        // no toleration for long waits!!!
+        KIKPCP(csa, kikpcpABND, "K006", &dodump);
+        }
+       huns = 100*relsecs;
+       STIMER(huns);
+       }
+
+      }
+      XTRACE(0, 0);
+      // restore aica timer. our STIMER killed it...
+      KIKAICA();
+      return(0);
+      //break;
+
+  case kikkcpSIGNOFF:   // signoff in KICKS == shutdown...
+      ETRACE(type_of, "", 0);
+      //
+      csa->runphase = 2;   // so set shutdown phase...
+      XTRACE(0, 0);
+      return(0);
+      //break;
+
+
+  case kikkcpSYNCPOINT: // declare LUW boundary
+      ETRACE(type_of, "", 0);
+      //
+      // arg1 - int, flag for abs (bit 0=0) or rel (bit 0=1)
+      {
+      int flag, len, savetrc = csa->trc.trcflags;
+      char res[256];
+      EnqueuedResouce *er, **back;
+
+      // call SYNCPOINT exit
+      // -1 - transaction startup - KCP attach
+      //  0 - commit              - **here**
+      //  1 - rollback            - **here**
+      //  2 - normal task end     - KCP attach
+      //  3 - task abend          - KCP attach
+      flag = *(int*)arg1;
+      if (csa->syncpgm[0] != 0) { // exit exists?
+       int four=4;
+       LINK(csa->syncpgm, flag, four);
+       csa->tca->kikeib.eibresp  = csa->tca->kikeib.eibresp2 = 0;
+       }
+
+      /* KEDF needs to be off while the TRANEND       */
+      /* routines are called or they will do nothing. */
+      csa->trc.trcflags &= ~16; // turn KEDF off
+
+      // empty enqueue list of LUW/UOW entries
+      back = &csa->tca->next_EQ;
+      er = *back;
+      while (er != NULL) {
+       if (er->life == 246) { // 246=luw, aka uow
+        len = er->size;
+        if (len > 0) MEMCPY(res, er->what, len);
+        // remove from list
+        *back = er->next;
+        // free storage
+        FREE(er);
+        // do mvs deq if len>0
+        if (len > 0) deq(res, len);
+        back = &csa->tca->next_EQ;
+        er = *back;
+        }
+       else {
+        back = &er->next;
+        er = *back;
+        }
+       }
+
+      //KBMS (csa, kikbmsTRANEND);
+      KIKTSP (csa, kikdcpTRANEND);
+      KIKDCP (csa, kikdcpTRANEND);
+      //KSCP (csa, kikdcpTRANEND);
+      KIKFCP (csa, kikfcpTRANEND);
+      //KKCP (csa, kikkcpTRANEND);
+      //KPCP (csa, kikpcpTRANEND);
+      //KTCP (csa, kiktcpTRANEND);
+
+      csa->trc.trcflags = savetrc; // maybe turn KEDF back on
+      }
+      XTRACE(0, 0);
+      return(0);
+      //break;
+
+  default:    // bad calls get here
+      ETRACE(type_of, "", 0);
+      {
+      if ((csa->trc.trcflags & 4) > 0) {
+        FCLOSE((FILE*)kikcsa->auxtrc);
+        csa->trc.trcflags &= ~4; // show closed
+       }
+      ABEND(kikkcpTYPE, type_of);
+      }
+  }
+
+}
+
+void ETRACE(int type_of, char *more, int intense)
+{ char tmsg[20]; int t; t = csa->tca->tasknum;
+  csa->AICAtime = -1;
+  csa->tca->kikeib.eibresp = csa->tca->kikeib.eibresp2 = 0;
+  if (type_of == kikkcpATTACH) { // trace new task # even
+   t = csa->nexttasknum;         // thou TCA does not
+   }                             // exist yet...
+  if (more == NULL)
+  SPRINTF(tmsg, "K%2.2X%4.4s     %4.4X", type_of, "", t);
+  else
+  SPRINTF(tmsg, "K%2.2X%4.4s     %4.4X", type_of, more, t);
+  ((SubPtr)csa->trc_addr)(tmsg, intense);
+}
+void XTRACE(int retcode, int intense)
+{ char tmsg[20]; int t; t = csa->tca->tasknum;
+  SPRINTF(tmsg, "KX%03.3d       %4.4X", retcode, t);
+  ((SubPtr)csa->trc_addr)(tmsg, intense);
+  //return(retcode);
+  csa->AICAtime = csa->AICAmax;
+}
+
+void TRACEstring(char *sometxt)
+{
+  FPRINTF((FILE*)csa->auxtrc, "%50s\n", sometxt);
+}
+
+void TRACEint(int someint)
+{
+  FPRINTF((FILE*)csa->auxtrc, "%x\n", someint);
+}
+
+ ///////////////////////////////////////////////////////////////
+ //
+ // SUBROUTINE to build/format new TCA
+ //
+ ///////////////////////////////////////////////////////////////
+
+void mak_tca(char *tranid) {
+ int dp[2], tp[2]; // need doubleword align (?)
+ int dodump=0, suppress=1;
+ KIKTCA *tca;
+ KIKTCTTE *tctte;
+
+ tca = csa->tca;
+ tctte = csa->tctte;
+
+ // make sure something not already attached...
+ if (tca->tasknum != 0) {
+  KIKPCP(csa, kikpcpABND, "K001", &dodump);
+ }
+
+ // clear tca
+ //__asm__ ("\n* MEMSET((char*)tca, 0, sizeof(KIKTCA));\n");
+ MEMSET((char*)tca, 0, sizeof(KIKTCA));
+
+ // set tca trnid and task number
+ MEMCPY((char*)tca->tranid, tranid, 4);
+ tca->tasknum = csa->nexttasknum++;
+
+ // set eib prefix stuff
+ tca->kikeibp.eibpcsa = (char*)csa;
+ tca->kikeibp.eibpcalen = tctte->calen;
+ tca->kikeibp.eibpca = csa->usrcommarea;
+
+ // now set eib stuff from tca stuff
+ tca->kikeib.eibtaskn = tca->tasknum;
+ tca->kikeib.eibcalen = tca->kikeibp.eibpcalen;
+ MEMCPY((char*)tca->kikeib.eibtrmid, (char*)tctte->trmid4, 4);
+ MEMCPY((char*)tca->kikeib.eibnetid, (char*)tctte->trmid, 8);
+ MEMCPY((char*)tca->kikeib.eibtrnid, (char*)tca->tranid, 4);
+ MEMCPY((char*)tca->kikeib.eibusrid, (char*)tctte->usrid, 8);
+ MEMCPY((char*)tca->kikeib.eibsysid, (char*)tctte->sysid, 8);
+ MEMCPY((char*)tca->kikeib.eibopid, &csa->opid, 3);
+
+ // get aid and cursor from tioa
+ tca->kikeib.eibaid   = tctte->tioa[0];
+ //MEMCPY((char*)&tca->kikeib.eibcposn, &tctte->tioa[1], 2);
+ {
+  int x, y;
+  SetMaxRowCol;
+  decode_sba ((char*)&tctte->tioa[1], &x, &y); // turn 3270 sba into x,y
+  y += (x-1)*sba_maxcol;
+  tca->kikeib.eibcposn = y-1;
+ }
+
+ // obtain date/time and put into eib
+ dp[0]=0; tp[0]=0; TIMEMAC(dp[1], tp[1]);
+ tca->kikeib.eibdate = dp[1];
+ tca->kikeib.eibtime = (tp[1] >> 4) | 15;
+}
+
+
+ ///////////////////////////////////////////////////////////////
+ //
+ // FUNCTION to enqueue on a name w/length
+ //
+ ///////////////////////////////////////////////////////////////
+
+ int enq(char *name, int len) {
+
+ char qname[8];
+ char rname[44];
+ int rtn;
+
+ SPRINTF(qname, "KICKS%03.3d", len);
+ MEMSET(rname, ' ', 44);
+ rtn = len; if (rtn > 44) rtn = 44;
+ MEMCPY(rname, name, rtn);
+
+ if (csa->enqscope[6] == 'S') {
+  __asm__ (
+    "L 2,%1\n\t"
+    "L 3,%2\n\t"
+    "ENQ ((2),(3),E,44,SYSTEMS),RET=USE\n\t"
+    "ST 15,%0"
+    : "=m"(rtn)
+    : "m"(qname),"m"(rname)
+    : "0","1","2","3","15"
+   );
+  }
+ else {
+  __asm__ (
+    "L 2,%1\n\t"
+    "L 3,%2\n\t"
+    "ENQ ((2),(3),E,44,SYSTEM),RET=USE\n\t"
+    "ST 15,%0"
+    : "=m"(rtn)
+    : "m"(qname),"m"(rname)
+    : "0","1","2","3","15"
+   );
+  }
+
+  return(rtn); // 0 - enqueued; not 0 - non enqueued
+ }
+
+
+ ///////////////////////////////////////////////////////////////
+ //
+ // SUBROUTINE to release enqueue on a name w/length
+ //
+ ///////////////////////////////////////////////////////////////
+
+ void deq(char *name, int len) {
+
+ char qname[8];
+ char rname[44];
+ int rtn;
+
+ SPRINTF(qname, "KICKS%03.3d", len);
+ MEMSET(rname, ' ', 44);
+ rtn = len; if (rtn > 44) rtn = 44;
+ MEMCPY(rname, name, rtn);
+
+ if (csa->enqscope[6] == 'S') {
+   __asm__ (
+    "L 2,%1\n\t"
+    "L 3,%2\n\t"
+    "DEQ ((2),(3),44,SYSTEMS),RET=HAVE\n\t"
+    "ST 15,%0"
+    : "=m"(rtn)
+    : "m"(qname),"m"(rname)
+    : "0","1","2","3","15"
+   );
+  }
+ else {
+   __asm__ (
+    "L 2,%1\n\t"
+    "L 3,%2\n\t"
+    "DEQ ((2),(3),44,SYSTEM),RET=HAVE\n\t"
+    "ST 15,%0"
+    : "=m"(rtn)
+    : "m"(qname),"m"(rname)
+    : "0","1","2","3","15"
+   );
+  }
+ }
+
+
+#ifdef __CMS__
+ ///////////////////////////////////////////////////////////////
+ //
+ // SUBROUTINE to obtain local time (for TZ generation)
+ // ** only used in CMS **
+ //
+ ///////////////////////////////////////////////////////////////
+
+void useTMAC (int *HH, int *MM) {
+  int dp[2];
+  int tp[2], tb;
+
+  // obtain date/time using MVS TIME macro
+  // would normally be localtime; in CMS that's the only choice
+  // ** always LOCAL ** same as shown with 'q time' **
+  dp[0]=0; tp[0]=0; TIMEMAC(dp[1], tp[1]);
+  tp[1] = tp[1] >> 4; tp[1] |= 15;
+
+  CVB(tp[0], tb);
+  *MM = (tb / 100) % 100;
+  *HH = (tb / 10000) % 100;
+ }
+#endif
+
+ ///////////////////////////////////////////////////////////////
+ //
+ // SUBROUTINE to obtain GMT time
+ //
+ ///////////////////////////////////////////////////////////////
+
+int  useSTCK (int *HH, int *MM, int *retsecs, char *result) {
+  int workarea[12]; char *where;
+  int i=0, secs;
+  struct tm *tm;
+
+  // bunch of inline assembler needed to do STCK and
+  // get result into the desired format. Mostly self
+  // evident, but the 'D%=' constant is to handle
+  // the 'bit 51 update' and get it into milliseconds.
+  // return will be milliseconds since 00:00 01/01/1900 -- GMT
+  __asm__ (
+   "L     4,%1\n\t"
+   "STCK  0(4)\n\t"
+   "LM    2,3,0(4)\n\t"
+   "N     2,A%=\n\t"
+   "CVD   2,8(4)\n\t"
+   "TM    0(4),X'80'\n\t"
+   "BNO   *+10\n\t"
+   "AP    8(8,4),B%=\n\t"
+   "N     3,A%=\n\t"
+   "CVD   3,16(4)\n\t"
+   "TM    4(4),X'80'\n\t"
+   "BNO   *+10\n\t"
+   "AP    16(8,4),B%=\n\t"
+   "ZAP   24(16,4),8(8,4)\n\t"
+   "MP    24(16,4),C%=\n\t"
+   "AP    24(16,4),16(8,4)\n\t"
+   "DP    24(16,4),D%=\n\t"
+   "ZAP   40(8,4),24(10,4)\n\t"
+   "LA    1,40(4)\n\t"
+   "ST    1,%0\n\t"
+   "B     D%=+6\n\t"
+   "CNOP  0,4\n"
+   "A%=   DC    XL4'7FFFFFFF'\n"
+   "B%=   DC    PL6'2147483648'\n"
+   "C%=   DC    PL6'4294967296'\n"
+   "D%=   DC    PL6'4096000'"
+   : "=m"(where)
+   : "m"(workarea)
+   : "0", "1", "2", "3", "4", "15"
+   );
+  MEMCPY(result, where, 8);
+
+  // MVS doesn't need any of the HH, MM or sec from the following
+  // it's only used by CMS (in kcpinit) for the TZ calculation...
+
+#ifdef __CMS__
+  // STCK is milliseconds since 00:00 01/01/1900 -- GMT
+  // make it into seconds since 00:00 01/01/1970 -- for PDPCLIB
+  __asm__ (
+   "XR   1,1\n\t"
+   "ST   1,%0\n\t"
+   "L    1,%2\n\t"
+   "ZAP  A%=,0(8,1)\n\t"
+   "MVO  A%=(8),A%=(7)\n\t"
+   "MVO  A%=(8),A%=(7)\n\t"
+   "MVO  A%=(8),A%=(7)\n\t"
+   "SP   A%=,B%=\n\t"
+   "CP   A%=,D%=\n\t"
+   "BC   2,X%=\n\t"
+   "CP   A%=,C%=\n\t"
+   "BC   4,X%=\n\t"
+   "CVB  1,A%=\n\t"
+   "ST   1,%1\n\t"
+   "B    D%=+6\n"
+  "X%=   LA   1,A%=         note bad result\n\t"
+   "ST   1,%0\n\t"
+   "B    D%=+6\n\t"
+   "CNOP 0,8\n"
+  "A%=  DS PL8              result\n"
+  "B%=  DC PL8'2208988800'  adjust to 1970\n"
+  "C%=  DC PL6'-2147483648' to little\n"
+  "D%=  DC PL6'2147483647'  to big"
+   : "=m"(i),"=m"(secs)
+   : "m"(where)
+   : "1"
+   );
+
+  // i=err code (0=good), secs='seconds since'
+  //         ie, same as 'secs = time(NULL)'
+  *retsecs = secs;
+
+  // get broken down time
+  tm = (struct tm *)GMTIME(&secs);
+
+  // return HH, MM
+  *HH = tm->tm_hour;
+  *MM = tm->tm_min;
+#endif
+
+  return i;
+ }
+
+
+ ///////////////////////////////////////////////////////////////
+ //
+ // SUBROUTINE to add timezone offset to ASKTIME fmt GMT time
+ //
+ ///////////////////////////////////////////////////////////////
+
+int  GMT2LOC (char *result) {
+ int tz=timezone * 1000; // seconds to milliseconds,,,
+
+  __asm__ (
+   "L     3,%1            get tz millisecs in R3\n\t"
+   "LA    4,W%=           address workarea\n\t"
+   "CVD   3,0(4)          get TZ into PD format\n\t"
+   "L     3,%0            get asktime address\n\t"
+   "AP    0(8,3),0(8,4)   add tz to gmt giving localtime\n\t"
+   "B     W%=+8           skip following workarea...\n"
+  "W%=    DC D'0'         just an inline workarea"
+   : "=m"(result)
+   : "m"(tz)
+   : "3", "4", "15"
+   );
+ }
+

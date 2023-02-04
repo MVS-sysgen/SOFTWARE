@@ -1,0 +1,814 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+ #define KEDFXEQFLAG
+ #include "kedfxeq.h"
+
+ /////////////////////////////////////////////////////////////////////
+ // KEDFXEQ is the command level debug intercept (user interface)
+ //
+ // Of course it is not a command level program itself, 'cause being
+ // such would interfere with it's purpose!
+ //
+ // It gets 'LINK'd to by the glue routine before/after each call.
+ //    and for each line of the traced code when source tracing...
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+int abs(int num) { if(num < 0) return -num; else return num; }
+
+
+ // maintained in Source_Trace, used in PF4/PF5 routines.
+ // (if max screen rows is 62, max source lines is 54)
+int stnum;              // number of lines on screen (& in tbl)
+struct {
+  short slt;            // line type
+  short grp;            // lines in group
+  int   line;           // line number of 1st in group
+  } srclinegrp[55];
+
+void Source_Trace(KIKEIB *eib, DEBUGGERCA *comm) {
+  char *tioa = csa->tctte->tioa;
+  char  buffer[200];
+  short slt, sbuf, *eibfn2 = (short*)&eibSave.eibfn;
+  int col, topline, botline, lines, row=3;
+  int curline, maxline, ln;
+  int i, iz=0, i16=16;
+  short dirlong, srclong, i0=0, i14=14;
+  unsigned int line, numlines;
+  char srckey[14];
+
+  DIRREC dirrec;
+  SRCREC srcrec;
+
+  stnum = 0;  // preset no lines on screen
+
+  if((csa->tctte->flags & tctteflag$crlpinuse) > 0) goto UsingCRLP;
+
+  DoTop(eib, comm);
+
+  tioa = csa->tctte->tioa;
+
+  PUT_SBA(row,1)
+  SPRINTF(buffer, "     program compiled %20.20s, ", eibSave.eibwc);
+  APPEND_MSG(buffer);
+
+  // decode eibline
+  line =     ((unsigned int)eibSave.eibline) & 0xffffff;
+  numlines = ((unsigned int)eibSave.eibline) >> 24;
+  if (numlines == 0) numlines++;
+  SPRINTF(buffer, "now at line %d", line);
+  APPEND_MSG(buffer);
+
+  // count number of breakpoints in table & display
+  for (i=0, slt=0; i<NUMBKP; i++) {
+   if (bkpline[i] != 0) slt++;
+   }
+  if (slt != 0) {
+   SPRINTF(buffer, " (%d/%d bpts set)", slt, NUMBKP);
+   APPEND_MSG(buffer);
+   }
+
+  // startbr to see if source is available
+  MEMCPY(srckey,   eibSave.eibprog, 8);
+  MEMCPY(srckey+8, "000000", 6);
+  STARTBR("KSDB    ", i16, srckey, i14, i0);
+  if (eib->eibresp == 13) { // done (with nicer msg) if not found
+   PUT_SBA(++row,1)
+   SPRINTF(buffer, " SOURCE LISTING NOT FOUND");
+   APPEND_MSG(buffer);
+   API_resp(eib, comm); // before/after/always...
+   DoBottom(eib, comm);
+   //sourct = -1;
+   CLOSE("KSDB    ");
+   return;
+   }
+  if (eib->eibresp != 0)  { // done if startbr fails...
+   PUT_SBA(++row,1)
+   SPRINTF(buffer, " 1ST STARTBR FAILED, RESP = %d, RESP2 = %d",
+           eib->eibresp, eib->eibresp2);
+   APPEND_MSG(buffer);
+   API_resp(eib, comm); // before/after/always...
+   DoBottom(eib, comm);
+   //sourct = -1;
+   CLOSE("KSDB    ");
+   return;
+   }
+
+  // readnext to get the 'directory' (line num 0)
+  dirlong = 92; MEMSET((char*)&dirrec, 0, dirlong);
+  READNEXT("KSDB    ", iz, (char*)&dirrec, dirlong, srckey, i14, i0);
+  if (eib->eibresp != 0) { // done if readnext fails...
+   ENDBR("KSDB    ", i0, i0);
+   PUT_SBA(++row,1)
+   SPRINTF(buffer, " 1ST READNEXT FAILED, RESP = %d, RESP2 = %d",
+           eib->eibresp, eib->eibresp2);
+   APPEND_MSG(buffer);
+   API_resp(eib, comm); // before/after/always...
+   DoBottom(eib, comm);
+   //sourct = -1;
+   CLOSE("KSDB    ");
+   return;
+   }
+
+  // endbr
+  ENDBR("KSDB    ", i0, i0);
+
+  // check to ensure compile dates match
+  if(STRNCMP(eibSave.eibwc, dirrec.cf_wcdate, 20)) {
+   PUT_SBA(++row,1)
+   SPRINTF(buffer, " SOURCE COMPILE TIME %20.20s ", dirrec.cf_wcdate);
+   APPEND_MSG(buffer);
+   SPRINTF(buffer, "DOES NOT MATCH RUNNING CODE");
+   APPEND_MSG(buffer);
+   API_resp(eib, comm); // before/after/always...
+   DoBottom(eib, comm);
+   //sourct = -1;
+   CLOSE("KSDB    ");
+   return;
+   }
+
+  // determine 'starting' (top) line number
+  curline = line;
+  SSCANF(dirrec.cf_numlines, "%d", &maxline);
+
+  // copy language to pgm name line
+  PUT_SBA(row,2)
+  APPEND_MSG(dirrec.cf_lang);
+
+  row++; row++; // skip 2 lines
+  topline = row;
+  botline = bot - helpv - 2; // leave room for help & resp
+  lines = botline - topline + 1;
+  if((eib->eibaid == 0) || (eib->eibaid == KIKPF2) ||
+                           (eib->eibaid == KIKPF24)) {
+   offset = curline - (lines / 2);         // initial entry, switch-to
+   if (offset < 1) offset = 1;             // or re-center
+   }
+  if (eib->eibaid == KIKPF7) {             // scroll back
+   offset -= lines;
+   if (offset < 1) offset = 1;
+   }
+  if (eib->eibaid == KIKPF8) {             // scroll fwd
+   col = offset + lines;
+   if (col < maxline) offset = col;
+   }
+  if (eib->eibaid == KIKPF19) offset = 1;  // scroll top
+  if (eib->eibaid == KIKPF20) {            // scroll bottom
+   offset = maxline + 1;         // num lines in area
+   offset -= lines;              // less num lines on screen
+   if (offset < 1) offset = 1;   // zero if negative...
+   }
+
+  // startbr to point to top line number
+  MEMCPY(srckey, eibSave.eibprog, 8);
+  SPRINTF(srckey+8, "%06.6d", offset);
+  STARTBR("KSDB    ", iz, srckey, i14, i0);
+  if (eib->eibresp != 0) { // done if startbr fails...
+   PUT_SBA(++row,1)
+   SPRINTF(buffer, " 2ND STARTBR FAILED, RESP = %d, RESP2 = %d",
+           eib->eibresp, eib->eibresp2);
+   APPEND_MSG(buffer);
+   API_resp(eib, comm); // before/after/always...
+   DoBottom(eib, comm);
+   CLOSE("KSDB    ");
+   return;
+   }
+
+  // loop for readnext to fill screen
+  for (col=0; col<lines; col++) {
+   if (offset+col > maxline) break;
+   srclong = 92; MEMSET((char*)&srcrec, 0, srclong);
+   READNEXT("KSDB    ", iz, (char*)&srcrec, srclong, srckey, i14, i0);
+   if (eib->eibresp != 0)  { // done if readnext fails...
+    if (eib->eibresp != 20) { // but msg only if it's not ENDFILE
+     PUT_SBA(++row,1)
+     SPRINTF(buffer, " 2ND READNEXT FAILED, RESP = %d, RESP2 = %d",
+             eib->eibresp, eib->eibresp2);
+     APPEND_MSG(buffer);
+     }
+    break;
+    }
+   if (MEMCMP(srckey, eibSave.eibprog, 8)) { // done if pgm no match
+    PUT_SBA(++row,1)
+    APPEND_MSG("SDB rec not for this program!!");
+    break;
+    }
+   PUT_SBA(row++,1)
+
+   // determine screen line type
+   slt = 0;                    // 0(default), non-breakable
+   if (srcrec.sr_line > 0)
+    slt += 1;                  // 1, breakable
+   if((offset+col >= line) &&
+      (offset+col <= (line+numlines-1)))
+       slt += 2;               // 2, current line
+   for (i=0; i<NUMBKP; i++) {
+    if (!MEMCMP(bkpprog[i], eibSave.eibprog, 8)) {  // names match
+     if(abs(bkpline[i]) == srcrec.sr_line) {        // lines match
+      slt += 4;                // 4, breakpoint
+      break;
+      }
+     }
+    }
+
+   // save screen info for PF4, PF5
+   srclinegrp[stnum].slt  = slt;
+   srclinegrp[stnum].grp  = srcrec.sr_grp;
+   srclinegrp[stnum].line = srcrec.sr_line;
+   stnum++;
+
+   // setup line attributes
+   // 41 F0=default, F1=BLINK,    F2=REVERSE, F4=UNDERSCORE
+   // 42 F0=default, F1=BLUE,     F2=RED,     F3=PINK
+   //    F4=GREEN,   F5=TURQUISE, F6=YELLOW,  F7=WHITE
+   switch (slt) {
+    case 0: // non-breakable, blue
+     APPEND_MSG("\x29\x05\xc0\xf0\x42\xf1\x42\xf1\x42\xf1\x42\xf1");
+     break;
+    case 1: // breakable, green
+     APPEND_MSG("\x29\x05\xc0\xf0\x42\xf4\x42\xf4\x42\xf4\x42\xf4");
+     break;
+    case 2: // current but not breakable -- this can really
+            // happen, as when PROCEDURE DIVISION is traced,
+            // so I decided it should also be 'white'
+     APPEND_MSG("\x29\x05\xc0\xf0\x42\xf7\x42\xf7\x42\xf7\x42\xf7");
+     break;
+    case 3: // current, breakable, white
+     APPEND_MSG("\x29\x05\xc0\xf0\x42\xf7\x42\xf7\x42\xf7\x42\xf7");
+     break;
+    case 4: // non-breakable, breakpoint -- impossible pink
+     APPEND_MSG("\x29\x05\xc0\xf0\x42\xf3\x42\xf3\x42\xf3\x42\xf3");
+     break;
+    case 5: // breakable, breakpoint, green, reverse
+     APPEND_MSG("\x29\x05\xc0\xf0\x42\xf4\x41\xf2\x42\xf4\x41\xf2");
+     break;
+    case 6: // non-breakable, current, breakpoint -- impossible pink
+     APPEND_MSG("\x29\x05\xc0\xf0\x42\xf3\x42\xf3\x42\xf3\x42\xf3");
+     break;
+    case 7: // breakable, current, breakpoint, white, reverse
+     APPEND_MSG("\x29\x05\xc0\xf0\x42\xf7\x41\xf2\x42\xf7\x41\xf2");
+     break;
+    default: // -- impossible red
+     APPEND_MSG("\x29\x05\xc0\xf0\x42\xf2\x42\xf2\x42\xf2\x42\xf2");
+     break;
+    }
+
+   // put the line on screen
+   SPRINTF(buffer, " %71.71s", srcrec.sr_main);
+   APPEND_MSG(buffer);
+
+   // terminate line attributes
+    APPEND_MSG("\x1d\xf0");                // end field
+
+   // check for last line
+   if(offset+col >= maxline) break;
+
+  } // end of 'for (col=0...'
+
+  // endbr & release the source file
+  ENDBR("KSDB    ", iz, i0);
+  CLOSE("KSDB    ");
+
+  // wrap up the screen
+  API_resp(eib, comm); // before/after/always...
+  DoBottom(eib, comm);
+
+  return;
+
+ UsingCRLP:
+  //  -- throw away all we already did (reset tioa, tioasize)
+  //  -- write a single line with pgm id, line number
+  //  -- set crlp 'special' mode on
+
+   tioa = csa->tctte->tioa;
+   tioau = 0;
+   APPEND_MSG("\x27\xf5\xc3");
+   row = 1;
+
+   PUT_SBA(row,1)
+   // extract program language from compile date since source NA
+   if(eibSave.eibwc[14] = ',') STRCPY(dirrec.cf_lang, "COB");
+   else
+   if(eibSave.eibwc[14] = ' ') STRCPY(dirrec.cf_lang, "CB2");
+   else
+   if(eibSave.eibwc[14] = ';') STRCPY(dirrec.cf_lang, "GCC");
+   else
+   STRCPY(dirrec.cf_lang, "???");
+   APPEND_MSG(dirrec.cf_lang);
+   SPRINTF(buffer, " program %8.8s ", eibSave.eibprog);
+   APPEND_MSG(buffer);
+   SPRINTF(buffer, "compiled %20.20s, ", eibSave.eibwc);
+   APPEND_MSG(buffer);
+
+   // decode eibline
+   line =     ((unsigned int)eibSave.eibline) & 0xffffff;
+   SPRINTF(buffer, "now at line %d", line);
+   APPEND_MSG(buffer);
+
+   // turn on special flag (reset when tctte restored)
+   csa->tctte->flags |= tctteflag$crlppure;
+}
+
+
+void DoScreen(KIKEIB *eib, DEBUGGERCA *comm) {
+char *tioa;
+
+ if (which == -1)  DoUSR(eib, comm);
+ else
+ if (which == 9)   DoTrace(eib, comm);
+ else
+ if (which == 10)  DoEIB(eib, comm);
+ else
+ if (which == 11)  DoCOMM(eib, comm);
+ else
+ if (which == 12)  DoWS(eib, comm);
+ else
+ if (which == 14)  DoCWA(eib, comm);
+ else
+ if (which == 21)  DoTWA(eib, comm);
+ else
+ if (which == 22)  DoTCTTEUA(eib, comm);
+ else
+ if (which == 23)  DoTIOA(eib, comm);
+
+ else {
+  which = 0;
+  DoMain(eib, comm);
+  }
+
+ // write the screen...
+ if (which != -1) { // DoUSR sends it's own...
+  tioa = csa->tctte->tioa;
+  csa->tctte->tioaused = tioau;
+  KIKTCP(csa, kiktcpSEND);
+  }
+}
+
+
+int firsttime=0; // flag for initial load
+
+
+void KEDFXEQ (KIKEIB *eib, DEBUGGERCA *comm) {
+char *p;
+int i, saveabendv1reg14;
+
+ // ********************************************************
+ // setup
+ // ********************************************************
+ p = ((char*)eib) - 8;          // backup into eib preface
+ csa = (KIKCSA *) *((int*)p);   // pull out the csa pointer
+
+ // do version checking
+ if (csa->version != MKVER(V, R, M, E))
+   KIKPCP(csa, kikpcpABND2, "VER4", &suppress);
+
+ // post fini-abend
+ static FiniAbend FA;
+ for (i=0; i<16; i++) FA.fini_rtntos.regs[i] = 0;
+ FA.fini_rtntos.val=0;
+ FA.fini_gotovars=NULL;
+ for (i=0; i<16; i++) FA.abend_rtntos.regs[i] = 0;
+ FA.abend_rtntos.val=0;
+ FA.abend_gotovars = NULL;
+
+ // chain fini_abends
+ FA.next = csa->tca->next_FA;
+ csa->tca->next_FA = &FA;
+
+ // get pre-link eib, including eibresp, resp2
+ MEMCPY(&eibSave, eib, sizeof(KIKEIB));
+ eibSave.eibresp  = comm->saveresp;
+ eibSave.eibresp2 = comm->saveresp2;
+
+ // init a couple vars
+ timebuf[0] = 0;                // force time init
+ pname[0] = 0;                  // force ppt scan
+ which = 0; pwhich = 0;         // force main scrn on entry
+
+ // do whatever if this is first load of KEDF
+ if (firsttime == 0) {
+  firsttime = 1;               // not first time anymore
+  MEMSET(&transkip[0], 0, 4);
+  for (i=0; i<NUMBKP; i++) {   // clear bkpt table
+   bkpline[i] = 0;
+   bkpprog[i][0] = 0;
+   bkpwc[i][0] = 0;
+   }
+  }
+
+ // if source tracing, determine if this line matches a breakpoint
+ //  and purge 'bad' breakpoint entries
+ if (sourct > 0) for (i=0; i<NUMBKP; i++) {
+  if (!MEMCMP(bkpprog[i], eibSave.eibprog, 8)) {  // names match
+   if (MEMCMP(bkpwc[i], eibSave.eibwc, 20)) {     // but compile date does not
+    bkpline[i] = 0;
+    bkpprog[i][0] = 0;
+    bkpwc[i][0] = 0;
+    }
+   if (abs(bkpline[i]) == (eibSave.eibline & 0xffffff)) {
+    skiptran = 0;        // if lines match it's a breakpoint so break
+    if(bkpline[i] < 0) { // if it's a temp bkpt we just hit clear it
+     bkpline[i] = 0;
+     bkpprog[i][0] = 0;
+     bkpwc[i][0] = 0;
+     }
+    }
+   }
+  }
+
+ // if 'after' and eibresp != 0 reset skiptran
+ if(((comm->BA & 3) != 1) && (eibSave.eibresp != 0)) skiptran = 0;
+
+ // ********************************************************
+ // filter very early, preventing excess screen restores...
+ // ********************************************************
+ // save & clear user exit stack
+ saveabendv1reg14 = csa->tca->abenv1.regs[14];
+ csa->tca->abenv1.regs[14] = 0;
+
+ // check for skipping rest of transaction
+ if (skiptran == eibSave.eibtaskn) {
+  //MEMCPY(eib, &eibSave, sizeof(KIKEIB)); /* didn't change it */
+  csa->tca->abenv1.regs[14] = saveabendv1reg14;
+  comm->rc = 0; eib->eibresp = 0; // tell glue we're ok
+  KIKPCP(csa, kikpcpRETN, NULL, NULL, &zero);
+  }
+
+ // another check for skipping rest of transaction
+ if((skiptran != 0) && (!MEMCMP(&transkip[0], eibSave.eibtrnid, 4))) {
+  //MEMCPY(eib, &eibSave, sizeof(KIKEIB)); /* didn't change it */
+  skiptran = eibSave.eibtaskn; // continue skip!
+  csa->tca->abenv1.regs[14] = saveabendv1reg14;
+  comm->rc = 0; eib->eibresp = 0; // tell glue we're ok
+  KIKPCP(csa, kikpcpRETN, NULL, NULL, &zero);
+  }
+
+ // in source trace view ignore successful 'after' API call
+ if((srcapi > 0) && ((comm->BA & 3) != 1) && (eibSave.eibresp == 0)) {
+  //MEMCPY(eib, &eibSave, sizeof(KIKEIB)); /* didn't change it */
+  csa->tca->abenv1.regs[14] = saveabendv1reg14;
+  comm->rc = 0; eib->eibresp = 0; // tell glue we're ok
+  KIKPCP(csa, kikpcpRETN, NULL, NULL, &zero);
+  }
+
+ // check filter, quit if not doing this one...
+ // (unless this is 'after' with eibresp != 0)
+ if(((comm->BA & 3) != 1) && (eibSave.eibresp != 0)) ;
+ else
+ if (DoFilter(eib, comm) != 0) {
+  MEMCPY(eib, &eibSave, sizeof(KIKEIB)); /* DoFilter changed it */
+  csa->tca->abenv1.regs[14] = saveabendv1reg14;
+  comm->rc = 0; eib->eibresp = 0; // tell glue we're ok
+  KIKPCP(csa, kikpcpRETN, NULL, NULL, &zero);
+  }
+
+ // ********************************************************
+ // save tctte, current tioa, last in/out tioa's
+ // ********************************************************
+ MEMCPY(&tctteSave, csa->tctte, sizeof(KIKTCTTE));
+ MEMCPY(&tioaSave[0], csa->tctte->tioa, TIOASIZE);
+ MEMCPY(&lotioaSave[0], csa->tctte->lotioa, TIOASIZE);
+ // also turn off tcp input pending flag
+ csa->tctte->flags &= ~tctteflag$suppressonce;
+
+
+ // ********************************************************
+ // obtain primary & alt screen size (num lines, aka bot)
+ // ********************************************************
+ csa->tctte->tioa[1] = 0x7e;   // tell SetUsingAlt we will
+ SetUsingAlt;                  // use the alternate screen
+ SetMaxRowCol;
+ bot = sba_maxrow;
+ if(bot > 62) bot = 62;        // 3290 (aka ISPF max), 62x160
+ sba_1632 = 16;                // setup narrow/wide dumps
+ if (sba_maxcol > 131) sba_1632 = 32;
+
+
+  // intra & temp accesses are atomic, so the files
+  // can be released while we are waiting around...
+  CLOSE("KIKINTRA");
+  CLOSE("KIKTEMP ");
+
+
+ // ********************************************************
+ // send before/after screen & interact (conversational)
+ // ********************************************************
+ eib->eibaid=0;
+ while (eib->eibaid != KIKENTER) {
+  if (skiptran == eibSave.eibtaskn) break;
+
+  DoScreen(eib, comm);
+
+  if((csa->tctte->flags & tctteflag$crlpinuse) > 0) { // check for crlp
+   break;                              // no (more) interaction for crlp
+   }
+
+  KIKTCP(csa, kiktcpRECV);
+
+  { // update eibcposn - normally done by bms...
+   int x, y;
+   decode_sba (&csa->tctte->tioa[1], &x, &y);
+   y += (x-1)*csa->tctte->ALTcols;
+   csa->tca->kikeib.eibcposn = y-1;
+  }
+
+  if(pwhich == -1) {       // coming back from usr screen
+   eib->eibaid = KIKCLEAR; // - force KIKCLEAR path...
+   }
+
+  switch (eib->eibaid) {
+
+    case KIKENTER: // continue
+     break;
+
+    case KIKCLEAR: // usr screen
+     which = -1;
+     break;
+
+    case KIKPF1:   // toggle 1/4/7 lines of help
+     if (helpv == 1) helpv = 4;
+     else
+     if (helpv == 4) helpv = 7;
+     else            helpv = 1;
+     break;
+
+    case KIKPF2:   // swap API with source;
+     if (sourct > 0) srcapi *= -1;
+     pwhich = which = 0; /* switch back to API/source */
+     break;
+
+    case KIKPF3:   // next transaction (goto breakpoint for PRO)
+     skiptran = eibSave.eibtaskn;
+     break;
+
+    case KIKPF4:   // skip subroutine
+     // set breakpoint at the next executable line *following* the
+     // current line, then skip until you get there, then turn off
+     // that breakpoint upon return (unless it was already a BKPT)
+     { int lsave;
+     // no toggle unless the source might be showing!
+     if ((comm->mgtpgm  == kikpcpTYPE) && (comm->type_of == 256)) {
+      // normal, non-api source trace line
+      }
+     else
+     if (srcapi > 0) {
+      // api line, with source trace instead of normal api display
+      }
+     else break;
+
+     if (which != 0) break;   // no toggle unless source is up now!
+     if (stnum <  1) break;   // no toggle if no source is present!
+
+     // get cursor row
+     lsave = (eib->eibcposn / csa->tctte->ALTcols) + 1;
+     lsave -= 5; /* turn into srclinegrp table index */
+
+     // cursor must be at default position
+     if (lsave != (bot-helpv-5)) break;
+
+     // make sure current line executable
+     for (i=0; i<stnum; i++) {
+      if(srclinegrp[i].line == (eibSave.eibline & 0xffffff)) break;
+      }                                  // select current line only if
+     if(i == stnum) break;               // it's shown on screen and the
+     lsave = i+10;                       // cursor is at the default loc
+
+     // find next executable following (within 10 lines)
+     for (i++; (i<stnum) && (i<lsave); i++) {
+      if((srclinegrp[i].slt & 1) == 1) break;
+      }
+     if((i == stnum) || (i >= lsave)) break; // not found
+     lsave = srclinegrp[i].line;             // found
+
+     // if already a breakpoint just set skip & done
+     for (i=0; i<NUMBKP; i++) {
+      if (!MEMCMP(bkpprog[i], eibSave.eibprog, 8)) {  // names match
+       if (abs(bkpline[i]) == lsave) {// if lines match - breakpoint
+        skiptran = eibSave.eibtaskn;
+        }
+       }
+      }
+
+     // if not a breakpoint try to make it so
+     // if no free slots silently do nothing;
+     if (i == NUMBKP) {                    // it was not in table so add it
+      for (i=0; i<NUMBKP; i++) {
+       if (bkpline[i] == 0) {              // free slot?
+        MEMCPY(bkpprog[i], eibSave.eibprog, 8);
+        MEMCPY(bkpwc[i], eibSave.eibwc, 20);
+        bkpline[i] = -1 * lsave; // make it temporary bkpt
+        skiptran = eibSave.eibtaskn;
+        break;
+        }
+       }
+      }
+     }
+     break;
+
+    case KIKPF5:   // toggle breakpoint
+     { int lsave;
+     // no toggle unless the source might be showing!
+     if ((comm->mgtpgm  == kikpcpTYPE) && (comm->type_of == 256)) {
+      // normal, non-api source trace line
+      }
+     else
+     if (srcapi > 0) {
+      // api line, with source trace instead of normal api display
+      }
+     else break;
+
+     if (which != 0) break;   // no toggle unless source is up now!
+     if (stnum <  1) break;   // no toggle if no source is present!
+
+     // get cursor row
+     lsave = (eib->eibcposn / csa->tctte->ALTcols) + 1;
+     lsave -= 5; /* turn into srclinegrp table index */
+
+     // based on cursor, select line number to bkpt
+     if((lsave >= 0) && (lsave < stnum)) {
+      // cursor is in source lines on screen
+      // get source line from srclinegrp table
+      lsave = srclinegrp[lsave].line;
+      // no toggle if that's not breakable line
+      if (lsave == 0) break;
+      }
+     else {
+      if (lsave != (bot-helpv-5)) break;
+      for (i=0; i<stnum; i++) {
+       if(srclinegrp[i].line == (eibSave.eibline & 0xffffff)) break;
+       }                                  // select current line only if
+      if(i == stnum) break;               // it's shown on screen and the
+      lsave = eibSave.eibline & 0xffffff; // cursor is at the default loc
+     }
+
+     // if already a breakpoint make it NOT
+     for (i=0; i<NUMBKP; i++) {
+      if (!MEMCMP(bkpprog[i], eibSave.eibprog, 8)) {  // names match
+       if (abs(bkpline[i]) == lsave) {      // if lines match - breakpoint
+        bkpline[i] = 0;                     //  so make it NOT...
+        bkpprog[i][0] = 0;
+        bkpwc[i][0] = 0;
+        break;
+        }
+       }
+      }
+
+      // if not a breakpoint try to make it so
+      // if no free slots silently do nothing; bkpt count already on screen
+      if (i == NUMBKP) {                    // it was not in table so add it
+       for (i=0; i<NUMBKP; i++) {
+        if (bkpline[i] == 0) {              // free slot?
+         MEMCPY(bkpprog[i], eibSave.eibprog, 8);
+         MEMCPY(bkpwc[i], eibSave.eibwc, 20);
+         bkpline[i] = lsave;
+         break;
+         }
+        }
+       }
+     }
+     break;
+
+    case KIKPF6:   // TRAN - toggles transkip
+     if (transkip[0] == 0)
+      MEMCPY(&transkip[0], eibSave.eibtrnid, 4);
+     else
+      MEMSET(&transkip[0], 0, 4);
+     break;
+
+    case KIKPF7:   // scroll back
+     break;
+
+    case KIKPF8:   // scroll forward
+     break;
+
+    case KIKPF9:   // trace table screen
+     which = 9;
+     break;
+
+    case KIKPF10:  // eib screen
+     which = 10;
+     break;
+
+    case KIKPF11:  // commarea screen
+     which = 11;
+     break;
+
+    case KIKPF12:  // working storage screen
+     which = 12;
+     break;
+    /* */
+
+    case KIKPF13 :  // shift PF1m toggle ST on/off
+     DoSTog(eib, comm);
+     pwhich = which = 0; /* switch back to API/source */
+     break;
+
+    case KIKPF14:   // shift PF2, cwa screen
+     which = 14;
+     break;
+
+    case KIKPF15:   // shift PF3, end edf (turn it off)
+     tctteSave.flags &= ~2;
+     eib->eibaid=KIKENTER; // out of here if quitting!!
+     break;
+
+#ifdef NOTDEFINED
+    case KIKPF16:  // shift PF4
+#endif
+
+    case KIKPF17:  // shift PF 5, dump
+     MEMCPY(eib, &eibSave, sizeof(KIKEIB));
+     MEMCPY(csa->tctte, &tctteSave, sizeof(KIKTCTTE));
+     MEMCPY(csa->tctte->tioa, &tioaSave[0], TIOASIZE);
+     DUMP("KEDF", dothedump, zero, zero);
+     // don't need to 'restore' KEDF env...
+     //    except for eib->eibaid!!
+     eib->eibaid = KIKPF17;
+     break;
+
+    case KIKPF18:   // shift PF6, abend
+     csa->trc.trcflags &= ~16;
+     MEMCPY(eib, &eibSave, sizeof(KIKEIB));
+     MEMCPY(csa->tctte, &tctteSave, sizeof(KIKTCTTE));
+     MEMCPY(csa->tctte->tioa, &tioaSave[0], TIOASIZE);
+     MEMCPY(csa->tctte->lotioa, &lotioaSave[0], TIOASIZE);
+     // dont need to restore tcp input pending flag, restored whole tctte!
+     // also restore user exit stack
+     csa->tca->abenv1.regs[14] = saveabendv1reg14;
+     KIKPCP(csa, kikpcpABND2, "KEDF", &dothedump);
+        // don't need to 'restore' KEDF env...
+     break;
+
+    case KIKPF19:  // shift PF7, top instead of back...
+                   // .. for cwa, twa, tctteua, trace, commarea, ws
+     break;
+
+    case KIKPF20:  // shift PF8, bottom instead of fwd...
+                   // .. for cwa, twa, tctteua, trace, commarea, ws
+     break;
+
+    case KIKPF21:  // shift PF9, twa screen
+     which = 21;
+     break;
+
+    case KIKPF22:  // shift PF10, tctteua screen
+     which = 22;
+     break;
+
+    case KIKPF23:  // shift PF11, tioa screen
+     which = 23;
+     break;
+
+    case KIKPF24:  // shift PF12, special function in some routines...
+                   // src trace - recenter on current line
+                   // trace     - swap hex/decoded displays
+     break;
+
+    /* */
+    default:
+     break;
+   }
+  }
+
+ // ********************************************************
+ // restore screen from last in/out tioa's
+ // ********************************************************
+ if((csa->tctte->flags & tctteflag$crlpinuse) == 0) {
+  which = -1; pwhich = 0; // make sure DoUSR restores screen
+  DoUSR(eib, comm);
+  }
+
+
+ // ********************************************************
+ // restore eib, tctte, current tioa, last in/out tioa's
+ // ********************************************************
+ MEMCPY(eib, &eibSave, sizeof(KIKEIB));
+ MEMCPY(csa->tctte, &tctteSave, sizeof(KIKTCTTE));
+ MEMCPY(csa->tctte->tioa, &tioaSave[0], TIOASIZE);
+ MEMCPY(csa->tctte->lotioa, &lotioaSave[0], TIOASIZE);
+ // dont need to restore tcp input pending flag, restored whole tctte!
+ // also restore user exit stack
+ csa->tca->abenv1.regs[14] = saveabendv1reg14;
+
+
+ // ********************************************************
+ // goback
+ // ********************************************************
+ eib->eibresp = 0; // glue needs to see this, it will
+                   // restore the real value...
+ comm->rc = 0;
+ KIKPCP(csa, kikpcpRETN, NULL, NULL, &zero);
+ }
+
+

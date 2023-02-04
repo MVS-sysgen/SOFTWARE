@@ -1,0 +1,15 @@
+#ifndef __IHALLE__
+#define __IHALLE__
+
+ // from SYS1.AMODGEN(IHALLE) on MVS 3.8J 'MVS380' system
+
+ typedef struct __ihalle__
+ {
+  int   llechn;             // +000 address of next lle in queue
+  int   llecdpt;            // +004 pointer to cde
+  short llecount;           // +008 responsibility count
+  short llesysct;           // +012 system responsibility count
+ } ihalle;
+
+#endif
+

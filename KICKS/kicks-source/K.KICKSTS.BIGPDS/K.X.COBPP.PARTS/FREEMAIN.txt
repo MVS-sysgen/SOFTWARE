@@ -1,0 +1,124 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+void Do_FREEMAIN() {
+// release virtual storage
+// EXEC CICS FREEMAIN { DATA(data-area) | DATAPOINTER(pointer-ref) } END-EXEC.
+
+ char err[100], saveblocks[4000];
+
+ char op[100], ops[30][100], *ip;
+ int  i, numops=0;
+
+ char data[100]="-1", datapointer[100]="-1";
+ int opt=0;
+
+ // break up string my way
+ numops = 0;
+ strcpy(saveblocks, cicsblks);
+ ip = SPCLTOK(saveblocks, " ");   // EXEC
+ while (ip=SPCLTOK(0, " ")) {     // KICKS, verb, ... END-EXEC
+  strcpy(ops[numops], ip);
+  numops++;
+  }
+
+ // march thru the args
+ for (i=0; i<numops; i++) {
+  strcpy(op, ops[i]);
+  if(strlen(op)==0) { continue; }
+  if(MYbegstr(op,".")) { continue; }
+  if(MYbegstr(op,"RESP")) { continue; }
+  if(MYbegstr(op,"RESP2")) { continue; }
+  if(MYbegstr(op,"NOHANDLE")) { continue; }
+  if(MYbegstr(op,"EXEC")) { continue; }
+  if(MYbegstr(op,"KICKS")) { continue; }
+  if(MYbegstr(op,"FREEMAIN")) { continue; }
+  if(MYbegstr(op,"END-EXEC")) { continue; }
+  if(MYbegstr(op,"DATAPOINTER")) {
+   ip = strtok(op, "()");   // DATAPOINTER
+   ip = strtok(0, "()");    // the name of the pointer
+   if (ip == NULL) {
+    sprintf(err,
+    "malformed argument %s of FREEMAIN", op);
+    prt_error(err, 8);
+    No_Code();
+    return;
+    }
+   parrensDown(ip);
+   strcpy(datapointer, ip);
+   opt |= 1;
+   continue;
+   }
+  if(MYbegstr(op,"DATA")) {
+   ip = strtok(op, "()");   // DATA
+   ip = strtok(0, "()");    // the name of the area
+   if (ip == NULL) {
+    sprintf(err,
+    "malformed argument %s of FREEMAIN", op);
+    prt_error(err, 8);
+    No_Code();
+    return;
+    }
+   parrensDown(ip);
+   strcpy(data, ip);
+   continue;
+   }
+
+  sprintf(err,
+  "unknown/unsupported argument %s of FREEMAIN", op);
+  prt_error(err, 8);
+  No_Code();
+  return;
+  }
+
+ if((data[0] == '-') && (datapointer[0] == '-')) {
+  prt_error("DATA or DATAPOINTER required for FREEMAIN", 8);
+  No_Code();
+  return;
+  }
+
+ if((data[0] != '-') && (datapointer[0] != '-')) {
+  prt_error("can't have both DATA and DATAPOINTER for FREEMAIN", 8);
+  No_Code();
+  return;
+  }
+
+#ifdef PPCOB
+ fprintf(stdout, "           MOVE 3076 TO EIBFN-2\n");
+ fprintf(stdout, "           MOVE %d TO KIK-FLAGS\n", opt);
+ fprintf(stdout, "           CALL 'KIKCOBGL' USING KIKEIB,\n");
+ if (!strcmp(respvar, ""))
+  fprintf(stdout, "                 KIK-V1,\n");
+ else
+  fprintf(stdout, "                 KIK-V2,\n");
+ if ((opt & 1) > 0)
+  fprintf(stdout, "                 %s,\n", datapointer);
+ else
+  fprintf(stdout, "                 %s,\n", data);
+ fprintf(stdout, "                 KIK-FLAGS");
+#endif
+#ifdef PPGCC
+ fprintf(stdout, "\t{ short *eibfn2 = (short*)&__KIKEIB->eibfn;\n");
+ fprintf(stdout, "\t\t*eibfn2 = 3076;\n");
+ if (!strcmp(respvar, ""))
+  fprintf(stdout, "\t  int *v=&KIK_V1;\n");
+ else
+  fprintf(stdout, "\t  int *v=&KIK_V2;\n");
+ fprintf(stdout, "\t  int flags=%d, *FLAGS=&flags;\n", opt);
+ if ((opt & 1) > 0)
+  fprintf(stdout, "\t kikgccgl(__KIKEIB, v, &%s, FLAGS);\n", datapointer);
+ else
+  fprintf(stdout, "\t kikgccgl(__KIKEIB, v, &%s, FLAGS);\n", data);
+#endif
+}

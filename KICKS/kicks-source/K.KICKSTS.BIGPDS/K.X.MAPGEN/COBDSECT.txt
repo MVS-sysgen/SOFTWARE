@@ -1,0 +1,250 @@
+/////////////////////////////////////////////////////////////////////
+// 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+// in MVS/TSO. Its CICS functionality is delivered at the source code
+// level, not at the object code level. Applications must be
+// recompiled and the recompiled programs are not compatible with any
+// known version of 'real' CICS (the IBM program product),
+//
+// © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+//
+// Usage of 'KICKS for TSO' is in all cases subject to license. See
+// http://www.kicksfortso.com
+// for most current information regarding licensing options..
+////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+#include <stdio.h>
+#include <string.h>
+#include <time.h>
+
+#include "kikmg01.h"
+
+void COB_Dsect(int final) {
+
+int i, ii, iii;
+char lvl[10];
+
+ // pass 3 does in, out, and inout
+
+ // with storage=auto the OUT of an INOUT overlays the IN
+ //      but MDI's do not overlay each other.
+ // without storage=auto the OUT's still overlay the INs,
+ //      but the MDI's DO overlay each other.
+
+ // in (and in side of inout) goes directly to stdout
+ // out (and out side of inout) goes initially to sysut1,
+ //     then on final or next mdi, is merged back
+ //     to stdout following the associated 'in'.
+
+ if(passno != 3) return;
+
+
+ if(!strcmp(opcode, "KIKMSD")) {
+
+  if( !final ) {
+   fprintf(stdout, "\
+      */////////////////////////////////////////////////////////////// \n\
+      * 'BMS' map for use with %s \n\
+      *   generated %s at %s with mapgen version %s \n\
+      * \n\
+      * %s  \n\
+      * © Copyright 2008-2014, Michael Noel, All Rights Reserved. \n\
+      *  \n\
+      * Assuming the input belongs to you this generated map is also  \n\
+      * your property and you may do whatever you like with it.    \n\
+      *   HOWEVER \n\
+      * \n\
+      * Usage of %s is subject to license.\n\
+      * See http://www.kicksfortso.com \n\
+      * for most current information regarding licensing options, \n\
+      *//1/////////2/////////3/////////4/////////5/////////6/////////7 \n\n",
+   __KFT__, sysdate, systime, mkv1, __KFT__, __KFT__);
+   }
+  else {
+   // for last msd do trailer (none for cobol)
+   }
+
+  return;
+  }
+
+
+ if(!strcmp(opcode, "KIKMDI")) {
+
+  if( !final ) {
+// here to write the header for a new mdi, possibly redefining
+// it back onto a prior mdi (if storage=auto)
+   char redef[100];
+   if ((!strcmp(msd_mode, "IN")) || (!strcmp(msd_mode, "INOUT"))) {
+     strcpy(redef, "I");
+     if (strcmp(msd_storageauto, "YES")) // if not storage=auto
+      if(strcmp(mdi_label, mdi_1_lbl)) {
+       strcpy(redef, "I REDEFINES ");
+       strcat(redef, mdi_1_lbl);
+       strcat(redef, "I");
+       }
+     fprintf(stdout, "       01  %s%s.\n", mdi_label, redef);
+     fprintf(stdout, "           02  FILLER PIC X(12).\n");
+     }
+
+   if ((!strcmp(msd_mode, "OUT")) || (!strcmp(msd_mode, "INOUT"))) {
+     strcpy(redef, "O");
+     if (strcmp(msd_storageauto, "YES")) { // if not storage=auto
+      if((strcmp(mdi_label, mdi_1_lbl)) ||
+         (!strcmp(msd_mode, "INOUT"))) {
+       strcpy(redef, "O REDEFINES ");
+       strcat(redef, mdi_1_lbl);
+       if (!strcmp(msd_mode, "OUT"))
+        strcat(redef, "O");
+       else
+        strcat(redef, "I");
+      }
+     }
+     else { // it IS storage=auto
+      if (!strcmp(msd_mode, "INOUT")) {
+       strcpy(redef, "O REDEFINES ");
+       strcat(redef, mdi_label);
+       strcat(redef, "I");
+       }
+     }
+     fprintf(sysut1, "       01  %s%s.\n", mdi_label, redef);
+     fprintf(sysut1, "           02  FILLER PIC X(12).\n");
+    }
+   }
+
+  else {
+// here to wrap up the prior mdi (prev, or last)
+// -- need to make sure this dsect length matches the max...
+   if ((!strcmp(msd_mode, "IN")) || (!strcmp(msd_mode, "INOUT"))) {
+    if(!strcmp(mdi_label, mdi_1_lbl)) {
+     if (mdi_maxs > mdi_1s) {
+      if (strcmp(msd_storageauto, "YES")) // if not storage=auto
+        fprintf(stdout, "           02  FILLER PIC X(%d).\n",
+               (mdi_maxs - mdi_1s));
+      }
+     }
+    fprintf(stdout, "\n");
+    }
+   if ((!strcmp(msd_mode, "OUT")) || (!strcmp(msd_mode, "INOUT"))) {
+    if(!strcmp(mdi_label, mdi_1_lbl)) {
+     if((mdi_maxs > mdi_1s) && (!strcmp(msd_mode, "OUT"))) {
+     if (strcmp(msd_storageauto, "YES")) // if not storage=auto
+        fprintf(sysut1, "           02  FILLER PIC X(%d).\n",
+               (mdi_maxs - mdi_1s));
+      }
+     }
+    fprintf(sysut1, "\n");
+    }
+// after writting any wrap up lines need to paste the sysut1 lines
+// onto the end of stdout, then clear sysut1 for the 'next' mdi
+    {
+    char aline[82];
+    fclose(sysut1);
+    sysut1 = fopen("DD:SYSUT1", "r");
+    if (sysut1 == NULL) prt_error("SYSUT1 failed to reopen 'r'", 16);
+    while (1) {
+     fgets(aline, 80, sysut1);
+     if (feof(sysut1)) break;
+     fprintf(stdout, "%s", aline);
+     }
+    fclose(sysut1);
+    sysut1 = fopen("DD:SYSUT1", "w");
+    if (sysut1 == NULL) prt_error("SYSUT1 failed to reopen 'w'", 16);
+    }
+   }
+
+
+  return;
+  }
+
+
+ if(!strcmp(opcode, "KIKMDF")) {
+  if (mdf_label[0] == '\0') return;
+
+  // set extatt bits and length
+  ii  = mdi_ebits;
+  iii = mdi_elong;
+
+  strcpy(lvl, "02");
+  if ((!strcmp(msd_mode, "IN")) || (!strcmp(msd_mode, "INOUT"))) {
+    if (mdf_occurs[0] != 0) {
+     fprintf(stdout, "           %s  %sD OCCURS %s.\n",
+       lvl, mdf_label, mdf_occurs);
+     strcpy(lvl, "    03");
+     }
+    fprintf(stdout, "           %s  %sL COMP PIC S9(4).\n",
+      lvl, mdf_label);
+    fprintf(stdout, "           %s  %sF PIC X.\n",
+      lvl, mdf_label);
+    if((ii & 0x01) > 0)
+     fprintf(stdout, "           %s  %sC PIC X.\n", lvl, mdf_label);
+    if((ii & 0x02) > 0)
+     fprintf(stdout, "           %s  %sP PIC X.\n", lvl, mdf_label);
+    if((ii & 0x04) > 0)
+     fprintf(stdout, "           %s  %sH PIC X.\n", lvl, mdf_label);
+    if((ii & 0x08) > 0)
+     fprintf(stdout, "           %s  %sV PIC X.\n", lvl, mdf_label);
+    if((ii & 0x10) > 0)
+     fprintf(stdout, "           %s  %sU PIC X.\n", lvl, mdf_label);
+    if((ii & 0x20) > 0)
+     fprintf(stdout, "           %s  %sM PIC X.\n", lvl, mdf_label);
+    if((ii & 0x40) > 0)
+     fprintf(stdout, "           %s  %sT PIC X.\n", lvl, mdf_label);
+    fprintf(stdout, "           %s  %sI PIC ", lvl, mdf_label);
+    if (mdf_picin[0] == '\0') {
+     fprintf(stdout, "X(%s).\n", mdf_length);
+     }
+    else {
+     fprintf(stdout, "%s.\n", mdf_picin);
+     }
+   }
+
+  strcpy(lvl, "02");
+  if ((!strcmp(msd_mode, "OUT")) || (!strcmp(msd_mode, "INOUT"))) {
+    if (mdf_occurs[0] != 0) {
+     fprintf(sysut1, "           %s  %sD OCCURS %s.\n",
+       lvl, mdf_label, mdf_occurs);
+     strcpy(lvl, "    03");
+     }
+    if (!strcmp(msd_mode, "OUT")) {
+     fprintf(sysut1, "           %s  %sL COMP PIC S9(4).\n",
+       lvl, mdf_label);
+     fprintf(sysut1, "           %s  %sA PICTURE X.\n",
+       lvl, mdf_label);
+     if((ii & 0x01) > 0)
+      fprintf(sysut1, "           %s  %sC PIC X.\n", lvl, mdf_label);
+     if((ii & 0x02) > 0)
+      fprintf(sysut1, "           %s  %sP PIC X.\n", lvl, mdf_label);
+     if((ii & 0x04) > 0)
+      fprintf(sysut1, "           %s  %sH PIC X.\n", lvl, mdf_label);
+     if((ii & 0x08) > 0)
+      fprintf(sysut1, "           %s  %sV PIC X.\n", lvl, mdf_label);
+     if((ii & 0x10) > 0)
+      fprintf(sysut1, "           %s  %sU PIC X.\n", lvl, mdf_label);
+     if((ii & 0x20) > 0)
+      fprintf(sysut1, "           %s  %sM PIC X.\n", lvl, mdf_label);
+     if((ii & 0x40) > 0)
+      fprintf(sysut1, "           %s  %sT PIC X.\n", lvl, mdf_label);
+     }
+    else {
+     fprintf(sysut1, "           %s  FILLER PIC X(2).\n", lvl);
+     fprintf(sysut1, "           %s  %sA PICTURE X.\n",
+      lvl, mdf_label);
+     if (iii > 0) {
+      fprintf(sysut1, "           %s  FILLER PIC X(%d).\n", lvl, iii);
+      }
+     }
+    fprintf(sysut1, "           %s  %sO PIC ", lvl, mdf_label);
+    if (mdf_picout[0] == '\0') {
+     fprintf(sysut1, "X(%s).\n", mdf_length);
+     }
+    else {
+     fprintf(sysut1, "%s.\n", mdf_picout);
+     }
+   }
+
+  return;
+  }
+
+
+}
+
+

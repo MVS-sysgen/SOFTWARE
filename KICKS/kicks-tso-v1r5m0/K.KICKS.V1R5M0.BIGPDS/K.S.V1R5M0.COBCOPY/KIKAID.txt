@@ -1,0 +1,52 @@
+      *///////////////////////////////////////////////////////////////
+      * KICKS is an enhancement for TSO that lets you run your CICS
+      * applications directly in TSO instead of having to 'install'
+      * those apps in CICS.
+      * You don't even need CICS itself installed on your machine!
+      *
+      * KICKS for TSO
+      * © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+      *
+      * Usage of 'KICKS for TSO' is in all cases subject to license.
+      * See http://www.kicksfortso.com
+      * for most current information regarding licensing options.
+      *//1/////////2/////////3/////////4/////////5/////////6/////////7
+
+      *   3270 aid byte values, usually used in examining eibaid
+      *                         to determine what user pressed...
+
+       01  KIKAID.
+           05  KIKENTER PIC X VALUE X'7D'.
+           05  KIKCLEAR PIC X VALUE X'6D'.
+
+           05  KIKNULL  PIC X VALUE X'00'.
+
+           05  KIKPA1   PIC X VALUE X'6C'.
+           05  KIKPA2   PIC X VALUE X'6E'.
+           05  KIKPA3   PIC X VALUE X'6B'.
+
+           05  KIKPF1   PIC X VALUE X'F1'.
+           05  KIKPF2   PIC X VALUE X'F2'.
+           05  KIKPF3   PIC X VALUE X'F3'.
+           05  KIKPF4   PIC X VALUE X'F4'.
+           05  KIKPF5   PIC X VALUE X'F5'.
+           05  KIKPF6   PIC X VALUE X'F6'.
+           05  KIKPF7   PIC X VALUE X'F7'.
+           05  KIKPF8   PIC X VALUE X'F8'.
+           05  KIKPF9   PIC X VALUE X'F9'.
+           05  KIKPF10  PIC X VALUE X'7A'.
+           05  KIKPF11  PIC X VALUE X'7B'.
+           05  KIKPF12  PIC X VALUE X'7C'.
+           05  KIKPF13  PIC X VALUE X'C1'.
+           05  KIKPF14  PIC X VALUE X'C2'.
+           05  KIKPF15  PIC X VALUE X'C3'.
+           05  KIKPF16  PIC X VALUE X'C4'.
+           05  KIKPF17  PIC X VALUE X'C5'.
+           05  KIKPF18  PIC X VALUE X'C6'.
+           05  KIKPF19  PIC X VALUE X'C7'.
+           05  KIKPF20  PIC X VALUE X'C8'.
+           05  KIKPF21  PIC X VALUE X'C9'.
+           05  KIKPF22  PIC X VALUE X'4A'.
+           05  KIKPF23  PIC X VALUE X'4B'.
+           05  KIKPF24  PIC X VALUE X'4C'.
+

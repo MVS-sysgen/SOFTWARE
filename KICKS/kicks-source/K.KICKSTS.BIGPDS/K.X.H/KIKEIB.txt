@@ -1,0 +1,58 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like'
+ // functionality in MVS/TSO. Its CICS functionality is delivered
+ // at the source code level, not at the object code level.
+ // Applications must be recompiled and the recompiled programs
+ // are not compatible with any known version of 'real' CICS.
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license.
+ // See http://www.kicksfortso.com
+ // for most current information regarding licensing options.
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+#ifndef __KIKEIBP__
+#define __KIKEIBP__
+typedef struct _KIKEIBP
+{                      // EIB 'preface'
+ char *gluR13;         // r13 when cobol called glue routine
+ int  useR13;          // flag saying in cobol (0) or in C call (1)
+ int  eibpcalen;       // length of commarea
+ char *eibpca;         // address of commarea
+ char *eibpcsa;        // pointer to csa
+ char *cobR13;         // r13 just before calling cobol
+ //
+} KIKEIBP;
+#endif
+
+#ifndef __KIKEIB__
+#define __KIKEIB__
+typedef struct _KIKEIB
+{
+ int eibtaskn;         // task number
+ short eibcalen;       // length of commarea
+ short eibcposn;       // cursor position
+ int eibdate;          // task start date
+ int eibtime;          // task start time
+ int eibresp;          // error (condition) code
+ int eibresp2;         // extended error code
+ char eibrsrce [8];    // last resource used
+ char eibds [8];       // last file used
+ char eibfn [2];       // last command code
+ char eibrcode [6];    // response from last command
+ char eibtrmid [4];    // terminal id
+ char eibtrnid [4];    // transaction id
+ char eibaid;          // aid byte from last input
+ char eibopid [3];     // opid
+ char eibusrid [8];    // user id from tso
+ char eibsysid [8];    // smf sysid
+ char eibnetid [8];    // terminal netname
+ char eibpgmid [8];    // program id (last load)
+ int eibline;          // line number in source
+ char eibprog [8];     // program name in source
+ char eibwc [20];      // compile date in source
+ //
+} KIKEIB;
+#endif
+

@@ -1,0 +1,165 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+void Do_RESETBR() {
+// re-establish position for a browse
+// EXEC CICS RESETBR { DATASET(name) | FILE(name) } RIDFLD(data-area)
+//       [KEYLENGTH(data-value)
+//       [GENERIC]] [RBA | RRN] [GTEQ | EQUAL] [REQID(data-value)]
+//       [SYSID(name)] END-EXEC.
+// *** SYSID unsupported
+
+ char err[100], saveblocks[4000];
+
+ char op[100], ops[30][100], *ip;
+ int  i, numops=0;
+
+ char file[100], into[100]="";
+ char ridfld[100], keylength[100]="-1";
+ char reqid[100]="0";
+ int generic=0, rba=0, rrn=0, gteq=0, equal=0;
+
+ strcpy(ridfld, kiknull);
+
+ // break up string my way
+ numops = 0;
+ strcpy(saveblocks, cicsblks);
+ ip = SPCLTOK(saveblocks, " ");   // EXEC
+ while (ip=SPCLTOK(0, " ")) {     // KICKS, verb, ... END-EXEC
+  strcpy(ops[numops], ip);
+  numops++;
+  }
+
+ // march thru the args
+ for (i=0; i<numops; i++) {
+  strcpy(op, ops[i]);
+  if(strlen(op)==0) { continue; }
+  if(MYbegstr(op,".")) { continue; }
+  if(MYbegstr(op,"RESP")) { continue; }
+  if(MYbegstr(op,"RESP2")) { continue; }
+  if(MYbegstr(op,"NOHANDLE")) { continue; }
+  if(MYbegstr(op,"EXEC")) { continue; }
+  if(MYbegstr(op,"KICKS")) { continue; }
+  if(MYbegstr(op,"RESETBR")) { continue; }
+  if(MYbegstr(op,"END-EXEC") || MYbegstr(op,";")) { continue; }
+  if(MYbegstr(op,"FILE") || MYbegstr(op,"DATASET")) {
+   ip = strtok(op, "()");   // FILE
+   ip = strtok(0, "()");    // the name of the file
+   if (ip == NULL) {
+    sprintf(err,
+    "malformed argument %s of RESETBR", op);
+    prt_error(err, 8);
+    No_Code();
+    return;
+    }
+   parrensDown(ip);
+   strcpy(file, ip);
+   fixXNAME(file, 8);
+   continue;
+   }
+  if(MYbegstr(op,"RIDFLD")) {
+   ip = strtok(op, "()");   // RIDFLD
+   ip = strtok(0, "()");    // the name of the var holding the ridfld
+   if (ip == NULL) {
+    sprintf(err,
+    "malformed argument %s of RESETBR", op);
+    prt_error(err, 8);
+    No_Code();
+    return;
+    }
+   parrensDown(ip);
+   strcpy(ridfld, ip);
+   continue;
+   }
+  if(MYbegstr(op,"KEYLENGTH")) {
+   ip = strtok(op, "()");   // KEYLENGTH
+   ip = strtok(0, "()");    // the name of the var holding the keylength
+   if (ip == NULL) {
+    sprintf(err,
+    "malformed argument %s of RESETBR", op);
+    prt_error(err, 8);
+    No_Code();
+    return;
+    }
+   parrensDown(ip);
+   strcpy(keylength, ip);
+   continue;
+   }
+  if(MYbegstr(op,"REQID")) {
+   ip = strtok(op, "()");   // REQID
+   ip = strtok(0, "()");    // the name of the var holding the reqid
+   if (ip == NULL) {
+    sprintf(err,
+    "malformed argument %s of RESETBR", op);
+    prt_error(err, 8);
+    No_Code();
+    return;
+    }
+   parrensDown(ip);
+   strcpy(reqid, ip);
+   continue;
+   }
+
+  if(MYbegstr(op,"GENERIC")) { generic = 1; continue; }
+  if(MYbegstr(op,"RBA")) { rba = 1; continue; }
+  if(MYbegstr(op,"RRN")) { rrn = 1; continue; }
+  if(MYbegstr(op,"GTEQ")) { gteq = 1; continue; }
+  if(MYbegstr(op,"EQUAL")) { equal = 1; continue; }
+
+  sprintf(err,
+  "unknown/unsupported argument %s of RESETBR", op);
+  prt_error(err, 8);
+  No_Code();
+  return;
+  }
+
+ if (!strcmp(ridfld, kiknull)) generic += 8388608;
+ generic += 2*rba + 4*rrn + 8*gteq + 16*equal;
+
+#ifdef PPCOB
+ fprintf(stdout, "           MOVE 1556 TO EIBFN-2\n");
+ fprintf(stdout, "           MOVE %s TO KIK-FILENAME\n", file);
+ fprintf(stdout, "           MOVE %d TO KIK-FLAGS\n", generic);
+ COBLEX(keylength, "-1", ridfld, kiknull, "KIK-KEYLEN");
+ fprintf(stdout, "           MOVE %s TO KIK-REQID\n", reqid);
+
+ fprintf(stdout, "           CALL 'KIKCOBGL' USING KIKEIB,\n");
+ if (!strcmp(respvar, ""))
+  fprintf(stdout, "                 KIK-V1,\n");
+ else
+  fprintf(stdout, "                 KIK-V2,\n");
+ fprintf(stdout, "                 KIK-FILENAME,\n");
+ fprintf(stdout, "                 KIK-FLAGS,\n");
+ fprintf(stdout, "                 KIK-NULL\n");
+ fprintf(stdout, "                 KIK-NULL\n");
+ fprintf(stdout, "                 %s,\n", ridfld);
+ fprintf(stdout, "                 KIK-KEYLEN,\n");
+ fprintf(stdout, "                 KIK-REQID");
+#endif
+#ifdef PPGCC
+ fprintf(stdout, "\t{ short *eibfn2 = (short*)&__KIKEIB->eibfn;\n");
+ fprintf(stdout, "\t\t*eibfn2 = 1556;\n");
+ if (!strcmp(respvar, ""))
+  fprintf(stdout, "\t  int *z=&KIK_NULL, *v=&KIK_V1;\n");
+ else
+  fprintf(stdout, "\t  int *z=&KIK_NULL, *v=&KIK_V2;\n");
+ fprintf(stdout, "\t  int generic=%d, *GENERIC=&generic;\n", generic);
+ GCCLEX(keylength, "-1", ridfld, kiknull, "KIK-KEYLEN");
+ fprintf(stdout, "\t  short keylength=%s, *KEYLENGTH=&keylength;\n",
+          keylength);
+ fprintf(stdout, "\t  short reqid=%s, *REQID=&reqid;\n", reqid);
+ fprintf(stdout, "\t kikgccgl(__KIKEIB, v, %s, GENERIC,\n", file);
+ fprintf(stdout, "\t\tz, z, &%s, KEYLENGTH, REQID);\n", ridfld);
+#endif
+}

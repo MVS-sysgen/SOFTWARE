@@ -1,0 +1,989 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+ // KIKCRLP - this pgm, is the routine TCP calls to read
+ //           from and write to the simulated 3270 screen.
+ // CRLPPGM - other pgm, is a KICKS application to control
+ //           some options for the simulated 3270 screen.
+
+#include <stdio.h>
+
+#include "kicks.h"
+
+extern KIKCSA *csa;
+
+#include "iefjfcb.h"
+iefjfcb *rdjfcb(char *ddname);
+
+FILE *CRLPIN, *CRLPOUT;
+
+#include "kicksaid.h"
+
+#define a3270_prot 0x20
+#define a3270_num  0x10
+#define a3270_askp 0x30
+#define a3270_mdt  0x01
+
+ //  function prototypes
+void MergeOutputTIOA(void);
+void MergeInputTIOA (void);
+
+void InitCRLP(void);
+void FiniCRLP(void);
+void DumpHex(FILE *D, char *begin, int size, int flag);
+void DoCRLPout(void);
+void DoCRLPin(void);
+
+int CheckEmpty(char *tioa, int tioaSIZE);
+int MakeCOUNTSfromTIOA(int *allfields, int *inpfields,
+                        char *tioa, int tioaSIZE);
+int MakeASCRfromTIOA(char *scr, char *tioa, int tioaSIZE);
+int MakeTSCRfromTIOA(char *scr, char *tioa, int tioaSIZE);
+int NextCursor(char *attr, int ic);
+int PrevCursor(char *attr, int ic);
+char *GetAttr(char *attr, int ic);
+int GetStart(char *attr, int ic);
+int Getlength(char *attr, int ic);
+
+
+ // hardwire the default screen & crlp size...
+#define SCRROWS 24
+#define SCRCOLS 80
+#define SCRSIZE (SCRROWS*SCRCOLS)
+
+ //
+ // Open CRLP if files present
+ //
+void InitCRLP() {
+
+ // open CRLP output file if present
+ iefjfcb *j;
+ char *CoutDD="CRLPOUT ";
+ j = rdjfcb(CoutDD);
+#ifdef __MVS__
+ if (j->jfcbind2 != 0)   { // DD present
+#endif
+#ifdef __CMS__
+ if (j->jfcbind2 != 192) { // FILEDEF present, not new
+#endif
+  char withdd[16];
+  STRCPY(withdd, "DD:"); STRNCAT(withdd, CoutDD, 8);
+  CRLPOUT   = (FILE *)FOPEN(withdd, "w");
+  if (CRLPOUT == NULL) {
+   FPRINTF(csa->csastderr,
+    "\nCRLP output did not open, fatal error! Bye Bye!\n\n");
+   EXIT (999);
+   }
+  // crlp output not dummy
+  csa->tctte->flags |=
+    (tctteflag$crlpinuse  | tctteflag$crlpoutNdumy);
+  }
+
+ // open CRLP input file if present
+ char *CinDD="CRLPIN  ";
+ j = rdjfcb(CinDD);
+#ifdef __MVS__
+ if (j->jfcbind2 != 0)   { // DD present
+#endif
+#ifdef __CMS__
+ if (j->jfcbind2 != 192) { // FILEDEF present, not new
+#endif
+  char withdd[16];
+  STRCPY(withdd, "DD:"); STRNCAT(withdd, CinDD, 8);
+  CRLPIN   = (FILE *)FOPEN(withdd, "r");
+  if (CRLPIN == NULL) {
+   FPRINTF(csa->csastderr,
+    "\nCRLP input did not open, fatal error! Bye Bye!\n\n");
+   EXIT (999);
+   }
+  // crlp input not dummy
+  csa->tctte->flags |=
+    (tctteflag$crlpinuse  | tctteflag$crlpinNdumy);
+  }
+
+  // default borders, echo input
+  csa->tctte->flags |=
+    (tctteflag$crlpshowbord | tctteflag$crlpechoi);
+ }
+
+
+ //
+ // Close CRLP if present
+ //
+void FiniCRLP() {
+ // close CRLP output file
+ if((csa->tctte->flags & tctteflag$crlpoutNdumy) > 0) {
+  FCLOSE(CRLPOUT);
+  csa->tctte->flags &= ~tctteflag$crlpoutNdumy;
+  }
+ }
+
+// this DumpHex lifted from kikacp and used to display tioas.
+void DumpHex(FILE *D, char *begin, int size, int flag) {
+int b, b2, bx, e, e2, i, ic, tx;
+char c, s[50];
+
+ // b2 is begin for dumping, b is begin of 'line'
+ b2 = (int)begin; b = b2;
+ // e2 is end of dumping
+ e2 = b2 + size - 1;
+
+ for (e=b2; e<(e2 | 0x0f); e=e+16, b=b+16) {
+  if (b <= e2) {
+   FPRINTF(D, "%04X: ", (b-b2));
+   for (i=0, bx=b; i<16; i++, bx++) {
+    if (bx < b2) { FPRINTF(D, "  "); }
+    else if (bx > e2) { FPRINTF(D, "  "); }
+    else {
+     c = *(char *)bx;
+     ic = c;
+     FPRINTF(D, "%02X", ic);
+     }
+    if ((i%4)==3) { FPRINTF(D, " "); }
+    }
+   FPRINTF(D, " ");
+   for (i=0, bx=b; i<16; i++, bx++) {
+    if (bx < b2) { FPRINTF(D, " "); }
+    else if (bx > e2) { FPRINTF(D, " "); }
+    else {
+     c = *(char *)bx;
+     if (!ISPRINT(c)) { c='.'; }
+     FPRINTF(D, "%c", c);
+     }
+    //if ((i%4)==3) { FPRINTF(D, " "); }
+    }
+   if (flag != 0) {
+    if((flag>=b) && (flag<(b+16)))
+     FPRINTF(D, " <<<<");
+    else
+     FPRINTF(D, "     ");
+
+    bx = b;
+    FPRINTF(D, "%s", &s[0]);
+    }
+
+   FPRINTF(D, "\n");
+   }
+  }
+}
+
+
+ //
+ // Send tioa to 'line printer'...
+ //
+ void DoCRLPout() {
+  int acnt, icnt, i, ic, j, k, lasta=0, r, c;
+  char  scr[SCRSIZE];
+  char attr[SCRSIZE];
+
+  // dump the output tioa on CRLP output
+  if((csa->tctte->flags & tctteflag$crlpoutNdumy) > 0)
+   if((csa->tctte->flags &tctteflag$crlpdisplayt) > 0) {
+    FPRINTF(CRLPOUT, "\nOUTPUT TIOA, %d BYTES\n", csa->tctte->tioaused);
+    DumpHex(CRLPOUT, csa->tctte->tioa, csa->tctte->tioaused, 0);
+    }
+
+  // skip everything else if empty tioa
+  if (CheckEmpty(csa->tctte->tioa, csa->tctte->tioaused)) return;
+
+  // table init(s) from current tioa
+  MakeCOUNTSfromTIOA(&acnt, &icnt, csa->tctte->tioa, csa->tctte->tioaused);
+  ic = MakeTSCRfromTIOA(scr,  csa->tctte->tioa, csa->tctte->tioaused);
+  ic = MakeASCRfromTIOA(attr, csa->tctte->tioa, csa->tctte->tioaused);
+
+  // send screen lines to printer
+  if((csa->tctte->flags & tctteflag$crlpoutNdumy) > 0) {
+   // CRLP output not dummy
+
+   // handle special KEDF one line output
+   if ((csa->tctte->flags & tctteflag$crlppure) != 0) {
+    for (i=0; i<SCRCOLS; i++) {
+     if (attr[i] != 0) lasta = attr[i];
+     if (scr[i] == 0) FPUTC(' ', CRLPOUT);
+     else
+     if ((lasta & 0x0C) != 0x0C) // chk for 'dark'
+      FPUTC(scr[i], CRLPOUT);
+     else
+      FPUTC(' ', CRLPOUT);
+     }
+    FPUTC('\n', CRLPOUT);
+    //csa->tctte->flags &=  ~tctteflag$crlppure;
+    return;
+    }
+
+   if ((csa->tctte->flags & tctteflag$crlptrimline) != 0)
+    csa->tctte->flags &=  ~tctteflag$crlpshowbord;
+
+   if ((csa->tctte->flags & tctteflag$crlpshowbord) > 0) {
+    FPUTS("\n*----------------------------------------", CRLPOUT);
+    FPUTS("----------------------------------------*\n", CRLPOUT);
+    }
+
+   for (r=0; r<SCRROWS; r++) {
+    j = SCRCOLS-1;
+    if ((csa->tctte->flags & tctteflag$crlpshowbord) > 0)
+       FPUTC('|', CRLPOUT);
+
+    if ((csa->tctte->flags & tctteflag$crlptrimline) != 0) {
+     for (; j>=0; j--) {
+      i = (r*SCRCOLS)+j;
+      if ((scr[i] != ' ') && (scr[i] != 0)) break;
+      }
+     }
+    for (c=0; c<SCRCOLS; c++) {
+     i = (r*SCRCOLS)+c;
+     if (attr[i] != 0) lasta = attr[i];
+     if (c <= j) {
+      if (scr[i] == 0) FPUTC(' ', CRLPOUT);
+      else
+      if ((lasta & 0x0C) != 0x0C) // chk for 'dark'
+       FPUTC(scr[i], CRLPOUT);
+      else
+       FPUTC(' ', CRLPOUT);
+      }
+     }
+
+    if ((csa->tctte->flags & tctteflag$crlpshowbord) > 0)
+       FPUTC('|', CRLPOUT);
+    if (j>0) FPUTC('\n', CRLPOUT);
+    }
+
+   if ((csa->tctte->flags & tctteflag$crlpshowbord) > 0) {
+    FPUTS("*----------------------------------------", CRLPOUT);
+    FPUTS("----------------------------------------*\n\n", CRLPOUT);
+    }
+   } // end of 'printer not dummy'
+  }  // end of function
+
+
+ //
+ // Get tioa from 'card reader'...
+ //
+ // which also must take into account what we glibly call
+ // the 'last output tioa', but that's really the concatenation
+ // of all the preceeding output (and input) tioa's back to
+ // the last output that cleared (erased) the screen. Excluding
+ // as usual any KEDF screen i/o...
+ //
+ void DoCRLPin() {
+  char  cardimg[90], c2img[90], *tioa, lasta;
+  int   acnt, icnt, i, j, jj, k, kk, kkk, r, c, xx, yy, esc;
+  int   cursor, ic, iclo, linesize, tioaSIZE, tioaUSED; short sba;
+  int   curfb, curfl, curfe;
+  char *curfa;
+
+  char loscr[SCRSIZE];
+  char attr[SCRSIZE];
+
+  // general initialization
+  tioa = csa->tctte->tioa;
+  tioaSIZE = csa->tctte->tioasize;
+  MEMSET (tioa, 0, tioaSIZE);
+  tioaUSED = 3; // room for aid & cursor
+  MEMSET (cardimg, ' ', 90);
+  MEMSET (c2img, ' ', 90);
+
+  // first check for crlp input dummy or already at eof
+  if(((csa->tctte->flags & tctteflag$crlpinNdumy) == 0) |
+     ((csa->tctte->flags & tctteflag$crlpineof) > 0)) {
+   csa->tctte->tioasize = tioaSIZE = 1; // just aid
+   tioa[0] = KIKCLEAR;
+   csa->runphase = 2;
+   return;
+   }
+
+  // check for 'PURE' mode (card reader/printer; not 3270)
+  if ((csa->tctte->flags & tctteflag$crlppure) != 0) {
+   FGETS(&tioa[0], 85, CRLPIN);
+   if (FEOF(CRLPIN)) {  // 1st time eof so
+    csa->tctte->flags &= ~tctteflag$crlpineof; // set eof flag
+    csa->tctte->tioasize = tioaSIZE = 1; // just aid
+    tioa[0] = KIKCLEAR;
+    csa->runphase = 2;
+    return;
+    }
+   tioa[85] = 0; /* stopper */
+   return;
+   }
+
+  // table init(s) from last output tioa
+  MakeCOUNTSfromTIOA(&acnt, &icnt, csa->tctte->lotioa, csa->tctte->lotioaused);
+  iclo = MakeTSCRfromTIOA(loscr,   csa->tctte->lotioa, csa->tctte->lotioaused);
+  iclo = MakeASCRfromTIOA(attr,    csa->tctte->lotioa, csa->tctte->lotioaused);
+
+  ic = iclo;                    // preset cursor as last output left it
+  if (icnt > 0) {
+   curfb = GetStart(attr, ic);  // get field start
+   curfl = Getlength(attr, ic); //     field length
+   curfe = curfb + curfl - 1;   //     field end
+   curfa = GetAttr(attr, ic);   //     field attribute
+   }
+
+  // process output thru next 'aid' to build new input tioa
+  while (1) {
+   FGETS(&cardimg[0], 85, CRLPIN);
+   if (FEOF(CRLPIN)) break; // out if while (1)
+   cardimg[85] = 0; /* stopper */
+   if((csa->tctte->flags & tctteflag$crlpoutNdumy) > 0) {
+    if((csa->tctte->flags & tctteflag$crlpechoi) > 0)
+       FPRINTF(CRLPOUT,"%s", cardimg);
+    }
+   linesize = STRLEN(cardimg);
+   MEMCPY (c2img, cardimg, 90);
+   linesize--; cardimg[linesize] = 0;
+   for (i=0, esc=0; i<linesize; i++) {
+    if (esc == 0) if (cardimg[i] == '\\') {
+     esc = 1;
+     continue;              // loops the while - ie - gets next char...
+     }
+    if (esc == 0) if (cardimg[i] == '<') {
+      // find aid/command in input
+     kkk = 2; // default to NOAID, which below errors out (in 'default')
+     for (i++, j=i, jj=0; j<linesize; j++) {
+      if (cardimg[j] == '>') { jj = j; break; } // out of for j
+      }
+     if (jj > 0) { jj -= i; }
+     if (jj > 0) {
+      // now check to see if the 'command' is xx,yy cursor positioning
+      xx=0; yy=0;
+      for (k=0; k<jj; k++) if (cardimg[i+k] == ',') break;
+      if (k < jj) {
+       // i+k indexes the comma, so extract xx, yy
+       SSCANF (&cardimg[i], "%d", &xx);
+       SSCANF (&cardimg[i+k+1], "%d", &yy);
+       // ignore xx, yy if invalid
+       if((xx < 1) | (xx > 24) | (yy < 1) | (yy > 80)) { xx=0; yy=0; }
+        else kkk = aid_max; // aid_code[aid_max] = 8
+       }
+      if (xx == 0) {
+       // not <xx,yy>, try to find matching aid/command in table
+       for (k=0; k<aid_max; k++) {
+        for (kk=0; kk<jj; kk++) {
+         if (TOUPPER(cardimg[i+kk]) != aid_text[k][kk]) break; // out of for kk
+         }
+        if (kk == jj) { kkk = k; break; } // out of for k
+        }
+       }
+      }
+     // now process the aid/command
+     switch ( aid_code[kkk] ) {
+      // first the 'aid' keys
+      case KIKCLEAR:
+      case KIKPA1: case KIKPA2: case KIKPA3:
+       tioaUSED = 1; // just aid
+       tioa[0] = aid_code[kkk];
+       break;
+      case KIKENTER:
+      case KIKPF1:  case KIKPF2:  case KIKPF3:  case KIKPF4:
+      case KIKPF5:  case KIKPF6:  case KIKPF7:  case KIKPF8:
+      case KIKPF9:  case KIKPF10: case KIKPF11: case KIKPF12:
+      case KIKPF13: case KIKPF14: case KIKPF15: case KIKPF16:
+      case KIKPF17: case KIKPF18: case KIKPF19: case KIKPF20:
+      case KIKPF21: case KIKPF22: case KIKPF23: case KIKPF24:
+       tioa[0] = aid_code[kkk];
+       r = 1 + ic / SCRCOLS; c = 1 + ic % SCRCOLS;
+       sba = encode_sba(r, c);
+       tioa[1] = sba>>8;
+       tioa[2] = sba&0xff;
+       break;
+      // Now the various non-terminating keys
+      // that (mostly) just move the cursor around...
+      case 1:    // rem, remark
+       // does nothing - just ends line
+       i = linesize;
+       break;
+      //se 2:    // reset
+      //  not implemented, fall into default...
+      // = linesize;
+      //reak;
+      case 3:    // tab
+       if (icnt > 0) {
+        ic = NextCursor(attr, ic);
+        curfb = GetStart(attr, ic);  // get field start
+        curfl = Getlength(attr, ic); //     field length
+        curfe = curfb + curfl - 1;   //     field end
+        curfa = GetAttr(attr, ic);   //     field attribute
+        }
+       i = linesize;
+       break;
+      case 4:    // back tab
+       if (icnt > 0) {
+        ic = PrevCursor(attr, ic);
+        curfb = GetStart(attr, ic);  // get field start
+        curfl = Getlength(attr, ic); //     field length
+        curfe = curfb + curfl - 1;   //     field end
+        curfa = GetAttr(attr, ic);   //     field attribute
+        }
+       i = linesize;
+       break;
+      case 5:    // home
+      case 6:    // end
+       // for 'home' or 'end', find first field
+       ic = 0;
+       if (icnt > 0)
+        for (ic=0; ic<SCRSIZE; i++) {
+         if (attr[ic] != 0)
+          if((attr[ic] & a3270_prot) == 0) {
+           ic = (ic + 1) % SCRSIZE;
+           break;
+           }
+         }
+       // for 'end', backup from first field to last
+       if (aid_code[kkk] == 6)
+        if (icnt > 0) {
+         ic = PrevCursor(attr, ic);
+         curfb = GetStart(attr, ic);  // get field start
+         curfl = Getlength(attr, ic); //     field length
+         curfe = curfb + curfl - 1;   //     field end
+         curfa = GetAttr(attr, ic);   //     field attribute
+         }
+       i = linesize;
+       break;
+      case 7:    // erase eof
+       // erase (0x00) from cursor to end of field
+       if (acnt > 0) {
+        // it's fielded input
+        if ((*curfa & 0x20) == 0) {          // unprotected
+         if((ic >= curfb) & (ic <= curfe)) { // inside field
+          *curfa |= a3270_mdt;               // turn on MDT
+          for (j=0; j<SCRSIZE; j++) {
+           k = ic+j;
+           if(attr[k] != 0) break;
+           loscr[k] = 0;
+           }
+          }
+         }
+        }
+       else
+        for (j=ic; j<SCRSIZE; j++) {
+         loscr[j] = 0;
+         }
+       i = linesize;
+       break;
+      case 8:    // <xx,yy>
+       // position cursor
+       ic = (xx-1)*80 + (yy-1);
+       if (acnt > 0) {
+        // reset field stuff
+        curfb = GetStart(attr, ic);      // get field start
+        curfl = Getlength(attr, ic);     //     field length
+        curfe = curfb + curfl - 1;       //     field end
+        curfa = GetAttr(attr, ic);       //     field attribute
+        }
+       break;
+      default:
+       if((csa->tctte->flags & tctteflag$crlpoutNdumy) > 0) {
+        if((csa->tctte->flags & tctteflag$crlpechoi) == 0)
+         FPRINTF(CRLPOUT,"%s", cardimg); // echo now if not before...
+        FPRINTF(CRLPOUT,"?? Bad <...> command\n");
+        }
+       i = linesize;
+      } // end switch
+     if (tioa[0] != 0) break; // out of 'for linesize'          <<<<<<<<<<<<<
+     }   // end if == '<'
+    esc = 0;                // turns off char escape after one shot...
+    if (i == linesize) continue;
+    // put char into screen
+    if (acnt > 0) {
+     // it's fielded input
+     if ((*curfa & 0x20) == 0) {              // unprotected
+      if((ic >= curfb) & (ic <= curfe)) {     // inside field
+       *curfa |= a3270_mdt;              // turn on MDT
+       loscr[ic % SCRSIZE] = cardimg[i]; // copy char
+       ic++;                             // advance char ptr
+       if((ic - curfe) == 1) {           // eod of field? chk askip
+        if ((attr[ic] & a3270_askp) == a3270_askp)
+         ic = NextCursor(attr, ic-1);    // -Yes- skip to next
+        else ic++;                       // -No-  1st of fld
+        // either way (askip or not) reset field stuff
+        curfb = GetStart(attr, ic);      // get field start
+        curfl = Getlength(attr, ic);     //     field length
+        curfe = curfb + curfl - 1;       //     field end
+        curfa = GetAttr(attr, ic);       //     field attribute
+        }
+       }
+      }
+     }
+    else {
+     // it's non-fielded input
+     loscr[ic % SCRSIZE] = cardimg[i];
+     ic++;
+     }
+    } // end 'for ... linesize...'
+   if (tioa[0] != 0) break; // out of 'while(1)'                 <<<<<<<<<<<<<
+   } // end 'while (1)'
+
+
+   if (FEOF(CRLPIN)) {  // 1st time eof so
+    linesize=0;
+    tioaUSED = 1; // just aid
+    tioa[0] = KIKCLEAR;
+    csa->tctte->flags &= ~tctteflag$crlpineof; // set eof flag
+    csa->runphase = 2;          // set shutdown flag
+    }
+
+  if (tioaUSED > 1) { // clear & pa's ignore any screen stuff...
+   if (acnt > 0) {
+    // it's fielded input
+    //  so add all the 'MDT bit set' fields
+    for (i=0; i<SCRSIZE; i++) {
+     if((attr[i] & a3270_mdt) > 0) {
+      // make sba for tioa field
+      r = 1 + (i+1) / SCRCOLS; c = 1 + (i+1) % SCRCOLS;
+      sba = encode_sba(r, c);
+      tioa[tioaUSED++] = 0x11;
+      tioa[tioaUSED++] = sba>>8;
+      tioa[tioaUSED++] = sba&0xff;
+      j = GetLength(attr, i+1);
+      for (k=0; k<j; k++) {
+       kk = (i+1+k) % SCRSIZE;
+       if (loscr[kk] == 0) break;
+       tioa[tioaUSED++] = loscr[kk];
+       }
+      }  // end of if (attr[] & a3270_mdt)
+     }   // end of for
+    }    // end of 'fielded input'
+   else {
+    // it's non-fielded input
+    //  so there are no MDT's, just copy everything
+    tioaUSED=3;
+    for (k=0; k<SCRSIZE; k++) {
+     if (loscr[k] == 0) break;
+     tioa[tioaUSED++] = loscr[k];
+     }
+    }    // end of 'non-fielded input'
+   }     // end of 'tioaUSED > 1'
+
+
+
+  // dump the input tioa on CRLP output
+  if((csa->tctte->flags & tctteflag$crlpoutNdumy) > 0)
+   if((csa->tctte->flags &tctteflag$crlpdisplayt) > 0) {
+    FPRINTF(CRLPOUT, "\nGENERATED INPUT TIOA, %d BYTES\n", tioaUSED);
+    DumpHex(CRLPOUT, tioa, tioaUSED, 0);
+    }
+
+
+  // display the completed input screen on CRLP output
+  if((csa->tctte->flags & tctteflag$crlpoutNdumy) > 0)
+   if((csa->tctte->flags & tctteflag$crlpdisplayi) > 0) {
+    if ((csa->tctte->flags & tctteflag$crlpshowbord) > 0) {
+     FPUTS("\n+========================================", CRLPOUT);
+     FPUTS("========================================+\n", CRLPOUT);
+     }
+    for (r=0; r<SCRROWS; r++) {
+     j = SCRCOLS-1;
+     if ((csa->tctte->flags & tctteflag$crlpshowbord) > 0)
+       FPUTC('/', CRLPOUT);
+     if ((csa->tctte->flags & tctteflag$crlptrimline) != 0) {
+      for (; j>=0; j--) {
+       i = (r*SCRCOLS)+j;
+       if (loscr[i] != ' ') break;
+       }
+      }
+     for (c=0; c<SCRCOLS; c++) {
+      i = (r*SCRCOLS)+c;
+      if (attr[i] != 0) lasta = attr[i];
+      if (c <= j) {
+       if ((lasta & 0x0C) != 0x0C) // chk for 'dark'
+        FPUTC(loscr[i], CRLPOUT);
+       else
+        FPUTC(' ', CRLPOUT);
+       }
+      }
+     if ((csa->tctte->flags & tctteflag$crlpshowbord) > 0)
+       FPUTC('/', CRLPOUT);
+     if (j>0) FPUTC('\n', CRLPOUT);
+     }
+
+    if ((csa->tctte->flags & tctteflag$crlpshowbord) > 0) {
+     FPUTS("+========================================", CRLPOUT);
+     FPUTS("========================================+\n\n", CRLPOUT);
+     }
+    }
+  // set global tioa use
+  csa->tctte->tioaused = tioaUSED;
+ }
+
+
+
+ //
+ // check for empty TIOA (a SEND CONTROL wo/erase?)
+ //
+ int CheckEmpty(char *tioa, int tioaSIZE) {
+  if(tioaSIZE > 3)    return false ; // not empty
+  if(tioa[1] != 0xf1) return false ; // erase set
+  return true;
+  }
+
+
+
+ //
+ // count 'all fields' & 'input fields' in last output TIOA
+ //
+ int MakeCOUNTSfromTIOA(int *allfields, int *inpfields,
+                        char *tioa, int tioaSIZE) {
+  int r, c, i, acnt=0, icnt=0;
+
+  // scan tioa for fields
+  for (i=3; i<tioaSIZE; i++) { // ignore esc, cmd, wcc
+   if (tioa[i] == 0x13) { // IC order
+    continue;
+    }
+   if (tioa[i] == 0x11) { // SBA order
+    i++; i++;
+    continue;
+    }
+   if (tioa[i] == 0x1d) { // SF order
+    i++;
+    acnt++;
+    if ((tioa[i+1] & a3270_prot) == 0) { // unprotected
+     icnt++;
+     }
+    continue;
+    }
+   if (tioa[i] == 0x29) { // SFE order
+    i++;
+    acnt++;
+    r = tioa[i]; // num pairs following
+    for (c=0; c<r; c++) {
+     i++; i++;
+     if (tioa[i-1] == 0xC0) {            // normal attr
+      if ((tioa[i] & a3270_prot) == 0) { // unprotected
+       icnt++;
+       }
+      }
+     }
+    continue;
+    }
+   if (tioa[i] == 0x28) { // SA order
+    i++; i++;
+    continue;
+    }
+   }
+
+  *allfields = acnt;
+  *inpfields = icnt;
+  return acnt;
+  }
+
+
+
+ //
+ // build array of atrributes as the 3270 screen, from an output tioa
+ //
+ int MakeASCRfromTIOA(char *scr, char *tioa, int tioaSIZE) {
+  int cursor=-1, i, j=0, r, c;
+
+  // preclear the buffer
+  MEMSET(scr, 0, SCRSIZE);
+
+  // copy tioa attributes into screen array
+  for (i=3; i<tioaSIZE; i++) { // ignore esc, cmd, wcc
+   if (tioa[i] == 0x13) { // IC order
+    cursor=j;
+    continue;
+    }
+   if (tioa[i] == 0x11) { // SBA order
+    i++; i++;
+    decode_sba (&tioa[i-1], &r, &c);
+    j = (r-1)*SCRCOLS+(c-1);
+    j = j % SCRSIZE;
+    continue;
+    }
+   if (tioa[i] == 0x1d) { // SF order
+    scr[j] = tioa[i+1];
+    i++; j++;
+    j = j % SCRSIZE;
+    continue;
+    }
+   if (tioa[i] == 0x29) { // SFE order
+    i++; j++;
+    r = tioa[i]; // num pairs following
+    for (c=0; c<r; c++) {
+     i++; i++;
+     if (tioa[i-1] == 0xC0) {
+      scr[j-1] = tioa[i];
+      }
+     }
+    j = j % SCRSIZE;
+    continue;
+    }
+   if (tioa[i] == 0x28) { // SA order
+    i++; i++;
+    continue;
+    }
+   if (j < SCRSIZE) {    // plain old screen data...
+    //scr[j] = tioa[i];
+    j++;
+    j = j % SCRSIZE;
+    }
+   }
+
+  if (cursor < 0) cursor=j;
+  return cursor;
+  }
+
+
+
+ //
+ // build array of text as the 3270 screen, from an output tioa
+ //
+ int MakeTSCRfromTIOA(char *scr, char *tioa, int tioaSIZE) {
+  int cursor=-1, i, j=0, r, c;
+
+  // preclear the buffer
+  MEMSET(scr, 0, SCRSIZE);
+
+  // copy tioa text into screen array
+  for (i=3; i<tioaSIZE; i++) { // ignore esc, cmd, wcc
+   if (tioa[i] == 0x13) { // IC order
+    cursor=j;
+    continue;
+    }
+   if (tioa[i] == 0x11) { // SBA order
+    i++; i++;
+    decode_sba (&tioa[i-1], &r, &c);
+    j = (r-1)*SCRCOLS+(c-1);
+    j = j % SCRSIZE;
+    continue;
+    }
+   if (tioa[i] == 0x1d) { // SF order
+    //scr[j] = tioa[i+1];
+    i++; j++;
+    j = j % SCRSIZE;
+    continue;
+    }
+   if (tioa[i] == 0x29) { // SFE order
+    i++; j++;
+    r = tioa[i]; // num pairs following
+    for (c=0; c<r; c++) {
+     i++; i++;
+     if (tioa[i-1] == 0xC0) {
+      //scr[j-1] = tioa[i];
+      }
+     }
+    j = j % SCRSIZE;
+    continue;
+    }
+   if (tioa[i] == 0x28) { // SA order
+    i++; i++;
+    continue;
+    }
+   if (j < SCRSIZE) {    // plain old screen data...
+    scr[j] = tioa[i];
+    j++;
+    j = j % SCRSIZE;
+    }
+   }
+
+  if (cursor < 0) cursor=j;
+  return cursor;
+  }
+
+
+
+ // current cursor (ic) must be within a field (between two
+ // attributes) for cursor ops to be meaningful. Since the search for
+ // the 'next' attribute wraps the single field case is handled.
+ //
+ // if no attribute found returns -1
+
+ //
+ // Return cursor for the start of the NEXT unprotected field
+ // from the current cursor and the attribute table...
+ //
+ int NextCursor(char *attr, int ic) {
+  int i, j;
+
+  if (ic < 0) return -1;
+  for (i=0; i<SCRSIZE; i++) {
+   j = (ic + i) % SCRSIZE;
+   if (attr[j] != 0)
+    if((attr[j] & a3270_prot) == 0) return ((j+1) % SCRSIZE);
+   }
+  return -1;
+  }
+
+
+
+ //
+ // Return cursor for the start of the PREVIOUS unprotected field
+ // from the current cursor and the attribute table...
+ // ** will refind the current field if the cursor is not
+ //    on it's first character...
+ //
+ int PrevCursor(char *attr, int ic) {
+  int i, j;
+
+  if (ic < 0) return -1;
+  for (i=2; i<SCRSIZE; i++) {   // skip curr char & attribute
+   j = (ic - i) % SCRSIZE;
+   if (attr[j] != 0)
+    if((attr[j] & a3270_prot) == 0) return ((j+1) % SCRSIZE);
+   }
+  return -1;
+  }
+
+
+
+ //
+ // Return Attribute for current field
+ //
+ //  0 return means no fields
+ // -1 return means bad input cursor as usual
+ //
+ char *GetAttr(char *attr, int ic) {
+  int i, j;
+
+  if (ic < 0) return 0;
+  for (i=1; i<SCRSIZE; i++) {   // skip curr char
+   j = (ic - i) % SCRSIZE;
+   if (attr[j] != 0) return &attr[j];
+   }
+  return 0;
+  }
+
+
+
+ //
+ // Return Start for current field
+ //
+ int GetStart(char *attr, int ic) {
+  int i, j;
+
+  if (ic < 0) return -1;
+  for (i=1; i<SCRSIZE; i++) {
+   j = (ic - i) % SCRSIZE;
+   if (attr[j] != 0) return ((j+1) % SCRSIZE);
+   }
+  return 0;
+  }
+
+
+
+ //
+ // Return Length of current field
+ //
+ //  0 return means no fields
+ // -1 return means bad input cursor as usual
+ //
+ int Getlength(char *attr, int ic) {
+  int i, j, b;
+
+  if (ic < 0) return -1;
+  b = GetStart(attr, ic);
+  if (b < 0) return b;
+  for (i=0; i<SCRSIZE; i++) {
+   j = (b+i) % SCRSIZE;
+   if (attr[j] != 0) return i;
+   }
+  return 0;
+  }
+
+
+ void MergeOutputTIOA() {
+  int wcc;
+
+ // this is what happens when we get a new output tioa
+ csa->tctte->flags &= ~tctteflag$lastrecv;
+
+ // out if neither crlp nor kedf running
+ if(((csa->tctte->flags & tctteflag$crlpinuse) == 0) &    // not crlp
+    ((csa->tctte->flags & tctteflag$kedfon) == 0)) {      // not kedf
+  csa->tctte->tioacnt = -1; // mark it bad
+  return;
+  }
+ // out if actually in kedf
+ if ((csa->trc.trcflags & 16) > 0) return; // in kedf
+
+  // replace buffer if erase
+  if((csa->tctte->tioa[1] == 0x7e) || (csa->tctte->tioa[1] == 0xf5)) {
+   // if erase command restart buffering
+   MEMCPY(csa->tctte->lotioa,
+          csa->tctte->tioa, csa->tctte->tioasize);
+   csa->tctte->lotioaused = csa->tctte->tioaused;
+   csa->tctte->tioacnt = 0; // mark it good
+   return;
+   }
+
+  // -- this version doesn't merge new output, it just copies
+  //    it all to the end...
+
+  if (csa->tctte->tioacnt == 0) {
+   csa->tctte->tioacnt = csa->tctte->lotioaused +
+                         csa->tctte->tioaused + 5; // 2 spare...
+   if (csa->tctte->tioacnt < csa->tctte->tioasize) {
+    csa->tctte->tioacnt = 0; // mark it good
+    // -- reset sba to top-left
+    MEMCPY(&csa->tctte->lotioa[csa->tctte->lotioaused],"\x11\x40\x40", 3);
+    csa->tctte->lotioaused += 3;
+    // -- copy last tioa fields to saved tioa
+    if (csa->tctte->tioaused > 3) {
+     MEMCPY(&csa->tctte->lotioa[csa->tctte->lotioaused],
+            &csa->tctte->tioa[3], csa->tctte->tioaused-3);
+     wcc = csa->tctte->tioa[2] & 6; // copy alarm + freekb
+     csa->tctte->lotioa[2] &= ~6;
+     csa->tctte->lotioa[2] |= wcc;
+     csa->tctte->lotioaused += csa->tctte->tioaused-3;
+     }  // end of used > 3
+    }   // end of < tioasize
+   }    // end of == 0
+  }     // end of MergeOutputTIOA
+
+
+ void MergeInputTIOA() {
+  char *p;
+
+ // this is what happens when we get a new input tioa
+ csa->tctte->flags |= tctteflag$lastrecv;
+
+ // out if neither crlp nor kedf running
+ if(((csa->tctte->flags & tctteflag$crlpinuse) == 0) &    // not crlp
+    ((csa->tctte->flags & tctteflag$kedfon) == 0)) {      // not kedf
+  csa->tctte->tioacnt = -1; // mark it bad
+  return;
+  }
+ // out if actually in kedf
+ if ((csa->trc.trcflags & 16) > 0) return; // in kedf
+
+  // -- this version doesn't merge new input, it just copies
+  //    it all to the end...
+
+  if (csa->tctte->tioacnt == 0) {
+   csa->tctte->tioacnt = csa->tctte->lotioaused +
+                         csa->tctte->tioaused + 5; // 2 spare...
+   if (csa->tctte->tioacnt < csa->tctte->tioasize) {
+    csa->tctte->tioacnt = 0; // mark it good
+    // -- reset sba to top-left
+    MEMCPY(&csa->tctte->lotioa[csa->tctte->lotioaused],"\x11\x40\x40", 3);
+    csa->tctte->lotioaused += 3;
+    // -- copy last tioa fields to saved tioa
+    if (csa->tctte->tioaused > 3) {
+     MEMCPY(&csa->tctte->lotioa[csa->tctte->lotioaused],
+            &csa->tctte->tioa[3], csa->tctte->tioaused-3);
+     csa->tctte->lotioaused += csa->tctte->tioaused-3;
+     }
+    // -- use input cursor to rebuild IC, SF at end of saved tioa
+    p = &csa->tctte->lotioa[csa->tctte->lotioaused];
+    *p = 0x11; p++;
+    *p = csa->tctte->tioa[1]; p++;
+    *p = csa->tctte->tioa[2]; p++;
+    *p = 0x13; p++;
+    *p = 0; p++; *p = 0; p++; *p = 0;
+    csa->tctte->lotioaused += 4;
+    }   // end of < tioasize
+   }    // end of == 0
+  }     // end of MergeInputTIOA
+

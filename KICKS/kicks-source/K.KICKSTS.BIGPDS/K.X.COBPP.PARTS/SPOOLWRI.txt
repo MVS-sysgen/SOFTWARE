@@ -1,0 +1,164 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+void Do_SPOOLWRITE() {
+// writes data to a spool report
+// EXEC CICS
+//  SPOOLWRITE
+//    TOKEN(data-area)  FROM(data-area)  FLENGTH(data-value)
+//    [ LINE | PAGE ]
+// END-EXEC.
+
+// *** PAGE not supported
+
+ char err[100], saveblocks[4000];
+
+ char op[100], ops[30][100], *ip;
+ int  i, numops=0;
+
+ char token[100]="' '", from[100]="", flength[100]="-1";
+
+ // break up string my way
+ numops = 0;
+ strcpy(saveblocks, cicsblks);
+ ip = SPCLTOK(saveblocks, " ");   // EXEC
+ while (ip=SPCLTOK(0, " ")) {     // KICKS, verb, ... END-EXEC
+  strcpy(ops[numops], ip);
+  numops++;
+  }
+
+ // march thru the args
+ for (i=0; i<numops; i++) {
+  strcpy(op, ops[i]);
+  if(strlen(op)==0) { continue; }
+  if(MYbegstr(op,".")) { continue; }
+  if(MYbegstr(op,"RESP")) { continue; }
+  if(MYbegstr(op,"RESP2")) { continue; }
+  if(MYbegstr(op,"NOHANDLE")) { continue; }
+  if(MYbegstr(op,"EXEC")) { continue; }
+  if(MYbegstr(op,"KICKS")) { continue; }
+  if(MYbegstr(op,"SPOOLWRITE")) { continue; }
+  if(MYbegstr(op,"LINE")) { continue; }
+  if(MYbegstr(op,"END-EXEC") || MYbegstr(op,";")) { continue; }
+  if(MYbegstr(op,"TOKEN")) {
+   ip = strtok(op, "()");   // TOKEN
+   ip = strtok(0, "()");    // the name of the TOKEN
+   if (ip == NULL) {
+    sprintf(err,
+    "malformed argument %s of SPOOLWRITE", op);
+    prt_error(err, 8);
+    No_Code();
+    return;
+    }
+   parrensDown(ip);
+   strcpy(token, ip);
+   continue;
+   }
+  if(MYbegstr(op,"FROM")) {
+   ip = strtok(op, "()");   // FROM
+   ip = strtok(0, "()");    // the name of the var to get data
+   if (ip == NULL) {
+    sprintf(err,
+    "malformed argument %s of SPOOLWRITE", op);
+    prt_error(err, 8);
+    No_Code();
+    return;
+    }
+   parrensDown(ip);
+   strcpy(from, ip);
+   continue;
+   }
+  if(MYbegstr(op,"FLENGTH")) {
+   ip = strtok(op, "()");   // FLENGTH
+   ip = strtok(0, "()");    // the name of the var holding the flength
+   if (ip == NULL) {
+    sprintf(err,
+    "malformed argument %s of SPOOLWRITE", op);
+    prt_error(err, 8);
+    No_Code();
+    return;
+    }
+   parrensDown(ip);
+   strcpy(flength, ip);
+   continue;
+   }
+
+  sprintf(err,
+  "unknown/unsupported argument %s of SPOOLWRITE", op);
+  prt_error(err, 8);
+  No_Code();
+  return;
+  }
+
+#ifdef PPCOB
+ fprintf(stdout, "           MOVE 22022 TO EIBFN-2\n");
+ fprintf(stdout, "           MOVE %s TO KIK-FILENAME\n", token);
+ if (strcmp(flength,"-1")) {
+  fprintf(stdout, "           MOVE %s TO KIK-FLEN\n", flength);
+  }
+ else {
+  if (DOcb2) {
+   fprintf(stdout, "           MOVE LENGTH OF %s TO KIK-FLEN\n", from);
+   }
+  else {
+   switch (DOdmap) {
+    int LL;
+      case 1:
+       fprintf(stdout, "           MOVE 1 TO KIK-FLEN\n");
+       break;
+      case 2:
+       LL = DmapLookup(from);
+       if (LL < 0) {
+        sprintf(err,
+         "LENGTH of %s can't be determined ", from);
+        prt_error(err, 8);
+        No_Code();
+        return;
+        }
+       fprintf(stdout, "           MOVE %d TO KIK-FLEN\n", LL);
+       break;
+      default:
+       prt_error("FLENGTH missing, always required", 8);
+       No_Code();
+       return;
+    }
+   }
+  }
+ fprintf(stdout, "           CALL 'KIKCOBGL' USING KIKEIB,\n");
+ if (!strcmp(respvar, ""))
+  fprintf(stdout, "                 KIK-V1,\n");
+ else
+  fprintf(stdout, "                 KIK-V2,\n");
+ fprintf(stdout, "                 KIK-FILENAME,\n");
+ fprintf(stdout, "                 %s,\n", from);
+ fprintf(stdout, "                 KIK-FLEN");
+#endif
+#ifdef PPGCC
+if (!strcmp(flength,"-1")) {
+ prt_error("FLENGTH missing, always required", 8);
+ No_Code();
+ return;
+ }
+
+ fprintf(stdout, "\t{ short *eibfn2 = (short*)&__KIKEIB->eibfn;\n");
+ fprintf(stdout, "\t\t*eibfn2 = 22022;\n");
+ if (!strcmp(respvar, ""))
+  fprintf(stdout, "\t  int *v=&KIK_V1;\n");
+ else
+  fprintf(stdout, "\t  int *v=&KIK_V2;\n");
+  fprintf(stdout, "\t  int flength=%s, *FLENGTH=&flength;\n", flength);
+ fprintf(stdout, "\t kikgccgl(__KIKEIB, v, &%s,\n", token);
+ fprintf(stdout, "\t\t&%s, FLENGTH);\n", from);
+#endif
+}

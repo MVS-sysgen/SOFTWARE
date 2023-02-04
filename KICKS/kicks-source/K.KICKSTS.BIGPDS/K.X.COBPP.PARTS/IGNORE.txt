@@ -1,0 +1,138 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+void Do_IGNORE() {
+// specifies that certain exception conditions should be ignored
+// EXEC CICS IGNORE CONDITION condition-name ... END-EXEC.
+
+char err[100], saveblocks[4000];
+
+char op[100], op2[100], ops[30][100], *ip;
+int  i, j, numops=0, nodump=0, verb;
+
+int numcond1=0, numcond2=0;
+union { int aki[4]; char akc[16]; } aidsi, aidsh;
+char akr[16][100];
+
+ // init the aids union
+ for (i=0; i<4; i++) { aidsi.aki[i] = aidsh.aki[i] = 0; }
+
+ // break up string my way
+ numops = 0;
+ strcpy(saveblocks, cicsblks);
+ ip = SPCLTOK(saveblocks, " ");   // EXEC
+ while (ip=SPCLTOK(0, " ")) {     // KICKS, verb, ... END-EXEC
+  strcpy(ops[numops], ip);
+  numops++;
+  }
+
+ // march thru the args
+ for (i=0; i<numops; i++) {
+  strcpy(op, ops[i]);
+
+//printf("op %s\n", op);
+//printf("oplen %d\n", strlen(op));
+
+  if(strlen(op)==0) { continue; }
+  if(MYbegstr(op,".")) { continue; }
+  if(MYbegstr(op,"RESP")) { continue; }
+  if(MYbegstr(op,"RESP2")) { continue; }
+  if(MYbegstr(op,"NOHANDLE")) { continue; }
+  if(MYbegstr(op,"EXEC")) { continue; }
+  if(MYbegstr(op,"KICKS")) { continue; }
+  if(MYbegstr(op,"IGNORE")) { continue; }
+  if(MYbegstr(op,"CONDITION")) { continue; }
+  if(MYbegstr(op,"END-EXEC") || MYbegstr(op,";")) { continue; }
+
+  // find  matching.condition
+  for (j=rt_max, verb=-1; j>0; j--) {
+   if (MYbegstr(op, resp_text[j-1])) { verb = resp_codes[j-1]; break; }
+   }
+  if (verb == -1) {
+   sprintf(err, "unknown/unsupported argument %s of IGNORE CONDITION", op);
+   prt_error(err, 8);
+   No_Code();
+   return;
+   }
+
+  // stash verb (condition value)
+  aidsi.akc[numcond2] = verb;
+  numcond2++;
+  if (numcond2 > 15) {
+   sprintf(err, "exceeded max 16 args to IGNORE CONDITION");
+   prt_error(err, 8);
+   No_Code();
+   return;
+   }
+  }
+
+#if defined(__MVS__) || defined(__CMS__)
+ // ENDIAN issue -
+ // in MVS the byte order is different, so must reverse...
+ for (i=0; i<16; i=i+4) {
+  int tmp;
+  tmp=aidsh.akc[3+i]; aidsh.akc[3+i]= aidsh.akc[0+i]; aidsh.akc[0+i]= tmp;
+  tmp=aidsh.akc[2+i]; aidsh.akc[2+i]= aidsh.akc[1+i]; aidsh.akc[1+i]= tmp;
+  tmp=aidsi.akc[3+i]; aidsi.akc[3+i]= aidsi.akc[0+i]; aidsi.akc[0+i]= tmp;
+  tmp=aidsi.akc[2+i]; aidsi.akc[2+i]= aidsi.akc[1+i]; aidsi.akc[1+i]= tmp;
+ }
+#endif
+
+ // make sure something to do
+ if (numcond2 == 0) {
+  sprintf(err, "nothing entered for IGNORE CONDITION");
+  prt_error(err, 8);
+  No_Code();
+  return;
+  }
+
+ // generate call to ignore condition
+#ifdef PPCOB
+ fprintf(stdout, "            MOVE 522 TO EIBFN-2\n");
+ fprintf(stdout,"\n           MOVE %d TO KIK-AIDS1\n", aidsi.aki[0]);
+ if (numcond2 > 4)
+  fprintf(stdout, "           MOVE %d TO KIK-AIDS2\n", aidsi.aki[1]);
+ if (numcond2 > 8)
+  fprintf(stdout, "           MOVE %d TO KIK-AIDS3\n", aidsi.aki[2]);
+ if (numcond2 > 12)
+  fprintf(stdout, "           MOVE %d TO KIK-AIDS4\n", aidsi.aki[3]);
+ fprintf(stdout, "           MOVE %d TO KIK-NUM-GOTO\n", numcond2);
+
+ fprintf(stdout, "           CALL 'KIKCOBGL' USING KIKEIB,\n");
+ if (!strcmp(respvar, ""))
+  fprintf(stdout, "                 KIK-V1,\n");
+ else
+  fprintf(stdout, "                 KIK-V2,\n");
+ fprintf(stdout, "                 KIK-GOTOVAR, KIK-NUM-GOTO,\n");
+ fprintf(stdout,
+   "                 KIK-AIDS1, KIK-AIDS2, KIK-AIDS3, KIK-AIDS4");
+#endif
+
+#ifdef PPGCC
+ fprintf(stdout, "\t{ short *eibfn2 = (short*)&__KIKEIB->eibfn;\n");
+ fprintf(stdout, "\t\t*eibfn2 = 522;\n");
+ if (!strcmp(respvar, ""))
+  fprintf(stdout, "\t  int *v=&KIK_V1;\n");
+ else
+  fprintf(stdout, "\t  int *v=&KIK_V2;\n");
+ fprintf(stdout, "\t  int numgotoi=%d, *numgoto=&numgotoi;\n", numcond2);
+ fprintf(stdout, "\t  int aids1i=%d, *aids1=&aids1i;\n", aidsi.aki[0]);
+ fprintf(stdout, "\t  int aids2i=%d, *aids2=&aids2i;\n", aidsi.aki[1]);
+ fprintf(stdout, "\t  int aids3i=%d, *aids3=&aids3i;\n", aidsi.aki[2]);
+ fprintf(stdout, "\t  int aids4i=%d, *aids4=&aids4i;\n", aidsi.aki[3]);
+ fprintf(stdout, "\t kikgccgl(__KIKEIB, v, numgoto, numgoto, ");
+ fprintf(stdout,     "aids1, aids2, aids3, aids4);\n");
+#endif
+
+}

@@ -1,0 +1,48 @@
+*
+* The standard GCC entry prolog macro
+* by Chris Langford and Dave Jones
+* August, 2006
+*
+* This code is in the public domain and can be used without
+* restriction in any application, either commercial or non-commerical,
+* and can be freely redistributed.
+*
+         MACRO
+&N       PDPPRLG &CINDEX=,&FRAME=,&BASER=,&ENTRY=
+*
+* *****************************************************************
+*
+* This is a HIGHLY NON STANDARD gcc entry prolog macro!!!
+*
+* It is intended for one use only, the ??? to C glue routines
+* for 'KICKS for TSO'. Mike Noel, 2008-2014
+*
+* *****************************************************************
+*
+         AIF     ('&ENTRY' EQ 'NO').NENT
+*
+         ENTRY   &N
+.NENT    ANOP
+&N       EQU   *
+         USING *,&BASER
+         SAVE  (14,12),,&N
+         LR    &BASER,15
+* ***********************
+* following 7 lines added
+* ***********************
+         L     15,0(,1)       get first arg - kicks eib pointer
+         BCTR  15,0           backup into eib prefix
+         BCTR  15,0           to point to eibp.cobR13
+         BCTR  15,0
+         BCTR  15,0
+         L     15,0(,15)      load eibp.cobR13
+         L     15,76(,15)     get addr 'next' save area base
+* *************************************************
+*        L     15,76(13)      this line deleted...
+* *************************************************
+         ST    13,4(15)
+         ST    15,8(13)
+         LR    13,15
+         A     15,=F'&FRAME'
+         ST    15,76(13)
+         MEND

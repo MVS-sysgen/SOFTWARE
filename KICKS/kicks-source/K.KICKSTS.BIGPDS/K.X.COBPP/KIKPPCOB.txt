@@ -1,0 +1,1635 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+
+ // STUFF 'IN WORK' ...
+
+ //  -- FCP fixups (massinsert, rba for ksds, etc)
+ //  -- audit/fix data-area, data-value, cdva, etc
+ //  -- APOST/QUOTE
+
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <time.h>
+
+#define PPCOBFLAG
+#define PPCOB
+#include "kikpp01.h"
+
+ char *MYstrstr(char *big, char *little) {
+  // I think gccmvs's strstr is broken so I'm using my own...
+  // ... look for 'little' in 'big' ...
+  int diffl, i, lb=strlen(big), ll=strlen(little);
+
+  diffl=lb-ll;
+  if (diffl < 0 ) return(NULL);
+  if (ll    == 0) return(big);
+  for (i=0; i<=diffl; i++) {
+   if (!memcmp(little, &big[i], ll)) return(&big[i]);
+  }
+  return(NULL);
+ }
+
+
+ char *MYbegstr(char *big, char *little) {
+  char *c; // find only at string beginning...
+  if((c = MYstrstr(big, little)) == NULL) return(NULL);
+  if( c != big) return(NULL);
+  return (c);
+ }
+
+
+ void usage () {
+   fprintf (stderr, "Syntax:\tKIKCOBPP <infile >outfile\n");
+   fprintf (stderr, "KICKS pre-processor for COBOL, arguments are\n");
+   fprintf (stderr, "   -s       generate for source debugger\n");
+   fprintf (stderr,
+     " * -ns      do not generate for source debugger\n");
+   fprintf (stderr,
+     " * -t       translate DFH's to KIK's, CICS's to KICKS's\n");
+   fprintf (stderr, "   -nt      do not translate DFH's and CICS's\n");
+   fprintf (stderr, "   -cb2     generate for cob2 instead of ansi cobol\n");
+   fprintf (stderr,
+     " * -ncb2    generate for ansi cobol instead of cob2\n");
+   fprintf (stderr, " * -wc     preprocess 'when compiled'\n");
+   fprintf (stderr,
+     "   -nwc    do not preprocess 'when compiled'\n");
+   fprintf (stderr, "   -dmapin1 do 1st pass dmap processing'\n");
+   fprintf (stderr, "   -dmapin2 do 2nd pass dmap processing'\n");
+   fprintf (stderr,
+     " * -ndmap  no dmap processing\n");
+   fprintf (stderr, "   -nosyslib - suppress preprocessor copies'\n");
+   fprintf (stderr, "   -nokicks - for use in normal batch apps'\n");
+   fprintf (stderr, "   -v       show version\n");
+   fprintf (stderr, "   -?       list help\n");
+   fprintf (stderr, "where '*'s are default...\n");
+ }
+
+
+ void version () {
+   fprintf (stderr, "KIKCOBPP version %s\n", ppv1);
+ }
+
+
+ // DoWithIt is called (recursively) for each line of the source file(s)
+
+ #define MAXNEST 5
+ int currentnest=0;
+
+ int DoCopy(char *cardimage) {
+  int i, j, k, n;
+  char *ip, *copymem, saveline[90], newline[256];
+  char incname[60], padmember[10];
+
+#ifdef __MVS__
+  FILE *inc;
+#endif
+#ifdef __CMS__
+  int inc;
+#endif
+
+    // unless syslib DD missing.....
+    if (!DOsyslib) return -1;
+
+    // get the name of member to copy
+    strncpy(saveline, cardimage, 80);
+    ip = strstr(cardimage, " COPY ");
+    copymem = strtok(ip, " .");             // get the COPY
+    if (!strcmp(copymem, "COPY")) {         // make sure plain old 'COPY'
+     copymem = strtok(0, " .");             // get name to copy
+     memset(padmember, 0, 10);
+     strncpy(padmember, copymem, 8);
+     for (i=7; i>0; i--) {
+      if (padmember[i] == 0) padmember[i] = ' ';
+      if (padmember[i] != ' ') break;
+      }
+     }
+    else {
+     strncpy(cardimage, saveline, 80);
+     return -1; // copy failed
+     }
+
+    // copy member
+
+ // in MVS we use SYSLIB for the copies
+
+#ifdef __MVS__
+    strcpy(incname, "DD:SYSLIB(");
+    strcat(incname, copymem);
+    strcat(incname, ")");
+    inc = fopen(incname, "r");
+    if(inc != NULL) {
+     memcpy(newline, saveline, 80);
+     prt_as_comment(newline);
+     while (1) {
+      j = (int)fgets(newline, 256, inc);
+      if(feof(inc)) break;
+      if (j == 0) {
+       prt_error("SYSLIB include file read failed", 12);
+       }
+      newline[255]=0;
+      j = strlen(newline);
+      if(j > 0)
+       if (newline[--j] == '\n') newline[j] = 0;
+      if (strlen(newline) > 80) newline[80] = 0;
+      if (currentnest > MAXNEST) {
+       prt_error("SYSLIB nesting max exceeded", 12);
+       } else {
+       currentnest++;
+       DoWithIt(newline);                  // <<<< rscursive call <<<<
+       currentnest--;
+       }
+      }
+     fclose(inc);
+     return 0;    // it worked
+     }
+    else {
+     strncpy(cardimage, saveline, 80);
+     return -1;   // it failed, so just leave COPY in code...
+     }
+#endif
+
+
+ // in CMS we use GLOBAL'd MACLIB's for the copies
+
+#ifdef __CMS__
+    UP(copymem);
+    memset(newline, 0, 256);
+    strcpy(newline, copymem);
+    while (strlen(newline)<8) strcat(newline, " ");
+    j = kikmaclb(2, newline, newline, &inc);   // open
+    if(j == 0) {
+     memcpy(newline, saveline, 80);
+     prt_as_comment(newline);
+     while (1) {
+      j = kikmaclb(3, newline, newline, &inc); // read
+      if (j == 12) break; // eof
+      if (j != 0) {
+       prt_error("SYSLIB include file read failed", 12);
+       }
+      newline[255]=0;
+      j = strlen(newline);
+      if(j > 0)
+       if (newline[--j] == '\n') newline[j] = 0;
+      if (strlen(newline) > 80) newline[80] = 0;
+      if (currentnest > MAXNEST) {
+       prt_error("SYSLIB nesting max exceeded", 12);
+       } else {
+       currentnest++;
+       DoWithIt(newline);                  // <<<< rscursive call <<<<
+       currentnest--;
+       }
+      }
+     kikmaclb(4, newline, newline, &inc);      // close
+     return 0;    // it worked
+     }
+    else {
+     strncpy(cardimage, saveline, 80);
+     return -1;   // it failed, so just leave COPY in code...
+     }
+#endif
+
+#if !defined(__MVS__) && !defined(__CMS__)
+     strncpy(cardimage, saveline, 80);
+     return -1;   // it failed, so just leave COPY in code...
+#endif
+
+  }
+
+
+ void DoWithIt(char *incard)
+ {
+  char *ip, cardimage[90], savecard[90];
+  int  i, j, k, LL, n;
+
+   // trim trailing CRs and LF's
+   strcpy(cardimage, incard);
+   chop(cardimage);
+   //fprintf(stderr, "%d\t%s\n", currline, cardimage);
+
+   // make sure no tabs to mess up positioning
+   if(tabchk(cardimage)) { prt_error("file contains tabs", 12); }
+
+   // ignore blank lines
+   rtrim(cardimage);
+   if(strlen(cardimage) == 0) { prt_normal(cardimage); return; }
+
+   // pad with spaces so can reliably check entire line
+   rpad(cardimage, 80);
+   if (strlen(cardimage)>80)
+    { prt_error("lines > 80 chars long", 12); }
+
+   // blank 73-80
+   for (i=72; i<80; i++) cardimage[i] = ' ';
+   cardimage[80] = 0;
+
+   // blank 1-6 if not control
+   if (cardimage[0] != '<') for (i=0; i<6; i++) cardimage[i] = ' ';
+
+   // ignore continuation lines
+   if (cardimage[6] == '-') { prt_normal(cardimage); return; }
+
+   // look for <WC> <NWC>
+   if(!strncmp(cardimage, "<WC>", 4)) {
+    DOwc=true;
+    return;
+    }
+   if(!strncmp(cardimage, "<NWC>", 5)) {
+    DOwc=false;
+    return;
+    }
+   // look for <T> <NT>
+   if(!strncmp(cardimage, "<T>", 3)) {
+    DFHmap=true;
+    return;
+    }
+   if(!strncmp(cardimage, "<NT>", 4)) {
+    DFHmap=false;
+    return;
+    }
+   // look for <REM>
+   if(!strncmp(cardimage, "<REM>", 5)) {
+    // yet another kind of one line remark...
+    return;
+    }
+   // look for <NOP> </NOP>
+   if(!strncmp(cardimage, "<NOP>", 5)) {
+    if (nskip > 0) {
+     prt_error("found illegal nested <NOP>", 8);
+     return;
+     }
+    nskip++;
+    return;
+    }
+   if(!strncmp(cardimage, "</NOP>", 6)) {
+    if (nskip == 0) {
+     prt_error("found illegal unnested </NOP>", 8);
+     return;
+     }
+    nskip--;
+    return;
+    }
+   // look for <KICKS> </KICKS> <NOKICKS> </NOKICKS>
+   if(!strncmp(cardimage, "<KICKS>", 7)) {
+    if (kskip > 0) {
+     prt_error("found illegal nested <KICKS>", 8);
+     return;
+     }
+    kskip++;
+    return;
+    }
+   if(!strncmp(cardimage, "</KICKS>", 8)) {
+    if (kskip == 0) {
+     prt_error("found illegal unnested </KICKS>", 8);
+     return;
+     }
+    kskip--;
+    return;
+    }
+   if(!strncmp(cardimage, "<NOKICKS>", 9)) {
+    if (nkskip > 0) {
+     prt_error("found illegal nested <NOKICKS>", 8);
+     return;
+     }
+    nkskip++;
+    return;
+    }
+   if(!strncmp(cardimage, "</NOKICKS>", 10)) {
+    if (nkskip == 0) {
+     prt_error("found illegal unnested </NOKICKS>", 8);
+     return;
+     }
+    nkskip--;
+    return;
+    }
+   // look for <PRO> </PRO> <NPRO> </NPRO>
+   if(!strncmp(cardimage, "<PRO>", 5)) {
+    if (pskip > 0) {
+     prt_error("found illegal nested <PRO>", 8);
+     return;
+     }
+    pskip++;
+    return;
+    }
+   if(!strncmp(cardimage, "</PRO>", 6)) {
+    if (pskip == 0) {
+     prt_error("found illegal unnested </PRO>", 8);
+     return;
+     }
+    pskip--;
+    return;
+    }
+   if(!strncmp(cardimage, "<NPRO>", 6)) {
+    if (npskip > 0) {
+     prt_error("found illegal nested <NPRO>", 8);
+     return;
+     }
+    npskip++;
+    return;
+    }
+   if(!strncmp(cardimage, "</NPRO>", 7)) {
+    if (npskip == 0) {
+     prt_error("found illegal unnested </NPRO>", 8);
+     return;
+     }
+    npskip--;
+    return;
+    }
+   // look for <GOLD> </GOLD> <NGOLD> </NGOLD>
+   if(!strncmp(cardimage, "<GOLD>", 5)) {
+    if (gskip > 0) {
+     prt_error("found illegal nested <GOLD>", 8);
+     return;
+     }
+    gskip++;
+    return;
+    }
+   if(!strncmp(cardimage, "</GOLD>", 6)) {
+    if (gskip == 0) {
+     prt_error("found illegal unnested </GOLD>", 8);
+     return;
+     }
+    gskip--;
+    return;
+    }
+   if(!strncmp(cardimage, "<NGOLD>", 6)) {
+    if (ngskip > 0) {
+     prt_error("found illegal nested <NGOLD>", 8);
+     return;
+     }
+    ngskip++;
+    return;
+    }
+   if(!strncmp(cardimage, "</NGOLD>", 7)) {
+    if (ngskip == 0) {
+     prt_error("found illegal unnested </NGOLD>", 8);
+     return;
+     }
+    ngskip--;
+    return;
+    }
+   //      and <TSO> </TSO> <NTSO> </NTSO>
+   if(!strncmp(cardimage, "<TSO>", 5)) {
+    if (tsoskip > 0) {
+     prt_error("found illegal nested <TSO>", 8);
+     return;
+     }
+    tsoskip++;
+    return;
+    }
+   if(!strncmp(cardimage, "</TSO>", 6)) {
+    if (tsoskip == 0) {
+     prt_error("found illegal unnested </TSO>", 8);
+     return;
+     }
+    tsoskip--;
+    return;
+    }
+   if(!strncmp(cardimage, "<NTSO>", 6)) {
+    if (ntsoskip > 0) {
+     prt_error("found illegal nested <NTSO>", 8);
+     return;
+     }
+    ntsoskip++;
+    return;
+    }
+   if(!strncmp(cardimage, "</NTSO>", 7)) {
+    if (ntsoskip == 0) {
+     prt_error("found illegal unnested </NTSO>", 8);
+     return;
+     }
+    ntsoskip--;
+    return;
+    }
+   //      and <CMS> </CMS> <NCMS> </NCMS>
+   if(!strncmp(cardimage, "<CMS>", 5)) {
+    if (cmsskip > 0) {
+     prt_error("found illegal nested <CMS>", 8);
+     return;
+     }
+    cmsskip++;
+    return;
+    }
+   if(!strncmp(cardimage, "</CMS>", 6)) {
+    if (cmsskip == 0) {
+     prt_error("found illegal unnested </CMS>", 8);
+     return;
+     }
+    cmsskip--;
+    return;
+    }
+   if(!strncmp(cardimage, "<NCMS>", 6)) {
+    if (ncmsskip > 0) {
+     prt_error("found illegal nested <NCMS>", 8);
+     return;
+     }
+    ncmsskip++;
+    return;
+    }
+   if(!strncmp(cardimage, "</NCMS>", 7)) {
+    if (ncmsskip == 0) {
+     prt_error("found illegal unnested </NCMS>", 8);
+     return;
+     }
+    ncmsskip--;
+    return;
+    }
+   //      and <CB2> </CB2> <NCB2> </NCB2>
+   if(!strncmp(cardimage, "<CB2>", 5)) {
+    if (cb2skip > 0) {
+     prt_error("found illegal nested <CB2>", 8);
+     return;
+     }
+    cb2skip++;
+    return;
+    }
+   if(!strncmp(cardimage, "</CB2>", 6)) {
+    if (cb2skip == 0) {
+     prt_error("found illegal unnested </CB2>", 8);
+     return;
+     }
+    cb2skip--;
+    return;
+    }
+   if(!strncmp(cardimage, "<NCB2>", 6)) {
+    if (ncb2skip > 0) {
+     prt_error("found illegal nested <NCB2>", 8);
+     return;
+     }
+    ncb2skip++;
+    return;
+    }
+   if(!strncmp(cardimage, "</NCB2>", 7)) {
+    if (ncb2skip == 0) {
+     prt_error("found illegal unnested </NCB2>", 8);
+     return;
+     }
+    ncb2skip--;
+    return;
+    }
+
+   if(!strncmp(cardimage, "<SD>", 4)) {
+    if (SDBX == 1) SDB = 1; // turns source trace on
+    return;
+    }
+   if(!strncmp(cardimage, "</SD>", 5)) {
+    SDB = 0;                // turns source trace off
+    return;
+    }
+
+   // finally check for "unknown" tags...
+   if(cardimage[0] == '<') {
+    prt_error("found unknown <xxx> markup", 8);
+    return;
+    }
+
+   if (nskip > 0) return; // NOP unconditional skip...
+
+   if (npskip > 0) return; // PRO version in block for non-PRO only...
+
+   if (gskip > 0)  return; // non-GOLD version in block for GOLD only...
+
+#ifdef __MVS__
+   if (ntsoskip > 0) return; // TSO version in block for non-TSO only...
+#else
+   if (tsoskip > 0)  return; // non-TSO version in block for TSO only...
+#endif
+
+#ifdef __CMS__
+   if (ncmsskip > 0) return; // CMS version in block for non-CMS only...
+#else
+   if (cmsskip > 0)  return; // non-CMS version in block for CMS only...
+#endif
+
+if (DOcb2) {
+ if (ncb2skip > 0) return; // cb2 option in block for non-CB2 only...
+ }
+else {
+ if (cb2skip > 0) return;  // non-cb2 option in block for CB2 only...
+ }
+
+if (NOKICKS) {
+ if (kskip > 0) return;  // non-KICKS option in block for KICKS only...
+ }
+else {
+ if (nkskip > 0) return; // KICKS option in block for non-KICKS only...
+ }
+
+   // ignore existing comments
+   if (cardimage[6] == '*') { prt_normal(cardimage); return; }
+
+  // do CICS->KICKS, DFH->KIK mappings
+   if (!NOKICKS) { // mapping ignored if 'NOKICKS'
+    if (DFHmap) {
+     // turn all ' DFH' strings into ' KIK' strings
+     while (ip = MYstrstr(cardimage, " DFH")) {
+      i = ip - cardimage;
+      cardimage[i+1] = 'K';
+      cardimage[i+2] = 'I';
+      cardimage[i+3] = 'K';
+      }
+
+     // turn all ' CICS ' strings into ' KICKS ' strings
+     while (ip = MYstrstr(cardimage, " CICS "))
+      { int ii;
+      i = ip - cardimage;
+      for (ii=79; ii>i; ii--) cardimage[ii] = cardimage[ii-1];
+      cardimage[i+1] = 'K';
+      cardimage[i+2] = 'I';
+      cardimage[i+3] = 'C';
+      cardimage[i+4] = 'K';
+      cardimage[i+5] = 'S';
+      rtrim(cardimage); rpad(cardimage, 80);
+      }
+     }
+    }
+
+   // if not procedure division check for ' COPY '
+   if (strcmp(division, "PROC"))
+    if (ip = strstr(cardimage, " COPY ")) {
+     // make sure it's not an "01  COPY" (etal)  --
+     // all chars from column 7 to the "C" in "COPY" must be spaces
+     i = ip - &cardimage[0];
+     for (j=7, k=0; j<i; j++) if (cardimage[j] != ' ') k=1;
+     // do (possibly recursive) copy & goback
+     if (k == 0) {
+      k = DoCopy(cardimage);
+      if (k == 0) return; // but if COPY fails fall thru...
+      }
+     }
+
+   // change VALUE X'NN...' strings into VALUE 'n..' strings
+   if (!DOcb2) {
+    if (ip = MYstrstr(cardimage, " VALUE X'")) {
+     long L;
+     char c1, c2, c3, c4, linebuf[90];
+     strcpy(linebuf, cardimage);
+     prt_as_comment(linebuf);
+     memset(linebuf, 0, 90);
+     *ip = 0; // demark the 1st part of line
+     L=strtol(ip+9, NULL, 16);
+     if (L<256) {           // 1 byte
+      c1 = L;
+      if (L == 0)
+       sprintf(linebuf, "%s VALUE LOW-VALUES.", cardimage);
+      else if (L == 0x7d)
+       sprintf(linebuf, "%s VALUE QUOTE.", cardimage);
+      else
+       sprintf(linebuf, "%s VALUE '%c'.", cardimage, c1);
+      }
+     else if (L<65536) {    // 2 bytes
+      c1 = L & 255;
+      c2 = (L>>8) & 255;
+      if((c1 == 0x76) | (c2 == 0x76)) {
+       prt_error("can't translation this particular multi-byte value", 8);
+       } else
+      sprintf(linebuf, "%s VALUE '%c%c'.", cardimage, c2, c1);
+      }
+     else if (L<16777216) { // 3 bytes
+      c1 = L & 255;
+      c2 = (L>>8) & 255;
+      c3 = (L>>16) & 255;
+      if((c1 == 0x76) | (c2 == 0x76) | (c3 == 0x76)) {
+       prt_error("can't translation this particular multi-byte value", 8);
+       } else
+      sprintf(linebuf, "%s VALUE '%c%c%c'.", cardimage, c3, c2, c1);
+      }
+     else {                 // 4 bytes
+      c1 = L & 255;
+      c2 = (L>>8) & 255;
+      c3 = (L>>16) & 255;
+      c4 = (L>>24) & 255;
+      if((c1 == 0x76) | (c2 == 0x76)| (c3 == 0x76) | (c4 == 0x76)) {
+       prt_error("can't translation this particular multi-byte value", 8);
+       } else
+      sprintf(linebuf, "%s VALUE '%c%c%c%c'.", cardimage, c4, c3, c2, c1);
+      }
+     // since linebuf now might have embedded nulls, we can't use
+     //  -- strcpy, rtrim, rpad, print_normal, fprint w/%s, ...
+     for (i=79; i<0, linebuf[i] != '.'; i--);
+     L=i+1;
+     for (i=0; i<L; i++) fprintf(stdout, "%c", linebuf[i]);
+     fprintf(stdout, "\n");
+     return;
+     }
+    }
+
+   // track where we are in the program...
+   if (INDEX(cardimage, "ID DIVISION.") == 7) {
+    commentoffremarks = false;
+    strcpy(olddivision, division);
+    strcpy(division, "ID");
+    strcpy(oldsection, section);
+    strcpy(section, "");
+    }
+   if (INDEX(cardimage, "IDENTIFICATION DIVISION.") == 7) {
+    commentoffremarks = false;
+    strcpy(olddivision, division);
+    strcpy(division, "ID");
+    strcpy(oldsection, section);
+    strcpy(section, "");
+    }
+   if (INDEX(cardimage, "PROGRAM-ID.") == 7) {
+    char buf[90];
+    strcpy(buf, cardimage);
+    commentoffremarks = false;
+    ip = strtok(buf, " ."); // PROGRAM-ID
+    ip=strtok(0, " .");     // the name of the program
+    strncpy(pgmid, ip, 8);
+    }
+   if (INDEX(cardimage, "AUTHOR.") == 7) { commentoffremarks = false; }
+   if (INDEX(cardimage, "DATE-WRITTEN.") == 7) { commentoffremarks = false; }
+   if (INDEX(cardimage, "DATE-COMPILED.") == 7) { commentoffremarks = false; }
+   if (INDEX(cardimage, "REMARKS.") == 7) { commentoffremarks = true; }
+
+   if (INDEX(cardimage, "ENVIRONMENT DIVISION.") == 7) {
+    commentoffremarks = false;
+    strcpy(olddivision, division);
+    strcpy(division, "ENV");
+    strcpy(oldsection, section);
+    strcpy(section, "");
+    }
+   if (INDEX(cardimage, "DATA DIVISION.") == 7) {
+    commentoffremarks = false;
+    strcpy(olddivision, division);
+    strcpy(division, "DATA");
+    strcpy(oldsection, section);
+    strcpy(section, "");
+    }
+
+   if (INDEX(cardimage, "PROCEDURE DIVISION.") == 7) {
+    if (!NOKICKS) {
+     if (numlinks == 0) {
+      if (!strcmp(section, "LINK")) {
+       prt_error("LINKAGE SECTION DEFINED BUT EMPTY", 8);
+       }
+      else {
+       //Enter_Linkage_Section();
+       DoWithIt("       LINKAGE SECTION.");
+       DoWithIt("       COPY KIKEIB.");
+       DoWithIt("       01  KIKCOMMAREA PIC X.");
+       }
+      }
+     }
+    // gen linkage section statements iff necessary
+    commentoffremarks = false;
+    strcpy(olddivision, division);
+    strcpy(division, "PROC");
+    strcpy(oldsection, section);
+    strcpy(section, "");
+    if (!NOKICKS) {
+     Enter_Procedure_Division();
+     // now return instead of falling thru because
+     // Enter_Procedure_Division wrote the modified
+     // PROCEDURE DIVISION stmt already...
+     return;
+     }
+    }
+
+   if (INDEX(cardimage, "WORKING-STORAGE SECTION.") == 7) {
+    commentoffremarks = false;
+    if (strcmp(section, "")) strcpy(oldsection, section);
+    strcpy(section, "WORK");
+    }
+
+   if (INDEX(cardimage, "LINKAGE SECTION.") == 7) {
+    if (!NOKICKS) {
+     // gen working storage header iff necessary
+     if (strcmp(section, "WORK")) {
+      DoWithIt("       WORKING-STORAGE SECTION.");
+      }
+     }
+    commentoffremarks = false;
+    if (strcmp(section, "")) strcpy(oldsection, section);
+    strcpy(section, "LINK");
+    if (!NOKICKS) {
+     Enter_Linkage_Section();
+     // now return instead of falling thru because
+     // Enter_Linkage_Section wrote a LINKAGE SECTION stmt for us.
+     return;
+     }
+    }
+
+   // comment remarks in ID Division
+   if ((!strcmp(division, "ID")) & commentoffremarks) {
+    prt_as_comment(cardimage);
+    return;
+    }
+
+   // turn " WHEN-COMPILED " into literal today's date
+   if (DOwc) {
+    if(ip = MYstrstr(cardimage, " WHEN-COMPILED "))
+     { char linebuf[90];
+      i = ip - cardimage;
+      strcpy(linebuf, cardimage);
+      prt_as_comment(cardimage);
+      linebuf[i+1] = 0;
+      strcat(linebuf, wcdate);
+      strcat(linebuf, cardimage+(i+14));
+      strcpy(cardimage, linebuf);
+      rtrim(cardimage); rpad(cardimage, 80);
+     }
+    }
+
+   // in linkage section we need to track 01 levels that
+   // will need to go into the procedure division 'using'
+   // clause.
+   if (!strcmp(section, "LINK")) {
+    if (!NOKICKS) {
+     if((INDEX(cardimage, " 01  ") == 6))
+      { char *oh_one, savecard[90];
+      strcpy(savecard, cardimage);
+      oh_one = strtok(savecard, " ");          // bypass 01
+      oh_one = strtok(0, " .");                // get name of 01 level
+      if (numlinks == 0) {
+       // accept KIKEIB or KIKEIBLK
+       // real cics uses 'COPY DFHEIBLK' with '01  EIBLK.'
+       // I've not "converted" 'cause I don't want to do a global
+       // change from 'KIKEIB' to 'EIBLK'...
+       // **however** - COBCOPY has KIKEIBLK as a copy of KIKEIB
+       if (strncmp(oh_one, "KIKEIB", 6)) {
+         DoWithIt("       COPY KIKEIB.");
+         }
+       }
+      if (numlinks == 1) {
+       if (strcmp(oh_one, "KIKCOMMAREA")) {
+         DoWithIt("       01  KIKCOMMAREA PIC X.");
+         }
+       }
+      strcpy(linkblock[numlinks], oh_one);
+      numlinks++;
+      }
+     if((INDEX(cardimage, " COPY ") > 5))      // copy sneaking thru??
+      { char *oh_one, savecard[90];
+      strcpy(savecard, cardimage);
+      oh_one = strtok(savecard, " ");          // bypass COPY
+      oh_one = strtok(0, " .");                // get name of member
+      strcpy(linkblock[numlinks], oh_one);     // assume member is 01 name
+      numlinks++;
+      }
+     }
+    }
+
+   // if not procedure division just print line and continue...
+   if (strcmp(division, "PROC")) {
+    prt_normal (cardimage);
+    return;
+    }
+
+   // in procedure division we fix and replace EXEC KICKS clauses.
+   //                       and fixup KIKRESP(xxx) 'calls'...
+   if (!NOKICKS) {
+   if(ip = MYstrstr(cardimage, " EXEC KICKS ")) {
+    numcicss = 0;
+    strcpy(cicsblock[numcicss], cardimage);
+    numcicss++;
+    if(ip = MYstrstr(cardimage, " END-EXEC")) { Gen_Code(); return; }
+
+    // embedded stdin while loop looking for END-EXEC
+    // *** COPY is not allowed in API blocks ***
+    while (!feof(stdin)) {
+     memset(cardimage, 0, 90);
+     fgets (cardimage, 90, stdin);
+     if (feof(stdin)) break;
+     currline++;
+     chop(cardimage);
+     if(tabchk(cardimage)) { prt_error("file contains tabs", 12); }
+     //rtrim(cardimage);
+     //if(strlen(cardimage) == 0) { prt_normal(cardimage); return; }
+     rpad(cardimage, 80);
+     if (strlen(cardimage)>80)
+      { prt_error("lines > 80 chars long", 12); }
+     for (i=72; i<80; i++) cardimage[i] = ' ';
+     cardimage[80] = 0;
+     if (cardimage[0] != '<') for (i=0; i<6; i++) cardimage[i] = ' ';
+     // *** no comments embedded in exec end-exec's please...
+     // *** no cobol type ('-' in col 7) continuations either please!!!
+      if (DFHmap) {
+       // turn all ' DFH' strings into ' KIK' strings
+       while (ip = MYstrstr(cardimage, " DFH")) {
+        i = ip - cardimage;
+        cardimage[i+1] = 'K';
+        cardimage[i+2] = 'I';
+        cardimage[i+3] = 'K';
+        }
+       // turn all ' CICS ' strings into ' KICKS ' strings
+       while (ip = MYstrstr(cardimage, " CICS "))
+        { int ii;
+        i = ip - cardimage;
+        for (ii=79; ii>i; ii--) cardimage[ii] = cardimage[ii-1];
+        cardimage[i+1] = 'K';
+        cardimage[i+2] = 'I';
+        cardimage[i+3] = 'C';
+        cardimage[i+4] = 'K';
+        cardimage[i+5] = 'S';
+        rtrim(cardimage); rpad(cardimage, 80);
+        }
+       }
+     strcpy(cicsblock[numcicss], cardimage);
+     numcicss++;
+     if (numcicss > 99) {
+      prt_error("EXEC KICKS block to long(> 99 lines)", 12);
+      }
+     if (cardimage[6] == '*') { prt_normal(cardimage); continue; }
+     if(ip = MYstrstr(cardimage, " END-EXEC")) {
+      strcpy(chk_period_card, cardimage); rtrim(chk_period_card);
+      Gen_Code();
+      break;
+      }
+     // i'm not even gonna try to detect an
+     // exec-cics on the same line FOLLOWING an end-cics!
+     // just say no. no way. no how...
+     } // end of embedded 'while' for finish pattern
+    return;
+    }  // end of 'if' for starting pattern found
+
+   // also KIKRESP stuff
+   while (ip = MYstrstr(cardimage, "KIKRESP")) {
+    char *ip2, *ip3, buf[80];
+    int i;
+    strcpy(buf, cardimage);
+    ip  = MYstrstr(buf, "KIKRESP");
+    ip2 = MYstrstr(ip, "(");
+    ip3 = MYstrstr(ip2,")");
+    if ((ip3 == NULL) | (ip2 == NULL)) {
+     char err[80];
+     sprintf(err, " malformed KIKRESP!");
+     prt_error(err, 8);
+     break;
+     }
+    *ip=0;
+    ip2++;
+    *ip3=0; ip3++;
+    for (i=0; i<rt_max; i++) {
+     if (!strcmp(resp_text[i], ip2)) {
+      i = resp_codes[i];
+      break;
+      }
+     }
+    if (i==rt_max) {
+     char err[80];
+     sprintf(err, "%s is not valid response code for KIKRESP!", ip2);
+     prt_error(err, 8);
+     break;
+     }
+    prt_as_comment(cardimage);
+    sprintf(cardimage, "%s +%d%s", buf, i, ip3);
+    }
+
+   // also KIKVALUE stuff
+   while (ip = MYstrstr(cardimage, "KIKVALUE")) {
+    char *ip2, *ip3, buf[80];
+    int i;
+    strcpy(buf, cardimage);
+    ip  = MYstrstr(buf, "KIKVALUE");
+    ip2 = MYstrstr(ip, "(");
+    ip3 = MYstrstr(ip2,")");
+    if ((ip3 == NULL) | (ip2 == NULL)) {
+     char err[80];
+     sprintf(err, " malformed KIKVALUE!");
+     prt_error(err, 8);
+     break;
+     }
+    *ip=0;
+    ip2++;
+    *ip3=0; ip3++;
+    i = kikvalue(ip2);
+    if (i==0) {
+     char err[80];
+     sprintf(err, "%s is not valid cvda code for KIKVALUE!", ip2);
+     prt_error(err, 8);
+     break;
+     }
+    prt_as_comment(cardimage);
+    sprintf(cardimage, "%s +%d%s", buf, i, ip3);
+    }
+   }   // end of enclosing 'if(!NOKICKS)'
+
+   // also 'LENGTH OF ???' stuff
+   { char buf[90]; int result;
+   strcpy(buf, cardimage);
+   result = DoLengthOf(cardimage);
+   switch (result) {
+    case 0: // note problem with current
+     prt_error("can't resolve LENGTH OF ...", 4);
+     break;
+    case 1: // card as is
+     break;
+    case 2: // comment current, proceed with replacement
+     prt_as_comment(buf);
+     break;
+    default:
+     prt_error("invalid return from DoLengthOf ...", 12);
+    }
+   }
+
+   // here to send procedure division card thru
+   // as is (or possibly as modified)
+
+
+   // already know it's not continuation or comment, so -
+   // check to see if it is an ' EXIT,' and if so gen a dummy label for it
+   // if not exit, check preceeding stmt for trailing period
+   if (SDB > 0) {
+    if(!strncmp(cardimage+7, "    ", 4)) { // not a label
+     if(INDEX(cardimage, " EXIT.") != 0) { // it *is* an EXIT stmt...
+      fprintf(stdout, "       KICKS-PP-DUMMY-%d.\n", ppdummy);
+      ppdummy++;
+      }
+     else { // *not* a EXIT stmt
+      if (chk_period_card[strlen(chk_period_card)-1] == '.') {
+       // prev card ended in a period, so it's OK to add a line
+       fprintf(stdout, "           MOVE %d TO EIBLINE.", currline);
+       fprintf(stdout,           " CALL 'KIKCOBGZ' USING KIKEIB.\n");
+       if (SDBX > 0) {
+        if (sdbout2 != NULL) {
+         fprintf(sdbout2,"%10.10d\n", currline);
+         numnums++;
+         }
+        }
+       }
+      else {
+       // no period on preceeding, see if lines starts w/verb...
+       char *ip, saveit[90];
+       int i, verb;
+       strncpy(saveit, cardimage, 80);
+       ip = strtok(saveit, " ");  // get first thing on line
+       for (i=0, verb=-1; i<cob_max; i++) {
+        if (!strcmp(ip, cob_verbs[i])) { verb = i; break; }
+        }
+       if (verb >= 0) {
+        fprintf(stdout, "           MOVE %d TO EIBLINE ", currline);
+        fprintf(stdout,           " CALL 'KIKCOBGZ' USING KIKEIB\n");
+        if (SDBX > 0) {
+         if (sdbout2 != NULL) {
+          fprintf(sdbout2,"%10.10d\n", currline);
+          numnums++;
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+
+   prt_normal (cardimage);
+   strcpy(chk_period_card, cardimage);
+
+   // check to see if it was a label, and if so maybe trace it...
+   if (SDB > 0) {
+    if(strncmp(cardimage+7, "    ", 4)) { // label <> spaces?
+     int pcnt;                     // ensure exactly one period
+     pcnt = INDEX(cardimage, "."); // followed by whitespace only
+     if (pcnt == strlen(cardimage)-1) {
+      fprintf(stdout, "           MOVE %d TO EIBLINE.", currline);
+      fprintf(stdout,           " CALL 'KIKCOBGZ' USING KIKEIB.\n");
+      if (SDBX > 0) {
+       if (sdbout2 != NULL) {
+        fprintf(sdbout2,"%10.10d\n", currline);
+        numnums++;
+       }
+       }
+      }
+     }
+    }
+
+
+ }      // end 'DoWithIt('
+
+
+ int main(int argc, char *argv[])
+ {
+  char cardimage[90], *ip;
+  int  arg_error=0, c, i;
+
+#define CYGWINDEBUG
+#undef  CYGWINDEBUG
+#ifdef  CYGWINDEBUG
+  freopen("test.stdout", "w", stdout);
+  freopen("test.stderr", "w", stderr);
+  freopen("test.c",      "r", stdin);
+#endif
+
+  // setup compile date & version(s)
+  strcpy(wcdate, currentwcdate());
+  strcpy(wxdate, wcdate);
+  mkversion();
+
+  // get command line argument(s) (if any)
+  for (i=1; i<argc; i++) {
+   if (!strcmp(argv[i], "-t")) {
+    DFHmap = true;
+    continue;
+    }
+   if (!strcmp(argv[i], "-nt")) {
+    DFHmap = false;
+    continue;
+    }
+   if (!strcmp(argv[i], "-s")) {
+    SDBX = 1; SDB = 1;
+    continue;
+    }
+   if (!strcmp(argv[i], "-ns")) {
+    SDB = 0;
+    continue;
+    }
+   if (!strcmp(argv[i], "-cb2")) {
+    DOcb2 = true;
+    DOwc = false;
+    strcpy(wxdate, wcdate);
+    wxdate[14] = ' ';
+    continue;
+    }
+   if (!strcmp(argv[i], "-ncb2")) {
+    DOcb2 = false;
+    DOwc = true;
+    strcpy(wxdate, wcdate);
+    continue;
+    }
+   if (!strcmp(argv[i], "-wc")) {
+    DOwc = true;
+    continue;
+    }
+   if (!strcmp(argv[i], "-nwc")) {
+    DOwc = false;
+    continue;
+    }
+   if (!strcmp(argv[i], "-ndmapin")) { // no dmap processing, default
+    DOdmap = 0;
+    continue;
+    }
+   if (!strcmp(argv[i], "-dmapin1")) { // pass 1 dmap processing
+    DOdmap = 1;
+    continue;
+    }
+   if (!strcmp(argv[i], "-dmapin2")) { // pass 2 dmap processing
+    DOdmap = 2;
+    continue;
+    }
+   if (!strcmp(argv[i], "-v")) {
+    version();
+    continue;
+    }
+   if (!strcmp(argv[i], "-nosyslib")) {
+    DOsyslib = false;
+    continue;
+    }
+   if (!strcmp(argv[i], "-nokicks")) {
+    NOKICKS = true;
+    DFHmap = false;
+    continue;
+    }
+   if (!strcmp(argv[i], "-?")) {
+    usage();
+    continue;
+    }
+   fprintf(stderr, "?command line argument %d (%s) is unknown\n",
+                 i, argv[i]);
+   usage();
+   exit (99);
+   }
+
+  if (SDBX > 0) {
+#if defined(__MVS__) || defined(__CMS__)
+   char sdbfile[] = "DD:sdbout2";
+#else
+   char sdbfile[] = "sdbout2";
+#endif
+   sdbout2 = fopen(sdbfile, "w");
+   }
+
+  // setup or process dmap
+  if (!DOcb2) InitDmap();   // no dmap in z/os...
+
+  // main loop - read cobol source, spit out 'fixed' source
+  while (1) {
+   memset(cardimage, 0, 90);
+   fgets (cardimage, 88, stdin);
+   if (feof(stdin)) break;
+   currline++;
+   DoWithIt(cardimage);
+   }
+
+  if (SDBX > 0) {
+   char LANG[4];
+   strcpy(&LANG[0], "COB");
+   if (cb2skip > 0) strcpy(&LANG[0], "CB2");
+   if (sdbout2 != NULL) { fclose(sdbout2); }
+#if defined(__MVS__) || defined(__CMS__)
+   char sdbfile[] = "DD:sdbout1";
+#else
+   char sdbfile[] = "sdbout1";
+#endif
+    sdbout1 = fopen(sdbfile, "w");
+   if (sdbout1 != NULL) {
+    fprintf(sdbout1,"%8.8s %20.20s %6.6d %3.3s %6.6d \n",
+      rpad(pgmid,8), &wxdate[1], currline, &LANG[0], numnums);
+    fclose(sdbout1);
+    }
+   }
+
+  exit(maxerror);
+ }
+
+
+// ===== subroutine to generate code for EXEC-CICS block
+ void Gen_Code() {
+ char line[90], *ip, *i2;
+ char saveblocks[4000];
+ int i, ii, iii, numlines=numcicss;
+ enum ExecVerbs verb;
+
+ // first put commented cicsblock into listing and
+ //       convert cicsblock into one long (global) string
+ strcpy(cicsblks, "");
+ for (i=0; i<numcicss; i++) {
+  strcpy(line, cicsblock[i]);
+  prt_as_comment (line);
+  // zap cobol line numbers
+  strcpy(line, cicsblock[i]);
+  for (ii=0; ii<6; ii++) line[ii] = ' ';
+  if (line[6] == ' ') strcat(cicsblks, line);
+  }
+
+ // squish out excess spaces
+ while (ip = MYstrstr(cicsblks, "  ")) {
+  i = ip - cicsblks;
+  ii = strlen(cicsblks) - i;
+  memcpy(cicsblks+i, cicsblks+i+1, ii);
+  }
+
+ // squish out spaces preceeding '('
+ while (ip = MYstrstr(cicsblks, " (")) {
+  i = ip - cicsblks;
+  ii = strlen(cicsblks) - i;
+  memcpy(cicsblks+i, cicsblks+i+1, ii);
+  }
+
+ // split the arguments back into cicsblock
+ numcicss = 0;
+ strcpy(saveblocks, cicsblks);
+ ip = strtok(saveblocks, " ");   // EXEC
+ while (ip=strtok(0, " ")) {     // KICKS, verb, ... END-EXEC
+  differParens(ip);
+  strcpy(cicsblock[numcicss], ip);
+  numcicss++;
+  }
+
+ // and the blocks back into a line
+ strcpy(cicsblks, "");
+ for (i=0; i<numcicss; i++) {
+  strcat(cicsblks, cicsblock[i]);
+  strcat(cicsblks, " ");
+  }
+
+ // find exec cics verb matching...
+ strcpy(blk_op1, cicsblock[1]);
+ strcpy(blk_op2, cicsblock[2]);
+ for (i=0, verb=-1; i<ev_max; i++) {
+  if (!strcmp(blk_op1, exec_verbs[i])) { verb = i; break; }
+  }
+
+ // capture global RESP, RESP2, NOHANDLE, and 'period' variables
+ strcpy(period, ""); strcpy(respvar, ""); strcpy(resp2var, "");
+ for (i=0; i<numcicss; i++) {
+  char op2[90];
+  strcpy(op2, cicsblock[i]);
+  if(MYstrstr(op2,".")) { strcpy(period, "."); }
+  if(MYstrstr(op2,"RESP(")) {
+   ip = strtok(op2, "()");   // sb RESP
+   ip=strtok(0, "()");       // sb the var
+   if (ip != NULL) {
+    parrensDown(ip);
+    strcpy(respvar, ip);
+    }
+   }
+  if(MYstrstr(op2,"RESP2(")) {
+   ip = strtok(op2, "()");   // sb RESP2
+   ip=strtok(0, "()");       // sb the var
+   if (ip != NULL) {
+    parrensDown(ip);
+    strcpy(resp2var, ip);
+    if (!strcmp(respvar,"")) {
+     strcpy(respvar, " "); // set respvar for kik02xxx tests
+     }
+    }
+   }
+  if(MYstrstr(op2,"NOHANDLE")) {
+    if (!strcmp(respvar,"")) {
+     strcpy(respvar, " "); // set respvar for kik02xxx tests
+     }
+   }
+  }
+
+ // setup EIBLINE for this verb
+ { unsigned int mixedline;
+ mixedline = (currline - numlines + 1) +
+             ((numlines & 127) << 24);
+ fprintf(stdout, "           MOVE %d TO EIBLINE\n", mixedline);
+ if (SDBX > 0) {
+  if (sdbout2 != NULL) {
+   fprintf(sdbout2,"%3.3d%7.7d\n", numlines, (currline - numlines + 1));
+   numnums++;
+   }
+  }
+ }
+
+ // dispatch routine to handle the verb
+ switch (verb) {
+    case ABEND:
+     Do_ABEND();
+     break;
+    case ADDRESS:
+     Do_ADDRESS();
+     break;
+    case ALLOCATE:
+     Do_ALLOCATE();
+     break;
+    case ASKTIME:
+     Do_ASKTIME();
+     break;
+    case ASSIGN:
+     Do_ASSIGN();
+     break;
+    case BIF:
+     Do_BIF();
+     break;
+    case BUILD:
+     Do_BUILD();
+     break;
+    case CANCEL:
+     Do_CANCEL();
+     break;
+    case CHANGE:
+     Do_CHANGE();
+     break;
+    case CONNECT:
+     Do_CONNECT();
+     break;
+    case CONVERSE:
+     Do_CONVERSE();
+     break;
+    case DELAY:
+     Do_DELAY();
+     break;
+    case DELETEQ:
+     Do_DELETEQ();
+     break;
+    case DELETE:
+     Do_DELETE();
+     break;
+    case DEQ:
+     Do_DEQ();
+     break;
+    case DUMP:
+     Do_DUMP();
+     break;
+    case ENDBR:
+     Do_ENDBR();
+     break;
+    case ENQ:
+     Do_ENQ();
+     break;
+    case ENTER:
+     Do_ENTER();
+     break;
+    case EXTRACT:
+     Do_EXTRACT();
+     break;
+    case FORMATTIME:
+     Do_FORMATTIME();
+     break;
+    case FREEMAIN:
+     Do_FREEMAIN();
+     break;
+    case FREE:
+     Do_FREE();
+     break;
+    case GETMAIN:
+     Do_GETMAIN();
+     break;
+    case HANDLE:
+     Do_HANDLE();
+     break;
+    case IGNORE:
+     Do_IGNORE();
+     break;
+    case LINK:
+     Do_LINK();
+     break;
+    case LOAD:
+     Do_LOAD();
+     break;
+    case POP:
+     Do_POP();
+     break;
+    case POST:
+     Do_POST();
+     break;
+    case PURGE:
+     Do_PURGE();
+     break;
+    case PUSH:
+     Do_PUSH();
+     break;
+    case READNEXT:
+     Do_READNEXT();
+     break;
+    case READPREV:
+     Do_READPREV();
+     break;
+    case READQ:
+     Do_READQ();
+     break;
+    case READ:
+     Do_READ();
+     break;
+    case RECEIVE:
+     Do_RECEIVE();
+     break;
+    case RELEASE:
+     Do_RELEASE();
+     break;
+    case RESETBR:
+     Do_RESETBR();
+     break;
+    case RETRIEVE:
+     Do_RETRIEVE();
+     break;
+    case RETURN:
+     Do_RETURN();
+     break;
+    case REWRITE:
+     Do_REWRITE();
+     break;
+    case ROUTE:
+     Do_ROUTE();
+     break;
+    case SEND:
+     Do_SEND();
+     break;
+    case SIGNOFF:
+     Do_SIGNOFF();
+     break;
+    case SIGNON:
+     Do_SIGNON();
+     break;
+    case SPOOLCLOSE:
+     Do_SPOOLCLOSE();
+     break;
+    case SPOOLOPEN:
+     Do_SPOOLOPEN();
+     break;
+    case SPOOLREAD:
+     Do_SPOOLREAD();
+     break;
+    case SPOOLWRITE:
+     Do_SPOOLWRITE();
+     break;
+    case STARTBR:
+     Do_STARTBR();
+     break;
+    case START:
+     Do_START();
+     break;
+    case SUSPEND:
+     Do_SUSPEND();
+     break;
+    case SYNCPOINT:
+     Do_SYNCPOINT();
+     break;
+    case UNLOCK:
+     Do_UNLOCK();
+     break;
+    case WAIT:
+     Do_WAIT();
+     break;
+    case WRITEQ:
+     Do_WRITEQ();
+     break;
+    case WRITE:
+     Do_WRITE();
+     break;
+    case XCTL:
+     Do_XCTL();
+     break;
+    default:
+     sprintf(line, "%s not yet implemented!", blk_op1);
+     prt_error(line, 8);
+     No_Code();
+  }
+
+ // handle global RESP and 'period' variables
+ if((strcmp(respvar,"")) && (strcmp(respvar," "))) {
+  fprintf(stdout, "\n");
+  fprintf(stdout, "           MOVE EIBRESP TO %s", respvar);
+  }
+ if (strcmp(resp2var,"")) {
+  fprintf(stdout, "\n");
+  fprintf(stdout, "           MOVE EIBRESP2 TO %s", resp2var);
+  }
+ fprintf(stdout, "%s\n", period);
+
+ }
+
+
+ // ===== subroutine to print an error line
+ void prt_error(char *line, int errr)
+ {
+  if (errr < 4)
+   { fprintf(stderr, "Remark(%d) ", errr); }
+  if ((errr > 3) && (errr < 8))
+   { fprintf(stderr, "Warning(%d) ", errr); }
+  if ((errr > 7) && (errr < 12))
+   { fprintf(stderr, "Error(%d) ", errr); }
+  if (errr > 11)
+   { fprintf(stderr, "Fatal Error(%d) ", errr); }
+  fprintf(stderr, "at line %d, %s\n", currline, rtrim(line));
+  if (errr > maxerror)
+   { maxerror = errr; }
+  if (errr > 7)
+   {  strcpy(period, ""); strcpy(respvar, ""); }
+  if (errr > 11 )
+   { exit (errr); }
+ }
+
+ // ===== subroutine to print a normal line
+ void prt_normal(char *line)
+ {
+  line[80]=0; // max 80 chars...
+  fprintf(stdout, "%s\n", rtrim(line));
+ }
+
+ // ===== subroutine to print a line as a comment
+ void prt_as_comment(char *line)
+ {
+  line[80]=0; // max 80 chars...
+  if (line[6] != ' ')
+   { // it's already a comment
+   line[7] = '<';
+   }
+  else    {
+   // it is not a comment
+   line[6] = '*';
+   }
+  fprintf(stdout, "%s\n", rtrim(line));
+ }
+
+
+ // ===== routine to gen KICKS items
+ //       at end of WORKING-STORAGE.
+
+ void Enter_Linkage_Section() {
+
+ int v;
+ v=mkversion(); // previously called to setup globals, this
+                // call is just to get return value (%d)
+
+
+ fprintf(stdout, "%s\n","\
+      * VALUES USED IN EXEC-KICKS CALLS\n\
+\n\
+       01  KIK-MSG                         PIC X(80).\n\
+       01  KIK-MAPSETNAME                  PIC X(8).\n\
+       01  KIK-MAPNAME                     PIC X(8).\n\
+       01  KIK-QUEUENAME.\n\
+           05  KIK-FILENAME                PIC X(8).\n\
+           05  KIK-PROGRAM                 PIC X(8).\n\
+       01  KIK-TRAN                        PIC X(4).\n\
+       01  KIK-ABND                        PIC X(4).\n\
+       01  KIK-LEN                         PIC S9(4) COMP.\n\
+       01  KIK-ITEM                        PIC S9(4) COMP.\n\
+       01  KIK-ITEMSIZE                    PIC S9(4) COMP.\n\
+       01  KIK-NUMITEMS                    PIC S9(4) COMP.\n\
+       01  KIK-FLEN                        PIC S9(8) COMP.\n\
+       01  KIK-KEYLEN                      PIC S9(4) COMP.\n\
+       01  KIK-NUMREC                      PIC S9(4) COMP.\n\
+       01  KIK-REQID                       PIC S9(4) COMP.\n\
+       01  KIK-FLAGS                       PIC S9(8) COMP.\n\
+       01  KIK-GOTOVAR                     PIC S9(4) COMP.\n\
+       01  KIK-NUM-GOTO                    PIC S9(8) COMP.\n\
+       01  KIK-AIDS1                       PIC S9(8) COMP.\n\
+       01  KIK-AIDS2                       PIC S9(8) COMP.\n\
+       01  KIK-AIDS3                       PIC S9(8) COMP.\n\
+       01  KIK-AIDS4                       PIC S9(8) COMP.\n");
+
+ fprintf(stdout, "\
+      * due to compiler bug (in ANSI MVT COBOL compiler)\n\
+      * we can't have versions in value clause because\n\
+      * the compiler doesn't like really big (but valid) numbers  \n\
+      * in value clauses. they seem ok in moves, computes, ...\n\
+       01  KIK-V1                          PIC S9(8) COMP VALUE +0.\n\
+       01  KIK-V2                          PIC S9(8) COMP VALUE +0.\n\
+\n\
+       01  KIK-NULL                        PIC S9(8) COMP VALUE +0.\n\n");
+
+ fprintf(stdout, "       LINKAGE SECTION.\n");
+ }
+
+
+
+ // ===== subroutine to add a 'using' clause, and
+ //    -- BLL's if necessary
+ //    -- add code to setup V1, V2
+ //    -- add code for initial glue call & final stop run
+ //    -- SDB init
+
+ void Enter_Procedure_Division() {
+ int i; char line[100], sep[10]=", ";
+
+ // fix linkblock[0] in case it was KIKEIBLK
+ // -- this happens 'cause with the z/OS 1.12 fix I can get
+ // -- the name from the COPY stmt instead of from the 01
+ if (!strcmp(linkblock[0], "KIKEIBLK"))
+  strcpy(linkblock[0], "KIKEIB");
+
+ // gen procedure division statement w/'using'
+ fprintf(stdout, "       PROCEDURE DIVISION USING\n");
+ i = 0;
+ while (i<numlinks) {
+  strcpy(line, linkblock[i++]);
+  fprintf(stdout, "               %s", line);
+  if (numlinks == i) { strcpy(sep, "."); }
+  fprintf(stdout, "%s\n", sep);
+  }
+
+  // gen BLL initialization if numlinks > 2
+  if (!DOcb2) { // no BLL init for CB2...
+   if (numlinks > 2) {
+    fprintf(stdout, "\n\
+      * Set up %s as BLL-CELLS\n\
+           CALL 'KIKBLLIN' USING %s.\n",
+        linkblock[2], linkblock[2]);
+    }
+   }
+
+  // gen version flags for API calls. these should be static
+  // but the cobol compiler won't handle the big numbers
+  // in value clauses...
+  i=mkversion(); // previously called to setup globals, this
+                 // call is just to get return value (%d)
+  fprintf(stdout, "\n\
+      * Set up KIK-V1/V2 as x'%s' - %s\n\
+           MOVE %d TO KIK-V1.\n\
+           MULTIPLY KIK-V1 BY -1 GIVING KIK-V2.\n",
+       ppv2, ppv1, i);
+
+  // fill in EIB source trace fields even if not source tracing...
+   fprintf(stdout, "\n\
+      * Fill in EIB source trace fields even if not source tracing\n\
+           MOVE '%8.8s' TO EIBPROG.\n\
+           MOVE '%20.20s' TO EIBWC.\n\
+           MOVE 0 TO EIBLINE.\n",
+        rpad(pgmid,8), &wxdate[1]);
+
+  // gen initial glue call & wrap-up stoprun.
+  fprintf(stdout, "\n      * Set up initial entry, final return\n");
+  if (DOcb2) {
+   // cb2 get 0 in flags to tell glue about LE
+   fprintf(stdout, "           MOVE 0 TO EIBFN-2, KIK-LEN.\n");
+   }
+  else {
+   // mvt cobol get -1 in flags to tell glue there's no LE
+   fprintf(stdout, "           MOVE 0 TO EIBFN-2. MOVE -1 TO KIK-LEN.\n");
+   }
+  fprintf(stdout, "           CALL 'KIKCOBGL' USING KIKEIB, KIK-V1,\n");
+  fprintf(stdout, "                 KIK-LEN.\n");
+  fprintf(stdout, "           IF KIK-LEN > 0\n");
+  // ****** changed from STOP RUN to GOBACK for LE ******
+  //rintf(stdout, "               STOP RUN.\n");
+  fprintf(stdout, "               GOBACK.\n");
+
+  // generate initial source trace
+  if (SDB > 0) {
+   fprintf(stdout, "\n\
+      * Generate 'routine entered' trace\n\
+           MOVE %d TO EIBLINE. \
+ CALL 'KIKCOBGZ' USING KIKEIB.\n",
+        currline);
+   }
+ }
+
+
+ // make version striings (etal)
+ int mkversion()
+ { int v=1, r=5, m=0, e=0;
+  union { int i; char c[4]; } ppv3;
+  sprintf(ppv1, "V%dR%dM%d(%d)", v, r, m, e);
+  sprintf(ppv2, "%02X%02X%02X%02X", v, r, m, e);
+  ppv3.c[0]=v; ppv3.c[1]=r; ppv3.c[2]=m; ppv3.c[3]=e;
+  return ppv3.i;
+ }
+

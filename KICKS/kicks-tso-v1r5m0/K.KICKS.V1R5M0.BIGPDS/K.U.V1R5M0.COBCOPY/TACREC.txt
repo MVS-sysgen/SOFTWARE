@@ -1,0 +1,50 @@
+       01  TAC-RECORD.
+      *01  TAC-RECORD.
+           05  TR-CODE                 PIC X.
+           05  TR-TYPE                 PIC XX.
+           05  FILLER                  PIC X(4).
+           05  TR-AR-REC.
+               10  TR-AR-YEAR          PIC 99.
+               10  TR-AR-NAME.
+                   15  TR-AR-NAME-1    PIC X.
+                   15  TR-AR-NAME-2    PIC X.
+                   15  TR-AR-NAME-3    PIC X(13).
+               10  TR-AR-ADDRESS       PIC X(25).
+               10  TR-AR-CITY          PIC X(22).
+               10  TR-AR-STATE         PIC XX.
+               10  TR-AR-ZIP           PIC 9(5).
+               10  TR-AR-SSN           PIC 9(9).
+               10  TR-AR-GROSS         PIC 9(6)V99.
+               10  TR-AR-CONTRIBUTIONS PIC 9(5).
+               10  FILLER              PIC X(104).
+           05  TR-MR-REC REDEFINES TR-AR-REC.
+               10  TR-MR-SSN           PIC 9(9).
+               10  TR-MR-AMOUNT        PIC 9(3)V99.
+               10  FILLER              PIC X(183).
+           05  TR-CC-REC REDEFINES TR-AR-REC.
+               10  TR-CC-BEGIN         PIC 9(5).
+               10  TR-CC-END           PIC 9(5).
+               10  FILLER              PIC X(187).
+           05  TR-DH-REC REDEFINES TR-AR-REC.
+               10  TR-DH-CHECK         PIC 9(5).
+               10  TR-DH-EMP-NO        PIC 9(5).
+               10  TR-DH-AMOUNT        PIC 9(7)V99.
+               10  TR-DH-DATE          PIC 9(6).
+               10  FILLER              PIC X(172).
+           05  TR-DP-REC REDEFINES TR-AR-REC.
+               10  TR-DP-COUNT         PIC 9(5).
+               10  TR-DP-TOTAL         PIC 9(7)V99.
+               10  TR-DP-DATE          PIC 9(6).
+               10  FILLER              PIC X(177).
+           05  TR-RD-REC REDEFINES TR-AR-REC.
+               10  TR-RD-CHECK         PIC 9(5).
+               10  TR-RD-AMOUNT        PIC 9(7)V99.
+               10  TR-RD-DATE          PIC 9(6).
+               10  FILLLER             PIC X(177).
+           05  TR-OT-REC REDEFINES TR-AR-REC.
+               10  TR-OT-CODE          PIC 9.
+               10  TR-OT-CHECK         PIC 9(5).
+               10  TR-OT-EMP-SSN       PIC 9(9).
+               10  TR-OT-AMOUNT        PIC 9(7)V99.
+               10  TR-OT-DATE          PIC 9(6).
+               10  FILLER              PIC X(167).

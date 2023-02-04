@@ -1,0 +1,29 @@
+ // struct (partial) of DOS rpl, from ikqrpl
+ typedef struct __ikqrpl__ {
+  char   rplid;      // +000 rpl id=0x00
+  char   rplstyp;    // +001 subtype
+  short  rpllen;     // +002 len of this block
+  int    rplrba;     // +004 rba return location - aka rpldddd
+  char  *rplarg;     // +008 ptr to search arg
+  char  *rplarea;    // +012 ptr area - aka rplrcd
+  int    rplrlen;    // +016 length of record
+  int    rplbufl;    // +020 user buff size
+  char  *rplacb;     // +024 ptr to acb - aka rpldacb
+  char   rplstrid;   // +028 string id
+  char   rplreq;     // +029 request type
+  short  rplkeyl;    // +030 key length
+  char   rplopt1;    // +032 1st byte of option codes - aka rploptcd
+  char   rplopt2;    // +032 2nd byte of option codes
+  char   rplhld2;    // +033 2nd test & set byte
+  char   rplhld;     // +034 test & set byte
+  char   rplflag;    // +035 flag byte
+  char   rplrtncd;   // +036 error class code - aka rplfdb1, rplfdbk
+  char   rplfdb2;    // +037 function type code
+  char   rplfdbkc;   // +038 error type code - aka rplfdb3, rplerrcd
+  char   filler;     // +039 ????
+  char  *rplchain;   // +040 ptr to next rpl
+  char   rplaixid;   // +044 aix info byte
+  char   filler2;    // +045 prime pointer length??
+  short  rplaixpc;   // +046 no of pointers
+  char  *rplmload;   // +048 CRM module load addr
+ } ikqrpl;

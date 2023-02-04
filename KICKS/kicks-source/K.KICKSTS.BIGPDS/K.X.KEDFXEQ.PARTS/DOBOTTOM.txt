@@ -1,0 +1,135 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+#include "kedfxeq.h"
+
+// top (only) line for 1 line help
+char *h1msg = "\
+PF1 - help       PF3 - goto bkpt    ENTER - step     \
+CLEAR - Show user screen";
+
+// all lines for 4 line help (also top 4 for 7 line help)
+char *h4msg_1 = "\
+                                    ENTER - step     \
+CLEAR - Show user screen";
+
+char *h4msg_2 = "\
+ PF1  - help      PF2   - src<->api  PF3   - goto bkpt \
+PF4  - skip subroutine";
+char *h4msg_3=  "\
+ PF5  - tog bkpt  PF6   - TRAN       PF7   - back      \
+PF8  - forward";
+char *h4msg_3a =  "\
+ PF5  - tog bkpt  PF6   - ";
+char *h4msg_3b              ="       PF7   - back      \
+PF8  - forward";
+char *h4msg_4 =  "\
+ PF9  - trace tbl PF10  - eib        PF11  - commarea  \
+PF12 - working storage";
+
+// bottom 3 lines for 7 line help
+char *h7msg_5 = "\
+ 13/1 - tog ST    14/2  - cwa        15/3  - quit      \
+16/4 - ";
+
+char *h7msg_6 =  "\
+ 17/5 - dump      18/6  - abend      19/7  - top       \
+20/8 - bottom";
+
+char *h7msg_7 =  "\
+ 21/9 - twa       22/10 - tctteua    23/11 - tioa      \
+24/12- re center";
+
+
+void DoBottom(KIKEIB *eib, DEBUGGERCA *comm) {
+char *tioa, buffer[20];
+short sbuf;
+
+ tioa = csa->tctte->tioa;
+
+ // bottom of the screen
+ if (helpv==1) {
+
+  PUT_SBA(bot-helpv+1,1) //             42  f5  is Turquoise
+  APPEND_MSG("\x29\x05\xc0\xf0\x42\xf5\x42\xf5\x42\xf5\x42\xf5");
+  APPEND_MSG(h1msg);
+  APPEND_MSG("\x1d\xf0");
+  }
+ else
+ if (helpv==4) {
+
+  PUT_SBA(bot-helpv+1,1) //             42  f5  is Turquoise
+  APPEND_MSG("\x29\x05\xc0\xf0\x42\xf5\x42\xf5\x42\xf5\x42\xf5");
+  APPEND_MSG(h4msg_1);
+
+  PUT_SBA(bot-helpv+2,1)
+  APPEND_MSG(h4msg_2);
+
+  PUT_SBA(bot-helpv+3,1)
+
+  //APPEND_MSG(h4msg_3);
+  APPEND_MSG(h4msg_3a);
+  if (transkip[0] == 0)
+   SPRINTF(buffer, "....");
+  else
+   SPRINTF(buffer, "%4.4s",&transkip[0]);
+  APPEND_MSG(buffer);
+  APPEND_MSG(h4msg_3b);
+
+  PUT_SBA(bot-helpv+4,1)
+  APPEND_MSG(h4msg_4);
+
+  APPEND_MSG("\x1d\xf0");
+  }
+ else
+ if (helpv==7) {
+
+  PUT_SBA(bot-helpv+1,1) //             42  f5  is Turquoise
+  APPEND_MSG("\x29\x05\xc0\xf0\x42\xf5\x42\xf5\x42\xf5\x42\xf5");
+
+  APPEND_MSG(h4msg_1);
+
+  PUT_SBA(bot-helpv+2,1)
+  APPEND_MSG(h4msg_2);
+
+  PUT_SBA(bot-helpv+3,1)
+
+  //APPEND_MSG(h4msg_3);
+  APPEND_MSG(h4msg_3a);
+  if (transkip[0] == 0)
+   SPRINTF(buffer, "....");
+  else
+   SPRINTF(buffer, "%4.4s",&transkip[0]);
+  APPEND_MSG(buffer);
+  APPEND_MSG(h4msg_3b);
+
+  PUT_SBA(bot-helpv+4,1)
+  APPEND_MSG(h4msg_4);
+
+  PUT_SBA(bot-helpv+5,1)
+  APPEND_MSG(h7msg_5);
+
+  PUT_SBA(bot-helpv+6,1)
+  APPEND_MSG(h7msg_6);
+
+  PUT_SBA(bot-helpv+7,1)
+  APPEND_MSG(h7msg_7);
+
+  APPEND_MSG("\x1d\xf0");
+  }
+
+ PUT_SBA(bot-helpv,17);
+ APPEND_MSG("\x13");
+}
+

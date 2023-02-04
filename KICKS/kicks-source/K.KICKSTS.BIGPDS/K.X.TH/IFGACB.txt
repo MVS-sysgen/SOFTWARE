@@ -1,0 +1,191 @@
+#ifndef __IFGACB__
+#define __IFGACB__
+
+ // from SYS1.MACLIB(IFGACB) on MVS 3.8J 'MVS380' system, 4/7/2009
+
+ // for VSAM usage in KICKS - does not include ifgacbvs/ifgacbvt as
+ // it should to be 'complete' (for use with VTAM)...
+
+ //*     CHANGE LEVEL = 8                                   @ZA34940*/
+ //*     DATE OF LAST CHANGE = 13  NOV   78 ( 78*317 )      @ZA34940*/
+ //*                                                                */
+ //*
+
+ //******************************************************************/
+ //*                                                                */
+ //*      ACCESS METHOD CONTROL BLOCK (ACB)                         */
+ //*                                                                */
+ //*      THE ACB DESCRIBES THE CURRENT USE OF A VSAM DATA SET.     */
+ //*      IN MVS, THE ACB DESCRIBES THE CURRENT USE OF A DATA SET   */
+ //*      WHEN THE JOB ENTRY SUBSYSTEM (JES) IS BEING USED FOR      */
+ //*      INPUT/OUTPUT CONTROL.  IN VTAM, THE ACB REPRESENTS A      */
+ //*      PROCESSING APPLICATION.                                   */
+ //*                                                                */
+ //*      THE ACB IS CREATED BY THE USER WITH THE ACB MACRO         */
+ //*      INSTRUCTION.   OTHER INFORMATION MAY BE ADDED FROM THE    */
+ //*      DD STATEMENT.  IT IS ACCESSED THROUGH THE RPLDACB FIELD   */
+ //*      IN THE REQUEST PARAMETER LIST.                            */
+ //*                                                                */
+ //*      THE CONTROL BLOCK CONSISTS OF AN AREA COMMON TO   @ZA34940*/
+ //*      ALL USERS, A CONTIGUOUS EXTENSION CREATED FOR     @ZA34940*/
+ //*      VSAM AND A CONTIGUOUS EXTENSION CREATED FOR VTAM. @ZA34940*/
+ //*      THE VTAM EXTENSION IS GENERATED IF 'AM=VTAM' IS   @ZA34940*/
+ //*      CODED IN THE ACB MACRO.                           @ZA34940*/
+ //*                                                                */
+ //*      CHANGE ACTIVITY                                           */
+ //*  C87700,155146                                        @ZM30033 */
+ //*  CONTROL BLOCKS IN COMMON SUPPORT                     @ZA16012 */
+ //*      MVS GUSHER SUPPORT                               @G29ASRL */
+ //*      CBMM SPLIT SUPPORT                               @ZA34940 */
+ //*                                                       @ZA26638 */
+ //* ADD CODE FOR BDT                                      @ZA92381 */
+ //* DEFINE BIT TO IGNORE SHARED DASD                      @YA03278 */
+ //*                                                                */
+ //******************************************************************/
+ //*
+
+ //*                                                                */
+ //*     ACB DIAGRAM                                                */
+ //*                                                                */
+ //*   0  _______________________________________________           */
+ //*     |           |           |                       |          */
+ //*     |  ACBID    | ACBSTYP   |        ACBLENG        |          */
+ //*   4 |___________|___________|_______________________|          */
+ //*     |                                               |  @X04SVHS*/
+ //*     |       ACBAMBL/ACBJWA/ACBIBCT/ACBAMWAP         |  @G29ASRL*/
+ //*   8 |_______________________________________________|          */
+ //*     |                                               |          */
+ //*     |                     ACBINRTN                  |          */
+ //*  12 |_______________________________________________|          */
+ //*     |       ACBMACRF        |           |           |  @X04SVHS*/
+ //*     | ACBMACR1  | ACBMACR2  | ACBBSTNO  | ACBSTRNO  |  @X04SVHS*/
+ //*  16 |___________|___________|___________|___________|  @X04SVHS*/
+ //*     |                       |                       |          */
+ //*     |       ACBBUFND        |       ACBBUFNI        |          */
+ //*  20 |_______________________|_______________________|          */
+ //*     |                    ACBBUFPL                   |  @X04SVHS*/
+ //*     | ACBMACR3  | ACBMACR4  |       ACBJBUF         |  @X04SVHS*/
+ //*  24 |___________|___________|_______________________|  @X04SVHS*/
+ //*     |           |           |                       |          */
+ //*     | ACBRECFM  | ACBCCTYP  |       ACBDSORG        |          */
+ //*  28 |___________|___________|_______________________|          */
+ //*     |                                               |          */
+ //*     |                   ACBMSGAR                    |  @X04SVHS*/
+ //*  32 |_______________________________________________|          */
+ //*     |                                               |          */
+ //*     |                     ACBPASSW                  |          */
+ //*  36 |_______________________________________________|          */
+ //*     |                                               |          */
+ //*     |            ACBEXLST/ACBUEL                    |          */
+ //*  40 |_______________________________________________| __  B    */
+ //*     |             OFFSET 40 BEFORE OPEN             |   | E    */
+ //*     |                                               |   | F    */
+ //*     |_                   ACBDDNM                   _|   | O    */
+ //*     |                  ( 8 BYTES )                  |   | R    */
+ //*     |                                               |   | E    */
+ //*  48 |_______________________________________________|   |      */
+ //*     |           |           |       ACBINFLG        |   | O    */
+ //*     |  ACBOFLGS | ACBERFLG  | ACBINFL1  | ACBINFL2  |   | P    */
+ //*     |___________|___________|___________|___________| __| E    */
+ //*                                                           N    */
+ //*                   OFFSET 40 AFTER OPEN                         */
+ //*                                                                */
+ //*  40  _______________________________________________  __  A    */
+ //*     |                       |           |           |   | F    */
+ //*     |        ACBTIOT        |  ACBINFL  | ACBAMETH  |   | T    */
+ //*  44 |_______________________|___________|___________|   | E    */
+ //*     |           |                                   |   | R    */
+ //*     |  ACBERFL  |             ACBDEB                |   |      */
+ //*  48 |___________|___________________________________|   | O    */
+ //*     |           |           |                       |   | P    */
+ //*     |  ACBOFLGS |  ACBERFLG |                       |   | E    */
+ //*     |___________|___________|_______________________| __| N    */
+ //*                                                                */
+ //*  52  _______________________________________________           */
+ //*     |                                               |          */
+ //*     |                     ACBUJFCB                  |          */
+ //*  56 |_______________________________________________|          */
+ //*     |                                               |          */
+ //*     |                     ACBBUFSP                  |          */
+ //*  60 |_______________________________________________|          */
+ //*     |                     |                         |          */
+ //*     |  ACBBLKSZ/ACBMSGLN  |       ACBLRECL          |  @X04SVHS*/
+ //*  64 |_____________________|_________________________|          */
+ //*     |                                               |          */
+ //*     |                  ACBUAPTR                     |          */
+ //*  68 |_______________________________________________|          */
+ //*     |                                               |          */
+ //*     |                  ACBCBMWA                     |          */
+ //*  72 |_______________________________________________|          */
+ //*     |                                               |          */
+ //*     |              ACBAPID/ACBAMAX                  |  @G29ASRL*/
+ //*     |_______________________________________________|          */
+ //*                                                                */
+ //*           THE VTAM EXTENSION BEGINS AT OFFSET 76.              */
+ //*          IT IS CONTIGUOUS TO THE COMMON AREA ABOVE.            */
+ //*                                                                */
+ //*  76  _______________________________________________           */
+ //*     |                                               |    X03004*/
+ //*     |                  ACBRTN                       |    X03004*/
+ //*  80 |                      _________________________|    X03004*/
+ //*     |                     |                         |    X03004*/
+ //*     |                     |            *            |    X03004*/
+ //*  84 |_____________________|_________________________|    X03004*/
+ //*     |                                               |    X03004*/
+ //*     |                     *                         |    X03004*/
+ //*     |_______________________________________________|    X03004*/
+ //*                                                                */
+ //*     ACB DECLARATION                                            */
+ //*                                                                */
+
+ typedef struct __ifgacb__
+ {
+   char  acbid;       // +000
+   char  acbtyp;      // +001
+   short acbleng;     // +002 CLI 3(ACBREG),OSACBLEN, BNE alreadydos
+   char *acbambl;     // +004               =76 (decimal)
+   char *acbinrtn;    // +008
+   short acbmacrf;    // +012
+   char  acbbstno;    // +014
+   char  acbstrno;    // +015
+   short acbbufnd;    // +016 data buffers
+   short acbbufni;    // +018 index buffers
+   int   acbbufpl;    // +020
+   char  acbrecfm;    // +024 recfm
+   char  acboctyp;    // +025
+   short acbopt;      // +026
+   char *acbmsgar;    // +028
+   char *acbpassw;    // +032
+   char *acbexlst;    // +036
+   union {
+    struct {
+     char acbddnm[8]; // +040
+    } acbpreopen;
+    struct {
+     short acbtiot;   // +040
+     char  acbinfl;   // +042
+     char  acbameth;  // +043
+     char *acbdeb;    // +044 actually acberfl(1), acbdeb(3)
+    } acbpostopn;
+   } acboff40;        // +040
+   char  acboflgs;    // +048
+   char  acberflg;    // +049
+   short acbinflg;    // +050
+   char *acbujfcb;    // +052
+   int   acbbufsp;    // +056 bufsp
+   short acbblksz;    // +060 blksize (aka acbmsgln - message len)
+   short acblrecl;    // +062 lrecl
+   char *acbuaptr;    // +064
+   char *acbcbmwa;    // +068
+   char *acbapid;     // +072
+
+ } ifgacb;
+
+ // flags for acboflgs
+#define acbeov   0x20
+#define acbopen  0x10
+#define acbdserr 0x08
+#define acblock  0x02
+#define acbbusy  0x01
+
+#endif

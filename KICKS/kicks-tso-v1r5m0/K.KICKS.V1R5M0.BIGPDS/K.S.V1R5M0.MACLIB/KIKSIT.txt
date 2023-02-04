@@ -1,0 +1,199 @@
+         MACRO
+         KIKSIT &SUFFIX=00,                                            *
+               &PCP=00,&PPT=00,                                        *
+               &KCP=00,&PCT=00,                                        *
+               &FCP=00,&FCT=00,                                        *
+               &DCP=00,&DCT=00,                                        *
+               &TCP=00,&BMS=00,                                        *
+               &SCP=00,                                                *
+               &TSP=00,                                                *
+               &OPID=999,         3 char (numeric?) 'operator id'      *
+               &NATLANG=E,        1 char language code                 *
+               &TRCNUM=100,       # entries in the internal trace tbl  *
+               &TRCFLAG=1,        1-internal,2-aux,3-both,...          *
+               &DMPCLAS=A,        sysout class for 'spin off' dumps    *
+               &ICVR=5000,        time (milliseconds) to AICA          *
+               &MAXDELY=180,      time (seconds) limit on delays       *
+               &PLTPI=KSGM,       first transaction                    *
+               &PLTSD=K999,       last transaction                     *
+               &CWAL=100,         size (characters) of CWA             *
+               &TCTUAL=100,       size (characters) of TCTTEUA         *
+               &FFREEKB=NO,       whether to force terminal freekb     *
+               &ENQSCOP=SYSTEMS,  s.b. SYSTEM or SYSTEMS               *
+               &SYNCPGM=          name of syncpoint exit, or null
+.*
+.*
+.* MACRO TO GENERATE 'SIT' TABLE FOR KICKS
+.*
+.* HISTORY:
+.*  V0R9M0 -
+.*  V1R0M0 - ADDED OPID, TRCNUM, TRCFLAG, PLTSTRT, PLTEND,
+.*                 ICVR, CWAL,   TCTUAL,  ENQNAME
+.*  V1R1M0 - added DCP, DCT
+.*         - allow PLPTPI, PLTSD to be nulled
+.*  V1R1M1 - added MAXDELAY
+.*  V1R1M2 - added SCP
+.*  V1R1M3 - added NATLANG
+.*         - changed default ENQSCOP to SYSTEMS
+.*  V1R4M0 - added TSP
+.*         - 'all macro' changes for CMS
+.*         -- removed blank lines
+.*         -- labeled csect instead of blank csect w/entry
+.*         -- entry (csect) name changed from DFH... to KIK...
+.*         - added wextrn for PRO license
+.*         - added ffreekb for control of keyboard lock
+.*  V1R4M1 -
+.*  V1R5M0 - added SYNCPGM
+.*
+.* COPYRIGHT MIKE NOEL, 2008-2014. ALL RIGHTS RESERVED.
+.*
+.*
+          LCLC &XOPID,&XDMPCLS,&XLANG
+          LCLA &XTRCNUM,&XTRCFLG
+          LCLA &XICVR,&XMD,&XFKB
+          LCLC &XLTSTR,&XLTEND
+          LCLA &XCWAL,&XTCTUAL
+          LCLC &XENQ,&XSYNC
+.*
+.CHKLANG  ANOP
+&XLANG    SETC '&NATLANG'
+          AIF (K'&XLANG EQ 1).CHKDMP
+          MNOTE 2,'NATLANG SHOULD BE 1 CHARACTER LONG'
+.*
+.CHKDMP   ANOP
+&XDMPCLS  SETC '&DMPCLAS'
+          AIF (K'&DMPCLAS EQ 1).CHKOPID
+          MNOTE 2,'DUMP CLASS SHOULD BE 1 CHARACTER LONG'
+.*
+.CHKOPID  ANOP
+&XOPID    SETC '&OPID'
+          AIF (K'&OPID EQ 3).CHKTNUM
+          MNOTE 2,'OPID SHOULD BE 3 CHARACTERS LONG'
+.*
+.CHKTNUM  ANOP
+&XTRCNUM  SETA &TRCNUM
+          AIF (&XTRCNUM EQ 0).CHKTFLG
+          AIF (&XTRCNUM LT 100).BADTNUM
+          AIF (&XTRCNUM GT 1000).BADTNUM
+          AGO .CHKTFLG
+.BADTNUM  ANOP
+          MNOTE 8,'TRCNUM SHOULD BE 0 OR 100-1000'
+&XTRCNUM  SETA 100
+.*
+.CHKTFLG  ANOP
+&XTRCFLG  SETA &TRCFLAG
+.*
+.CHKICVR  ANOP
+&XICVR    SETA &ICVR
+          AIF (&XICVR EQ 0).CHKPSTR
+          AIF (&XICVR LT 1000).BADICVR
+          AIF (&XICVR GT 600000).MSGICVR
+          AGO .CHKPSTR
+.BADICVR  ANOP
+          MNOTE 8,'ICVR SHOULD BE 0 OR 1000-600000'
+&XICVR    SETA 5000
+          AGO .CHKPSTR
+.MSGICVR  ANOP
+          MNOTE 2,'ICVR>600000 (10 MINUTES)'
+.*
+.CHKPSTR  ANOP
+&XLTSTR   SETC '&PLTPI'
+          AIF (K'&PLTPI EQ 0).CHKPEND
+          AIF (K'&PLTPI EQ 4).CHKPEND
+          MNOTE 2,'PLTPI START TRANID SHOULD BE 4 CHARACTERS'
+.*
+.CHKPEND  ANOP
+&XLTEND   SETC '&PLTSD'
+          AIF (K'&PLTSD EQ 0).CHKSYNC
+          AIF (K'&PLTSD EQ 4).CHKSYNC
+          MNOTE 2,'PLTSD END TRANID SHOULD BE 4 CHARACTERS'
+.*
+.CHKSYNC  ANOP
+&XSYNC    SETC '&SYNCPGM'
+          AIF (K'&SYNCPGM LT 9).CHKCWA
+          MNOTE 2,'SYNCPGM SHOULD BE LESS THAN 9 CHARACTERS'
+.*
+.CHKCWA   ANOP
+&XCWAL    SETA &CWAL
+          AIF (&XCWAL LE 1024).CHKTCT
+          MNOTE 8,'CWA LENGTH SHOULD BE LE 1024'
+&XCWAL    SETA 1024
+.*
+.CHKTCT   ANOP
+&XTCTUAL  SETA &TCTUAL
+          AIF (&XTCTUAL LT 1024).CHKENQ
+          MNOTE 8,'TCTTEUA LENGTH SHOULD BE LE 1024'
+&XTCTUAL  SETA 1024
+.*
+.CHKENQ   ANOP
+&XENQ     SETC '&ENQSCOP'
+          AIF ('&XENQ' EQ 'SYSTEM').CHKMD
+          AIF ('&XENQ' EQ 'SYSTEMS').CHKMD
+          MNOTE 8,'ENQUEUE SCOPE SHOULD BE SYSTEM OR SYSTEMS'
+&XENQ     SETC 'SYSTEM'
+.*
+.CHKMD    ANOP
+&XMD      SETA &MAXDELY
+          AIF (&XMD LT 0).BADMD
+          AIF (&XMD LT 175001).CHKFKB
+.BADMD    MNOTE 8,'MAXDELY SHOULD BE 0-175000'
+&XMD      SETA 180
+.*
+.CHKFKB   ANOP
+&XFKB     SETA 1
+          AIF ('&FFREEKB' EQ 'NO').GENIT
+&XFKB     SETA 0
+          AIF ('&FFREEKB' EQ 'YES').GENIT
+          MNOTE 8,'FFREEKB SHOULD BE YES OR NO'
+.*
+.GENIT    ANOP
+.*
+KIKSIT&SUFFIX CSECT
+         DC    CL2'&SUFFIX'
+         DC    XL4'01050000'    4 BYTE VERSION: (V),(R),(M),(EDIT)
+         DC    H'0'             FILLER
+         DC    CL2'&PCP'
+         DC    CL2'&PPT'
+         DC    CL2'&KCP'
+         DC    CL2'&PCT'
+         DC    CL2'&FCP'
+         DC    CL2'&FCT'
+         DC    CL2'&DCP'
+         DC    CL2'&DCT'
+         DC    CL2'&BMS'
+         DC    CL2'&TCP'
+         DC    CL2'&SCP'
+         DC    CL2'&TSP'
+         DC    CL3'&XOPID'
+         DC    CL1'&XLANG'
+         DC    F'&XICVR'
+         DC    H'&XTRCNUM'
+         DC    XL1'&XTRCFLG'
+         DC    XL1'&XFKB'       0 MEANS SUPPRESS KB LOCK
+         DC    CL1'&XDMPCLS'
+         DC    XL3'000000'      FILLER
+          AIF (K'&PLTPI EQ 0).DUMY1
+         DC    CL4'&XLTSTR'
+          AGO .DUMY2
+.DUMY1    ANOP
+         DC    XL4'00000000'
+.DUMY2    ANOP
+          AIF (K'&PLTSD EQ 0).DUMY3
+         DC    CL4'&XLTEND'
+          AGO .DUMY4
+.DUMY3    ANOP
+         DC    XL4'00000000'
+.DUMY4    ANOP
+         DC    H'&XCWAL'
+         DC    H'&XTCTUAL'
+         DC    CL8'&XENQ'
+         DC    F'&XMD'
+*        DC    V(KPROLIC)
+*        WXTRN   KPROLIC
+          AIF (K'&SYNCPGM EQ 0).DUMY5
+         DC    CL8'&XSYNC'
+          AGO .DUMY6
+.DUMY5    ANOP
+         DC    XL8'0000000000000000'
+.DUMY6    ANOP
+         MEND

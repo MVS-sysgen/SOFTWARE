@@ -1,0 +1,198 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+#ifndef __KIKCSA__
+#define __KIKCSA__
+
+#ifndef _GottenStorage_
+#define _GottenStorage_
+typedef struct _GottenStorage  // in tca & csa - be sure the same!!!
+{                              // chain of gotten storage
+  struct _GottenStorage *next; // malloc/free used for these...
+  int size;                    // how big it is
+  char where[0];               // allocated storage
+} GottenStorage;
+#endif
+
+typedef struct _KIKCSA
+{
+ char csastrt[16];         // eyecatcher
+
+ int version;              // 4 byte version: (V),(R),(M),(edit)
+
+ TRACEHDR trc;             // trace table stuff
+ char *trc_addr;           // address for trace writer
+ char *auxtrc;             // file for auxtrace
+
+ char *cobR13;             // r13 just before calling cobol
+
+ LOADCB *loadcb;           // address of loader cb
+
+ VCONS *vcons;             // address of vcon table
+
+ KIKTCA *tca;              // address of tca
+ int nexttasknum;          // number for next task
+
+ KIKTCTTE *tctte;          // address of tctte
+
+ char *usrcommarea;        // ptr to user 'comm-area'
+ int maxcommsize;          // max size of 'comm-area'
+
+ int runphase;             // 0-initing, 1-mainloop, 2-shutdown,
+                           // 3-AICA, 4-ASRA, 5-ASRB, 6=LE handler
+
+ int AICAtime;             // 'ticks' until AICA
+ int AICAmax;              // reset value for AICA timer (aka ICCV)
+
+ char *AICAinst;           // routine to reinstall AICA trap
+ char *AICArtn;            // routine for trap to call for AICA
+ char *ASRArtn;            // routine for trap to call for ASRA
+ char *ASRBrtn;            // routine for trap to call for ASRB
+
+ char *kikrb;              // my rb, here to make it easy for
+                           // AICA routine to find psw, regs
+                           // ** NOTE: rb not avail in CMS **
+
+ // change nothing ¬¬ ABOVE ¬¬ this line, it's used by  *********
+ // asm code in the ASRA/ASRB/AICA routine...           *********
+
+ GottenStorage   *next_GS; // gotten storage chain ('shared')
+
+ char *cwaa;               // address of CWA
+ int  cwal;                // length  of CWA
+
+ char eye0[4];             // all 'eyes' on left margin of dump...
+
+ char siteye[3];
+ char sit_table_suffix[2]; // init table (used only during init)
+ char eye1[7];
+ KIKSIT *sit_table_addr;   // address of SIT (used only during init)
+
+
+ char pcpeye[3];
+ char pcp_suffix[2];       // program control program
+ char eye2[11];
+ char *pcp_addr;           // address for  program control
+ int  pcp_load, pcp_size;
+ int  pcp_cs;
+
+ char ppteye[3];
+ char pcp_table_suffix[2]; // program property table (PPT)
+ char eye3[3];
+ char *pcp_table_addr;     // address of PPT
+ int  ppt_size;
+
+ char kcpeye[3];
+ char kcp_suffix[2];       // task control program
+ char eye4[11];
+ char *kcp_addr;           // address for  task control
+ int  kcp_load, kcp_size;
+ int  kcp_cs;
+ char pcteye[3];
+ char kcp_table_suffix[2]; // program control table (PCT)
+ char eye5[3];
+ char *kcp_table_addr;     // address of PCT
+ int  pct_size;
+
+ char fcpeye[3];
+ char fcp_suffix[2];       // file control program
+ char eye6[11];
+ char *fcp_addr;           // address for  file control
+ int  fcp_load, fcp_size;
+ int  fcp_cs;
+ char fcteye[3];
+ char fcp_table_suffix[2]; // file control table (FCT)
+ char eye7[3];
+ char *fcp_table_addr;     // address of FCT
+ int  fct_size;
+
+ char dcpeye[3];
+ char dcp_suffix[2];       // dest control program
+ char eye8[11];
+ char *dcp_addr;           // address for  dest control
+ int  dcp_load, dcp_size;
+ int  dcp_cs;
+ char dcteye[3];
+ char dcp_table_suffix[2]; // deet control table (DCT)
+ char eye9[3];
+ char *dcp_table_addr;     // address of DCT
+ int  dct_size;
+
+ char bmseye[3];
+ char bms_suffix[2];       // bms program
+ char eye10[11];
+ char *bms_addr;           // address for calling bms
+ int  bms_load, bms_size;
+ int  bms_cs;
+ char eye10b[16];
+
+ char tcpeye[3];
+ char tcp_suffix[2];       // terminal control program
+ char eye11[11];
+ char *tcp_addr;           // address for terminal control
+ int  tcp_load, tcp_size;
+ int  tcp_cs;
+ char eye11b[16];
+
+ char scpeye[3];
+ char scp_suffix[2];       // storage control program
+ char eye12[11];
+ char *scp_addr;           // address for storage control
+ int  scp_load, scp_size;
+ int  scp_cs;
+ char eye12b[16];
+
+ char tspeye[3];
+ char tsp_suffix[2];       // temp storage control program
+ char eye13[11];
+ char *tsp_addr;           // address for temp storage control
+ int  tsp_load, tsp_size;
+ int  tsp_cs;
+ char eye13b[16];
+
+ char  opid[3];            // 3 char (numeric?) 'operator id'
+
+ char  systype;            // byte defining OS
+#define csasystype$mvs38 0x01
+#define csasystype$zos   0x02
+#define csasystype$vm6pk 0x04
+#define csasystype$zvm   0x08
+#define csasystype$vmsp  0x10
+#define csasystype$batch 0x80
+
+ char  natlang;            // byte defining language code
+ char  dmpclass;           // sysout class for 'spin off' dumps
+ short trcnum;             // # entries in the internal trace tbl
+ unsigned char trcflags;   // initial flags (kiktrac.h for breakout)
+ char  pltstrt[4];         // first transaction
+ char  pltend[4];          // last transaction
+ // following item probably s.b. in TCTTE, but it's the only
+ // sit item that would not be in the CSA, so I decided to keep
+ // it here with the rest of the sit stuff...
+ short tctteual;           // size (characters) of TCTTEUA
+ int  maxdelay;            // time (secs) limit for any DELAY api
+ int  ffreekb;             // ffreekb flag from SIT
+ FILE *csastdin, *csastdout, *csastderr; // file handles
+ short lastcc;             // return code from last transaction
+ short maxcc;              // max return code from any transaction
+
+ char  enqscope[8];        // s.b. SYSTEM or SYSTEMS
+
+ char  syncpgm[8];         // syncpoint exit
+
+ char csaend[16];          // eyecatcher
+
+} KIKCSA;
+
+#endif

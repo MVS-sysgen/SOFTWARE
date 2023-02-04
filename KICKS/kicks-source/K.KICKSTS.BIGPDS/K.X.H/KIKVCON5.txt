@@ -1,0 +1,334 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+#ifndef __KIKVCONS__
+#define __KIKVCONS__
+
+typedef struct _VCONS
+{
+ //char vcbegin[16];
+ char *ptr_XXMMDEF;
+ char *ptr_XXMMINIT;
+ char *ptr_XXMMTERM;
+ char *ptr_XXMMSUPP;
+ char *ptr_XXMMALLO;
+ char *ptr_XXMMFREE;
+ char *ptr_XXMMFID;
+ char *ptr_XXMMMAXS;
+ char *ptr_XXMMDEBU;
+ char *ptr_XXMMDBG2;
+ char *ptr_XXMMREAL;
+ char *ptr_XXMEMMGR;
+
+ char *ptr_STDIN;
+ char *ptr_STDOUT;
+ char *ptr_STDERR;
+ char *ptr_PRINTF;
+ char *ptr_FPRINTF;
+ char *ptr_VFPRINTF;
+ char *ptr_FOPEN;
+ char *ptr_FCLOSE;
+ char *ptr_FPUTC;
+
+ char *ptr_FREOPEN;
+ char *ptr_EXIT;
+
+ char *ptr_REMOVE;
+ char *ptr_RENAME;
+ char *ptr_SPRINTF;
+ char *ptr_VSPRINTF;
+ char *ptr_UNGETC;
+ char *ptr_FGETC;
+ char *ptr_FSEEK;
+ char *ptr_FTELL;
+ char *ptr_FSETPOS;
+ char *ptr_FGETPOS;
+ char *ptr_REWIND;
+ char *ptr_CLEARERR;
+ char *ptr_PERROR;
+ char *ptr_SETVBUF;
+ char *ptr_SETBUF;
+ char *ptr_FFLUSH;
+ char *ptr_TMPNAM;
+ char *ptr_TMPFILE;
+ char *ptr_FSCANF;
+ char *ptr_SCANF;
+ char *ptr_SSCANF;
+ char *ptr_GETS;
+ char *ptr_PUTS;
+ char *ptr_GETC;
+ char *ptr_PUTC;
+ char *ptr_GETCHAR;
+ char *ptr_PUTCHAR;
+ char *ptr_FEOF;
+ char *ptr_FERROR;
+ char *ptr_FGETS;
+ char *ptr_FPUTS;
+ char *ptr_FWRITE;
+ char *ptr_FREAD;
+ char *ptr_XXUSERFI;
+
+ char *ptr_MALLOC;
+ char *ptr_CALLOC;
+ char *ptr_REALLOC;
+ char *ptr_FREE;
+ char *ptr_ABORT;
+ char *ptr_QSORT;
+ char *ptr_SRAND;
+ char *ptr_RAND;
+ char *ptr_ATOF;
+ char *ptr_STRTOD;
+ char *ptr_ATOI;
+ char *ptr_ATOL;
+ char *ptr_STRTOL;
+ char *ptr_STRTOUL;
+ char *ptr_MBLEN;
+ char *ptr_MBTOWC;
+ char *ptr_WCTOMB;
+ char *ptr_MBSTOWCS;
+ char *ptr_WCSTOMBS;
+ char *ptr_ABS;
+ char *ptr_DIV;
+ char *ptr_LABS;
+ char *ptr_LDIV;
+ char *ptr_ATEXIT;
+ char *ptr_GETENV;
+ char *ptr_SYSTEM;
+ char *ptr_BSEARCH;
+ char *ptr_XXUSEREX;
+
+ char *ptr_XXASSERT;
+
+ char *ptr_XXISBUF;
+ char *ptr_XXTOLOW;
+ char *ptr_XXTOUP;
+ char *ptr_ISALNUM;
+ char *ptr_ISALPHA;
+ char *ptr_ISCNTRL;
+ char *ptr_ISDIGIT;
+ char *ptr_ISGRAPH;
+ char *ptr_ISLOWER;
+ char *ptr_ISPRINT;
+ char *ptr_ISPUNCT;
+ char *ptr_ISSPACE;
+ char *ptr_ISUPPER;
+ char *ptr_ISXDIGIT;
+ char *ptr_TOLOWER;
+ char *ptr_TOUPPER;
+
+ char *ptr_ERRNO;
+
+ char *ptr_SETLOCAL;
+ char *ptr_LOCALECO;
+
+ char *ptr_CEIL;
+ char *ptr_FABS;
+ char *ptr_FLOOR;
+ char *ptr_FMOD;
+ char *ptr_ACOS;
+ char *ptr_ASIN;
+ char *ptr_ATAN;
+ char *ptr_ATAN2;
+ char *ptr_COS;
+ char *ptr_SIN;
+ char *ptr_TAN;
+ char *ptr_COSH;
+ char *ptr_SINH;
+ char *ptr_TANH;
+ char *ptr_EXP;
+ char *ptr_LOG;
+ char *ptr_LOG10;
+ char *ptr_POW;
+ char *ptr_SQRT;
+ char *ptr_FREXP;
+
+ char *ptr_LDEXP;
+ char *ptr_MODF;
+ char *ptr_MEMMOVE;
+
+ char *ptr_STRCPY;
+ char *ptr_STRNCPY;
+ char *ptr_STRCAT;
+ char *ptr_STRNCAT;
+ char *ptr_MEMCMP;
+ char *ptr_STRCMP;
+
+ char *ptr_STRCOLL;
+ char *ptr_STRNCMP;
+ char *ptr_STRXFRM;
+ char *ptr_MEMCHR;
+ char *ptr_STRCHR;
+ char *ptr_STRCSPN;
+ char *ptr_STRPBRK;
+ char *ptr_STRRCHR;
+ char *ptr_STRSPN;
+ char *ptr_STRSTR;
+ char *ptr_STRTOK;
+ char *ptr_MEMSET;
+ char *ptr_STRERROR;
+ char *ptr_STRLEN;
+ char *ptr_MEMCPY;
+
+ char *ptr_XXCRT0;
+ char *ptr_XXEXITA;
+
+ char *ptr_XXMANSTK;
+ char *ptr_XXMANSTL;
+ char *ptr_XXPGMPRM;
+ char *ptr_XXSYSANC;
+ char *ptr_XXAOPEN;
+ char *ptr_XXAREAD;
+ char *ptr_XXAWRITE;
+ char *ptr_XXACLOSE;
+ char *ptr_XXGETM;
+ char *ptr_XXFREEM;
+ char *ptr_XXGETCLK;
+ char *ptr_XXSAVER;
+ char *ptr_XXLOADR;
+
+ char *ptr_SETJMP;
+ char *ptr_LONGJMP;
+
+ char *ptr_SIGNAL;
+ char *ptr_RAISE;
+ char *ptr_XXSIGDFL;
+ char *ptr_XXSIGERR;
+ char *ptr_XXSIGIGN;
+
+ char *ptr_XXSTART;
+ char *ptr_XXEXIT;
+
+ char *ptr_TIME;
+ char *ptr_CLOCK;
+ char *ptr_DIFFTIME;
+ char *ptr_MKTIME;
+ char *ptr_ASCTIME;
+ char *ptr_CTIME;
+ char *ptr_GMTIME;
+ char *ptr_LOCALTIM;
+ char *ptr_STRFTIME;
+ //char vcend[16];
+
+} VCONS;
+
+typedef void (*SubPtr) ();
+typedef int  (*SubIPtr) ();
+
+long   ATOI(const char *nptr);
+int    ISSPACE(int c);
+int    ISPRINT(int c);
+int    TOLOWER(int c);
+int    TOUPPER(int c);
+
+#define ATOI    ((SubIPtr)csa->vcons->ptr_ATOI)
+#define ISSPACE ((SubIPtr)csa->vcons->ptr_ISSPACE)
+#define ISPRINT ((SubIPtr)csa->vcons->ptr_ISPRINT)
+#define TOLOWER ((SubIPtr)csa->vcons->ptr_TOLOWER)
+#define TOUPPER ((SubIPtr)csa->vcons->ptr_TOUPPER)
+
+char  *GETS(char *s);
+char  *FGETS(char *s, int n, FILE *stream);
+int    FPUTS(const char *s, FILE *stream);
+int    FPUTC(int c, FILE *stream);
+int    FEOF(FILE *stream);
+int    PRINTF(const char *format, ...);
+FILE  *FOPEN(const char *filename, const char *mode);
+FILE  *FREOPEN(const char *filename, const char *mode, FILE *stream);
+int    FCLOSE(FILE *stream);
+int    FPRINTF(FILE *stream, const char *format, ...);
+int    SPRINTF(char *s, const char *format, ...);
+int    SSCANF(const char *s, const char *format, ...);
+int    FSEEK(FILE *stream, long int offset, int whence);
+long   FTELL(FILE *stream);
+size_t FREAD(void *ptr, size_t size, size_t nmemb, FILE *stream);
+size_t FWRITE(const void *ptr, size_t size, size_t nmemb, FILE *stream);
+
+#define GETS    ((SubIPtr)csa->vcons->ptr_GETS)
+#define FGETS   ((SubIPtr)csa->vcons->ptr_FGETS)
+#define FPUTS   ((SubIPtr)csa->vcons->ptr_FPUTS)
+#define FPUTC   ((SubIPtr)csa->vcons->ptr_FPUTC)
+#define FEOF    ((SubIPtr)csa->vcons->ptr_FEOF)
+#define PRINTF  ((SubIPtr)csa->vcons->ptr_PRINTF)
+#define FOPEN   ((SubIPtr)csa->vcons->ptr_FOPEN)
+#define FREOPEN ((SubIPtr)csa->vcons->ptr_FREOPEN)
+#define FCLOSE  ((SubIPtr)csa->vcons->ptr_FCLOSE)
+#define FPRINTF ((SubIPtr)csa->vcons->ptr_FPRINTF)
+#define SPRINTF ((SubIPtr)csa->vcons->ptr_SPRINTF)
+#define SSCANF  ((SubIPtr)csa->vcons->ptr_SSCANF)
+#define FSEEK   ((SubIPtr)csa->vcons->ptr_FSEEK)
+#define FTELL   ((SubIPtr)csa->vcons->ptr_FTELL)
+#define FREAD   ((SubIPtr)csa->vcons->ptr_FREAD)
+#define FWRITE  ((SubIPtr)csa->vcons->ptr_FWRITE)
+
+void   EXIT(int status);
+
+#define EXIT    ((SubPtr)csa->vcons->ptr_EXIT)
+
+int    MEMCMP(const void *s1, const void *s2, size_t n);
+void  *MEMCPY(void *s1, const void *s2, size_t n);
+void  *MEMSET(void *s, int c, size_t n);
+
+#define MEMCMP  ((SubIPtr)csa->vcons->ptr_MEMCMP)
+#define MEMCPY  ((SubPtr)csa->vcons->ptr_MEMCPY)
+#define MEMSET  ((SubPtr)csa->vcons->ptr_MEMSET)
+
+char  *STRCHR(const char *s, int c);
+int    STRCMP(const char *s1, const char *s2);
+int    STRNCMP(const char *s1, const char *s2, size_t n);
+char  *STRCPY(char *s1, const char *s2);
+char  *STRNCPY(char *s1, const char *s2, size_t n);
+char  *STRCAT(char *s1, const char *s2);
+char  *STRNCAT(char *s1, const char *s2, size_t n);
+size_t STRLEN(const char *s);
+
+#define STRCHR  ((SubIPtr)csa->vcons->ptr_STRCHR)
+#define STRCMP  ((SubIPtr)csa->vcons->ptr_STRCMP)
+#define STRNCMP ((SubIPtr)csa->vcons->ptr_STRNCMP)
+#define STRCPY  ((SubPtr)csa->vcons->ptr_STRCPY)
+#define STRNCPY ((SubPtr)csa->vcons->ptr_STRNCPY)
+#define STRCAT  ((SubPtr)csa->vcons->ptr_STRCAT)
+#define STRNCAT ((SubPtr)csa->vcons->ptr_STRNCAT)
+#define STRLEN  ((SubIPtr)csa->vcons->ptr_STRLEN)
+
+int    SETJMP(jmp_buf env);
+void   LONGJMP(jmp_buf env, int val);
+
+#define SETJMP  ((SubIPtr)csa->vcons->ptr_SETJMP)
+#define LONGJMP ((SubPtr)csa->vcons->ptr_LONGJMP)
+
+void   SRAND(unsigned int seed);
+int    RAND(void);
+time_t TIME(time_t *timer);
+struct tm *LOCALTIME(const time_t *timer);
+struct tm *GMTIME(const time_t *timer);
+size_t STRFTIME(char *s, size_t maxsize,
+                const char *format, const struct tm *timeptr);
+
+#define SRAND     ((SubIPtr)csa->vcons->ptr_SRAND)
+#define RAND      ((SubIPtr)csa->vcons->ptr_RAND)
+#define TIME      ((SubIPtr)csa->vcons->ptr_TIME)
+#define LOCALTIME ((SubIPtr)csa->vcons->ptr_LOCALTIM)
+#define LOCALTIM  ((SubIPtr)csa->vcons->ptr_LOCALTIM)
+#define GMTIME    ((SubIPtr)csa->vcons->ptr_GMTIME)
+#define STRFTIME  ((SubIPtr)csa->vcons->ptr_STRFTIME)
+
+void  *MALLOC(size_t size);
+void  *CALLOC(size_t nmemb, size_t size);
+void   FREE(void *ptr);
+
+#define MALLOC  ((SubIPtr)csa->vcons->ptr_MALLOC)
+#define CALLOC  ((SubIPtr)csa->vcons->ptr_CALLOC)
+#define FREE    ((SubIPtr)csa->vcons->ptr_FREE)
+
+#endif

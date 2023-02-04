@@ -1,0 +1,44 @@
+ /////////////////////////////////////////////////////////////////////
+ //   KICKS is an enhancement for TSO that lets you run your CICS
+ //   applications directly in TSO instead of having to 'install'
+ //   those apps in CICS.
+ //   You don't even need CICS itself installed on your machine!
+ //
+ //   KICKS for TSO
+ //   © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ //   Usage of 'KICKS for TSO' is in all cases subject to license.
+ //   See http://www.kicksfortso.com
+ //   for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+#ifndef __KIKEIB__
+#define __KIKEIB__
+typedef struct _KIKEIB
+{
+ int eibtaskn;         // task number
+ short eibcalen;       // length of commarea
+ short eibcposn;       // cursor position
+ int eibdate;          // task start date
+ int eibtime;          // task start time
+ int eibresp;          // error (condition) code
+ int eibresp2;         // extended error code
+ char eibrsrce [8];    // last resource used
+ char eibds [8];       // last file used
+ char eibfn [2];       // last command code
+ char eibrcode [6];    // response from last command
+ char eibtrmid [4];    // terminal id
+ char eibtrnid [4];    // transaction id
+ char eibaid;          // aid byte from last input
+ char eibopid [3];     // opid
+ char eibusrid [8];    // user id from tso
+ char eibsysid [8];    // smf sysid
+ char eibnetid [8];    // terminal netname
+ char eibpgmid [8];    // program id
+ int eibline;          // line number in source
+ char eibprog [8];     // program name in source
+ char eibwc [20];      // when compiled in source
+ //
+} KIKEIB;
+#endif
+

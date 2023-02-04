@@ -1,0 +1,78 @@
+         PRINT NOGEN
+MENSET1  DFHMSD TYPE=&SYSPARM,                                         X
+               LANG=COBOL,                                             X
+               MODE=INOUT,                                             X
+               TERM=3270-2,                                            X
+               CTRL=FREEKB,                                            X
+               STORAGE=AUTO,                                           X
+               DSATTS=(COLOR,HILIGHT),                                 X
+               MAPATTS=(COLOR,HILIGHT),                                X
+               TIOAPFX=YES
+***********************************************************************
+MENMAP1  DFHMDI SIZE=(24,80),                                          X
+               LINE=1,                                                 X
+               COLUMN=1
+***********************************************************************
+         DFHMDF POS=(1,1),                                             X
+               LENGTH=7,                                               X
+               ATTRB=(NORM,PROT),                                      X
+               COLOR=BLUE,                                             X
+               INITIAL='MENMAP1'
+         DFHMDF POS=(1,20),                                            X
+               LENGTH=11,                                              X
+               ATTRB=(NORM,PROT),                                      X
+               COLOR=GREEN,                                            X
+               INITIAL='Master Menu'
+TRANID   DFHMDF POS=(1,76),                                            X
+               LENGTH=4,                                               X
+               ATTRB=(NORM,PROT),                                      X
+               COLOR=BLUE,                                             X
+               INITIAL='XXXX'
+***********************************************************************
+         DFHMDF POS=(3,1),                                             X
+               LENGTH=36,                                              X
+               ATTRB=(NORM,PROT),                                      X
+               COLOR=NEUTRAL,                                          X
+               INITIAL='Select an action.  Then press Enter.'
+         DFHMDF POS=(5,1),                                             X
+               LENGTH=14,                                              X
+               ATTRB=(NORM,PROT),                                      X
+               COLOR=GREEN,                                            X
+               INITIAL='Action . . . .'
+ACTION   DFHMDF POS=(5,16),                                            X
+               LENGTH=1,                                               X
+               ATTRB=(NORM,UNPROT,NUM,IC),                             X
+               COLOR=TURQUOISE,                                        X
+               INITIAL='_'
+         DFHMDF POS=(5,18),                                            X
+               LENGTH=32,                                              X
+               ATTRB=(NORM,ASKIP),                                     X
+               COLOR=NEUTRAL,                                          X
+               INITIAL='1.  Display customer information'
+         DFHMDF POS=(6,18),                                            X
+               LENGTH=33,                                              X
+               ATTRB=(NORM,PROT),                                      X
+               COLOR=NEUTRAL,                                          X
+               INITIAL='2.  Maintain customer information'
+         DFHMDF POS=(7,18),                                            X
+               LENGTH=16,                                              X
+               ATTRB=(NORM,PROT),                                      X
+               COLOR=NEUTRAL,                                          X
+               INITIAL='3.  Enter orders'
+***********************************************************************
+MESSAGE  DFHMDF POS=(23,1),                                            X
+               LENGTH=79,                                              X
+               ATTRB=(BRT,PROT),                                       X
+               COLOR=YELLOW
+         DFHMDF POS=(24,1),                                            X
+               LENGTH=20,                                              X
+               ATTRB=(NORM,PROT),                                      X
+               COLOR=BLUE,                                             X
+               INITIAL='F3=Exit   F12=Cancel'
+DUMMY    DFHMDF POS=(24,79),                                           X
+               LENGTH=1,                                               X
+               ATTRB=(DRK,PROT,FSET),                                  X
+               INITIAL=' '
+***********************************************************************
+         DFHMSD TYPE=FINAL
+         END

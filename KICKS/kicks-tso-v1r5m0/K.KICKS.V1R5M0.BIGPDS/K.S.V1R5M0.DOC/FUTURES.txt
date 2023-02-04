@@ -1,0 +1,142 @@
+Ideas for Future KICKS enhancements
+
+
+The 1.5.1 release (mid 2015?) will provide early support for 31 bit
+applications; the goal being to get that into user testing well before
+its official debut in the 1.6.0 release. 1.5.1 thus is primarily for
+'z' users and will also feature a preprocessor for IBM C and KICKS
+build using that compiler.
+
+The 1.6.0 release (2016 timeframe?) will feature 31 bit compatibility,
+IC (interval control), trigger processing, and internals documentation.
+
+The 1.7.0 release (2018 timeframe?) will feature Journaling & DTB
+(dynamic transaction backout), dynamic table update, and maybe a command
+level interpreter.
+
+
+1.6.0 timeframe - end of 2016
+
+1.6.0 definitely
+* all under 'near term interests' 'minor projects'
+* integrate KEDFPGM api filter control into KEDF proper
+* make it 31 bit clean
+* interval control & trigger processing
+* internals documentation
+
+1.6.0 maybe
+* add symbolic working storage display/update to KEDF
+* batch program debugging shell
+* converse; 3270 partition support
+* bsd sockets (at least in vm370/nicof)
+* 'prettify' the code
+
+
+1.7.0 timeframe - end of 2018
+
+1.7.0 definitely
+* whatever doesn't make it from 1.6.0
+* KEDA (CEDA like) dynamic tables
+* Journaling & DTB
+* add SET processing (as alternate to INTO) to various READ api's
+
+1.7.0 maybe
+* KECI (CECI like) command level interpreter
+* add some of the SP api's (set, inquire) and rewrite KSMT
+* some kind of gui for generating bms maps (SDF like? MAPR like?)
+
+
+Near term interests
+
+
+* add symbolic working storage display/update for mvt cobol to KEDF
+* add 'execution profiling' to KEDF source trace
+* integrate KEDFPGM api filter control into KEDF proper
+* capture and redirect (to term & TS) GCC stdin stdout stderr for
+  batch sim with KEDF source trace
+* converse; 3270 partition support
+* bsd sockets (at least in vm370/nicof)
+  * port EZASOCKET
+* minor projects
+  * allow multiple args for current "one at a time" api's like
+    ASSIGN, ADDRESS, FORMATTIME
+  * line/column support in bms maps
+  * run crlp to eof at startup before 'switching' to real terminal
+  * improve KICKS abend reporting when abend is not in user code
+  * PA, PF key named transactions (taskreq arg in PCT macro, etc)
+  * extended PF keys (25-48?)
+  * migrate some KICKS doc & KooKbooK receipes to youtube
+  * setup & encourage CICS/KICKS 'public domain' app repository
+
+
+Longer term interests
+
+
+* add some of the SP api's (set, inquire) and rewrite KSMT
+  to use them
+* capture and redirect (to term & TS) COBOL, COBOL2 display &
+  accept for batch sim with KEDF source trace
+* add symbolic working storage display/update for cobol2 to KEDF
+* add symbolic working storage display/update for gcc to KEDF
+  (needs unported nm, objdump tools)
+* make it 31 bit clean
+* make KICKS reentrant
+* 'prettify' the code
+* make CMDLVL programs serially reusable (currently reloaded
+  every time)
+* interval control & trigger processing
+* function shipping
+* implement more legacy api's (BIF? PUSH/POP?, ...)
+* implement some modern api's (SOAP, WEB, ...)
+* more bms options (grpname, ...)
+* some kind of gui for generating bms maps (SDF like? MAPR like?)
+* add more vsam fcp functions like massinsert; rba access to ksds,
+  path; etc
+* add BDAM support to fcp
+* group type for PPT, PCT (etc) macros, for example group=samples
+  to pull in the TAC, MUR stuff, group=test for the testcob stuff,
+* KEDA (CEDA like) dynamic tables
+* KECI (CECI like) command level interpreter
+* Journaling & DTB
+* a KICKS version of DFHELII, allowing relink of CICS apps into
+  KICKS without app source
+* align KICKS to DFHELII, allowing KICKS and CICS object modules to
+  be moved between KICKS and CICS without recompile
+* improved CMS implementation of ENQ/DEQ, SPOOLOPEN, and
+  WRITE OPERATOR
+* improved CMS vsam support; multiple vsam volumes
+* add SET processing (as alternate to INTO) to various READ api's
+  for in buffer processing
+
+
+Others have also suggested
+
+
+* ASRA, ASRB, AICA recovery
+* KSMT newcopy function
+* OPID security (transec arg in PCT macro, etc)
+* finish the Linux/zLinux port
+* DOS/VS, VSE port
+* MVS open edition port
+* assembly language preprocessor
+* pl/1 preprocessor
+* VS cobol support (mostly procs & bll cell load)
+* other preprocessors and environments like REXX, JAVA
+* TSO clists (like current CMS execs) for online mapgens, compiles,
+  table updates, etc - as alternate to batch
+* multiple terminal support (pseudo conversational model)
+* add BPAM support to fcp
+* container support
+* support for vsam xrba's
+* support for other C compilers
+
+
+Related (stalled or never really started) projects
+
+
+* Port opencobol to MVS/CMS
+* vsam replacement for CMS (based on sqlite)
+* SQL preprocessor for TK3/VM370 based systems
+* write a good DSECT2C program for GCCMVS
+
+

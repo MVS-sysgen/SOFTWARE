@@ -1,0 +1,588 @@
+       IDENTIFICATION DIVISION.
+
+       PROGRAM-ID.  CUSTMNT3.
+
+       ENVIRONMENT DIVISION.
+
+       DATA DIVISION.
+
+       WORKING-STORAGE SECTION.
+
+       01  SWITCHES.
+
+           05  VALID-DATA-SW                 PIC X(01)  VALUE 'Y'.
+               88  VALID-DATA                           VALUE 'Y'.
+
+       01  FLAGS.
+
+           05  SEND-FLAG                     PIC X(01).
+               88  SEND-ERASE                       VALUE '1'.
+               88  SEND-ERASE-ALARM                 VALUE '2'.
+               88  SEND-DATAONLY                    VALUE '3'.
+               88  SEND-DATAONLY-ALARM              VALUE '4'.
+
+       01  WORK-FIELDS.
+
+           05  RESPONSE-CODE                 PIC S9(08) COMP.
+
+       01  USER-INSTRUCTIONS.
+
+           05  ADD-INSTRUCTION                 PIC X(79) VALUE
+               'Type information for new customer.  Then Press Enter.'.
+           05  CHANGE-INSTRUCTION              PIC X(79) VALUE
+               'Type changes.  Then press Enter.'.
+           05  DELETE-INSTRUCTION              PIC X(79) VALUE
+               'Press Enter to delete this customer or press F12 to canc
+      -        'el.'.
+
+       01  COMMUNICATION-AREA.
+
+           05  CA-CONTEXT-FLAG               PIC X.
+               88  PROCESS-KEY-MAP                  VALUE '1'.
+               88  PROCESS-ADD-CUSTOMER             VALUE '2'.
+               88  PROCESS-CHANGE-CUSTOMER          VALUE '3'.
+               88  PROCESS-DELETE-CUSTOMER          VALUE '4'.
+           05  CA-CUSTOMER-NUMBER            PIC X(6).
+
+       01  TEMPORARY-STORAGE-FIELDS.
+
+           05  TS-QUEUE-NAME.
+               10  TS-TERMINAL-ID            PIC X(4).
+               10  FILLER                    PIC X(4)   VALUE 'MNT3'.
+           05  TS-ITEM-NUMBER                PIC S9(4)  COMP  VALUE +1.
+           05  TS-CUSTOMER-RECORD.
+               10  TS-CUSTOMER-NUMBER        PIC X(6).
+               10  FILLER                    PIC X(112).
+
+       COPY CUSTMAS.
+
+       COPY MNTSET1.
+
+       COPY KIKAID.
+
+       COPY ATTR.
+
+       LINKAGE SECTION.
+
+       01  KIKCOMMAREA                       PIC X(07).
+
+       PROCEDURE DIVISION.
+
+       0000-PROCESS-CUSTOMER-MAINT.
+
+           IF EIBCALEN > ZERO
+               MOVE KIKCOMMAREA TO COMMUNICATION-AREA.
+
+           MOVE EIBTRMID TO TS-TERMINAL-ID.
+
+      *    EVALUATE TRUE
+
+      *        WHEN EIBCALEN = ZERO
+               IF EIBCALEN = ZERO
+                   MOVE LOW-VALUE TO TS-CUSTOMER-RECORD
+                   EXEC KICKS
+                       WRITEQ TS QUEUE(TS-QUEUE-NAME)
+                                 FROM(TS-CUSTOMER-RECORD)
+                   END-EXEC
+                   MOVE LOW-VALUE TO MNTMAP1O
+      *            SET SEND-ERASE TO TRUE
+                   MOVE '1' TO SEND-FLAG
+                   MOVE -1 TO CUSTNO1L
+                   PERFORM 1500-SEND-KEY-MAP
+      *            SET PROCESS-KEY-MAP TO TRUE
+                   MOVE '1' TO CA-CONTEXT-FLAG
+
+      *        WHEN EIBAID = KIKPF3
+               ELSE
+               IF EIBAID = KIKPF3
+                   EXEC KICKS
+                       DELETEQ TS QUEUE(TS-QUEUE-NAME)
+                   END-EXEC
+                   EXEC KICKS
+                       XCTL PROGRAM('INVMENU')
+                   END-EXEC
+
+      *        WHEN EIBAID = KIKPF12
+               ELSE
+               IF EIBAID = KIKPF12
+                   PERFORM XXXX-UNNESTED-8
+
+      *        WHEN EIBAID = KIKCLEAR
+               ELSE
+               IF EIBAID = KIKCLEAR
+                   PERFORM XXXX-UNNESTED-9
+
+      *        WHEN EIBAID = DFHPA1 OR DFHPA2 OR DFHPA3
+
+      *           CONTINUE -- let these fall into 'other'...
+
+
+      *        WHEN EIBAID = KIKENTER
+               ELSE
+               IF EIBAID = KIKENTER
+                   PERFORM XXXX-UNNESTED-2
+
+      *        WHEN OTHER
+               ELSE
+                   PERFORM XXXX-UNNESTED-10.
+
+      *    END-EVALUATE.
+
+           EXEC KICKS
+               RETURN TRANSID('MNT3')
+                      COMMAREA(COMMUNICATION-AREA)
+           END-EXEC.
+
+       1000-PROCESS-KEY-MAP.
+
+           PERFORM 1100-RECEIVE-KEY-MAP.
+           PERFORM 1200-EDIT-KEY-DATA.
+           IF VALID-DATA
+               MOVE CUSTNO1I      TO CUSTNO2O
+               MOVE CM-LAST-NAME  TO LNAMEO
+               MOVE CM-FIRST-NAME TO FNAMEO
+               MOVE CM-ADDRESS    TO ADDRO
+               MOVE CM-CITY       TO CITYO
+               MOVE CM-STATE      TO STATEO
+               MOVE CM-ZIP-CODE   TO ZIPCODEO
+               MOVE -1            TO LNAMEL
+      *        SET SEND-ERASE TO TRUE
+               MOVE '1' TO SEND-FLAG
+               PERFORM 1400-SEND-DATA-MAP
+           ELSE
+               MOVE LOW-VALUE TO CUSTNO1O
+                                 ACTIONO
+      *        SET SEND-DATAONLY-ALARM TO TRUE
+               MOVE '4' TO SEND-FLAG
+               PERFORM 1500-SEND-KEY-MAP.
+
+       1100-RECEIVE-KEY-MAP.
+
+           EXEC KICKS
+               RECEIVE MAP('MNTMAP1')
+                       MAPSET('MNTSET1')
+                       INTO(MNTMAP1I)
+           END-EXEC.
+
+       1200-EDIT-KEY-DATA.
+
+           IF ACTIONI NOT = '1' AND '2' AND '3'
+               MOVE -1 TO ACTIONL
+               MOVE 'Action must be 1, 2, or 3.' TO MSG1O
+               MOVE 'N' TO VALID-DATA-SW.
+
+           IF       CUSTNO1L = ZERO
+                 OR CUSTNO1I = SPACE
+               MOVE -1 TO CUSTNO1L
+               MOVE 'You must enter a customer number.' TO MSG1O
+               MOVE 'N' TO VALID-DATA-SW.
+
+           IF VALID-DATA
+               MOVE LOW-VALUE TO MNTMAP2O
+      *        EVALUATE ACTIONI
+      *            WHEN '1'
+                   IF ACTIONI EQUAL '1'
+                       PERFORM 1300-READ-CUSTOMER-RECORD
+                       PERFORM XXXX-UNNESTED-12
+      *            WHEN '2'
+                   ELSE
+                   IF ACTIONI EQUAL '2'
+                       PERFORM 1300-READ-CUSTOMER-RECORD
+                       PERFORM XXXX-UNNESTED-14
+      *            WHEN '3'
+                   ELSE
+                   IF ACTIONI EQUAL '3'
+                       PERFORM 1300-READ-CUSTOMER-RECORD
+                       PERFORM XXXX-UNNESTED-16.
+      *        END-EVALUATE.
+
+       1300-READ-CUSTOMER-RECORD.
+
+           EXEC KICKS
+               READ FILE('CUSTMAS')
+                    INTO(CUSTOMER-MASTER-RECORD)
+                    RIDFLD(CUSTNO1I)
+                    RESP(RESPONSE-CODE)
+           END-EXEC.
+           IF      RESPONSE-CODE NOT = KIKRESP(NORMAL)
+               AND RESPONSE-CODE NOT = KIKRESP(NOTFND)
+               PERFORM 9999-TERMINATE-PROGRAM.
+           IF RESPONSE-CODE = KIKRESP(NORMAL)
+               MOVE CUSTOMER-MASTER-RECORD TO TS-CUSTOMER-RECORD
+               EXEC KICKS
+                   WRITEQ TS QUEUE(TS-QUEUE-NAME)
+                             FROM(TS-CUSTOMER-RECORD)
+                             ITEM(TS-ITEM-NUMBER)
+                             REWRITE
+               END-EXEC.
+
+       1400-SEND-DATA-MAP.
+
+           MOVE 'MNT3' TO TRANID2O.
+
+      *    EVALUATE TRUE
+      *        WHEN SEND-ERASE
+               IF SEND-ERASE
+                   EXEC KICKS
+                       SEND MAP('MNTMAP2')
+                            MAPSET('MNTSET1')
+                            FROM(MNTMAP2O)
+                            ERASE
+                            CURSOR
+                   END-EXEC
+      *        WHEN SEND-DATAONLY-ALARM
+               ELSE
+               IF SEND-DATAONLY-ALARM
+                   EXEC KICKS
+                       SEND MAP('MNTMAP2')
+                            MAPSET('MNTSET1')
+                            FROM(MNTMAP2O)
+                            DATAONLY
+                            ALARM
+                            CURSOR
+               END-EXEC.
+      *    END-EVALUATE.
+
+       1500-SEND-KEY-MAP.
+
+           MOVE 'MNT3' TO TRANID1O.
+
+      *    EVALUATE TRUE
+      *        WHEN SEND-ERASE
+               IF SEND-ERASE
+                   EXEC KICKS
+                       SEND MAP('MNTMAP1')
+                            MAPSET('MNTSET1')
+                            FROM(MNTMAP1O)
+                            ERASE
+                            CURSOR
+                   END-EXEC
+      *        WHEN SEND-ERASE-ALARM
+               ELSE
+               IF SEND-ERASE-ALARM
+                   EXEC KICKS
+                       SEND MAP('MNTMAP1')
+                            MAPSET('MNTSET1')
+                            FROM(MNTMAP1O)
+                            ERASE
+                            ALARM
+                            CURSOR
+                   END-EXEC
+      *        WHEN SEND-DATAONLY-ALARM
+               ELSE
+               IF SEND-DATAONLY-ALARM
+                   EXEC KICKS
+                       SEND MAP('MNTMAP1')
+                            MAPSET('MNTSET1')
+                            FROM(MNTMAP1O)
+                            DATAONLY
+                            ALARM
+                            CURSOR
+               END-EXEC.
+      *    END-EVALUATE.
+
+       2000-PROCESS-ADD-CUSTOMER.
+
+           PERFORM 2100-RECEIVE-DATA-MAP.
+           PERFORM 2300-WRITE-CUSTOMER-RECORD.
+           IF RESPONSE-CODE = KIKRESP(NORMAL)
+               MOVE 'Customer record added.' TO MSG1O
+      *        SET SEND-ERASE TO TRUE
+               MOVE '1' TO SEND-FLAG
+           ELSE
+               PERFORM XXXX-UNNESTED-3.
+           MOVE -1 TO CUSTNO1L.
+           PERFORM 1500-SEND-KEY-MAP.
+      *    SET PROCESS-KEY-MAP TO TRUE.
+           MOVE '1' TO CA-CONTEXT-FLAG.
+
+       2100-RECEIVE-DATA-MAP.
+
+           EXEC KICKS
+               RECEIVE MAP('MNTMAP2')
+                       MAPSET('MNTSET1')
+                       INTO(MNTMAP2I)
+           END-EXEC.
+
+       2300-WRITE-CUSTOMER-RECORD.
+
+           MOVE CUSTNO2I TO CM-CUSTOMER-NUMBER.
+           MOVE LNAMEI   TO CM-LAST-NAME.
+           MOVE FNAMEI   TO CM-FIRST-NAME.
+           MOVE ADDRI    TO CM-ADDRESS.
+           MOVE CITYI    TO CM-CITY.
+           MOVE STATEI   TO CM-STATE.
+           MOVE ZIPCODEI TO CM-ZIP-CODE.
+           EXEC KICKS
+               WRITE FILE('CUSTMAS')
+                     FROM(CUSTOMER-MASTER-RECORD)
+                     RIDFLD(CM-CUSTOMER-NUMBER)
+                     RESP(RESPONSE-CODE)
+           END-EXEC.
+           IF      RESPONSE-CODE NOT = KIKRESP(NORMAL)
+               AND RESPONSE-CODE NOT = KIKRESP(DUPREC)
+               PERFORM 9999-TERMINATE-PROGRAM.
+
+       3000-PROCESS-CHANGE-CUSTOMER.
+
+           PERFORM 2100-RECEIVE-DATA-MAP.
+           MOVE CUSTNO2I TO CM-CUSTOMER-NUMBER.
+           PERFORM 3100-READ-CUSTOMER-FOR-UPDATE.
+           IF RESPONSE-CODE = KIKRESP(NORMAL)
+               EXEC KICKS
+                   READQ TS QUEUE(TS-QUEUE-NAME)
+                           INTO(TS-CUSTOMER-RECORD)
+                           ITEM(TS-ITEM-NUMBER)
+               END-EXEC
+               PERFORM XXXX-UNNESTED-4
+           ELSE
+               PERFORM XXXX-UNNESTED-5.
+           MOVE -1 TO CUSTNO1L.
+           PERFORM 1500-SEND-KEY-MAP.
+      *    SET PROCESS-KEY-MAP TO TRUE.
+           MOVE '1' TO CA-CONTEXT-FLAG.
+
+       3100-READ-CUSTOMER-FOR-UPDATE.
+
+           EXEC KICKS
+               READ FILE('CUSTMAS')
+                    INTO(CUSTOMER-MASTER-RECORD)
+                    RIDFLD(CM-CUSTOMER-NUMBER)
+                    UPDATE
+                    RESP(RESPONSE-CODE)
+           END-EXEC.
+           IF      RESPONSE-CODE NOT = KIKRESP(NORMAL)
+               AND RESPONSE-CODE NOT = KIKRESP(NOTFND)
+               PERFORM 9999-TERMINATE-PROGRAM.
+
+       3200-REWRITE-CUSTOMER-RECORD.
+
+           MOVE LNAMEI   TO CM-LAST-NAME.
+           MOVE FNAMEI   TO CM-FIRST-NAME.
+           MOVE ADDRI    TO CM-ADDRESS.
+           MOVE CITYI    TO CM-CITY.
+           MOVE STATEI   TO CM-STATE.
+           MOVE ZIPCODEI TO CM-ZIP-CODE.
+           EXEC KICKS
+               REWRITE FILE('CUSTMAS')
+                       FROM(CUSTOMER-MASTER-RECORD)
+                       RESP(RESPONSE-CODE)
+           END-EXEC.
+           IF RESPONSE-CODE NOT = KIKRESP(NORMAL)
+               PERFORM 9999-TERMINATE-PROGRAM.
+
+       4000-PROCESS-DELETE-CUSTOMER.
+
+           MOVE CA-CUSTOMER-NUMBER TO CM-CUSTOMER-NUMBER.
+           PERFORM 3100-READ-CUSTOMER-FOR-UPDATE.
+           IF RESPONSE-CODE = KIKRESP(NORMAL)
+               EXEC KICKS
+                   READQ TS QUEUE(TS-QUEUE-NAME)
+                            INTO(TS-CUSTOMER-RECORD)
+                            ITEM(TS-ITEM-NUMBER)
+               END-EXEC
+               PERFORM XXXX-UNNESTED-6
+           ELSE
+               PERFORM XXXX-UNNESTED-7.
+           MOVE -1 TO CUSTNO1L.
+           PERFORM 1500-SEND-KEY-MAP.
+      *    SET PROCESS-KEY-MAP TO TRUE.
+           MOVE '1' TO CA-CONTEXT-FLAG.
+
+       4100-DELETE-CUSTOMER-RECORD.
+
+           EXEC KICKS
+               DELETE FILE('CUSTMAS')
+                      RESP(RESPONSE-CODE)
+           END-EXEC.
+           IF  RESPONSE-CODE NOT = KIKRESP(NORMAL)
+               PERFORM 9999-TERMINATE-PROGRAM.
+
+       9999-TERMINATE-PROGRAM.
+
+           EXEC KICKS
+               ABEND
+           END-EXEC.
+
+
+       XXXX-UNNESTED SECTION.
+
+       XXXX-UNNESTED-1.
+      *                EVALUATE TRUE
+      *                    WHEN PROCESS-ADD-CUSTOMER
+                           IF PROCESS-ADD-CUSTOMER
+                               MOVE ADD-INSTRUCTION    TO INSTR2O
+      *                    WHEN PROCESS-CHANGE-CUSTOMER
+                           ELSE
+                           IF PROCESS-CHANGE-CUSTOMER
+                               MOVE CHANGE-INSTRUCTION TO INSTR2O
+      *                    WHEN PROCESS-DELETE-CUSTOMER
+                           ELSE
+                           IF PROCESS-DELETE-CUSTOMER
+                               MOVE DELETE-INSTRUCTION TO INSTR2O.
+      *                END-EVALUATE.
+
+       XXXX-UNNESTED-2.
+      *            EVALUATE TRUE
+      *                WHEN PROCESS-KEY-MAP
+                       IF PROCESS-KEY-MAP
+                           PERFORM 1000-PROCESS-KEY-MAP
+      *                WHEN PROCESS-ADD-CUSTOMER
+                       ELSE
+                       IF PROCESS-ADD-CUSTOMER
+                           PERFORM 2000-PROCESS-ADD-CUSTOMER
+      *                WHEN PROCESS-CHANGE-CUSTOMER
+                       ELSE
+                       IF PROCESS-CHANGE-CUSTOMER
+                           PERFORM 3000-PROCESS-CHANGE-CUSTOMER
+      *                WHEN PROCESS-DELETE-CUSTOMER
+                       ELSE
+                       IF PROCESS-DELETE-CUSTOMER
+                           PERFORM 4000-PROCESS-DELETE-CUSTOMER.
+      *            END-EVALUATE.
+
+       XXXX-UNNESTED-3.
+               IF RESPONSE-CODE = KIKRESP(DUPREC)
+                   MOVE 'Another user has added a record with that custo
+      -             'mer number.' TO MSG1O
+      *            SET SEND-ERASE-ALARM TO TRUE
+                   MOVE '2' TO SEND-FLAG.
+
+       XXXX-UNNESTED-4.
+               IF CUSTOMER-MASTER-RECORD = TS-CUSTOMER-RECORD
+                   PERFORM 3200-REWRITE-CUSTOMER-RECORD
+                   MOVE 'Customer record updated.' TO MSG1O
+      *            SET SEND-ERASE TO TRUE
+                   MOVE '1' TO SEND-FLAG
+               ELSE
+                   MOVE 'Another user has updated the record.  Try again
+      -                 '.' TO MSG1O
+      *            SET SEND-ERASE-ALARM TO TRUE
+                   MOVE '2' TO SEND-FLAG.
+
+       XXXX-UNNESTED-5.
+               IF RESPONSE-CODE = KIKRESP(NOTFND)
+                   MOVE 'Another user has deleted the record.' TO
+                       MSG1O
+      *            SET SEND-ERASE-ALARM TO TRUE
+                   MOVE '2' TO SEND-FLAG.
+
+       XXXX-UNNESTED-6.
+               IF CUSTOMER-MASTER-RECORD = TS-CUSTOMER-RECORD
+                   PERFORM 4100-DELETE-CUSTOMER-RECORD
+                   MOVE 'Customer deleted.' TO MSG1O
+      *            SET SEND-ERASE TO TRUE
+                   MOVE '1' TO SEND-FLAG
+               ELSE
+                   MOVE 'Another user has updated the record.  Try again
+      -                 '.' TO MSG1O
+      *            SET SEND-ERASE-ALARM TO TRUE
+                   MOVE '2' TO SEND-FLAG.
+
+       XXXX-UNNESTED-7.
+               IF RESPONSE-CODE = KIKRESP(NOTFND)
+                   MOVE 'Another user has deleted the record.' TO
+                       MSG1O
+      *            SET SEND-ERASE-ALARM TO TRUE
+                   MOVE '2' TO SEND-FLAG.
+
+       XXXX-UNNESTED-8.
+                   IF PROCESS-KEY-MAP
+                       EXEC KICKS
+                           DELETEQ TS QUEUE(TS-QUEUE-NAME)
+                       END-EXEC
+                       EXEC KICKS
+                           XCTL PROGRAM('INVMENU')
+                       END-EXEC
+                   ELSE
+                       MOVE LOW-VALUE TO MNTMAP1O
+                       MOVE -1 TO CUSTNO1L
+      *                SET SEND-ERASE TO TRUE
+                       MOVE '1' TO SEND-FLAG
+                       PERFORM 1500-SEND-KEY-MAP
+      *                SET PROCESS-KEY-MAP TO TRUE
+                       MOVE '1' TO CA-CONTEXT-FLAG.
+
+       XXXX-UNNESTED-9.
+                   IF PROCESS-KEY-MAP
+                       MOVE LOW-VALUE TO MNTMAP1O
+                       MOVE -1 TO CUSTNO1L
+      *                SET SEND-ERASE TO TRUE
+                       MOVE '1' TO SEND-FLAG
+                       PERFORM 1500-SEND-KEY-MAP
+                   ELSE
+                       MOVE LOW-VALUE TO MNTMAP2O
+                       MOVE CA-CUSTOMER-NUMBER TO CUSTNO2O
+                       PERFORM XXXX-UNNESTED-1
+                       MOVE -1 TO LNAMEL
+      *                SET SEND-ERASE TO TRUE
+                       MOVE '1' TO SEND-FLAG
+                       PERFORM 1400-SEND-DATA-MAP.
+
+       XXXX-UNNESTED-10.
+                   IF PROCESS-KEY-MAP
+                       MOVE LOW-VALUE TO MNTMAP1O
+                       MOVE 'That key is unassigned.' TO MSG1O
+                       MOVE -1 TO CUSTNO1L
+      *                SET SEND-DATAONLY-ALARM TO TRUE
+                       MOVE '4' TO SEND-FLAG
+                       PERFORM 1500-SEND-KEY-MAP
+                   ELSE
+                       MOVE LOW-VALUE TO MNTMAP2O
+                       MOVE -1 TO LNAMEL
+                       MOVE 'That key is unassigned.' TO MSG2O
+      *                SET SEND-DATAONLY-ALARM TO TRUE
+                       MOVE '4' TO SEND-FLAG
+                       PERFORM 1400-SEND-DATA-MAP.
+
+       XXXX-UNNESTED-11.
+                           IF RESPONSE-CODE = KIKRESP(NORMAL)
+                               MOVE 'That customer already exists.' TO
+                                   MSG1O
+                               MOVE 'N' TO VALID-DATA-SW.
+
+       XXXX-UNNESTED-12.
+                       IF RESPONSE-CODE = KIKRESP(NOTFND)
+                           MOVE CM-CUSTOMER-NUMBER TO CA-CUSTOMER-NUMBER
+                           MOVE ADD-INSTRUCTION TO INSTR2O
+      *                    SET PROCESS-ADD-CUSTOMER TO TRUE
+                           MOVE '2' TO CA-CONTEXT-FLAG
+                           MOVE SPACE TO CUSTOMER-MASTER-RECORD
+                       ELSE
+                           PERFORM XXXX-UNNESTED-11.
+
+       XXXX-UNNESTED-13.
+                           IF RESPONSE-CODE = KIKRESP(NOTFND)
+                               MOVE 'That customer does not exist.' TO
+                                   MSG1O
+                               MOVE 'N' TO VALID-DATA-SW.
+
+       XXXX-UNNESTED-14.
+                       IF RESPONSE-CODE = KIKRESP(NORMAL)
+                           MOVE CM-CUSTOMER-NUMBER TO CA-CUSTOMER-NUMBER
+                           MOVE CHANGE-INSTRUCTION TO INSTR2O
+      *                    SET PROCESS-CHANGE-CUSTOMER TO TRUE
+                           MOVE '3' TO CA-CONTEXT-FLAG
+                       ELSE
+                           PERFORM XXXX-UNNESTED-13.
+
+       XXXX-UNNESTED-15.
+                           IF RESPONSE-CODE = KIKRESP(NOTFND)
+                               MOVE 'That customer does not exist.' TO
+                                   MSG1O
+                               MOVE 'N' TO VALID-DATA-SW.
+
+       XXXX-UNNESTED-16.
+                       IF RESPONSE-CODE = KIKRESP(NORMAL)
+                           MOVE CM-CUSTOMER-NUMBER TO CA-CUSTOMER-NUMBER
+                           MOVE DELETE-INSTRUCTION TO INSTR2O
+      *                    SET PROCESS-DELETE-CUSTOMER TO TRUE
+                           MOVE '4' TO CA-CONTEXT-FLAG
+                           MOVE ATTR-PROT TO LNAMEA
+                                             FNAMEA
+                                             ADDRA
+                                             CITYA
+                                             STATEA
+                                             ZIPCODEA
+                       ELSE
+                           PERFORM XXXX-UNNESTED-15.

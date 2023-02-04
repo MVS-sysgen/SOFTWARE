@@ -1,0 +1,78 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+#include "kedfxeq.h"
+
+void DoTrace(KIKEIB *eib, DEBUGGERCA *comm) {
+char *tioa, buffer[200];
+int tadd, tsiz;
+int row, col, topline, botline, lines;
+short sbuf;
+
+ if((pwhich == 9) && (eib->eibaid == KIKPF9)) {
+  offset = -1;
+  DoMain(eib, comm);
+  return;
+  }
+ pwhich = 9;
+
+ DoTop(eib, comm);
+
+ tioa = csa->tctte->tioa;
+ topline = 6;
+ botline = bot - helpv - 1;
+ lines = botline - topline + 1;
+
+ tadd = (int)csa->trc.trctbl;
+ tsiz = (csa->trc.trcnum)*(csa->trc.trcsize);
+
+ SPRINTF(buffer, "Trace Table storage address %06X, length %hd",
+                 tadd, tsiz);
+ PUT_SBA(4,1)
+ APPEND_MSG(buffer);
+
+ if (tsiz == 0) {
+  DoBottom(eib, comm);
+  return;
+  }
+ if((eib->eibaid == KIKPF9) ||             // initial entry
+    (eib->eibaid == KIKPF24)){             // or re-center
+   offset = csa->trc.trccur;
+   offset = (--offset) * csa->trc.trcsize;
+   offset-= 16*(lines-1);
+   if (offset < 0) offset = 0;
+   ttype = 1; // first time (now always) do formatted...
+   }
+ // trace always scrolls by 16 'cause that's the size of trace entries!
+ if (eib->eibaid == KIKPF7) {             // scroll back
+  offset -= lines*16;
+  if (offset < 0) offset = 0;
+  }
+ if (eib->eibaid == KIKPF8) {             // scroll fwd
+  col = offset + lines*16;
+  if (col < tsiz) offset = col;
+  }
+ if (eib->eibaid == KIKPF19) offset = 0;  // scroll top
+ if (eib->eibaid == KIKPF20) {            // scroll bottom
+  offset = tsiz / 16;           // num lines in area
+  if (tsiz % 16 > 0) offset++;
+  offset -= lines;              // less num lines on screen
+  offset *= 16;                 // times chars / line
+  if (offset < 0) offset = 0;   // zero if negative...
+  }
+ DoDump((char*)tadd, tsiz, offset, topline, lines);
+ DoBottom(eib, comm);
+}
+
+

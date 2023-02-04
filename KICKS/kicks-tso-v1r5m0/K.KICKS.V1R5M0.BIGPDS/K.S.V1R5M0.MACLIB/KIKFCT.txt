@@ -1,0 +1,158 @@
+         MACRO
+&LABEL   KIKFCT &SUFFIX=00,                                            *
+               &TYPE=DATASET,                                          *
+               &FILSTAT=ENABLED,                                       *
+               &NUMREQ=,                                               *
+               &DATASET=,                                              *
+               &CATUSER=CMSUSER,                                       *
+               &CATLNK1=194,                                           *
+               &CATLNK2=222,                                           *
+               &CATPASS=WRITE,                                         *
+               &CATFM=O,                                               *
+               &CATVOL=VSAMIN,                                         *
+               &BASE=
+.*
+.* MACRO TO GENERATE 'FCT' TABLE FOR KICKS
+.*
+.* HISTORY:
+.*  V0R9M0 -
+.*  V1R0M0 - UNCHANGED (EXCEPT FOR VERSION STAMP)
+.*  V1R1M0 - added rcode
+.*  V1R1M1 - 9/1/2010
+.*  V1R1M2 - 11/28/2010
+.*  V1R1M3 - 04/13/2011
+.*  V1R4M0 - added cms catalog info in prefix
+.*         - deleted acb macrf stuff except 'adr'
+.*  V1R4M1 - 7/1/2011
+.*  V1R5M0 - 7/1/2012
+.*
+.* COPYRIGHT MIKE NOEL, 2008-2014. ALL RIGHTS RESERVED.
+.*
+         GBLA  &IREQS
+         GBLA  &NUMENTS
+         GBLB  &MNOTES
+         LCLA  &NUMREQS,&FREQS
+         LCLA  &NUM2
+         LCLC  &OLDLBL,&NEWLBL
+         LCLC  &DDNAME
+.*
+         AIF   ('&TYPE' EQ 'DATASET').FILE
+         AIF   ('&TYPE' EQ 'FINAL').FINAL
+         AIF   ('&TYPE' EQ 'INITIAL').INITIAL
+         MNOTE 8,'TYPE VALUE IS INVALID'
+&MNOTES  SETB  1
+         MEXIT
+.*
+.*
+.INITIAL ANOP
+KIKFCT&SUFFIX CSECT
+         DC    CL2'&SUFFIX'
+         DC    XL4'01050000'    4 byte version: (V),(R),(M),(edit)
+         DC    CL8'&CATUSER'    mvs - unused; cms - user owning
+         DC    XL2'&CATLNK1'    mvs - unused; cms - cat link sour
+         DC    XL2'&CATLNK2'    mvs - unused; cms - cat link targ
+         DC    CL8'&CATPASS'    mvs - unused; cms - write passwd
+         DC    CL2'&CATFM'      mvs - usused; cms - cat fm
+         DC    CL6'&CATVOL'     mvs - usused; cms - cat volid
+.*
+.* default initial (global) numreq to 10
+&IREQS   SETA  10
+         AIF   ('&NUMREQ' EQ '').NUMI003
+         AIF   (&NUMREQ LT 1).NUMI001
+         AIF   (&NUMREQ LE 15).NUMI002
+.NUMI001 MNOTE 8,'NUMREQ MUST BE GE 1 AND LE 15'
+&MNOTES  SETB  1
+         AGO  .NUMI003
+.NUMI002 ANOP
+&IREQS   SETA  &NUMREQ
+.NUMI003 ANOP
+         DC    A(FCT1)           POINTER TO FIRST FILE ENTRY
+         MEXIT
+.*
+.*
+.FILE    ANOP
+.* default file (local) numreq to initial (global) value
+&FREQS   SETA  &IREQS
+         AIF   ('&NUMREQ' EQ '').NUMF003
+         AIF   (&NUMREQ LT 1).NUMF001
+         AIF   (&NUMREQ LE 15).NUMF002
+.NUMF001 MNOTE 8,'NUMREQ MUST BE GE 1 AND LE 15'
+&MNOTES  SETB  1
+         AGO  .NUMF003
+.NUMF002 ANOP
+&FREQS   SETA  &NUMREQ
+.NUMF003 ANOP
+&OLDLBL  SETC  'FCT&NUMENTS'
+&NUMENTS SETA  &NUMENTS+1
+&NEWLBL  SETC  'FCT&NUMENTS'
+         AIF   (&NUMENTS LT 2).LBLFIX
+         ORG  &OLDLBL
+         DC    A(&NEWLBL)
+         ORG
+.LBLFIX  ANOP
+&NEWLBL  DC    F'0'          PLACE HOLDER FOR 'NEXT'
+         AIF   ('&LABEL' EQ '').FILE001
+         AIF   ('&DATASET' EQ '').FILE002
+         AIF   ('&DATASET' EQ '&LABEL').FILE002
+         MNOTE 8,'LABEL AND DATASET MUST BE THE SAME IF BOTH GIVEN'
+&MNOTES  SETB  1
+         MEXIT
+.FILE001 ANOP
+&DDNAME  SETC  '&DATASET'
+         AGO   .FILE003
+.FILE002 ANOP
+&DDNAME  SETC  '&LABEL'
+.*       AGO   .FILE003
+.FILE003 ANOP
+.*
+         AIF   ('&FILSTAT' NE 'ENABLED').STAT002
+         DC    H'0'          FLAG1
+         AGO   .STAT004
+.STAT002 AIF   ('&FILSTAT' NE 'DISABLED').STAT003
+         DC    H'1'          FLAG1 - FILE IN DISABLED STATE
+         AGO   .STAT004
+.STAT003 MNOTE 8,'FILSTAT MUST BE "ENABLED" OR "DISABLED"'
+&MNOTES  SETB  1
+.STAT004 ANOP
+.*
+         DC    H'0'          keylen
+         DC    3F'0'         nlogr,lrecl,rkp
+         DC    2H'0'         resp,resp2
+         DC    XL6'00'       rcode
+         DC    H'&FREQS'     numreq
+         DC    H'0'          lastreqid
+         DC    CL8'&DDNAME'  saved ddname of acb
+         AIF   ('&BASE' EQ '').NOBASE
+         DC    CL8'&BASE'    ddname of base cluster
+         AGO   .NOBASE2
+.NOBASE  DC    CL8' '        no base defined
+.NOBASE2 ANOP
+         DC    CL44' '       dsname (of base) for ENQ
+.*
+         ACB   DDNAME=&DDNAME,MACRF=(ADR,IN,OUT)
+*        ACB   DDNAME=&DDNAME,MACRF=(ADR)
+*        ACB   DDNAME=&DDNAME,
+*              MACRF=(KEY,ADR,SEQ,DIR,IN,OUT,DSN)
+.*
+&NUM2    SETA  0
+*        TABLE OF REQID INFO
+.REQLOOP ANOP
+         DC    H'0'          reqid
+         DC    H'0'          lastop
+         DC    H'0'          flags from last start browse
+         DC    H'0'          keylen frm last start browse
+         RPL   OPTCD=(ADR)
+         DC    F'0'          pointer to last key
+*
+&NUM2    SETA  &NUM2+1
+         AIF   (&NUM2 LT &FREQS).REQLOOP
+.*
+         MEXIT
+.*
+.*
+.FINAL   ANOP
+.*
+.* SHOULD HAVE CHECK FOR EXISTANCE OF ENTRY FOR 'BASE' DEFINITIONS...
+.*
+         LTORG
+         MEND

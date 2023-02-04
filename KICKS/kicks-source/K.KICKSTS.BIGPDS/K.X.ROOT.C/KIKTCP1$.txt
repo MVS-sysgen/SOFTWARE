@@ -1,0 +1,595 @@
+ /////////////////////////////////////////////////////////////////////
+ // 'KICKS for TSO' is a product to deliver 'CICS like' functionality
+ // in MVS/TSO. Its CICS functionality is delivered at the source code
+ // level, not at the object code level. Applications must be
+ // recompiled and the recompiled programs are not compatible with any
+ // known version of 'real' CICS (the IBM program product),
+ //
+ // © Copyright 2008-2014, Michael Noel, All Rights Reserved.
+ //
+ // Usage of 'KICKS for TSO' is in all cases subject to license. See
+ // http://www.kicksfortso.com
+ // for most current information regarding licensing options..
+ ////////1/////////2/////////3/////////4/////////5/////////6/////////7
+
+#include <stdio.h>
+
+#include "kicks.h"
+
+
+#include "kikaid.h"
+
+KIKCSA *csa = (KIKCSA*)&csa;
+
+ // macro to set useingalt based on cmd in tioa
+#define SetUsingAlt                         \
+ {                                          \
+ if (csa->tctte->tioa[1] == 0xf5)           \
+  csa->tctte->flags &= ~tctteflag$usingalt; \
+ if (csa->tctte->tioa[1] == 0x7e)           \
+  csa->tctte->flags |=  tctteflag$usingalt; \
+ }
+
+
+ ///////////////////////////////////////////////////////////////
+ //
+ //  function prototypes
+ //
+ ///////////////////////////////////////////////////////////////
+
+void ETRACE(int type_of, char *more, int intense);
+void XTRACE(int retcode, int intense);
+void MergeOutputTIOA(void);
+void MergeInputTIOA (void);
+
+
+void InitCRLP(void);
+void FiniCRLP(void);
+void DoCRLPout(void);
+void DoCRLPin(void);
+
+
+ ///////////////////////////////////////////////////////////////
+ //
+ //  kiktcp mainline
+ //
+ ///////////////////////////////////////////////////////////////
+
+int kiktcp (KIKCSA *kikcsa, int type_of,
+   char *arg1, char *arg2, char *arg3, char *arg4,
+   char *arg5, char *arg6, char *arg7, char *arg8, char *arg9
+   ) {
+
+ char *tioa;
+ int i, istat, rc, tioaSIZE;
+
+ int dodump=0, suppress=1;
+
+#define firstnl arg1
+
+ int batchflag=0; // = 0 means interactive,
+                  // = 1 means batch (hence CRLP only choice)
+
+ switch (type_of)
+  {
+  case kiktcpINIT:    // startup
+
+      csa = kikcsa;
+      ETRACE(type_of, "", 0);
+      //
+      //no arguments
+
+
+#ifdef DEBUGIT
+      // message if debugging version
+     FPRINTF(csa->csastderr,"%s", firstnl); firstnl[0]=0;
+     FPRINTF(csa->csastderr,"*** DEBUGGING version of TCP *** *** ***\n");
+#endif
+
+      // preset defaults
+      csa->tctte->PRMlines = 24;
+      csa->tctte->PRMcols  = 80;
+      csa->tctte->ALTlines = 24;
+      csa->tctte->ALTcols  = 80;
+      csa->tctte->termattr = 0;
+
+      // -- terminal id (assume it's gonna be CRLP)
+      MEMSET(csa->tctte->trmid, ' ', 8);
+      if((csa->systype & csasystype$batch) == 0)
+       MEMCPY(csa->tctte->trmid, "tso CRLP", 8);
+      else
+       MEMCPY(csa->tctte->trmid, "btchCRLP", 8);
+      MEMCPY(&csa->tctte->trmid4[0], csa->tctte->trmid+4, 4);
+
+      // -- sysid / smfid
+      MEMSET(csa->tctte->sysid, ' ', 8);
+      {
+      int cvt, smca, smcasid;
+
+      #define CVTPTR   0x0010
+      #define CVTSMCA  0x00C4
+      #define SMCASID  0x0010
+
+      cvt     = *(int*)CVTPTR;
+      smca    = *(int*)(cvt+CVTSMCA);    // smca
+      smcasid = smca + SMCASID;          // smf sysid
+      MEMCPY(csa->tctte->sysid, (char*)smcasid, 4);
+      }
+
+      // do CRLP init
+      InitCRLP();
+
+      // if CRLP set its default options based on batch/interactive
+      if ((csa->tctte->flags & tctteflag$crlpinuse) != 0) {
+       if((csa->systype & csasystype$batch) == 0)
+        csa->tctte->flags |=
+          (tctteflag$crlptrimline | tctteflag$crlpshowbord);
+       XTRACE(0, 0);
+       return (0);
+       }
+
+      // no CRLP, make sure not batch
+      if((csa->systype & csasystype$batch) != 0) {
+       FPRINTF(csa->csastderr,"%s", firstnl); firstnl[0]=0;
+       FPRINTF(csa->csastderr,"CRLP files missing in batch mode!\n");
+       EXIT (999);
+       }
+
+      // get screen info (alt screen size, attributes)
+      {
+      char pri[2], alt[2], id[8];
+      int  att, i;
+
+      GTSIZE(istat);
+
+      if (!istat) {
+       FPRINTF(csa->csastderr,"%s", firstnl); firstnl[0]=0;
+       FPRINTF(csa->csastderr,"TSO terminal is not a 3270!\n");
+       EXIT (999);
+       }
+
+      GTTERM(pri, alt, att, id, istat);
+
+      if (istat != 0) {
+       // no longer support very old TK systems wo/zp60009 or better
+       FPRINTF(csa->csastderr,"%s", firstnl); firstnl[0]=0;
+       FPRINTF(csa->csastderr,"GTTERM failed!\n");
+       EXIT (999);
+       }
+      else {
+       csa->tctte->PRMlines = pri[0];
+       csa->tctte->PRMcols  = pri[1];
+       csa->tctte->ALTlines = alt[0];
+       csa->tctte->ALTcols  = alt[1];
+
+// termattr != 0 --> color/ewasupp/extds/hilight/partns/ps
+
+       csa->tctte->termattr = att;
+
+// ATTRIB=addr - see http://publib.boulder.ibm.com/infocenter/zos/v1r12
+//                        /index.jsp?topic=/com.ibm.zos.r12.ikjb700/gtt.htm)
+//    specifies the address of a 1-word field into which GTTERM returns
+//    terminal attributes. The contents of this field are described below:
+//    Byte        Setting         Meaning
+//    0   xxxx xxxx       Reserved.
+//    1   0... ....       The terminal does not support double-byte
+//                        character set (DBCS).
+//    1   1... ....       The terminal supports DBCS.
+//    1   .000 0000       American English (default).
+//    1   .000 0001       American English.
+//    1   .001 0001       Katakana.
+//    2   xxxx ....       Reserved.
+//    2   .... 00..       The ASCII-7 device code identifier.
+//    2   .... 01..       The ASCII-8 device code identifier.
+//    2   .... ..xx       Reserved.
+//    3   1... ....       This is a VTAM® TSB1.
+//    3   .1.. ....       Break features are not allowed1.
+//    3   ..1. ....       The translate table is in use1.
+//    3   ...1 ....       The default translate table is in use1.
+//    3   .... 1...       Display in full-screen mode1.
+//    3   .... .x..       Reserved.
+//    3   .... ..0.       The device supports EBCDIC code.
+//    3   .... ..1.       The device supports ASCII code.
+//    3   .... ...0       The Read Partition (Query) is not supported.
+//    3   .... ...1       The Read Partition (Query) is supported.
+//    1 These bits are returned only for VTAM applications.
+
+       MEMCPY(csa->tctte->trmid, id, 8);
+       // copy low order non-blank 4 chars of netname to termid
+       for (i=0; i<4; i++) {
+        if (csa->tctte->trmid[i+4] == ' ') break;
+        }
+       MEMCPY(&csa->tctte->trmid4[0], &csa->tctte->trmid[i], 4);
+       }
+      }
+
+      // validate screen info
+      if((csa->tctte->PRMlines != 24) || (csa->tctte->PRMcols != 80)) {
+       // *** HOPEFULLY THIS IS A 'NEVER HAPPEN' SITUATION ***
+       FPRINTF(csa->csastderr,"%s", firstnl); firstnl[0]=0;
+       FPRINTF(csa->csastderr,"Primary 3270 screen <> 24x80!\n");
+       EXIT (999);
+       }
+
+      // line mode 'final flush'
+      FREOPEN("DD:SYSPRINT", "w", csa->csastdout);
+
+      // open screen
+      batchflag = 1; // preset error, open will reset back to zero...
+      __asm__ ( "STFSMODE ON,NOEDIT=YES,INITIAL=YES" );
+      __asm__ ( "STTMPMD ON,KEYS=ALL" );
+      batchflag = 0; // set no error...
+
+      // validate screen opened
+      if (batchflag == 1) {
+       FPRINTF(csa->csastderr,"Full Screen Open Failed\n");
+       FPRINTF(csa->csastderr,"This is a fatal error! Bye Bye!\n\n");
+       EXIT (999);
+       }
+
+      // encourage KSGM to open on large screen...
+      if (csa->tctte->ALTlines > csa->tctte->PRMlines)
+       csa->tctte->flags |=  tctteflag$usingalt;
+
+      // turn on can use 14 bit sba's
+      csa->tctte->flags |= tctteflag$use14bitsba;  // on
+
+      // goback
+      XTRACE(0, 0);
+      return (0);
+
+  case kiktcpTERM:    // shutdown
+
+       ETRACE(type_of, "", 0);
+      //
+      //no arguments
+
+      if ((csa->tctte->flags & tctteflag$crlpinuse) == 0) {
+       // normal tso 3270
+       __asm__ ( "STLINENO LINE=1" );
+       __asm__ ( "STFSMODE OFF" );
+       __asm__ ( "STTMPMD OFF,KEYS=NO" );
+       }
+
+      FiniCRLP();
+
+      XTRACE(0, 0);
+      return (0);
+      //break;
+
+  case kiktcpSEND:
+
+      ETRACE(type_of, "", 0);
+      //
+      //no arguments
+
+      // turn off tcpRECV suppress
+      csa->tctte->flags &= ~tctteflag$suppressonce;
+      tioa = csa->tctte->tioa;
+      tioaSIZE = csa->tctte->tioaused;
+
+      // maybe force FREEKB in WCC
+      if(csa->ffreekb == 0) tioa[2] |= 2;
+
+      // capture normal/alt screen size for clears
+      SetUsingAlt;
+
+      // if default size = alternate size override alt
+      // *** PROTECT AGAINST UNDECLARED MOD5'S (ETAL) ***
+      if (tioa[1] == 0x7e)
+       if (csa->tctte->PRMlines == csa->tctte->ALTlines)
+        if (csa->tctte->PRMcols == csa->tctte->ALTcols)
+         tioa[1] = 0xf5;
+
+      if ((csa->tctte->flags & tctteflag$crlpinuse) == 0) {
+       // normal tso 3270
+
+       TPUT_NE(tioa, tioaSIZE);
+
+       // now copy to 'last output tioa'
+       MergeOutputTIOA();
+       }
+      else {
+       // put tioa into a virtual screen and dump to printer
+       MergeOutputTIOA(); // always in front of CRLP...
+       DoCRLPout();
+       }
+
+      XTRACE(0, 0);
+      return (0);
+      //break;
+
+  case kiktcpRECV:
+
+      ETRACE(type_of, "", 0);
+      //
+      //no arguments
+      {
+      tioa = csa->tctte->tioa;
+      istat = 0;
+
+      if ((csa->tctte->flags & tctteflag$suppressonce) == 0) {
+
+       if ((csa->tctte->flags & tctteflag$crlpinuse) == 0) {
+        // normal tso 3270
+        // check for input ready
+        tioaSIZE = 0;
+        TGET_NOWAIT(tioa, istat, tioaSIZE);
+        if(istat == 4) {
+         // nothing ready so this must be a conversational trans
+         // close any disp=shr files the tran opened
+         //KBMS (csa, kikbmsTRANEND);
+         KIKDCP (csa, kikdcpTRANEND);
+         KIKFCP (csa, kikfcpTRANEND);
+         //KKCP (csa, kikkcpTRANEND);
+         //KPCP (csa, kikpcpTRANEND);
+         //KTCP (csa, kiktcpTRANEND);
+         csa->AICAtime = -1; // above kikxxxTRANEND's would re-enable...
+         }
+        // ready or not, get input and return
+        tioaSIZE = csa->tctte->tioasize;
+        MEMSET (tioa, 0, tioaSIZE);
+        TGET(tioa, istat, tioaSIZE);
+        } else {
+        // get tioa from a card reader
+        DoCRLPin();
+        tioaSIZE = STRLEN(tioa); // OK 'cause CRLP only uses 12 bit sbas
+        }
+
+       // OK to use STRLEN here since there won't
+       // be any nulls in an input tioa...            **** WRONG! ****
+       csa->tca->kikeib.eibaid = tioa[0];
+       //a->tctte->tioaused = STRLEN(tioa);
+       csa->tctte->tioaused = tioaSIZE;
+
+       // now copy to 'last input tioa'
+       MergeInputTIOA();
+       }
+
+      // turn off tcpRECV suppress
+      csa->tctte->flags &= ~tctteflag$suppressonce;
+      XTRACE(istat, 0);
+      }
+      return (istat);
+      //break;
+
+  case kiktcpCHEK:
+
+      // note this as 'intense' tracing unit
+      ETRACE(type_of, "", 1);
+      //
+      //no arguments
+
+      // turn off tcpRECV suppress
+      csa->tctte->flags &= ~tctteflag$suppressonce;
+      tioa = csa->tctte->tioa;
+      tioaSIZE = 0;
+      istat = 0; // preset ready...
+
+      if ((csa->tctte->flags & tctteflag$crlpinuse) == 0) {
+       // normal tso 3270
+       TGET_NOWAIT(tioa, istat, tioaSIZE);
+       } else {
+        // crlp, say not ready if eof flag set...
+        if ((csa->tctte->flags & tctteflag$crlpineof) > 0) istat = 4;
+        }
+
+      tioa[0] = 'R';       // make aid say Ready
+      if(istat == 4) tioa[0] = 'N'; // not Not
+      XTRACE(istat, 1);
+      return (istat);
+      //break;
+
+  case kiktcpWTO:    // WTO
+  case kiktcpWTOR:   // WTOR
+
+      ETRACE(type_of, "", 0);
+      //
+      //arg1 - msg               char[]
+      //arg2 - msg length        int
+      //arg3 - routcodes         char[]
+      //arg4 - numroutes         int
+      //arg5 - action            int
+      {
+      char *msg, *routes, *reply;
+      int  action, msgL, numroutes, *replyL, maxL, time;
+      int  i, j;
+      short rbuf=0;
+
+      msg = arg1; msgL = *(int*)arg2;
+      routes = arg3; numroutes = *(int*)arg4;
+      action = *(int*)arg5;
+      action &= 15; // clean wto/wtor flag off action
+
+      // validate numroutes
+      if ((numroutes < 0) || (numroutes > 16)) {
+       csa->tca->kikeib.eibresp  = 16;  // invreq
+       csa->tca->kikeib.eibresp2 = 2;
+       KIKPCP(csa, kikpcpABND, "ATC2", &dodump);
+       }
+
+      // validate routes, get into rbuf
+      if (numroutes == 0) rbuf = 0x4000; // route=2
+      else
+      for (i=0; i<numroutes; i++) {
+       j = routes[i];
+       if ((j < 1) || (j > 16)) {
+        csa->tca->kikeib.eibresp  = 16;  // invreq
+        csa->tca->kikeib.eibresp2 = 3;
+        KIKPCP(csa, kikpcpABND, "ATC3", &dodump);
+        }
+       rbuf |= (1 << (16-j));
+       }
+
+      // validate desc code
+      if((action != 2) &&
+         (action != 3) &&
+         (action != 11)) {
+        csa->tca->kikeib.eibresp  = 16;  // invreq
+        csa->tca->kikeib.eibresp2 = 6;
+        KIKPCP(csa, kikpcpABND, "ATC4", &dodump);
+       }
+
+      // if WTO only do it
+      if (type_of == kiktcpWTO) { // begin wto-only code
+
+       // build wto list
+       // --- WTO  list format is ---
+       //     DS   XL2(L'MSG)  msg length (including desc, rout codes)
+       //     DS   XL2         flag bytes
+       // MSG DS   CLN         message
+       //     DS   XL2         desc code
+       //     DS   XL2         rout code
+       char w[200], *wp = &w[8+0];
+       int *wip; short *wsp;
+       // *** setup wto part
+       MEMSET (w, 0, 200);
+       w[8+2] = 0x80;                       // flag route/desc
+       if (msgL > 160) msgL = 160;
+       MEMCPY (&w[8+4], msg, msgL);         // set msg
+       wsp = (short*)wp; *wsp = msgL+4;     // set msg length
+       wp = &w[8+msgL+4];
+       wsp = (short*)wp; *wsp++ = action;   // set desc
+       *wsp = rbuf;                         // set route(s)
+
+       // do the WTO
+       __asm__ (
+        "L 1,%0\n\t"
+        "WTO MF=(E,(1))"
+        : /* no output */
+        : "m"(&w[8])
+        : "0", "1", "15"
+        );
+
+       // and goback
+       XTRACE(0, 0);
+       return (0);
+       //break;
+
+       }                          // end   wto-only code
+
+      else {                      // begin wtor-only code
+
+       // not WTO so it must be WTOR...
+
+       //arg6 - reply            char[]
+       //arg7 - max length       int
+       //arg8 - reply length     int
+       //arg9 - timeout          int
+
+       reply = arg6; maxL = *(int*)arg7; replyL = (int*)arg8;
+       time = *(int*)arg9;
+
+       // build wtor list
+       // --- WTOR list format is ---
+       //     DS   XL1(L'REPLY)
+       //     DS   AL3(REPLY)
+       //     DS   A(ECB)
+       //     DS   XL2(L'MSG)  msg length (including desc, rout codes)
+       //     DS   XL2         flag bytes
+       // MSG DS   CLN         message
+       //     DS   XL2         desc code
+       //     DS   XL2         rout code
+       char w[200], *wp = &w[8+0];
+       int *wip, ecb, msgid; short *wsp;
+       // *** setup wto part
+       MEMSET (w, 0, 200);
+       w[8+2] = 0x80;                       // flag route/desc
+       if (msgL > 160) msgL = 160;
+       MEMCPY (&w[8+4], msg, msgL);         // set msg
+       wsp = (short*)wp; *wsp = msgL+4;     // set msg length
+       wp = &w[8+msgL+4];
+       wsp = (short*)wp; *wsp++ = action;   // set desc
+       *wsp = rbuf;                         // set route(s)
+       // *** setup reply part
+       wp = &w[0]; wip = (int*)wp;
+       *wip++ = (int)reply;                 // set reply address
+       if (maxL > 119) maxL = 119;
+       *wp = maxL;                          // set max reply length
+       *wip = (int)&ecb;                    // set ecb address
+
+       // preclear the msgid, ecb and reply length
+       ecb = msgid = 0;
+       MEMSET (reply, 0, maxL);
+       if (replyL != 0) *replyL = 0;
+
+       // do the WTOR and capture the message id (for DOM)
+       __asm__ (
+        "L 1,%1\n\t"
+        "WTOR MF=(E,(1))\n\t"
+        "ST 1,%0"
+        : "=m"(msgid)
+        : "m"(&w[0])
+        : "0", "1", "15"
+        );
+
+       // check/wait for the ecb
+       while ((ecb & 0x40000000) == 0) {
+        if (time-- < 0) {
+         // DOM if timeout
+         __asm__ (
+          "L 1,%0\n\t"
+          "DOM MSG=(1),REPLY=YES"
+          : /* no output */
+          : "m"(msgid)
+          : "0", "1", "15"
+          );
+         // then timeout abend
+         KIKAICA(); // restore aica timer. our STIMER killed it...
+         csa->tca->kikeib.eibresp  = 31;  // expired
+         csa->tca->kikeib.eibresp2 = 7;   // timeout
+         KIKPCP(csa, kikpcpABND, "ATC5", &dodump);
+         }
+        STIMER(100); // wait 1 second
+        }
+
+       // space tail of reply & set reply length
+       for (i=maxL-1, j=0; i>0; i--) {
+        if((reply[i] != 0) && (j == 0)) j = i+1;
+        if (j == 0) reply[i] = ' ';
+        }
+       if (replyL != 0) *replyL = j;
+
+       KIKAICA(); // restore aica timer. our STIMER killed it...
+       XTRACE(istat, 0);
+       return (istat);
+       //break;
+       }                          // end   wtor-only code
+
+      }                           // end of all wto/wtor code
+
+  default:    // bad calls get here
+
+      ETRACE(type_of, "", 0);
+      {
+      if ((csa->trc.trcflags & 4) > 0) {
+        FCLOSE((FILE*)kikcsa->auxtrc);
+        csa->trc.trcflags &= ~4; // show closed
+       }
+      ABEND(kiktcpTYPE, type_of);
+      }
+  }
+}
+
+
+ void ETRACE(int type_of, char *more, int intense)
+ { char tmsg[20]; int t; t = csa->tca->tasknum;
+   csa->AICAtime = -1;
+   csa->tca->kikeib.eibresp = csa->tca->kikeib.eibresp2 = 0;
+   if (more == NULL)
+   SPRINTF(tmsg, "T%2.2X%4.4s     %4.4X", type_of, "", t);
+   else
+   SPRINTF(tmsg, "T%2.2X%4.4s     %4.4X", type_of, more, t);
+   ((SubPtr)csa->trc_addr)(tmsg, intense);
+ }
+
+
+ void XTRACE(int retcode, int intense)
+ { char tmsg[20]; int t; t = csa->tca->tasknum;
+   SPRINTF(tmsg, "TX%03.3d       %4.4X", retcode, t);
+   ((SubPtr)csa->trc_addr)(tmsg, intense);
+   //return(retcode);
+   csa->AICAtime = csa->AICAmax;
+ }
+
+
