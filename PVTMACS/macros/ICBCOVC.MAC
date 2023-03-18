@@ -157,7 +157,7 @@
 .*   SHOWN BELOW:                                              @Y30LB02
 .*                                                             @Y30LB02
 .*   --------------------------------------------              @Y30LB02
-.*   × X × X × X × X ×BITS 4-15 UNUSED AND ZERO ×              @Y30LB02
+.*   | X | X | X | X |BITS 4-15 UNUSED AND ZERO |              @Y30LB02
 .*   --------------------------------------------              @Y30LB02
 .*   IF CVOL (COPY VOLUME) IS SPECIFIED FOR THE TYPE           @Y30LB02
 .*   PARAMETER:                                                @Y30LB02
@@ -628,7 +628,7 @@ CVOLVEXT DC    XL4'0000'           2-BYTE VVICEXT AREA         @Y30LB02
 */*      INVALID 'TYPE' WILL CREATE THE FOLLOWING ERR MSGS   @Y30LB02*/
 */*                                                          @Y30LB02*/
 *   ERSW=1;                       /*SET ERROR SWITCH         @Y30LB02*/
-*   ANS MSG('  ICB601I - TYPE IS INCORRECTLY'××
+*   ANS MSG('  ICB601I - TYPE IS INCORRECTLY'||
 *           ' SPECIFIED')SKIP;                             /*@Y30LB02*/
 *   RETCODE=12;               /*SET RETURN CODE TO 12        @Y30LB02*/
 *   IF ERSW=1 THEN            /*CHECK ERROR SWITCH           @Y30LB02*/
@@ -637,7 +637,7 @@ CVOLVEXT DC    XL4'0000'           2-BYTE VVICEXT AREA         @Y30LB02
 *START:
 *     IF CVTESTR = 0 THEN    /*REG 1 DECLARED?               @Y30LB02*/
 *      DO;                   /*NO,DECLARE IT                 @Y30LB02*/
-*        ANS('DCL CVOLR1 REG(1) PTR;/*DECLARE R1 - '××
+*        ANS('DCL CVOLR1 REG(1) PTR;/*DECLARE R1 - '||
 *        'ADDRESS OF REQUEST BLOCK @Y30LB02*/')SKIP;
 *        CVTESTR=1;          /*INCREM REG COUNTER            @Y30LB02*/
 *      END;                  /*                              @Y30LB02*/
@@ -646,7 +646,7 @@ CVOLVEXT DC    XL4'0000'           2-BYTE VVICEXT AREA         @Y30LB02
 *   IF MF(2) ^= '' THEN      /*LIST NAME SPECIFIED?          @Y30LB02*/
 *        GO TO LISTFORM;     /*YES,BRCH,PROCESS REQUEST      @Y30LB02*/
 *   ERSW=1;                  /*NO,SET ERROR SWITCH           @Y30LB02*/
-*   ANS MSG('  ICB602I - A NAME FOR THE '××
+*   ANS MSG('  ICB602I - A NAME FOR THE '||
 *     'REQUEST BLOCK MUST BE SPECIFIED IN MF(2)')SKIP;     /*@Y30LB02*/
 *   RETCODE=12;             /*SET RETURN CODE TO 12          @Y30LB02*/
 *   IF ERSW=1 THEN          /*ERROR SWITCH SET?              @Y30LB02*/
@@ -671,8 +671,8 @@ CVOLVEXT DC    XL4'0000'           2-BYTE VVICEXT AREA         @Y30LB02
 *   IF CTR > 0 THEN         /*IS COUNTER GT ZERO?            @Y30LB02*/
 *     DO;                   /*YES,PRINT WARNING MSG          @Y30LB02*/
 *        RETCODE=4;         /*SET RETURN CODE TO 4           @Y30LB02*/
-*        ANS MSG('  ICB603I - WARNING-ONLY MF AND '××
-*             'TYPE PARAMETERS ARE VALID FOR LIST '××
+*        ANS MSG('  ICB603I - WARNING-ONLY MF AND '||
+*             'TYPE PARAMETERS ARE VALID FOR LIST '||
 *             'FORM ')SKIP;                                /*@Y30LB02*/
 *     END;                  /*                               @Y30LB02*/
 */*                                                          @Y30LB02*/
@@ -681,174 +681,174 @@ CVOLVEXT DC    XL4'0000'           2-BYTE VVICEXT AREA         @Y30LB02
 */*                                                          @Y30LB02*/
 *   IF TYPE(1)='CVOL' THEN   /*TYPE CVOL?                    @Y30LB02*/
 *     DO;                    /*PRINT CVOL LIST FORM          @Y30LB02*/
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************** @Y30LB02*/')SKIP;
-*        ANS('/*    MACMEAN  MSSC COPY VOLUME MACRO       '××
+*        ANS('/*    MACMEAN  MSSC COPY VOLUME MACRO       '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '××
+*        ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*THIS IS THE INITIALIZED LIST FORM         '××
+*        ANS('/*THIS IS THE INITIALIZED LIST FORM         '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************** @Y30LB02*/')SKIP;
-*        ANS('DCL 1 ' ××MF(2)×× '  STATIC LOCAL,'××
+*        ANS('DCL 1 ' ||MF(2)|| '  STATIC LOCAL,'||
 *        ' /*COPY VOLUME REQUEST BLOCK @Y30LB02*/')SKIP;
-*        ANS('    2  CVOLLEN  FIXED(31)INIT('××QUOTE
-*        ('28')××'X),/*LENGTH OF REQBLK @Y30LB02*/')SKIP;
-*        ANS('    2  CVOLOPCD CHAR(1)INIT('××QUOTE('2A')××
+*        ANS('    2  CVOLLEN  FIXED(31)INIT('||QUOTE
+*        ('28')||'X),/*LENGTH OF REQBLK @Y30LB02*/')SKIP;
+*        ANS('    2  CVOLOPCD CHAR(1)INIT('||QUOTE('2A')||
 *        'X),/*COPY VOLUME OPCODE @Y30LB02*/')SKIP;
-*        ANS('    2  CVOLRES1 CHAR(1)INIT('××QUOTE('00')××
+*        ANS('    2  CVOLRES1 CHAR(1)INIT('||QUOTE('00')||
 *        'X), /*ONE BYTE OF ZERO @Y30LB02*/')SKIP;
-*        ANS('    2  CVOLFLG BIT(16)INIT('××QUOTE
-*        ('0000000000000000')××'B), /*FLAGS AREA @Y30LB02*/')SKIP;
-*        ANS('     3  CVODASCR  BIT(1), /*DASD TO '××
+*        ANS('    2  CVOLFLG BIT(16)INIT('||QUOTE
+*        ('0000000000000000')||'B), /*FLAGS AREA @Y30LB02*/')SKIP;
+*        ANS('     3  CVODASCR  BIT(1), /*DASD TO '||
 *        'CARTRIDGE ATTRIBUTE @Y30LB02*/')SKIP;
-*        ANS('     3  CVOCRDAS  BIT(1),/*CARTRIDGE '××
+*        ANS('     3  CVOCRDAS  BIT(1),/*CARTRIDGE '||
 *        'TO DASD ATTRIBUTE @Y30LB02*/')SKIP;
-*        ANS('     3  CVOCRCR  BIT(1),/*CARTRIDGE '××
+*        ANS('     3  CVOCRCR  BIT(1),/*CARTRIDGE '||
 *        'TO CARTRIDGE ATTRIBUTE TRANS VOL @Y30LB02*/')SKIP;
-*        ANS('     3  CVOCRCRV BIT(1),/*CARTRIDGE '××
+*        ANS('     3  CVOCRCRV BIT(1),/*CARTRIDGE '||
 *        'TO CARTRIDGE ATTRIBUTE VOL INV LIST @Y30LB02*/')SKIP;
-*        ANS('     3  *      BIT(12),'××
+*        ANS('     3  *      BIT(12),'||
 *        ' /*TWELVE BITS RESERVED @Y30LB02*/')SKIP;
-*        ANS('    2  CVOLID  CHAR(6) INIT('××QUOTE
-*        ('000000000000')××'X), /*VOLUME ID  @Y30LB02*/')SKIP;
-*        ANS('    2  CVOLASID CHAR(2) INIT('××QUOTE
-*        ('0000')××'X),/*ASID AREA @Y30LB02*/')SKIP;
-*        ANS('    2  CVOLECB  FIXED(31) INIT(0),'××
+*        ANS('    2  CVOLID  CHAR(6) INIT('||QUOTE
+*        ('000000000000')||'X), /*VOLUME ID  @Y30LB02*/')SKIP;
+*        ANS('    2  CVOLASID CHAR(2) INIT('||QUOTE
+*        ('0000')||'X),/*ASID AREA @Y30LB02*/')SKIP;
+*        ANS('    2  CVOLECB  FIXED(31) INIT(0),'||
 *        ' /*EVENT CONTROL BLOCK  @Y30LB02*/')SKIP;
 *        ANS('    2  CVOLCSN CHAR(12),/*CSN AREA @Y30LB02*/')SKIP;
-*        ANS('       3  *(12) CHAR(1)INIT((12)'××QUOTE
-*        ('00')××'X),/*INIT CSN AREA @Y30LB02*/')SKIP;
-*        ANS('    2  CVOLRUA  FIXED(15) INIT(0),'××
+*        ANS('       3  *(12) CHAR(1)INIT((12)'||QUOTE
+*        ('00')||'X),/*INIT CSN AREA @Y30LB02*/')SKIP;
+*        ANS('    2  CVOLRUA  FIXED(15) INIT(0),'||
 *        ' /*REAL UNIT ADDRESS  @Y30LB02*/')SKIP;
-*        ANS('    2  CVOLRES2 CHAR(2) INIT('××QUOTE
-*        ('0000')××'X),/*RESERVED AREA @Y30LB02*/')SKIP;
-*        ANS('    2  CVOLVEXT FIXED(31) INIT(0);'××
+*        ANS('    2  CVOLRES2 CHAR(2) INIT('||QUOTE
+*        ('0000')||'X),/*RESERVED AREA @Y30LB02*/')SKIP;
+*        ANS('    2  CVOLVEXT FIXED(31) INIT(0);'||
 *        '/*MSVC EXTENSION AREA @Y30LB02*/')SKIP;
 *        GO TO FINISH;        /*BRANCH TO END                @Y30LB02*/
 *     END;                    /*                             @Y30LB02*/
 */*                                                          @Y30LB02*/
 *  ELSE                       /*COPY CART REQUEST            @Y30LB02*/
 *     DO;                     /*PRINT COPY CART REQBLK       @Y30LB02*/
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************** @Y30LB02*/')SKIP;
-*        ANS('/*    MACMEAN  MSSC COPY CARTRIDGE MACRO    '××
+*        ANS('/*    MACMEAN  MSSC COPY CARTRIDGE MACRO    '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '××
+*        ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*THIS IS THE INITIALIZED LIST FORM         '××
+*        ANS('/*THIS IS THE INITIALIZED LIST FORM         '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *           '************** @Y30LB02*/')SKIP;
-*        ANS('DCL 1 ' ××MF(2)×× '  STATIC LOCAL,'××
+*        ANS('DCL 1 ' ||MF(2)|| '  STATIC LOCAL,'||
 *        ' /*COPY CARTRIDGE REQUEST BLOCK @Y30LB02*/')SKIP;
-*        ANS('    2  CCRTLEN  FIXED(31)INIT('××QUOTE('20')××
+*        ANS('    2  CCRTLEN  FIXED(31)INIT('||QUOTE('20')||
 *        'X),/*LENGTH OF REQUEST BLOCK @Y30LB02*/')SKIP;
-*        ANS('    2  CCRTOPCD CHAR(1)INIT('××QUOTE('28')××
+*        ANS('    2  CCRTOPCD CHAR(1)INIT('||QUOTE('28')||
 *        'X),/*COPY CARTRIDGE OPCODE @Y30LB02*/')SKIP;
-*        ANS('    2  CCRTRES1 CHAR(1)INIT('××QUOTE('00')××
+*        ANS('    2  CCRTRES1 CHAR(1)INIT('||QUOTE('00')||
 *        'X), /*ONE BYTE OF ZERO @Y30LB02*/')SKIP;
-*        ANS('    2  CCRTFLG BIT(16)INIT('××QUOTE
-*        ('0000000000000000')××'B), /*FLAGS AREA @Y30LB02*/')SKIP;
-*        ANS('     3  CCRTCRT1  BIT(1), /*CART 1 OF 2 '××
+*        ANS('    2  CCRTFLG BIT(16)INIT('||QUOTE
+*        ('0000000000000000')||'B), /*FLAGS AREA @Y30LB02*/')SKIP;
+*        ANS('     3  CCRTCRT1  BIT(1), /*CART 1 OF 2 '||
 *        'ATTRIBUTE @Y30LB02*/')SKIP;
-*        ANS('     3  CCRTCRT2  BIT(1), /*CART 2 OF 2 '××
+*        ANS('     3  CCRTCRT2  BIT(1), /*CART 2 OF 2 '||
 *        'ATTRIBUTE @Y30LB02*/')SKIP;
-*        ANS('     3  *      BIT(14),'××
+*        ANS('     3  *      BIT(14),'||
 *        ' /*FOURTEEN BITS RESERVED @Y30LB02*/')SKIP;
-*        ANS('    2  CCRTVOL  CHAR(6) INIT('××QUOTE
-*        ('000000000000')××'X),/*VOLID AREA @Y30LB02*/')SKIP;
-*        ANS('    2  CCRTASID CHAR(2) INIT('××QUOTE
-*        ('0000')××'X),/*ASID AREA @Y30LB02*/')SKIP;
-*        ANS('    2  CCRTECB  FIXED(31) INIT(0),'××
+*        ANS('    2  CCRTVOL  CHAR(6) INIT('||QUOTE
+*        ('000000000000')||'X),/*VOLID AREA @Y30LB02*/')SKIP;
+*        ANS('    2  CCRTASID CHAR(2) INIT('||QUOTE
+*        ('0000')||'X),/*ASID AREA @Y30LB02*/')SKIP;
+*        ANS('    2  CCRTECB  FIXED(31) INIT(0),'||
 *        ' /*EVENT CONTROL BLOCK  @Y30LB02*/')SKIP;
 *        ANS('    2  CCRTCSN CHAR(12),/*CSN AREA @Y30LB02*/')SKIP;
-*        ANS('       3  *(12) CHAR(1)INIT((12)'××QUOTE
-*        ('00')××'X);/*INIT CSN AREA @Y30LB02*/')SKIP;
+*        ANS('       3  *(12) CHAR(1)INIT((12)'||QUOTE
+*        ('00')||'X);/*INIT CSN AREA @Y30LB02*/')SKIP;
 *        GO TO FINISH;        /*BRANCH TO END                @Y30LB02*/
 *     END;                    /*                             @Y30LB02*/
 *ATTRLST:
 */*                                                          @Y30LB02*/
 *   IF TYPE(1)='CVOL' THEN    /*COPY VOL REQUEST?            @Y30LB02*/
 *     DO;                     /*CVOL UNINIT REQUEST BLOCK    @Y30LB02*/
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************* @Y30LB02*/')SKIP;
-*        ANS('/*     MACMEAN  MSSC COPY VOLUME MACRO      '××
+*        ANS('/*     MACMEAN  MSSC COPY VOLUME MACRO      '||
 *            '              @Y30LB02*/')SKIP;
-*        ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '××
+*        ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '||
 *            '              @Y30LB02*/')SKIP;
-*        ANS('/*THIS IS THE UNINITIALIZED LIST FORM       '××
+*        ANS('/*THIS IS THE UNINITIALIZED LIST FORM       '||
 *            '              @Y30LB02*/')SKIP;
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************* @Y30LB02*/')SKIP;
-*        ANS('DCL 1 ' ××MF(2)××' '××MF(3)××','××
+*        ANS('DCL 1 ' ||MF(2)||' '||MF(3)||','||
 *        ' /*COPY VOLUME REQUEST BLOCK @Y30LB02*/')SKIP;
-*        ANS('    2  CVOLLEN  FIXED(31),/*LENGTH'××
+*        ANS('    2  CVOLLEN  FIXED(31),/*LENGTH'||
 *        ' OF REQ BLOCK = 28 BYTES HEX @Y30LB02*/')SKIP;
-*        ANS('    2  CVOLOPCD CHAR(1),'××
+*        ANS('    2  CVOLOPCD CHAR(1),'||
 *        '/*COPY VOLUME OPCODE = 2A HEX @Y30LB02*/')SKIP;
-*        ANS('    2  CVOLRES1 CHAR(1),'××
+*        ANS('    2  CVOLRES1 CHAR(1),'||
 *        ' /*ONE BYTE OF ZERO @Y30LB02*/')SKIP;
-*        ANS('    2  CVOLFLG BIT(16),'××
+*        ANS('    2  CVOLFLG BIT(16),'||
 *        ' /*FLAGS AREA @Y30LB02*/')SKIP;
-*        ANS('     3  CVODASCR  BIT(1), /*DASD TO '××
+*        ANS('     3  CVODASCR  BIT(1), /*DASD TO '||
 *        'CARTRIDGE ATTRIBUTE @Y30LB02*/')SKIP;
-*        ANS('     3  CVOCRDAS  BIT(1),/*CARTRIDGE '××
+*        ANS('     3  CVOCRDAS  BIT(1),/*CARTRIDGE '||
 *        'TO DASD ATTRIBUTE @Y30LB02*/')SKIP;
-*        ANS('     3  CVOCRCR  BIT(1),/*CARTRIDGE '××
+*        ANS('     3  CVOCRCR  BIT(1),/*CARTRIDGE '||
 *        'TO CARTRIDGE ATTRIBUTE TRANS VOL @Y30LB02*/')SKIP;
-*        ANS('     3  CVOCRCRV BIT(1),/*CARTRIDGE '××
+*        ANS('     3  CVOCRCRV BIT(1),/*CARTRIDGE '||
 *        'TO CARTRIDGE ATTRIBUTE VOL INV LIST @Y30LB02*/')SKIP;
-*        ANS('     3  *      BIT(12),'××
+*        ANS('     3  *      BIT(12),'||
 *        ' /*THIRTEEN BITS RESERVED @Y30LB02*/')SKIP;
-*        ANS('    2  CVOLID  CHAR(6),'××
+*        ANS('    2  CVOLID  CHAR(6),'||
 *        ' /*VOLUME ID  @Y30LB02*/')SKIP;
-*        ANS('    2  CVOLASID CHAR(2) ,'××
+*        ANS('    2  CVOLASID CHAR(2) ,'||
 *        '/*ASID AREA @Y30LB02*/')SKIP;
-*        ANS('    2  CVOLECB  FIXED(31) ,'××
+*        ANS('    2  CVOLECB  FIXED(31) ,'||
 *        ' /*EVENT CONTROL BLOCK  @Y30LB02*/')SKIP;
 *        ANS('    2  CVOLCSN CHAR(12),/*CSN AREA @Y30LB02*/')SKIP;
-*        ANS('    2  CVOLRUA  FIXED(15),'××
+*        ANS('    2  CVOLRUA  FIXED(15),'||
 *        ' /*REAL UNIT ADDRESS  @Y30LB02*/')SKIP;
-*        ANS('    2  CVOLRES2 CHAR(2) ,'××
+*        ANS('    2  CVOLRES2 CHAR(2) ,'||
 *        '/*RESERVED AREA @Y30LB02*/')SKIP;
-*        ANS('    2  CVOLVEXT  FIXED(31) ;'××
+*        ANS('    2  CVOLVEXT  FIXED(31) ;'||
 *        ' /*MSVC EXTENTION AREA  @Y30LB02*/')SKIP;
 *        GO TO FINISH;        /*BRANCH TO END                @Y30LB02*/
 *     END;                    /*                             @Y30LB02*/
 */*                                                          @Y30LB02*/
 *  ELSE                       /*COPY CARTRIDGE REQUEST       @Y30LB02*/
 *     DO;                     /*COPY CART REQ BLOCK          @Y30LB02*/
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************* @Y30LB02*/')SKIP;
-*        ANS('/*   MACMEAN  MSSC COPY CARTRIDGE MACRO     '××
+*        ANS('/*   MACMEAN  MSSC COPY CARTRIDGE MACRO     '||
 *            '              @Y30LB02*/')SKIP;
-*        ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '××
+*        ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '||
 *            '              @Y30LB02*/')SKIP;
-*        ANS('/*THIS IS THE UNINITIALIZED LIST FORM       '××
+*        ANS('/*THIS IS THE UNINITIALIZED LIST FORM       '||
 *            '              @Y30LB02*/')SKIP;
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************* @Y30LB02*/')SKIP;
-*        ANS('DCL 1 ' ××MF(2)××' '××MF(3)××','××
+*        ANS('DCL 1 ' ||MF(2)||' '||MF(3)||','||
 *        ' /*COPY CARTRIDGE REQUEST BLOCK @Y30LB02*/')SKIP;
-*        ANS('    2  CCRTLEN  FIXED(31),/*LENGTH OF'××
+*        ANS('    2  CCRTLEN  FIXED(31),/*LENGTH OF'||
 *        ' REQUEST BLOCK = 20 HEX @Y30LB02*/')SKIP;
-*        ANS('    2  CCRTOPCD CHAR(1),'××
+*        ANS('    2  CCRTOPCD CHAR(1),'||
 *        '/*COPY CARTRIDGE OPCODE = 28 HEX @Y30LB02*/')SKIP;
-*        ANS('    2  CCRTRES1 CHAR(1),'××
+*        ANS('    2  CCRTRES1 CHAR(1),'||
 *        ' /*ONE BYTE OF ZERO @Y30LB02*/')SKIP;
 *        ANS('    2  CCRTFLG BIT(16),/*FLAGS AREA @Y30LB02*/')SKIP;
-*        ANS('     3  CCRTCRT1  BIT(1), /*CART 1 OF 2 '××
+*        ANS('     3  CCRTCRT1  BIT(1), /*CART 1 OF 2 '||
 *        'ATTRIBUTE @Y30LB02*/')SKIP;
-*        ANS('     3  CCRTCRT2  BIT(1), /*CART 2 OF 2 '××
+*        ANS('     3  CCRTCRT2  BIT(1), /*CART 2 OF 2 '||
 *        'ATTRIBUTE @Y30LB02*/')SKIP;
-*        ANS('     3  *      BIT(14),'××
+*        ANS('     3  *      BIT(14),'||
 *        ' /*FOURTEEN BITS RESERVED @Y30LB02*/')SKIP;
-*        ANS('    2  CCRTVOL  CHAR(6),'××
+*        ANS('    2  CCRTVOL  CHAR(6),'||
 *        '/*VOLID AREA @Y30LB02*/')SKIP;
 *        ANS('    2  CCRTASID CHAR(2),/*ASID AREA @Y30LB02*/')SKIP;
-*        ANS('    2  CCRTECB  FIXED(31),'××
+*        ANS('    2  CCRTECB  FIXED(31),'||
 *        ' /*EVENT CONTROL BLOCK  @Y30LB02*/')SKIP;
 *        ANS('    2  CCRTCSN CHAR(12);/*CSN AREA @Y30LB02*/')SKIP;
 *        GO TO FINISH;        /*BRANCH TO END                @Y30LB02*/
@@ -861,40 +861,40 @@ CVOLVEXT DC    XL4'0000'           2-BYTE VVICEXT AREA         @Y30LB02
 *        GO TO SFORM;          /*NO,CK FOR STANDARD          @Y30LB02*/
 *   IF MF(2)='' THEN           /*2ND SUB-PARM SPECIFIED?     @Y30LB02*/
 *     DO;                      /*PRINT ERROR MESSAGE         @Y30LB02*/
-*        ANS MSG('  ICB612I - MF(2) MUST '××
-*             'CONTAIN REQ BLK NAME IF '××
+*        ANS MSG('  ICB612I - MF(2) MUST '||
+*             'CONTAIN REQ BLK NAME IF '||
 *             'EXEC MACRO FORM REQUESTED')SKIP;            /*@Y30LB02*/
 *        RETCODE=12;           /*SET ERROR RETURN CODE       @Y30LB02*/
 *        ERSW = 1;             /*SET ERROR SWITCH            @Y30LB02*/
 *        GO TO COMPROC;        /*BRANCH TO CK ERROR SWITCH   @Y30LB02*/
 *     END;                     /*                            @Y30LB02*/
 */*                                                        /*@Y30LB02*/
-*   ANS('/*******************************************'××
+*   ANS('/*******************************************'||
 *       '************* @Y30LB02*/')SKIP;
-*   ANS('/*MACMEAN  MSSC COPY VOLUME/CARTRIDGE MACRO '××
+*   ANS('/*MACMEAN  MSSC COPY VOLUME/CARTRIDGE MACRO '||
 *       '              @Y30LB02*/')SKIP;
-*   ANS('/*VS1-4/VS2-3 VERSION-- 06/09/74 LEVEL 00   '××
+*   ANS('/*VS1-4/VS2-3 VERSION-- 06/09/74 LEVEL 00   '||
 *       '              @Y30LB02*/')SKIP;
-*   ANS('/*THIS IS THE OUTPUT FOR THE EXECUTE FORM.  '××
+*   ANS('/*THIS IS THE OUTPUT FOR THE EXECUTE FORM.  '||
 *       '              @Y30LB02*/')SKIP;
-*   ANS('/*THE LIST FORM OF THIS MACRO SHOULD BE     '××
+*   ANS('/*THE LIST FORM OF THIS MACRO SHOULD BE     '||
 *       '              @Y30LB02*/')SKIP;
-*   ANS('/*INVOKED FIRST IN ORDER TO SET UP NECESSARY'××
+*   ANS('/*INVOKED FIRST IN ORDER TO SET UP NECESSARY'||
 *       '              @Y30LB02*/')SKIP;
-*   ANS('/*DECLARES.  IF THE COMPLETE ARGUMENT IS    '××
+*   ANS('/*DECLARES.  IF THE COMPLETE ARGUMENT IS    '||
 *       '              @Y30LB02*/')SKIP;
-*   ANS('/*SPECIFIED THE REQ BLOCK WILL BE ZEROED.   '××
+*   ANS('/*SPECIFIED THE REQ BLOCK WILL BE ZEROED.   '||
 *       '              @Y30LB02*/')SKIP;
-*   ANS('/*******************************************'××
+*   ANS('/*******************************************'||
 *       '************* @Y30LB02*/')SKIP;
 *    IF MF(3) = 'COMPLETE' THEN   /*REQUEST TO ZERO BLOCK?   @Y30LB02*/
 *      DO;                     /*                            @Y30LB02*/
-*        ANS(' '××MF(2)××'='××MF(2)××'&&'××MF(2)××';'××
+*        ANS(' '||MF(2)||'='||MF(2)||'&&'||MF(2)||';'||
 *        '/*ZERO OUT REQUEST BLOCK @Y30LB02*/')SKIP;
 *      END;                    /*                            @Y30LB02*/
 */*                                                          @Y30LB02*/
 *        ANS('RFY(CVOLR1)RSTD;/*RESTRICT REG 1 @Y30LB02*/')SKIP;
-*        ANS('CVOLR1=ADDR('××MF(2)××'); /*R1 PTR'××
+*        ANS('CVOLR1=ADDR('||MF(2)||'); /*R1 PTR'||
 *        ' TO LIST  @Y30LB02*/')SKIP;
 *        GO TO COMPROC;       /*BRANCH TO CK PARAMETERS      @Y30LB02*/
 */*                                                          @Y30LB02*/
@@ -903,7 +903,7 @@ CVOLVEXT DC    XL4'0000'           2-BYTE VVICEXT AREA         @Y30LB02
 *     DO;                     /*NO,PRINT ERROR MESSAGE       @Y30LB02*/
 *        ERSW = 1;            /*SET ERROR SWITCH             @Y30LB02*/
 *        RETCODE=12;          /*SET RETURN CODE              @Y30LB02*/
-*        ANS MSG('  ICB615I - INVALID MF PARAMETER '××
+*        ANS MSG('  ICB615I - INVALID MF PARAMETER '||
 *             'SPECIFIED, MUST BE L, E, OR NULL')SKIP;     /*@Y30LB02*/
 *        GO TO COMPROC;       /*BRANCH,CK ERROR SWITCH       @Y30LB02*/
 *     END;                    /*                             @Y30LB02*/
@@ -912,7 +912,7 @@ CVOLVEXT DC    XL4'0000'           2-BYTE VVICEXT AREA         @Y30LB02
 *     DO;                     /*NO,PROCESS ERROR MESSAGE     @Y30LB02*/
 *        ERSW=1;              /*SET THE ERROR SWITCH         @Y30LB02*/
 *        RETCODE=12;          /*SET RETURN CODE TO 12        @Y30LB02*/
-*        ANS MSG('  ICB607I - FLAGS MUST BE SPECIFIED '××
+*        ANS MSG('  ICB607I - FLAGS MUST BE SPECIFIED '||
 *        'FOR STANDARD FORM MACRO')SKIP;                   /*@Y30LB02*/
 *        GO TO COMPROC;       /*BRANCH TO CK ERROR SWITCH    @Y30LB02*/
 *     END;                    /*                             @Y30LB02*/
@@ -922,7 +922,7 @@ CVOLVEXT DC    XL4'0000'           2-BYTE VVICEXT AREA         @Y30LB02
 *     DO;                     /*NO,PRINT ERROR MESSAGE       @Y30LB02*/
 *        ERSW=1;              /*SET ERROR SWITCH             @Y30LB02*/
 *        RETCODE=12;          /*SET RETURN CODE              @Y30LB02*/
-*        ANS MSG('  ICB610I - VOLID MUST BE SPECIFIED '××
+*        ANS MSG('  ICB610I - VOLID MUST BE SPECIFIED '||
 *        'FOR STANDARD FORM MACRO')SKIP;                   /*@Y30LB02*/
 *        GO TO COMPROC;       /*BRANCH TO CK ERROR SWITCH    @Y30LB02*/
 *     END;                    /*                             @Y30LB02*/
@@ -932,7 +932,7 @@ CVOLVEXT DC    XL4'0000'           2-BYTE VVICEXT AREA         @Y30LB02
 *     DO;                     /*YES,PRINT ERROR MESSAGE      @Y30LB02*/
 *        ERSW=1;              /*SET ERROR SWITCH             @Y30LB02*/
 *        RETCODE=12;          /*SET RETURN CODE              @Y30LB02*/
-*        ANS MSG('  ICB616I - RUA MUST BE SPECIFIED '××
+*        ANS MSG('  ICB616I - RUA MUST BE SPECIFIED '||
 *        'FOR STANDARD FORM MACRO ')SKIP;                  /*@Y30LB02*/
 *        GO TO COMPROC;       /*BRANCH TO CK ERROR SWITCH    @Y30LB02*/
 *     END;                    /*                             @Y30LB02*/
@@ -940,7 +940,7 @@ CVOLVEXT DC    XL4'0000'           2-BYTE VVICEXT AREA         @Y30LB02
 *     DO;                     /*NO,PRINT ERROR MESSAGE       @Y30LB02*/
 *        ERSW=1;              /*SET ERROR SWITCH             @Y30LB02*/
 *        RETCODE=12;          /*SET RETURN CODE              @Y30LB02*/
-*        ANS MSG('  ICB605I - ECB MUST BE SPECIFIED '××
+*        ANS MSG('  ICB605I - ECB MUST BE SPECIFIED '||
 *        'FOR STANDARD FORM MACRO')SKIP;                   /*@Y30LB02*/
 *        GO TO COMPROC;        /*BRANCH TO CK ERROR SWITCH   @Y30LB02*/
 *     END;                     /*                            @Y30LB02*/
@@ -948,17 +948,17 @@ CVOLVEXT DC    XL4'0000'           2-BYTE VVICEXT AREA         @Y30LB02
 *   IF TYPE(1)='CVOL' THEN     /*TYPE COPY VOLUME?           @Y30LB02*/
 *     IF CVOLTEST => 1 THEN    /*STD FORM INVOKED BEFORE?    @Y30LB02*/
 *      DO;                     /*YES,DON'T PRINT DECLARES    @Y30LB02*/
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************* @Y30LB02*/')SKIP;
-*        ANS('/*   MACMEAN  MSSC COPY VOLUME MACRO        '××
+*        ANS('/*   MACMEAN  MSSC COPY VOLUME MACRO        '||
 *            '              @Y30LB02*/')SKIP;
-*        ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '××
+*        ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '||
 *            '              @Y30LB02*/')SKIP;
-*        ANS('/*THIS IS THE OUTPUT FOR A SECONDARY        '××
+*        ANS('/*THIS IS THE OUTPUT FOR A SECONDARY        '||
 *            '              @Y30LB02*/')SKIP;
-*        ANS('/*INVOCATION OF THE STANDARD FORM MACRO     '××
+*        ANS('/*INVOCATION OF THE STANDARD FORM MACRO     '||
 *            '              @Y30LB02*/')SKIP;
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************* @Y30LB02*/')SKIP;
 *        ANS('RFY(CVOLR1)RSTD;/*RESTRICT REG 1 @Y30LB02*/')SKIP;
 *        ANS('CVOLR1=ADDR(CVOLLEN);/*PTR TO REQBLK    @Y30LB02*/')SKIP;
@@ -967,52 +967,52 @@ CVOLVEXT DC    XL4'0000'           2-BYTE VVICEXT AREA         @Y30LB02
 */*                                                        /*@Y30LB02*/
 *     IF TYPE(1) = 'CVOL' THEN  /*COPY VOLUME                @Y30LB02*/
 *      DO;                   /*PRINT DECLARES                @Y30LB02*/
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************** @Y30LB02*/')SKIP;
-*        ANS('/*    MACMEAN  MSSC COPY VOLUME MACRO       '××
+*        ANS('/*    MACMEAN  MSSC COPY VOLUME MACRO       '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '××
+*        ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*OUTPUT FOR THE STANDARD FORM MACRO        '××
+*        ANS('/*OUTPUT FOR THE STANDARD FORM MACRO        '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************** @Y30LB02*/')SKIP;
 *        ANS('RFY(CVOLR1)RSTD;/*RESTRICT REG 1 @Y30LB02*/')SKIP;
 *        ANS('CVOLR1=ADDR(CVOLLEN);/*PTR REQUEST BLK  @Y30LB02*/')SKIP;
-*        ANS('DCL 1  CVOLLST  STATIC LOCAL,'××
+*        ANS('DCL 1  CVOLLST  STATIC LOCAL,'||
 *        ' /*COPY VOLUME REQUEST BLOCK @Y30LB02*/')SKIP;
-*        ANS('    2  CVOLLEN  FIXED(31)INIT('××QUOTE('28')××
+*        ANS('    2  CVOLLEN  FIXED(31)INIT('||QUOTE('28')||
 *        'X),/*LENGTH OF REQUEST BLOCK @Y30LB02*/')SKIP;
-*        ANS('    2  CVOLOPCD CHAR(1)INIT('××QUOTE('2A')××
+*        ANS('    2  CVOLOPCD CHAR(1)INIT('||QUOTE('2A')||
 *        'X),/*COPY VOLUME OPCODE @Y30LB02*/')SKIP;
-*        ANS('    2  CVOLRES1 CHAR(1)INIT('××QUOTE('00')××
+*        ANS('    2  CVOLRES1 CHAR(1)INIT('||QUOTE('00')||
 *        'X), /*ONE BYTE OF ZERO @Y30LB02*/')SKIP;
-*        ANS('    2  CVOLFLG BIT(16)INIT('××QUOTE
-*        ('0000000000000000')××'B), /*FLAGS AREA @Y30LB02*/')SKIP;
-*        ANS('     3  CVODASCR  BIT(1), /*DASD TO '××
+*        ANS('    2  CVOLFLG BIT(16)INIT('||QUOTE
+*        ('0000000000000000')||'B), /*FLAGS AREA @Y30LB02*/')SKIP;
+*        ANS('     3  CVODASCR  BIT(1), /*DASD TO '||
 *        'CARTRIDGE ATTRIBUTE @Y30LB02*/')SKIP;
-*        ANS('     3  CVOCRDAS  BIT(1),/*CARTRIDGE '××
+*        ANS('     3  CVOCRDAS  BIT(1),/*CARTRIDGE '||
 *        'TO DASD ATTRIBUTE @Y30LB02*/')SKIP;
-*        ANS('     3  CVOCRCR  BIT(1),/*CARTRIDGE '××
+*        ANS('     3  CVOCRCR  BIT(1),/*CARTRIDGE '||
 *        'TO CARTRIDGE ATTRIBUTE TRAN VOL @Y30LB02*/')SKIP;
-*        ANS('     3  CVOCRCRV BIT(1),/*CARTRIDGE '××
+*        ANS('     3  CVOCRCRV BIT(1),/*CARTRIDGE '||
 *        'TO CARTRIDGE ATTRIBUTE VOL INVL @Y30LB02*/')SKIP;
-*        ANS('     3  *      BIT(12),'××
+*        ANS('     3  *      BIT(12),'||
 *        ' /*TWELVE BITS RESERVED @Y30LB02*/')SKIP;
-*        ANS('    2  CVOLID  CHAR(6) INIT('××QUOTE
-*        ('000000000000')××'X), /*VOLUME ID  @Y30LB02*/')SKIP;
-*        ANS('    2  CVOLASID CHAR(2) INIT('××QUOTE
-*        ('0000')××'X),/*ASID AREA @Y30LB02*/')SKIP;
-*        ANS('    2  CVOLECB  FIXED(31) INIT(0),'××
+*        ANS('    2  CVOLID  CHAR(6) INIT('||QUOTE
+*        ('000000000000')||'X), /*VOLUME ID  @Y30LB02*/')SKIP;
+*        ANS('    2  CVOLASID CHAR(2) INIT('||QUOTE
+*        ('0000')||'X),/*ASID AREA @Y30LB02*/')SKIP;
+*        ANS('    2  CVOLECB  FIXED(31) INIT(0),'||
 *        ' /*EVENT CONTROL BLOCK  @Y30LB02*/')SKIP;
 *        ANS('    2  CVOLCSN CHAR(12),/*CSN AREA @Y30LB02*/')SKIP;
-*        ANS('       3  *(12) CHAR(1)INIT((12)'××QUOTE
-*        ('00')××'X),/*INIT CSN AREA @Y30LB02*/')SKIP;
-*        ANS('    2  CVOLRUA  FIXED(15) INIT(0),'××
+*        ANS('       3  *(12) CHAR(1)INIT((12)'||QUOTE
+*        ('00')||'X),/*INIT CSN AREA @Y30LB02*/')SKIP;
+*        ANS('    2  CVOLRUA  FIXED(15) INIT(0),'||
 *        ' /*REAL UNIT ADDRESS  @Y30LB02*/')SKIP;
-*        ANS('    2  CVOLRES2 CHAR(2) INIT('××QUOTE
-*        ('0000')××'X),/*RESERVED AREA @Y30LB02*/')SKIP;
-*        ANS('    2  CVOLVEXT  FIXED(31) INIT(0);'××
+*        ANS('    2  CVOLRES2 CHAR(2) INIT('||QUOTE
+*        ('0000')||'X),/*RESERVED AREA @Y30LB02*/')SKIP;
+*        ANS('    2  CVOLVEXT  FIXED(31) INIT(0);'||
 *        ' /*MSVC EXTENSION AREA  @Y30LB02*/')SKIP;
 *        CVOLTEST=CVOLTEST+1; /*INCREM COUNTER               @Y30LB02*/
 *        GO TO COMPROC;    /*BRANCH TO CK PARAMETERS         @Y30LB02*/
@@ -1021,17 +1021,17 @@ CVOLVEXT DC    XL4'0000'           2-BYTE VVICEXT AREA         @Y30LB02
 *   ELSE                     /*PROCESS COPY CARTRIDGE        @Y30LB02*/
 *     IF CCRTTEST => 1 THEN  /*STD FM INVOKED BEFORE?        @Y30LB02*/
 *      DO;                   /*YES,DON'T PRINT DCLS          @Y30LB02*/
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************** @Y30LB02*/')SKIP;
-*        ANS('/*   MACMEAN  MSSC COPY CARTRIDGE MACRO     '××
+*        ANS('/*   MACMEAN  MSSC COPY CARTRIDGE MACRO     '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '××
+*        ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*THIS IS THE OUTPUT FOR A SECONDARY        '××
+*        ANS('/*THIS IS THE OUTPUT FOR A SECONDARY        '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*INVOCATION OF THE STANDARD FORM MACRO     '××
+*        ANS('/*INVOCATION OF THE STANDARD FORM MACRO     '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************** @Y30LB02*/')SKIP;
 *        ANS('RFY(CVOLR1)RSTD;/*RESTRICT REG 1 @Y30LB02*/')SKIP;
 *        ANS('CVOLR1=ADDR(CCRTLEN);/*PTR TO BLOCK @Y30LB02*/')SKIP;
@@ -1039,43 +1039,43 @@ CVOLVEXT DC    XL4'0000'           2-BYTE VVICEXT AREA         @Y30LB02
 *      END;                                                /*@Y30LB02*/
 *     IF CCRTTEST=0 THEN      /*                             @Y30LB02*/
 *     DO;                                                  /*@Y30LB02*/
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************** @Y30LB02*/')SKIP;
-*        ANS('/*   MACMEAN  MSSC COPY CARTRIDGE MACRO     '××
+*        ANS('/*   MACMEAN  MSSC COPY CARTRIDGE MACRO     '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '××
+*        ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*THIS IS THE OUTPUT FOR THE STANDARD FORM  '××
+*        ANS('/*THIS IS THE OUTPUT FOR THE STANDARD FORM  '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************** @Y30LB02*/')SKIP;
 *        ANS('RFY(CVOLR1)RSTD;/*RESTRICT REG 1 @Y30LB02*/')SKIP;
 *        ANS('CVOLR1=ADDR(CCRTLEN);/*R1 PTR TO BLOCK @Y30LB02*/')SKIP;
-*        ANS('DCL 1 CCRTLST  STATIC LOCAL,'××
+*        ANS('DCL 1 CCRTLST  STATIC LOCAL,'||
 *        ' /*COPY CARTRIDGE REQUEST BLOCK @Y30LB02*/')SKIP;
-*        ANS('    2  CCRTLEN  FIXED(31)INIT('××QUOTE
-*        ('20')××'X),/*LENGTH OF REQ BLOCK @Y30LB02*/')SKIP;
-*        ANS('    2  CCRTOPCD CHAR(1)INIT('××QUOTE('28')××
+*        ANS('    2  CCRTLEN  FIXED(31)INIT('||QUOTE
+*        ('20')||'X),/*LENGTH OF REQ BLOCK @Y30LB02*/')SKIP;
+*        ANS('    2  CCRTOPCD CHAR(1)INIT('||QUOTE('28')||
 *        'X),/*COPY CARTRIDGE OPCODE @Y30LB02*/')SKIP;
-*        ANS('    2  CCRTRES1 CHAR(1)INIT('××QUOTE('00')××
+*        ANS('    2  CCRTRES1 CHAR(1)INIT('||QUOTE('00')||
 *        'X), /*ONE BYTE OF ZERO @Y30LB02*/')SKIP;
-*        ANS('    2  CCRTFLG BIT(16)INIT('××QUOTE
-*        ('0000000000000000')××'B), /*FLAGS AREA @Y30LB02*/')SKIP;
-*        ANS('     3  CCRTCRT1  BIT(1), /*CART 1 OF 2 '××
+*        ANS('    2  CCRTFLG BIT(16)INIT('||QUOTE
+*        ('0000000000000000')||'B), /*FLAGS AREA @Y30LB02*/')SKIP;
+*        ANS('     3  CCRTCRT1  BIT(1), /*CART 1 OF 2 '||
 *        'ATTRIBUTE @Y30LB02*/')SKIP;
-*        ANS('     3  CCRTCRT2  BIT(1), /*CART 2 OF 2 '××
+*        ANS('     3  CCRTCRT2  BIT(1), /*CART 2 OF 2 '||
 *        'ATTRIBUTE @Y30LB02*/')SKIP;
-*        ANS('     3  *      BIT(14),'××
+*        ANS('     3  *      BIT(14),'||
 *        ' /*FOURTEEN BITS RESERVED @Y30LB02*/')SKIP;
-*        ANS('    2  CCRTVOL  CHAR(6) INIT('××QUOTE
-*        ('000000000000')××'X),/*VOLID AREA @Y30LB02*/')SKIP;
-*        ANS('    2  CCRTASID CHAR(2) INIT('××QUOTE
-*        ('0000')××'X),/*ASID AREA @Y30LB02*/')SKIP;
-*        ANS('    2  CCRTECB  FIXED(31) INIT(0),'××
+*        ANS('    2  CCRTVOL  CHAR(6) INIT('||QUOTE
+*        ('000000000000')||'X),/*VOLID AREA @Y30LB02*/')SKIP;
+*        ANS('    2  CCRTASID CHAR(2) INIT('||QUOTE
+*        ('0000')||'X),/*ASID AREA @Y30LB02*/')SKIP;
+*        ANS('    2  CCRTECB  FIXED(31) INIT(0),'||
 *        ' /*EVENT CONTROL BLOCK  @Y30LB02*/')SKIP;
 *        ANS('    2  CCRTCSN CHAR(12),/*CSN AREA @Y30LB02*/')SKIP;
-*        ANS('       3  *(12) CHAR(1)INIT((12)'××QUOTE
-*        ('00')××'X);/*INIT CSN AREA @Y30LB02*/')SKIP;
+*        ANS('       3  *(12) CHAR(1)INIT((12)'||QUOTE
+*        ('00')||'X);/*INIT CSN AREA @Y30LB02*/')SKIP;
 *        CCRTTEST=CCRTTEST+1; /*INCREMENT CTR                @Y30LB02*/
 *     END;                    /*                             @Y30LB02*/
 */*                                                          @Y30LB02*/
@@ -1084,61 +1084,61 @@ CVOLVEXT DC    XL4'0000'           2-BYTE VVICEXT AREA         @Y30LB02
 *     GO TO FINISH;          /*YES,BRANCH TO END             @Y30LB02*/
 *   IF TYPE(1)='CVOL' THEN  /*TYPE CVOL?                     @Y30LB02*/
 *    DO;                    /*OUTPUT LEN AND OPC             @Y30LB02*/
-*     ANS('CVOLLEN=' ××QUOTE(CVLEN)×× 'X; /*LENGTH OF '××
+*     ANS('CVOLLEN=' ||QUOTE(CVLEN)|| 'X; /*LENGTH OF '||
 *      'COPY VOLUME REQUEST BLOCK @Y30LB02*/')SKIP;
-*     ANS('CVOLOPCD=' ××QUOTE(CVOLCOD)×× 'X;/*COPYVL '××
+*     ANS('CVOLOPCD=' ||QUOTE(CVOLCOD)|| 'X;/*COPYVL '||
 *     ' OPCODE @Y30LB02*/')SKIP;
 *    END;                 /*                                 @Y30LB02*/
 */*                                                          @Y30LB02*/
 *   ELSE                 /*CCRT LEN AND OPC                  @Y30LB02*/
 *    DO;                 /*                                  @Y30LB02*/
-*     ANS('CCRTLEN=' ××QUOTE(CCLEN)×× 'X; /*LENGTH'××
+*     ANS('CCRTLEN=' ||QUOTE(CCLEN)|| 'X; /*LENGTH'||
 *    ' COPY CARTRIDGE REQUEST BLOCK @Y30LB02*/')SKIP;
-*     ANS('CCRTOPCD=' ××QUOTE(CCRTCOD)×× 'X;/*OPCODE FOR'××
+*     ANS('CCRTOPCD=' ||QUOTE(CCRTCOD)|| 'X;/*OPCODE FOR'||
 *    ' COPY CARTRIDGE LIST @Y30LB02*/')SKIP;
 *    END;                /*                                  @Y30LB02*/
 */*                                                          @Y30LB02*/
 *   IF TYPE(1)='CVOL' THEN  /*TYPE COPY VOL?                 @Y30LB02*/
 *    IF FLAGS ^= '' THEN    /*FLAGS PARAMETER SPECIFIED      @Y30LB02*/
-*     ANS('CVOLFLG=' ××FLAGS×× '; /*VALUE OF FLAGS    @Y30LB02*/')SKIP;
+*     ANS('CVOLFLG=' ||FLAGS|| '; /*VALUE OF FLAGS    @Y30LB02*/')SKIP;
 */*                                                          @Y30LB02*/
 *   IF TYPE(1)='CCRT' THEN    /*COPY CARTRIDGE?              @Y30LB02*/
 *    IF FLAGS ^= '' THEN      /*FLAGS SPECIFIED?             @Y30LB02*/
-*     ANS('CCRTFLG=' ××FLAGS×× '; /*VALUE OF FLAGS    @Y30LB02*/')SKIP;
+*     ANS('CCRTFLG=' ||FLAGS|| '; /*VALUE OF FLAGS    @Y30LB02*/')SKIP;
 */*                                                          @Y30LB02*/
 *   IF VOLID ^= '' THEN      /*VOLID SPECIFIED?              @Y30LB02*/
 *    IF TYPE(1) = 'CVOL' THEN    /*COPY VOLUME?              @Y30LB02*/
-*     ANS('CVOLID=' ××VOLID×× '; /*VALUE OF VOLID @Y30LB02*/')SKIP;
+*     ANS('CVOLID=' ||VOLID|| '; /*VALUE OF VOLID @Y30LB02*/')SKIP;
 */*                                                          @Y30LB02*/
 *   IF VOLID ^= '' THEN     /*VOLID SPECIFIED?               @Y30LB02*/
 *    IF TYPE(1) = 'CCRT' THEN  /*COPY CARTRIDGE?             @Y30LB02*/
-*     ANS('CCRTVOL= ' ××VOLID×× ';/*VALUE OF VOLID    @Y30LB02*/')SKIP;
+*     ANS('CCRTVOL= ' ||VOLID|| ';/*VALUE OF VOLID    @Y30LB02*/')SKIP;
 */*                                                          @Y30LB02*/
 *   IF CSN ^= '' THEN    /*CSN SPECIFIED?                    @Y30LB02*/
 *    IF TYPE(1) = 'CVOL' THEN   /*TYPE COPY VOLUME?          @Y30LB02*/
-*     ANS('CVOLCSN=' ××CSN×× '; /*VALUE OF CSN @Y30LB02*/')SKIP;
+*     ANS('CVOLCSN=' ||CSN|| '; /*VALUE OF CSN @Y30LB02*/')SKIP;
 */*                                                          @Y30LB02*/
 *   IF CSN ^= '' THEN
 *    IF TYPE(1) = 'CCRT' THEN  /*COPY CARTRIDGE?             @Y30LB02*/
-*     ANS('CCRTCSN= ' ××CSN×× ';/*VALUE OF CSN @Y30LB02*/')SKIP;
+*     ANS('CCRTCSN= ' ||CSN|| ';/*VALUE OF CSN @Y30LB02*/')SKIP;
 */*                                                          @Y30LB02*/
 *   IF ECB ^= ''  THEN      /*ECB PARAMETER SPECIFIED        @Y30LB02*/
 *     IF TYPE(1) = 'CCRT' THEN
-*        ANS('CCRTECB=ADDR' ××ECB××';/*ADDRESS OF ECB'××
+*        ANS('CCRTECB=ADDR' ||ECB||';/*ADDRESS OF ECB'||
 *        ' @Y30LB02*/')SKIP;
 */*                                                          @Y30LB02*/
 *   IF ECB ^= ''  THEN
 *     IF TYPE(1) = 'CVOL' THEN
-*        ANS('CVOLECB=ADDR' ××ECB××';/*ADDRESS OF ECB'××
+*        ANS('CVOLECB=ADDR' ||ECB||';/*ADDRESS OF ECB'||
 *        ' @Y30LB02*/')SKIP;
 */*                                                          @Y30LB02*/
 *   IF RUA ^= '' THEN      /*RUA PARAMETER SPECIFIED?        @Y30LB02*/
 *    IF TYPE(1) = 'CVOL' THEN
-*     ANS('CVOLRUA=' ××RUA×× '; /*VALUE OF RUA @Y30LB02*/')SKIP;
+*     ANS('CVOLRUA=' ||RUA|| '; /*VALUE OF RUA @Y30LB02*/')SKIP;
 */*                                                          @Y30LB02*/
 *   IF VVICEXT ^= ''  THEN  /*MSVC EXTENSION?                @Y30LB02*/
 *     IF TYPE(1) = 'CVOL' THEN
-*        ANS('CVOLVEXT=ADDR'××VVICEXT××';/*ADDRESS OF '××
+*        ANS('CVOLVEXT=ADDR'||VVICEXT||';/*ADDRESS OF '||
 *        'VVICEXT @Y30LB02*/')SKIP;
 */*                                                          @Y30LB02*/
 *     ANS('SVC (126);/*INVOKE THE SVC @Y30LB02*/')SKIP;

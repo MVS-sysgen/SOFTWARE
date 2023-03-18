@@ -253,50 +253,50 @@ CSDMASK  DS    0XL32 -        TABLE OF BIT MASKS FOR TESTING BITS IN
 *                                           TESTING BITS IN CSDCPUAL
 *                                                              MDC017*/
 *   2 *           CHAR(152) BDY(DWORD);  /* RESERVED                 */
-T(1),                  /* INDICATES MULTIPROCESSING   ©
-                          SYSTEM INSTRUCTION SET IS   © 
-                          AVAILABLE.  CSDCPUAL MUST   © Þ*
-                          BE EXAMINED TO DETERMINE    ©Ô *
-                          WHETHER A MULTIPROCESSING   ©ƒ*
-                          SYSTEM IS RUNNING OR JUST   ©ƒç*
-                          HALF A MULTIPROCESSING      ©„&*
-                          SYSTEM. (MDC300) @Z30AQ9A*/ ©…½*    3 CSDRV03
-T(1),                  /* RESERVED                 */ © 
-T(1),                  /* RESERVED                 */ ©&
-T(1),                  /* RESERVED                 */ ©¡
-T(1),                  /* RESERVED                 */ ©-
-T(1),                  /* RESERVED                 */ ©Ü
-T(1),                  /* RESERVED                 */ ©Þ
-T(1),                  /* RESERVED                 */ ©ã
-0) CHAR(8),            /* CPU-AFFINITY FEATURE        ©ç
-                          TABLE                    */ ©e
-BIT(16),               /* RESERVED           MDC018*/ ©ð
-FIXED(15),             /* DDR DEVICE ALLOCATION       °
-                          INTERFACE COUNT FIELD.      °
-                          ACCESSED AND MODIFIED       °
-                          UNDER CMS LOCK.             °¦
-                          INCREMENTED BY DDR TO       °	
-                          INDICATE TO DYNAMIC         °§
-                          ALLOCATION THAT DDR         °
-                          EXCHANGED ADDRESSES IN      °©
-                          THE IOS LOOKUP TABLE.       °°
-                                             MDC008*/ °°½*   2 CSDGDCC
-FIXED(31),             /* COUNT OF USABLE CLOCK       °
-                          COMPARATORS CURRENTLY IN    °
+T(1),                  /* INDICATES MULTIPROCESSING   
+                          SYSTEM INSTRUCTION SET IS    
+                          AVAILABLE.  CSDCPUAL MUST   
+                          BE EXAMINED TO DETERMINE    
+                          WHETHER A MULTIPROCESSING   
+                          SYSTEM IS RUNNING OR JUST   
+                          HALF A MULTIPROCESSING      
+                          SYSTEM. (MDC300) @Z30AQ9A*/         3 CSDRV03
+T(1),                  /* RESERVED                 */ 
+T(1),                  /* RESERVED                 */ 
+T(1),                  /* RESERVED                 */ 
+T(1),                  /* RESERVED                 */ 
+T(1),                  /* RESERVED                 */ 
+T(1),                  /* RESERVED                 */ 
+T(1),                  /* RESERVED                 */ 
+0) CHAR(8),            /* CPU-AFFINITY FEATURE        
+                          TABLE                    */ 
+BIT(16),               /* RESERVED           MDC018*/ 
+FIXED(15),             /* DDR DEVICE ALLOCATION       
+                          INTERFACE COUNT FIELD.      
+                          ACCESSED AND MODIFIED       
+                          UNDER CMS LOCK.             
+                          INCREMENTED BY DDR TO       
+                          INDICATE TO DYNAMIC         
+                          ALLOCATION THAT DDR         
+                          EXCHANGED ADDRESSES IN      
+                          THE IOS LOOKUP TABLE.       
+                                             MDC008*/         2 CSDGDCC
+FIXED(31),             /* COUNT OF USABLE CLOCK       
+                          COMPARATORS CURRENTLY IN    
 
-                          THE CONFIGURATION  MDC003*/ °½
-FIXED(31),             /* COUNT OF USABLE CPU         °
+                          THE CONFIGURATION  MDC003*/ 
+FIXED(31),             /* COUNT OF USABLE CPU         
 
-                          TIMERS CURRENTLY IN THE     °È
-                          CONFIGURATION      MDC004*/ °
-FIXED(31),             /* COUNT OF CPU'S WHICH HAVE   ° 
-                          ACCESS TO A GOOD TOD        ° 
-                          CLOCK              MDC005*/ °&
-FIXED(31),             /* COUNT OF TAPE ALLOCATIONS   °-
-                          IN PROGRESS        MDC009*/ °Ü
-FIXED(31),             /* COUNT OF UNIT RECORD        °Þ
-                          ALLOCATIONS IN PROGRESS     °ã
-                                             MDC010*/ °ç
-6) CHAR(2),            /* TABLE OF BIT MASKS FOR      °n
-                          TESTING BITS IN CSDCPUAL    
-                                             MDC017*/ 	
+                          TIMERS CURRENTLY IN THE     
+                          CONFIGURATION      MDC004*/ 
+FIXED(31),             /* COUNT OF CPU'S WHICH HAVE   
+                          ACCESS TO A GOOD TOD        
+                          CLOCK              MDC005*/ 
+FIXED(31),             /* COUNT OF TAPE ALLOCATIONS   
+                          IN PROGRESS        MDC009*/ 
+FIXED(31),             /* COUNT OF UNIT RECORD        
+                          ALLOCATIONS IN PROGRESS     
+                                             MDC010*/ 
+6) CHAR(2),            /* TABLE OF BIT MASKS FOR        
+                          TESTING BITS IN CSDCPUAL     
+                                             MDC017*/  	

@@ -32,7 +32,7 @@
 *
 *   LOCSYMB BLSCAMMM NEXTLOC,MODEL,TYPE,AMS
 *
-*                     ×,ALLOCATION MODEL KEYWORDS×
+*                     |,ALLOCATION MODEL KEYWORDS|
 *
 *
 *           LOCSYMB
@@ -99,8 +99,8 @@
 *                  GC26-3878 FOR INFORMATION ABOUT OPEN SUB-
 *                  PARAMETERS.
 *
-*             DYRB=( VERB ×,FLAGS1× ×,FLAGS2× )
-*                         ×,      ×
+*             DYRB=( VERB |,FLAGS1| |,FLAGS2| )
+*                         |,      |
 *
 *                  VERB (REQUIRED PARAMETER)
 *                   ONE OF THE FOLLOWING VALUES:
@@ -133,31 +133,31 @@
 *
 *             UNIT=UNIT NAME
 *
-*                     × TRK          ×
-*             SPACE=( × CYL          × ,
-*                     × BLOCK LENGTH ×
+*                     | TRK          |
+*             SPACE=( | CYL          | ,
+*                     | BLOCK LENGTH |
 *
-*                     (PRIMARY QUANTITY ×,SECONDARY QUANTITY×)
+*                     (PRIMARY QUANTITY |,SECONDARY QUANTITY|)
 *
-*                     ×,RLSE × ×,CONTIG × ×,ROUND ×)
-*                     ×,     × ×,       ×
+*                     |,RLSE | |,CONTIG | |,ROUND |)
+*                     |,     | |,       |
 *
-*             DISP=(×NEW × ×,DELETE × ×,DELETE ×)
-*                   ×OLD × ×,KEEP   × ×,KEEP   ×
-*                   ×SHR × ×,CATLG  × ×,CATLG  ×
-*                   ×MOD × ×,UNCATLG× ×,UNCATLG×
-*                   ×,   × ×,       ×
+*             DISP=(|NEW | |,DELETE | |,DELETE |)
+*                   |OLD | |,KEEP   | |,KEEP   |
+*                   |SHR | |,CATLG  | |,CATLG  |
+*                   |MOD | |,UNCATLG| |,UNCATLG|
+*                   |,   | |,       |
 *
 *                  DEFAULT: DISP=(SHR,KEEP,KEEP)
 *
-*             LABEL=( ×DATA SET SEQUENCE NUMBER× ×,SL ×
-*                                                ×,NL ×
-*                                                ×,BLP×
-*                                                ×,LTM×
-*                                                ×,   ×
+*             LABEL=( |DATA SET SEQUENCE NUMBER| |,SL |
+*                                                |,NL |
+*                                                |,BLP|
+*                                                |,LTM|
+*                                                |,   |
 *
-*                     ×,PASSWORD× ×,RETPD×)
-*                     ×,NOPWREAD×
+*                     |,PASSWORD| |,RETPD|)
+*                     |,NOPWREAD|
 *
 *             PASSW=PASSWORD
 *
@@ -167,7 +167,7 @@
 *
 *             CNVRT=CNVRT
 *
-*             SYSOUT=( ×SYSOUT CLASS× ×,PROGRAM NAME× )
+*             SYSOUT=( |SYSOUT CLASS| |,PROGRAM NAME| )
 *
 *            VALID KEYWORDS FOR DYRB=IN:
 *

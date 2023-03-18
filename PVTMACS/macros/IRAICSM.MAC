@@ -83,7 +83,7 @@
 *   DCL
 *     1 ICSM BASED(ICSMPTR) BDY(WORD),
 *            %GOTO ICSMPLS4;        /* SKIP USER-GIVEN LEVEL         */
-*%ICSMPLS3:  ICSMDUM = ICSMLEVL××' ICSM';  /* PICK UP GIVEN LEVEL    */
+*%ICSMPLS3:  ICSMDUM = ICSMLEVL||' ICSM';  /* PICK UP GIVEN LEVEL    */
 *     ICSMDUM BDY(WORD),
 *%ICSMPLS4:  ;
 *       10 ICSMSUBN CHAR(4),        /* SUBSYSTEM NAME                */

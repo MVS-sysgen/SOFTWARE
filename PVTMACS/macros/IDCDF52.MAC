@@ -200,7 +200,7 @@
              /********************************************************/
                                                            /*@Y30LB39*/
              ENTRYNUM = 1;                                 /*@Y30LB39*/
-             DO UNTIL (SSRHALF=SSARRAY(ENTRYNUM)×SSARRAY(ENTRYNUM)=0);
+             DO UNTIL (SSRHALF=SSARRAY(ENTRYNUM)|SSARRAY(ENTRYNUM)=0);
                ENTRYNUM = ENTRYNUM + 1;                    /*@Y30LB39*/
              END;                                          /*@Y30LB39*/
                                                            /*@Y30LB39*/

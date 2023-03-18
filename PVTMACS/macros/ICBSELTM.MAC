@@ -212,7 +212,7 @@ TRMOPCD  EQU   X'8A'               OP CODE FOR TERMINATE REQ   @G24LB04
 */*                                                          @G24LB04*/
 *   IF TYPE='' THEN          /*IS THE TYPE PARM NULL?        @G24LB04*/
 *     DO;                    /*PRINT ERROR MESSAGE           @G24LB04*/
-*        ANS MSG('  ICB600I - TYPE MUST BE '××
+*        ANS MSG('  ICB600I - TYPE MUST BE '||
 *                'SPECIFIED ')SKIP;                        /*@G24LB04*/
 *        RETCODE=12;         /*SET RETURN CODE TO 12         @G24LB04*/
 *        GO TO FINISH;       /*BRANCH TO FINISH              @G24LB04*/
@@ -224,7 +224,7 @@ TRMOPCD  EQU   X'8A'               OP CODE FOR TERMINATE REQ   @G24LB04
 */*                                                          @G24LB04*/
 */*      INVALID 'TYPE' WILL CREATE THE FOLLOWING ERR MSG    @G24LB04*/
 */*                                                          @G24LB04*/
-*   ANS MSG('  ICB601I - TYPE IS INCORRECTLY '××
+*   ANS MSG('  ICB601I - TYPE IS INCORRECTLY '||
 *           'SPECIFIED')SKIP;                              /*@G24LB04*/
 *   RETCODE=12;              /*SET RETURN CODE TO 12         @G24LB04*/
 *        GO TO FINISH;       /*BRANCH TO FINISH              @G24LB04*/
@@ -232,7 +232,7 @@ TRMOPCD  EQU   X'8A'               OP CODE FOR TERMINATE REQ   @G24LB04
 *START:
 *   IF MF(1) = 'L' THEN      /*IS REQUEST FOR LIST FORM?     @G24LB04*/
 *        GO TO BLDLIST;      /*YES, WILL GO BUILD LIST       @G24LB04*/
-*   ANS MSG('  ICB617I - INVALID MF PARAMETER '××
+*   ANS MSG('  ICB617I - INVALID MF PARAMETER '||
 *           'SPECIFIED; MUST BE L.')SKIP;                /*  @G24LB04*/
 *   RETCODE=12;              /*SET RETURN CODE TO 12         @G24LB04*/
 *        GO TO FINISH;       /*BRANCH TO FINISH              @G24LB04*/
@@ -240,131 +240,131 @@ TRMOPCD  EQU   X'8A'               OP CODE FOR TERMINATE REQ   @G24LB04
 *BLDLIST:
 *   IF TYPE(1)='SEL' THEN       /*SELECT REQUEST?            @G24LB04*/
 *     DO;                       /*PRINT UNINITIALIZED BLK    @G24LB04*/
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************** @G24LB04*/')SKIP;
-*        ANS('/*MACMEAN  MSSC SELECT MACRO                '××
+*        ANS('/*MACMEAN  MSSC SELECT MACRO                '||
 *            '               @G24LB04*/')SKIP;
-*        ANS('/*MVS VERSION--07/20/76                     '××
+*        ANS('/*MVS VERSION--07/20/76                     '||
 *            '               @G24LB04*/')SKIP;
-*        ANS('/*THIS IS THE UNINITIALIZED LIST FORM       '××
+*        ANS('/*THIS IS THE UNINITIALIZED LIST FORM       '||
 *            '               @G24LB04*/')SKIP;
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************** @G24LB04*/')SKIP;
-*        ANS('DCL 1 SELRB BASED,'××
+*        ANS('DCL 1 SELRB BASED,'||
 *        ' /*SELECT REQUEST BLOCK @G24LB04*/')SKIP;
-*        ANS('    2  SELRBLEN FIXED(31), /*LENGTH'××
+*        ANS('    2  SELRBLEN FIXED(31), /*LENGTH'||
 *        ' OF BLOCK @G24LB04*/')SKIP;
-*        ANS('    2  SELRBOPC FIXED(8), /*SELECT'××
+*        ANS('    2  SELRBOPC FIXED(8), /*SELECT'||
 *        ' OPCODE @G24LB04*/')SKIP;
-*        ANS('    2  SELFLGS1 BIT(8), /* ALLOCATION FLAGS'××
+*        ANS('    2  SELFLGS1 BIT(8), /* ALLOCATION FLAGS'||
 *        ' @G24LB04*/')SKIP;
-*        ANS('    3  SELPARMT BIT(1) , /*PARALLEL MOUNT REQUESTED '××
+*        ANS('    3  SELPARMT BIT(1) , /*PARALLEL MOUNT REQUESTED '||
 *        '@G24LB04*/')SKIP;
-*        ANS('    3  SELDEFER BIT(1) , /*DEFERRED MOUNT REQUESTED '××
+*        ANS('    3  SELDEFER BIT(1) , /*DEFERRED MOUNT REQUESTED '||
 *        '@G24LB04*/')SKIP;
-*        ANS('    3  SELSEPVL BIT(1) , /*SEPVOL REQUESTED '××
+*        ANS('    3  SELSEPVL BIT(1) , /*SEPVOL REQUESTED '||
 *        '@G24LB04*/')SKIP;
-*        ANS('    3  SELVENQV BIT(1) , /*VOLUME ENQUEUE VALID '××
+*        ANS('    3  SELVENQV BIT(1) , /*VOLUME ENQUEUE VALID '||
 *        '@G24LB04*/')SKIP;
-*        ANS('    3  SELVOLRF BIT(1) , /*VOLUME REFERBACK TO DDNAME '××
+*        ANS('    3  SELVOLRF BIT(1) , /*VOLUME REFERBACK TO DDNAME '||
 *        ' REQUESTED @G24LB04*/')SKIP;
-*        ANS('    3  SELVRNEW BIT(1) , /*REFERENCED DD IS FOR NEW '××
+*        ANS('    3  SELVRNEW BIT(1) , /*REFERENCED DD IS FOR NEW '||
 *        'DATA SET @G24LB04*/')SKIP;
-*        ANS('    3  SELVRGRP BIT(1) , /*REFERENCED DD IS FOR GROUP '××
+*        ANS('    3  SELVRGRP BIT(1) , /*REFERENCED DD IS FOR GROUP '||
 *        'VOLUME (IF NEW) @G24LB04*/')SKIP;
-*        ANS('    3  SELMXESO BIT(1), /* MIXED ESOTERIC REQUEST'××
+*        ANS('    3  SELMXESO BIT(1), /* MIXED ESOTERIC REQUEST'||
 *        ' @G24LB04*/')SKIP;
-*        ANS('    2  SELFLGS2 BIT(8), /* ALLOCATION/MSVC FLAGS'××
+*        ANS('    2  SELFLGS2 BIT(8), /* ALLOCATION/MSVC FLAGS'||
 *        ' @G24LB04*/')SKIP;
-*        ANS('    3  SELPRSPL BIT(1) , /*RESERVED FOR VS1 USE '××
+*        ANS('    3  SELPRSPL BIT(1) , /*RESERVED FOR VS1 USE '||
 *        '@G24LB04*/')SKIP;
-*        ANS('    3  SELSCSPL BIT(1) , /*RESERVED FOR VS1 USE '××
+*        ANS('    3  SELSCSPL BIT(1) , /*RESERVED FOR VS1 USE '||
 *        '@G24LB04*/')SKIP;
-*        ANS('    3  SELSUBAL BIT(1) , /*RESERVED FOR VS1 USE '××
+*        ANS('    3  SELSUBAL BIT(1) , /*RESERVED FOR VS1 USE '||
 *        '@G24LB04*/')SKIP;
-*        ANS('    3  SELUNSEP BIT(1) , /*RESERVED FOR VS1 USE '××
+*        ANS('    3  SELUNSEP BIT(1) , /*RESERVED FOR VS1 USE '||
 *        '@G24LB04*/')SKIP;
-*        ANS('    3  SELCNTWT BIT(1) , /*CAN NOT WAIT REQUEST '××
+*        ANS('    3  SELCNTWT BIT(1) , /*CAN NOT WAIT REQUEST '||
 *        '@G24LB04*/')SKIP;
-*        ANS('    3  SELINITC BIT(1) , /*INITIAL CALL FOR STEP OR '××
+*        ANS('    3  SELINITC BIT(1) , /*INITIAL CALL FOR STEP OR '||
 *        ' DYNAMIC ALLOCATION @G24LB04*/')SKIP;
-*        ANS('    3  SELRPRIV BIT(1) , /*MARK REQUEST PRIVATE '××
+*        ANS('    3  SELRPRIV BIT(1) , /*MARK REQUEST PRIVATE '||
 *        ' @G24LB04*/')SKIP;
-*        ANS('    3  SELNOVSL BIT(1) , /*NO VOLUMES WERE SELECTED '××
+*        ANS('    3  SELNOVSL BIT(1) , /*NO VOLUMES WERE SELECTED '||
 *        ' @G24LB04*/')SKIP;
-*        ANS('    2  SELUNCNT FIXED(8),/*UNIT COUNT '××
+*        ANS('    2  SELUNCNT FIXED(8),/*UNIT COUNT '||
 *        '@G24LB04*/')SKIP;
-*        ANS('    2  SELJOBID FIXED(31), /*ASID'××
+*        ANS('    2  SELJOBID FIXED(31), /*ASID'||
 *        ' @G24LB04*/')SKIP;
-*        ANS('    2  SELJFCBA PTR(31),/*ADDRESS OF JFCB '××
+*        ANS('    2  SELJFCBA PTR(31),/*ADDRESS OF JFCB '||
 *        '@G24LB04*/')SKIP;
-*        ANS('    2  SELDEVTP CHAR(4) , /*INTERNAL DEVICE TYPE '××
+*        ANS('    2  SELDEVTP CHAR(4) , /*INTERNAL DEVICE TYPE '||
 *        '@G24LB04*/')SKIP;
-*        ANS('    2  SELUCBAD PTR(31) , /*ADDRESS OF UCB (IF '××
+*        ANS('    2  SELUCBAD PTR(31) , /*ADDRESS OF UCB (IF '||
 *        'SPECIFIC UNIT REQUESTED) @G24LB04*/')SKIP;
-*        ANS('    2  SELJOBNM CHAR(8) , /*JOBNAME '××
+*        ANS('    2  SELJOBNM CHAR(8) , /*JOBNAME '||
 *        ' @G24LB04*/')SKIP;
-*        ANS('    2  SELDDNAM CHAR(8) , /*DD NAME '××
+*        ANS('    2  SELDDNAM CHAR(8) , /*DD NAME '||
 *        ' @G24LB04*/')SKIP;
-*        ANS('    2  SELSTNUM FIXED(8) , /*STEP NUMBER '××
+*        ANS('    2  SELSTNUM FIXED(8) , /*STEP NUMBER '||
 *        ' @G24LB04*/')SKIP;
-*        ANS('    2  SELUNUS1 CHAR(1),/*UNUSED '××
+*        ANS('    2  SELUNUS1 CHAR(1),/*UNUSED '||
 *        '@G24LB04*/')SKIP;
-*        ANS('    2  SELDDCAT FIXED(15), /*DD RELATIVE CONCATENATION'××
+*        ANS('    2  SELDDCAT FIXED(15), /*DD RELATIVE CONCATENATION'||
 *        ' NUMBER @G24LB04*/')SKIP;
-*        ANS('    2  SELDDNUM FIXED(15) , /*CURRENT DD NUMBER, '××
+*        ANS('    2  SELDDNUM FIXED(15) , /*CURRENT DD NUMBER, '||
 *        'ZERO FOR DYNAMIC ALLOCATION @G24LB04*/')SKIP;
-*        ANS('    2  SELRFDDN FIXED(15) , /*REFERENCED DD NUMBER '××
+*        ANS('    2  SELRFDDN FIXED(15) , /*REFERENCED DD NUMBER '||
 *        '(FOR SEPVOL) @G24LB04*/')SKIP;
-*        ANS('    2  SELUNUS2 CHAR(4),/*UNUSED '××
+*        ANS('    2  SELUNUS2 CHAR(4),/*UNUSED '||
 *        '@G24LB04*/')SKIP;
-*        ANS('    2  SELJFCBX PTR(31) , /*ADDRESS OF FIRST JFCB '××
+*        ANS('    2  SELJFCBX PTR(31) , /*ADDRESS OF FIRST JFCB '||
 *        'EXTENSION @G24LB04*/')SKIP;
-*        ANS('    2  SELVLRET PTR(31),/*ADDRESS OF VOLUME SERIAL '××
+*        ANS('    2  SELVLRET PTR(31),/*ADDRESS OF VOLUME SERIAL '||
 *        'RETURN AREA @G24LB04*/')SKIP;
-*        ANS('    2  SELGRPPR PTR(31),/*ADDRESS OF GROUP PARAMETERS '××
+*        ANS('    2  SELGRPPR PTR(31),/*ADDRESS OF GROUP PARAMETERS '||
 *        'AREA @G24LB04*/')SKIP;
 *        ANS('    2  SELUNUSE CHAR(8);/*UNUSED @G24LB04*/')SKIP;
-*        ANS('DCL SELLEN FIXED(8) CONSTANT(72);'××
+*        ANS('DCL SELLEN FIXED(8) CONSTANT(72);'||
 *        '/*SELECT REQUEST LENGTH @G24LB04*/')SKIP;
-*        ANS('DCL SELOPCD BIT(8) CONSTANT(' ×× QUOTE('89') ×× 'X);'××
+*        ANS('DCL SELOPCD BIT(8) CONSTANT(' || QUOTE('89') || 'X);'||
 *        '/*SELECT OP CODE @G24LB04*/')SKIP;
 *        GO TO FINISH;                                    /* @G24LB04*/
 *     END;                                                /* @G24LB04*/
 */*                                                          @G24LB04*/
 *  ELSE                      /*PROCESS TERMINATE REQ BLK     @G24LB04*/
 *     DO;                    /*PRINT TERMINATE REQ BLK       @G24LB04*/
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************** @G24LB04*/')SKIP;
-*        ANS('/*MACMEAN  MSSC TERMINATE MACRO             '××
+*        ANS('/*MACMEAN  MSSC TERMINATE MACRO             '||
 *            '               @G24LB04*/')SKIP;
-*        ANS('/*MVS VERSION--06/16/76                     '××
+*        ANS('/*MVS VERSION--06/16/76                     '||
 *            '               @G24LB04*/')SKIP;
-*        ANS('/*THIS IS THE UNINITIALIZED LIST FORM       '××
+*        ANS('/*THIS IS THE UNINITIALIZED LIST FORM       '||
 *            '               @G24LB04*/')SKIP;
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************** @G24LB04*/')SKIP;
-*        ANS('DCL 1 TRMRB BASED,'××
+*        ANS('DCL 1 TRMRB BASED,'||
 *        ' /*TERMINATE REQUEST BLOCK @G24LB04*/')SKIP;
-*        ANS('    2  TRMRBLEN FIXED(31),/*LENGTH OF'××
+*        ANS('    2  TRMRBLEN FIXED(31),/*LENGTH OF'||
 *        ' TERMINATE REQ BLK @G24LB04*/')SKIP;
-*        ANS('    2  TRMRBOPC FIXED(8),/*TERMINATE'××
+*        ANS('    2  TRMRBOPC FIXED(8),/*TERMINATE'||
 *        ' OPCODE @G24LB04*/')SKIP;
-*        ANS('    2  TRMFLAGS BIT(8), /*ALLOCATION FLAGS'××
+*        ANS('    2  TRMFLAGS BIT(8), /*ALLOCATION FLAGS'||
 *        ' @G24LB04*/')SKIP;
-*        ANS('    3  TRMALLOK BIT(1), /*STEP ALLOCATED '××
+*        ANS('    3  TRMALLOK BIT(1), /*STEP ALLOCATED '||
 *        'SUCCESSFULLY @G24LB04*/')SKIP;
-*        ANS('    3  TRMSCHAB BIT(1), /*RESERVED FOR VS1 USE '××
+*        ANS('    3  TRMSCHAB BIT(1), /*RESERVED FOR VS1 USE '||
 *        ' @G24LB04*/')SKIP;
-*        ANS('    3  * BIT(6), /*UNUSED BITS'××
+*        ANS('    3  * BIT(6), /*UNUSED BITS'||
 *        ' @G24LB04*/')SKIP;
 *        ANS('    2  * CHAR(2), /* UNUSED @G24LB04*/')SKIP;
 *        ANS('    2  TRMJOBID FIXED(31), /*ASID @G24LB04*/')SKIP;
-*        ANS('    2  TRMSTHDR PTR(31);/*STEP TABLE HEADER ADDRESS' ××
+*        ANS('    2  TRMSTHDR PTR(31);/*STEP TABLE HEADER ADDRESS' ||
 *        ' @G24LB04*/')SKIP;
 *        ANS('DCL TRMLEN FIXED(8) CONSTANT(16);/*TERMINATE REQUEST '
-*         ×× 'LENGTH @G24LB04*/')SKIP;
-*        ANS('DCL TRMOPCD BIT(8) CONSTANT(' ×× QUOTE('8A') ×× 'X);'××
+*         || 'LENGTH @G24LB04*/')SKIP;
+*        ANS('DCL TRMOPCD BIT(8) CONSTANT(' || QUOTE('8A') || 'X);'||
 *        '/*TERMINATE OP CODE @G24LB04*/')SKIP;
 *     END;                 /*                                @G24LB04*/
 */*                                                          @G24LB04*/

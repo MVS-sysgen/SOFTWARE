@@ -26,7 +26,7 @@
 *  %THEN %CTGVL999 = ';';           /*   THEN CLOSE DECLARE STMNT    */
 *%IF CTGVLLVL  = ''                 /* IF BLOCK NOT CONCATENATED,    */
 *  %THEN %GOTO CTGVL001;            /*   THEN GENERATE DECLARE       */
-*%CTGVLDUM = CTGVLLVL××' CTGVL(*)'; /* SET MINOR LEVEL NUMBER        */
+*%CTGVLDUM = CTGVLLVL||' CTGVL(*)'; /* SET MINOR LEVEL NUMBER        */
 *   CTGVLDUM                        /* CTGVL CONCATENATED LEVEL      */
 *%GOTO CTGVL002;                    /* SKIP DECLARE                  */
 *%CTGVL001:;                        /* DECLARE                       */

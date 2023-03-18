@@ -122,7 +122,7 @@
 .*   FOLLOWS:                                                  @Y30LB02
 .*                                                             @Y30LB02
 .*     ----------------------------------------------          @ZD00155
-.*     × X × X × X ×     BITS 3-15 --- ALL ZEROS    ×          @ZD00155
+.*     | X | X | X |     BITS 3-15 --- ALL ZEROS    |          @ZD00155
 .*     ----------------------------------------------          @ZD00155
 .*                                                             @Y30LB02
 .*   BIT 0------------'1'B     IMMEDIATE SHUTDOWN              @Y30LB02
@@ -134,7 +134,7 @@
 .*   BIT 2------------'1'B     PREPARE TO SWAP MSCS            @ZD00155
 .*                    '0'B     NO FUNCTION                     @Y30LB02
 .*                                                             @Y30LB02
-.*   BITS 3-15------------    ×NOT USED - ALWAYS ZERO×         @Y30LB02
+.*   BITS 3-15------------    |NOT USED - ALWAYS ZERO|         @Y30LB02
 .*                                                             @Y30LB02
 .*      IMMEDIATE SHUTDOWN:                                    @Y30LB02
 .*                                                             @Y30LB02
@@ -352,7 +352,7 @@ SUSPFLG  DC   XL2'0000'           2-BYTE FLAGS AREA            @Y30LB02
 */********************************************************   @Y30LB02*/
 *        IF SUTESTR1=0 THEN  /*REGISTER ONE DECLARED?        @Y30LB02*/
 *             DO;            /*NO,DECLARE IT                 @Y30LB02*/
-*                  ANS('DCL SUSPR1 REG(1) PTR ;/*PTR'××
+*                  ANS('DCL SUSPR1 REG(1) PTR ;/*PTR'||
 *                  ' TO REQUEST BLOCK @Y30LB02*/')SKIP;
 *                  SUTESTR1=SUTESTR1+1; /*INCREM REG CTR     @Y30LB02*/
 *             END;               /*                          @Y30LB02*/
@@ -362,7 +362,7 @@ SUSPFLG  DC   XL2'0000'           2-BYTE FLAGS AREA            @Y30LB02
 *        DO;                     /*NO,PRINT ERROR MSG        @Y30LB02*/
 *             ERSW=1;            /*SET ERROR SWITCH          @Y30LB02*/
 *             RETCODE=12;        /*SET RETURN CODE           @Y30LB02*/
-*        ANS MSG('  ICB602I -  A NAME FOR THE '××
+*        ANS MSG('  ICB602I -  A NAME FOR THE '||
 *        'REQUEST BLOCK MUST BE SPECIFIED IN MF(2)')SKIP;  /*@Y30LB02*/
 *             GO TO FINISH;      /*BRANCH TO END PROCESS     @Y30LB02*/
 *        END;                 /*                             @Y30LB02*/
@@ -372,72 +372,72 @@ SUSPFLG  DC   XL2'0000'           2-BYTE FLAGS AREA            @Y30LB02
 *   IF CTR > 0 THEN          /*INCREMENT CTR > ZERO?         @Y30LB02*/
 *        DO;                 /*GIVE USER WARNING MSG         @Y30LB02*/
 *             RETCODE=4;     /*SET RETURN CODE TO 4          @Y30LB02*/
-*             ANS MSG('  ICB604I -  WARNING-ONLY'××
-*                 ' THE MF PARAMETER IS VALID FOR THE'××
+*             ANS MSG('  ICB604I -  WARNING-ONLY'||
+*                 ' THE MF PARAMETER IS VALID FOR THE'||
 *                 ' LIST FORM  ')SKIP;                     /*@Y30LB02*/
 *        END;                  /*                            @Y30LB02*/
 *    IF MF(3) ^= '' THEN       /*PLS ATTRIBUTE SPECIFIED     @Y30LB02*/
 *        GO TO ATTRLST;        /*BRCH,PROCESS ATTRIBUTE      @Y30LB02*/
 */*                                                          @Y30LB02*/
-*   ANS('/*******************************************'××
+*   ANS('/*******************************************'||
 *       '************** @Y30LB02*/')SKIP;
-*   ANS('/*    MACMEAN  MSSC SUSPEND MACRO           '××
+*   ANS('/*    MACMEAN  MSSC SUSPEND MACRO           '||
 *       '               @Y30LB02*/')SKIP;
-*   ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '××
+*   ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '||
 *       '               @Y30LB02*/')SKIP;
-*   ANS('/*THIS IS THE INITIALIZED LIST FORM         '××
+*   ANS('/*THIS IS THE INITIALIZED LIST FORM         '||
 *       '               @Y30LB02*/')SKIP;
-*   ANS('/*******************************************'××
+*   ANS('/*******************************************'||
 *       '************** @Y30LB02*/')SKIP;
-*             ANS('DCL 1 '××MF(2)××' STATIC LOCAL,'××
+*             ANS('DCL 1 '||MF(2)||' STATIC LOCAL,'||
 *             ' /*SUSPEND REQUEST BLOCK @Y30LB02*/')SKIP;
-*             ANS('    2  SUSPLEN  FIXED(31)INIT('××QUOTE
-*             ('08')××'X),/*LENGTH OF SUSPEND REQ BLK @Y30LB02*/')SKIP;
-*             ANS('    2  SUSPOP  CHAR(1)INIT('××QUOTE('22')××
+*             ANS('    2  SUSPLEN  FIXED(31)INIT('||QUOTE
+*             ('08')||'X),/*LENGTH OF SUSPEND REQ BLK @Y30LB02*/')SKIP;
+*             ANS('    2  SUSPOP  CHAR(1)INIT('||QUOTE('22')||
 *             'X),/*SUSPEND OPCODE @Y30LB02*/')SKIP;
-*             ANS('    2  *      CHAR(1)INIT('××QUOTE('00')××
+*             ANS('    2  *      CHAR(1)INIT('||QUOTE('00')||
 *             'X),/*RESERVED AND ZERO @Y30LB02*/')SKIP;
-*             ANS('    2  SUSPFLG BIT(16)INIT('××QUOTE
-*             ('0000000000000000')××'B),/*TWO BYTE ATTRI'××
+*             ANS('    2  SUSPFLG BIT(16)INIT('||QUOTE
+*             ('0000000000000000')||'B),/*TWO BYTE ATTRI'||
 *             'BUTE AREA @Y30LB02*/')SKIP;
-*             ANS('       3  SUPIMED BIT(1),/*SUSPEND'××
+*             ANS('       3  SUPIMED BIT(1),/*SUSPEND'||
 *             ' IMMEDIATE ATTRIBUTE @Y30LB02*/')SKIP;
-*             ANS('       3  SUPRCON BIT(1),/*SUSPEND'××
+*             ANS('       3  SUPRCON BIT(1),/*SUSPEND'||
 *             ' RECONFIGURATION ATTRIBUTE @Y30LB02*/')SKIP;
-*             ANS('       3  SUPPRSW BIT(1),/*SUSPEND'××
+*             ANS('       3  SUPPRSW BIT(1),/*SUSPEND'||
 *             ' PREPARE TO SWAP MSCS ATTRIBUTE @ZD00155*/')SKIP;
-*             ANS('       3  *      BIT(13);/*RESERVED AND'××
+*             ANS('       3  *      BIT(13);/*RESERVED AND'||
 *             ' MUST BE ZERO @ZD00155*/')SKIP;
 *             GO TO FINISH;    /*BRANCH TO END PROCESSING    @Y30LB02*/
 */*                                                          @Y30LB02*/
 *ATTRLST:
-*   ANS('/*******************************************'××
+*   ANS('/*******************************************'||
 *       '************** @Y30LB02*/')SKIP;
-*   ANS('/*     MACMEAN  MSSC SUSPEND MACRO          '××
+*   ANS('/*     MACMEAN  MSSC SUSPEND MACRO          '||
 *       '               @Y30LB02*/')SKIP;
-*   ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '××
+*   ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '||
 *       '               @Y30LB02*/')SKIP;
-*   ANS('/*THIS IS THE UNINITIALIZED LIST FORM       '××
+*   ANS('/*THIS IS THE UNINITIALIZED LIST FORM       '||
 *       '               @Y30LB02*/')SKIP;
-*   ANS('/*******************************************'××
+*   ANS('/*******************************************'||
 *       '************** @Y30LB02*/')SKIP;
-*             ANS('DCL 1 '××MF(2)××' '××MF(3)××','××
+*             ANS('DCL 1 '||MF(2)||' '||MF(3)||','||
 *             ' /*SUSPEND REQUEST BLOCK @Y30LB02*/')SKIP;
-*             ANS('    2  SUSPLEN  FIXED(31),/*LENG'××
+*             ANS('    2  SUSPLEN  FIXED(31),/*LENG'||
 *             'TH OF SUSPEND REQBLK = 8 BYTES @Y30LB02*/')SKIP;
-*             ANS('    2  SUSPOP  CHAR(1),'××
+*             ANS('    2  SUSPOP  CHAR(1),'||
 *             '/*SUSPEND OPCODE = 22 HEX @Y30LB02*/')SKIP;
-*             ANS('    2  *      CHAR(1),'××
+*             ANS('    2  *      CHAR(1),'||
 *             '/*RESERVED AND ZERO @Y30LB02*/')SKIP;
-*             ANS('    2  SUSPFLG BIT(16),'××
+*             ANS('    2  SUSPFLG BIT(16),'||
 *             '/*TWO BYTE ATTRIBUTE AREA @Y30LB02*/')SKIP;
-*             ANS('       3  SUPIMED BIT(1),/*SUSPEND'××
+*             ANS('       3  SUPIMED BIT(1),/*SUSPEND'||
 *             ' IMMEDIATE ATTRIBUTE @Y30LB02*/')SKIP;
-*             ANS('       3  SUPRCON BIT(1),/*SUSPEND'××
+*             ANS('       3  SUPRCON BIT(1),/*SUSPEND'||
 *             ' RECONFIGURATION ATTRIBUTE @Y30LB02*/')SKIP;
-*             ANS('       3  SUPPRSW BIT(1),/*SUSPEND'××
+*             ANS('       3  SUPPRSW BIT(1),/*SUSPEND'||
 *             ' PREPARE TO SWAP MSCS ATTRIBUTE @ZD00155*/')SKIP;
-*             ANS('       3  *      BIT(13);/*RESERVED AND'××
+*             ANS('       3  *      BIT(13);/*RESERVED AND'||
 *             ' MUST BE ZERO @ZD00155*/')SKIP;
 *             GO TO FINISH;   /*BRANCH TO END PROCESSING     @Y30LB02*/
 */*                                                          @Y30LB02*/
@@ -450,43 +450,43 @@ SUSPFLG  DC   XL2'0000'           2-BYTE FLAGS AREA            @Y30LB02
 *        DO;                  /*NO,PRINT ERROR MSG           @Y30LB02*/
 *             ERSW=1;         /*SET ERROR SWITCH             @Y30LB02*/
 *             RETCODE=12;     /*SET RETURN CODE              @Y30LB02*/
-*             ANS MSG('  ICB612I - MF(2) MUST '××
-*                'CONTAIN REQ BLK NAME IF '××
+*             ANS MSG('  ICB612I - MF(2) MUST '||
+*                'CONTAIN REQ BLK NAME IF '||
 *                'EXEC MACRO FORM REQUESTED ')SKIP;        /*@Y30LB02*/
 *             GO TO CKSW;     /*BRANCH TO CK ERROR SWITCH    @Y30LB02*/
 *        END;                 /*                             @Y30LB02*/
 */*                                                          @Y30LB02*/
 *   ELSE                       /*REQUEST TO ZERO BLOCK?      @Y30LB02*/
-*   ANS('/*******************************************'××
+*   ANS('/*******************************************'||
 *       '************* @Y30LB02*/')SKIP;
-*   ANS('/*     MACMEAN  MSSC SUSPEND MACRO          '××
+*   ANS('/*     MACMEAN  MSSC SUSPEND MACRO          '||
 *       '              @Y30LB02*/')SKIP;
-*   ANS('/*VS1-4/VS2-3 VERSION-- 06/09/74 LEVEL 00   '××
+*   ANS('/*VS1-4/VS2-3 VERSION-- 06/09/74 LEVEL 00   '||
 *       '              @Y30LB02*/')SKIP;
-*   ANS('/*THIS IS THE OUTPUT FOR THE EXECUTE FORM.  '××
+*   ANS('/*THIS IS THE OUTPUT FOR THE EXECUTE FORM.  '||
 *       '              @Y30LB02*/')SKIP;
-*   ANS('/*THE LIST FORM OF THIS MACRO SHOULD BE     '××
+*   ANS('/*THE LIST FORM OF THIS MACRO SHOULD BE     '||
 *       '              @Y30LB02*/')SKIP;
-*   ANS('/*INVOKED FIRST IN ORDER TO SET UP NECESSARY'××
+*   ANS('/*INVOKED FIRST IN ORDER TO SET UP NECESSARY'||
 *       '              @Y30LB02*/')SKIP;
-*   ANS('/*DECLARES.  IF THE COMPLETE ARGUMENT IS    '××
+*   ANS('/*DECLARES.  IF THE COMPLETE ARGUMENT IS    '||
 *       '              @Y30LB02*/')SKIP;
-*   ANS('/*SPECIFIED THE REQ BLOCK WILL BE ZEROED.   '××
+*   ANS('/*SPECIFIED THE REQ BLOCK WILL BE ZEROED.   '||
 *       '              @Y30LB02*/')SKIP;
-*   ANS('/*******************************************'××
+*   ANS('/*******************************************'||
 *       '************* @Y30LB02*/')SKIP;
 *    IF MF(3) = 'COMPLETE' THEN   /*COMPLETE SPECIFIED?      @Y30LB02*/
 *      DO;                        /*YES,ZERO BLOCK           @Y30LB02*/
-*        ANS(' '××MF(2)××'='××MF(2)××'&&'××MF(2)××';'××    /*@Y30LB02*/
+*        ANS(' '||MF(2)||'='||MF(2)||'&&'||MF(2)||';'||    /*@Y30LB02*/
 *        '/*ZERO OUT REQUEST BLOCK @Y30LB02*/')SKIP;
 *      END;                  /*                              @Y30LB02*/
 */*                                                          @Y30LB02*/
 *        ANS('RFY(SUSPR1)RSTD;/*RESTRICT REG1 @Y30LB02*/')SKIP;
-*        ANS('SUSPR1=ADDR('××MF(2)××');/*R1 POINTER TO'××
+*        ANS('SUSPR1=ADDR('||MF(2)||');/*R1 POINTER TO'||
 *        ' REQUEST BLOCK @Y30LB02*/')SKIP;
-*        ANS('SUSPLEN= '××QUOTE(SUPLEN)××'X;/*LENGTH '××
+*        ANS('SUSPLEN= '||QUOTE(SUPLEN)||'X;/*LENGTH '||
 *        'OF SUSPEND REQUEST @Y30LB02*/')SKIP;
-*        ANS('SUSPOP= '××QUOTE(SUPOP)××'X;/*SUSPEND'××
+*        ANS('SUSPOP= '||QUOTE(SUPOP)||'X;/*SUSPEND'||
 *        ' OPCODE @Y30LB02*/')SKIP;
 *        GO TO COMPROC;    /*BRANCH,CK PARAMETERS            @Y30LB02*/
 */*                                                          @Y30LB02*/
@@ -501,7 +501,7 @@ SUSPFLG  DC   XL2'0000'           2-BYTE FLAGS AREA            @Y30LB02
 *     DO;                  /*NO,PRINT ERROR MESSAGE          @Y30LB02*/
 *        ERSW=1;           /*SET ERROR SWITCH                @Y30LB02*/
 *        RETCODE=12;       /*SET RETURN CODE TO 12           @Y30LB02*/
-*        ANS MSG('  ICB615I - INVALID MF PARAMETER '××
+*        ANS MSG('  ICB615I - INVALID MF PARAMETER '||
 *             'SPECIFIED, MUST BE L, E, OR NULL')SKIP;     /*@Y30LB02*/
 *        GO TO CKSW2;      /*BRANCH,CHECK ERROR SWITCH       @Y30LB02*/
 *     END;                 /*                                @Y30LB02*/
@@ -510,7 +510,7 @@ SUSPFLG  DC   XL2'0000'           2-BYTE FLAGS AREA            @Y30LB02
 *     DO;                  /*NO,PRINT ERROR MESSAGE          @Y30LB02*/
 *        ERSW=1;           /*SET ERROR SWITCH TO ONE         @Y30LB02*/
 *        RETCODE=12;       /*SET RETURN CODE TO 12           @Y30LB02*/
-*        ANS MSG('  ICB607I - FLAGS MUST BE SPECIFIED '××
+*        ANS MSG('  ICB607I - FLAGS MUST BE SPECIFIED '||
 *        'FOR STANDARD FORM MACRO')SKIP;                   /*@Y30LB02*/
 *     END;                 /*                                @Y30LB02*/
 */*                                                          @Y30LB02*/
@@ -521,60 +521,60 @@ SUSPFLG  DC   XL2'0000'           2-BYTE FLAGS AREA            @Y30LB02
 */*                                                          @Y30LB02*/
 *   IF SUSPTEST = 1 THEN  /*STD FORM REQUESTED BEFORE?       @Y30LB02*/
 *     DO;                 /*YES,DON'T PUT OUT DECLARES       @Y30LB02*/
-*   ANS('/*******************************************'××
+*   ANS('/*******************************************'||
 *       '************** @Y30LB02*/')SKIP;
-*   ANS('/*     MACMEAN  MSSC SUSPEND MACRO          '××
+*   ANS('/*     MACMEAN  MSSC SUSPEND MACRO          '||
 *       '               @Y30LB02*/')SKIP;
-*   ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '××
+*   ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '||
 *       '               @Y30LB02*/')SKIP;
-*   ANS('/*THIS IS THE OUTPUT FOR A SECONDARY        '××
+*   ANS('/*THIS IS THE OUTPUT FOR A SECONDARY        '||
 *       '               @Y30LB02*/')SKIP;
-*   ANS('/*INVOCATION OF THE STANDARD FORM MACRO     '××
+*   ANS('/*INVOCATION OF THE STANDARD FORM MACRO     '||
 *       '               @Y30LB02*/')SKIP;
-*   ANS('/*******************************************'××
+*   ANS('/*******************************************'||
 *       '************** @Y30LB02*/')SKIP;
 *        ANS('RFY(SUSPR1)RSTD;/*RESTRICT REG1 @Y30LB02*/')SKIP;
 *        ANS('SUSPR1=ADDR(SUSPLEN);/*R1 PTR TO BLK @Y30LB02*/')SKIP;
-*        ANS('SUSPLEN= '××QUOTE(SUPLEN)××'X;/*LENGTH '××
+*        ANS('SUSPLEN= '||QUOTE(SUPLEN)||'X;/*LENGTH '||
 *        'OF SUSPEND REQUEST @Y30LB02*/')SKIP;
-*        ANS('SUSPOP='××QUOTE(SUPOP)××'X;/*SUSPEND'××
+*        ANS('SUSPOP='||QUOTE(SUPOP)||'X;/*SUSPEND'||
 *        ' OPCODE @Y30LB02*/')SKIP;
 *        GO TO COMPROC;       /*BRANCH,CK PARAMETERS         @Y30LB02*/
 *     END;                    /*                             @Y30LB02*/
 */*                                                          @Y30LB02*/
 *   ELSE                      /*STD FORM 1ST TIME            @Y30LB02*/
 *     DO;                     /*PRINT DECLARES               @Y30LB02*/
-*   ANS('/*******************************************'××
+*   ANS('/*******************************************'||
 *       '************** @Y30LB02*/')SKIP;
-*   ANS('/*     MACMEAN  MSSC SUSPEND MACRO          '××
+*   ANS('/*     MACMEAN  MSSC SUSPEND MACRO          '||
 *       '               @Y30LB02*/')SKIP;
-*   ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '××
+*   ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '||
 *       '               @Y30LB02*/')SKIP;
-*   ANS('/*INVOCATION OF THE STANDARD FORM MACRO     '××
+*   ANS('/*INVOCATION OF THE STANDARD FORM MACRO     '||
 *       '               @Y30LB02*/')SKIP;
-*   ANS('/*******************************************'××
+*   ANS('/*******************************************'||
 *       '*********** @Y30LB02*/')SKIP;
 *        ANS('RFY(SUSPR1)RSTD;/*RESTRICT REG1 @Y30LB02*/')SKIP;
-*        ANS('SUSPR1=ADDR(SUSPLEN);/*R1 PTR  '××
+*        ANS('SUSPR1=ADDR(SUSPLEN);/*R1 PTR  '||
 *        'TO BLOCK @Y30LB02*/')SKIP;
-*        ANS('DCL 1 SUSPLST  STATIC LOCAL,'××
+*        ANS('DCL 1 SUSPLST  STATIC LOCAL,'||
 *        ' /*SUSPEND REQUEST BLOCK @Y30LB02*/')SKIP;
-*        ANS('    2  SUSPLEN  FIXED(31)INIT('××QUOTE
-*        ('08')××'X),/*LENGTH OF SUSPEND REQ BLK @Y30LB02*/')SKIP;
-*        ANS('    2  SUSPOP  CHAR(1)INIT('××QUOTE('22')××
+*        ANS('    2  SUSPLEN  FIXED(31)INIT('||QUOTE
+*        ('08')||'X),/*LENGTH OF SUSPEND REQ BLK @Y30LB02*/')SKIP;
+*        ANS('    2  SUSPOP  CHAR(1)INIT('||QUOTE('22')||
 *        'X),/*SUSPEND OPCODE @Y30LB02*/')SKIP;
-*        ANS('    2  *      CHAR(1)INIT('××QUOTE('00')××
+*        ANS('    2  *      CHAR(1)INIT('||QUOTE('00')||
 *        'X),/*RESERVED AND ZERO @Y30LB02*/')SKIP;
-*        ANS('    2  SUSPFLG BIT(16)INIT('××QUOTE
-*        ('0000000000000000')××'B),/*TWO BYTE ATTRI'××
+*        ANS('    2  SUSPFLG BIT(16)INIT('||QUOTE
+*        ('0000000000000000')||'B),/*TWO BYTE ATTRI'||
 *        'BUTE AREA @Y30LB02*/')SKIP;
-*        ANS('       3  SUPIMED BIT(1),/*SUSPEND'××
+*        ANS('       3  SUPIMED BIT(1),/*SUSPEND'||
 *        ' IMMEDIATE ATTRIBUTE @Y30LB02*/')SKIP;
-*        ANS('       3  SUPRCON BIT(1),/*SUSPEND'××
+*        ANS('       3  SUPRCON BIT(1),/*SUSPEND'||
 *        ' RECONFIGURATION ATTRIBUTE @Y30LB02*/')SKIP;
-*        ANS('       3  SUPPRSW BIT(1),/*SUSPEND'××
+*        ANS('       3  SUPPRSW BIT(1),/*SUSPEND'||
 *        ' PREPARE TO SWAP MSCS ATTRIBUTE @ZD00155*/')SKIP;
-*        ANS('       3  *      BIT(13);/*RESERVED AND'××
+*        ANS('       3  *      BIT(13);/*RESERVED AND'||
 *        ' MUST BE ZERO @ZD00155*/')SKIP;
 *        SUSPTEST=SUSPTEST+1;  /*INCREM STD FORM CTR         @Y30LB02*/
 *        GO TO COMPROC;        /*BRANCH TO CK PARAMETERS     @Y30LB02*/
@@ -588,7 +588,7 @@ SUSPFLG  DC   XL2'0000'           2-BYTE FLAGS AREA            @Y30LB02
 */*********************************************************  @Y30LB02*/
 *COMPROC:
 *   IF FLAGS ^= '' THEN   /*FLAGS SPECIFIED?                 @Y30LB02*/
-*        ANS('SUSPFLG= '××FLAGS××';/*VALUE OF FLAGS '××
+*        ANS('SUSPFLG= '||FLAGS||';/*VALUE OF FLAGS '||
 *        'PARAMETER @Y30LB02*/')SKIP;
 */*                                                          @Y30LB02*/
 */********************************************************   @Y30LB02*/

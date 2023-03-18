@@ -98,7 +98,7 @@ LSCTLEN  EQU   LSCTEND-LSCT -      LENGTH OF LSCT              @G50IPJH
 *DECLARE                           /*                                */
 *  1 LSCT BASED(LSCTPTR)           /* LOGICAL SWAP CONTROL TABLE     */
 *    %GOTO LSCTPLS4;               /* MAJOR STRUCTURE                */
-*%LSCTPLS3:LSCTDM=LSCTLEVL××' LSCT';/* CONCATENATE AS MINOR STRUCTURE*/
+*%LSCTPLS3:LSCTDM=LSCTLEVL||' LSCT';/* CONCATENATE AS MINOR STRUCTURE*/
 *  LSCTDM                         /* LOGICAL SWAP CONTROL TABLE     */
 *%LSCTPLS4:;
 *        BDY(DWORD),

@@ -132,13 +132,13 @@
 .*          FOLLOWS:                                           @Y30LB02
 .*                                                             @Y30LB02
 .*  -----------------------------------------                  @Y30LB02
-.*  × X ×0×0×0×0×0×0×0× X × X × X ×0×0×0×0×0×                  @Y30LB02
+.*  | X |0|0|0|0|0|0|0| X | X | X |0|0|0|0|0|                  @Y30LB02
 .*  -----------------------------------------                  @Y30LB02
 .*                                                             @Y30LB02
 .*  BIT 0-------'1'B    MODIFY MODE                            @Y30LB02
 .*              '0'B    DISPLAY MODE                           @Y30LB02
 .*                                                             @Y30LB02
-.*  BITS 1-7---         ×RESERVED AND MUST BE ZERO×            @Y30LB02
+.*  BITS 1-7---         |RESERVED AND MUST BE ZERO|            @Y30LB02
 .*                                                             @Y30LB02
 .*  BIT 8-------'1'B    DISPLAY OR MODIFY THRESHOLDS           @Y30LB02
 .*              '0'B    NO FUNCTION (DEFAULT)                  @Y30LB02
@@ -151,7 +151,7 @@
 .*                      RESOLUTION                             @Y30LB02
 .*              '0'B    NO FUNCTION (DEFAULT)                  @Y30LB02
 .*                                                             @Y30LB02
-.*  BIT 11-15---        ×RESERVED AND MUST BE ZERO×            @Y30LB02
+.*  BIT 11-15---        |RESERVED AND MUST BE ZERO|            @Y30LB02
 .*                                                             @Y30LB02
 .*  MODIFY MODE                                                @Y30LB02
 .*                                                             @Y30LB02
@@ -450,7 +450,7 @@ TUNEDATA DC   XL4'00000000'       2-BYTE RESERVED AREA         @Y30LB02
 */********************************************************   @Y30LB02*/
 *        IF TUTESTR1=0 THEN  /*REG1 DECLARED BEFORE?         @Y30LB02*/
 *             DO;            /*                              @Y30LB02*/
-*                  ANS('DCL TUNER1 REG(1) PTR ;/*PTR'××
+*                  ANS('DCL TUNER1 REG(1) PTR ;/*PTR'||
 *                  ' TO REQUEST BLOCK @Y30LB02*/')SKIP;
 *                  TUTESTR1=TUTESTR1+1;/*INCREMENT CTR       @Y30LB02*/
 *             END;           /*                              @Y30LB02*/
@@ -460,7 +460,7 @@ TUNEDATA DC   XL4'00000000'       2-BYTE RESERVED AREA         @Y30LB02
 *        DO;                 /*SET UP ERROR MESSAGE          @Y30LB02*/
 *             ERSW=1;        /*SET ERROR SWITCH ON           @Y30LB02*/
 *             RETCODE=12;    /*SET RETURN CODE TO 12         @Y30LB02*/
-*             ANS MSG('  ICB602I - A NAME FOR THE REQUEST BLOCK '××
+*             ANS MSG('  ICB602I - A NAME FOR THE REQUEST BLOCK '||
 *             'MUST BE SPECIFIED IN MF(2) ')SKIP;          /*@Y30LB02*/
 *             GO TO FINISH;  /*BRANCH TO END                 @Y30LB02*/
 *        END;                /*                              @Y30LB02*/
@@ -483,100 +483,100 @@ TUNEDATA DC   XL4'00000000'       2-BYTE RESERVED AREA         @Y30LB02
 *   IF CTR > 0 THEN          /*INCREMENT CTR > ZERO?         @Y30LB02*/
 *        DO;                 /*SET UP ERROR MESSAGE          @Y30LB02*/
 *          RETCODE=4;     /*SET RETURN CODE TO 4             @Y30LB02*/
-*          ANS MSG('  ICB604I - WARNING-ONLY THE MF PARAMETER'××
+*          ANS MSG('  ICB604I - WARNING-ONLY THE MF PARAMETER'||
 *             ' IS VALID FOR LIST FORM')SKIP;              /*@Y30LB02*/
 *        END;                /*                              @Y30LB02*/
 *   IF MF(3) ^= '' THEN      /*ARGUMENT THREE SPECIFIED      @Y30LB02*/
 *        GO TO ATTRLST;      /*IF YES, THEN BRANCH           @Y30LB02*/
 */*                                                          @Y30LB02*/
-*             ANS('/*******************************************'××
+*             ANS('/*******************************************'||
 *                 '************** @Y30LB02*/')SKIP;
-*             ANS('/*MACMEAN  MSSC TUNING MACRO                '××
+*             ANS('/*MACMEAN  MSSC TUNING MACRO                '||
 *                 '               @Y30LB02*/')SKIP;
-*             ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '××
+*             ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '||
 *                 '               @Y30LB02*/')SKIP;
-*             ANS('/*THIS IS THE INITIALIZED LIST FORM         '××
+*             ANS('/*THIS IS THE INITIALIZED LIST FORM         '||
 *                 '               @Y30LB02*/')SKIP;
-*             ANS('/*******************************************'××
+*             ANS('/*******************************************'||
 *                 '************** @Y30LB02*/')SKIP;
-*             ANS('DCL 1 '××MF(2)××'  STATIC LOCAL,'××
+*             ANS('DCL 1 '||MF(2)||'  STATIC LOCAL,'||
 *             ' /*TUNING REQUEST BLOCK @Y30LB02*/')SKIP;
-*             ANS('    2  TUNELEN  FIXED(31)INIT('××QUOTE
-*             ('14')××'X),/*LEN OF TUNING REQ BLK @Y30LB02*/')SKIP;
-*             ANS('    2  TUNEOPCD CHAR(1)INIT('××QUOTE('1C')××
+*             ANS('    2  TUNELEN  FIXED(31)INIT('||QUOTE
+*             ('14')||'X),/*LEN OF TUNING REQ BLK @Y30LB02*/')SKIP;
+*             ANS('    2  TUNEOPCD CHAR(1)INIT('||QUOTE('1C')||
 *             'X),/*TUNING OPCODE @YM02853*/')SKIP;
-*             ANS('    2  TUNERES1 CHAR(1)INIT('××QUOTE('00')××'X),'××
+*             ANS('    2  TUNERES1 CHAR(1)INIT('||QUOTE('00')||'X),'||
 *             '/*RESERVED AND ZERO @Y30LB02*/')SKIP;
-*             ANS('    2  TUNEFLAG BIT(16)INIT('××QUOTE
-*             ('0000000000000000')××'B),/*TWO BYTE ATTRIBUTE '××
+*             ANS('    2  TUNEFLAG BIT(16)INIT('||QUOTE
+*             ('0000000000000000')||'B),/*TWO BYTE ATTRIBUTE '||
 *             'AREA @Y30LB02*/')SKIP;
-*             ANS('       3  TUNMODE BIT(1),/*IF ON, THEN'××
+*             ANS('       3  TUNMODE BIT(1),/*IF ON, THEN'||
 *             ' MODIFY MODE-OFF RESULT IN DISPLAY @Y30LB02*/')SKIP;
-*             ANS('       3  TUNRES1 BIT(7),/*SEVEN BITS'××
+*             ANS('       3  TUNRES1 BIT(7),/*SEVEN BITS'||
 *             ' RESERVED @Y30LB02*/')SKIP;
-*             ANS('       3  TUNTHRES BIT(1),/*DISPLAY OR'××
+*             ANS('       3  TUNTHRES BIT(1),/*DISPLAY OR'||
 *             ' MODIFY THRESHOLDS @Y30LB02*/')SKIP(1);
-*             ANS('       3  TUNSLICE BIT(1),/*DISPLAY OR'××
+*             ANS('       3  TUNSLICE BIT(1),/*DISPLAY OR'||
 *             ' MODIFY SLICE RANGES @Y30LB02*/')SKIP(1);
-*             ANS('       3  TUNCLOCK BIT(1),/*DISPLAY OR'××
+*             ANS('       3  TUNCLOCK BIT(1),/*DISPLAY OR'||
 *             ' MODIFY LRU CLOCK @Y30LB02*/')SKIP(1);
-*             ANS('       3  TUNRES2 BIT(5),/*5 BITS'××
+*             ANS('       3  TUNRES2 BIT(5),/*5 BITS'||
 *             ' RESERVED @Y30LB02*/')SKIP;
-*             ANS('    2  TUNESDGN  FIXED(8) INIT(0),'××
+*             ANS('    2  TUNESDGN  FIXED(8) INIT(0),'||
 *             '/*STAGING DRIVE GROUP NUMBER @Y30LB02*/')SKIP;
-*             ANS('    2  TUNERES2  CHAR(1) INIT('××QUOTE
-*             ('00')××'X),/*RESERVED AREA @Y30LB02*/')SKIP;
-*             ANS('    2  TUNEASID  CHAR(2) INIT('××QUOTE
-*             ('0000')××'X),/*ADDRESS SPACE ID @Y30LB02*/')SKIP;
-*             ANS('    2  TUNEECB  FIXED(31) INIT(0),'××
+*             ANS('    2  TUNERES2  CHAR(1) INIT('||QUOTE
+*             ('00')||'X),/*RESERVED AREA @Y30LB02*/')SKIP;
+*             ANS('    2  TUNEASID  CHAR(2) INIT('||QUOTE
+*             ('0000')||'X),/*ADDRESS SPACE ID @Y30LB02*/')SKIP;
+*             ANS('    2  TUNEECB  FIXED(31) INIT(0),'||
 *             '/*EVENT CONTROL BLOCK @Y30LB02*/')SKIP;
-*             ANS('    2  TUNEDATA  FIXED(31)INIT(0);'××
+*             ANS('    2  TUNEDATA  FIXED(31)INIT(0);'||
 *             '/*DATA PARAMETER @Y30LB02*/')SKIP;
 *             GO TO FINISH;    /*BRANCH TO END               @Y30LB02*/
 */*                                                          @Y30LB02*/
 *ATTRLST:
 */*                                                          @Y30LB02*/
-*             ANS('/*******************************************'××
+*             ANS('/*******************************************'||
 *                 '************** @Y30LB02*/')SKIP;
-*             ANS('/*MACMEAN  MSSC TUNING MACRO                '××
+*             ANS('/*MACMEAN  MSSC TUNING MACRO                '||
 *                 '               @Y30LB02*/')SKIP;
-*             ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '××
+*             ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '||
 *                 '               @Y30LB02*/')SKIP;
-*             ANS('/*THIS IS THE UNINITIALIZED LIST FORM       '××
+*             ANS('/*THIS IS THE UNINITIALIZED LIST FORM       '||
 *                 '               @Y30LB02*/')SKIP;
-*             ANS('/*******************************************'××
+*             ANS('/*******************************************'||
 *                 '************** @Y30LB02*/')SKIP;
-*             ANS('DCL 1 '××MF(2)××' '××MF(3)××','××
+*             ANS('DCL 1 '||MF(2)||' '||MF(3)||','||
 *             ' /*TUNING REQUEST BLOCK @Y30LB02*/')SKIP;
-*             ANS('    2  TUNELEN  FIXED(31),'××
+*             ANS('    2  TUNELEN  FIXED(31),'||
 *             '/*LEN OF TUNING REQ BLK 20 BYTES @Y30LB02*/')SKIP;
-*             ANS('    2  TUNEOPCD CHAR(1),'××
+*             ANS('    2  TUNEOPCD CHAR(1),'||
 *             '/*TUNING MACRO OPCODE @YM02853*/')SKIP;
-*             ANS('    2  TUNERES1 CHAR(1),'××
+*             ANS('    2  TUNERES1 CHAR(1),'||
 *             '/*RESERVED AND ZERO @Y30LB02*/')SKIP;
-*             ANS('    2  TUNEFLAG BIT(16),'××
+*             ANS('    2  TUNEFLAG BIT(16),'||
 *             '/*TWO BYTE ATTRIBUTE AREA @Y30LB02*/')SKIP;
-*             ANS('       3  TUNMODE BIT(1),/*IF ON, THEN'××
+*             ANS('       3  TUNMODE BIT(1),/*IF ON, THEN'||
 *             ' MODIFY MODE-OFF RESULT IN DISPLAY @Y30LB02*/')SKIP;
-*             ANS('       3  TUNRES1 BIT(7),/*SEVEN BITS'××
+*             ANS('       3  TUNRES1 BIT(7),/*SEVEN BITS'||
 *             ' RESERVED @Y30LB02*/')SKIP;
-*             ANS('       3  TUNTHRES BIT(1),/*DISPLAY OR'××
+*             ANS('       3  TUNTHRES BIT(1),/*DISPLAY OR'||
 *             ' MODIFY THRESHOLDS @Y30LB02*/')SKIP;
-*             ANS('       3  TUNSLICE BIT(1),/*DISPLAY OR'××
+*             ANS('       3  TUNSLICE BIT(1),/*DISPLAY OR'||
 *             ' MODIFY SLICE RANGES @Y30LB02*/')SKIP;
-*             ANS('       3  TUNCLOCK BIT(1),/*DISPLAY OR'××
+*             ANS('       3  TUNCLOCK BIT(1),/*DISPLAY OR'||
 *             ' MODIFY LRU CLOCK @Y30LB02*/')SKIP;
-*             ANS('       3  TUNRES2 BIT(5),/*5 BITS'××
+*             ANS('       3  TUNRES2 BIT(5),/*5 BITS'||
 *             ' RESERVED @Y30LB02*/')SKIP;
-*             ANS('    2  TUNESDGN  FIXED(8) ,'××
+*             ANS('    2  TUNESDGN  FIXED(8) ,'||
 *             '/*STAGING DRIVE GROUP NUMBER @Y30LB02*/')SKIP;
-*             ANS('    2  TUNERES2  CHAR(1) ,'××
+*             ANS('    2  TUNERES2  CHAR(1) ,'||
 *             '/*RESERVED AREA @Y30LB02*/')SKIP;
-*             ANS('    2  TUNEASID  CHAR(2) ,'××
+*             ANS('    2  TUNEASID  CHAR(2) ,'||
 *             '/*ADDRESS SPACE ID @Y30LB02*/')SKIP;
-*             ANS('    2  TUNEECB  FIXED(31) ,'××
+*             ANS('    2  TUNEECB  FIXED(31) ,'||
 *             '/*EVENT CONTROL BLOCK @Y30LB02*/')SKIP;
-*             ANS('    2  TUNEDATA  FIXED(31);'××
+*             ANS('    2  TUNEDATA  FIXED(31);'||
 *             '/*DATA PARAMETER @Y30LB02*/')SKIP;
 *             GO TO FINISH;    /*BRANCH TO END               @Y30LB02*/
 */*                                                          @Y30LB02*/
@@ -589,43 +589,43 @@ TUNEDATA DC   XL4'00000000'       2-BYTE RESERVED AREA         @Y30LB02
 *        DO;                   /*SETUP ERROR MESSAGE         @Y30LB02*/
 *             ERSW=1;          /*SET ERROR SWITCH ON         @Y30LB02*/
 *             RETCODE=12;      /*SET RETURN CODE TO 12       @Y30LB02*/
-*             ANS MSG('  ICB612I - MF(2) MUST CONTAIN '××
-*                'REQ BLK NAME IF EXEC '××
+*             ANS MSG('  ICB612I - MF(2) MUST CONTAIN '||
+*                'REQ BLK NAME IF EXEC '||
 *                'MACRO FORM REQUESTED ')SKIP;             /*@Y30LB02*/
 *             GO TO CKSW;      /*BRANCH TO CK ERROR SWITCH   @Y30LB02*/
 *        END;                  /*                            @Y30LB02*/
 */*                                                          @Y30LB02*/
 *   ELSE              /*CONTINUE EXECUTE PROCESSING          @Y30LB02*/
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************** @Y30LB02*/')SKIP;
-*        ANS('/*MACMEAN  MSSC TUNING MACRO                '××
+*        ANS('/*MACMEAN  MSSC TUNING MACRO                '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*VS1-4/VS2-3 VERSION-- 06/09/74 LEVEL 00   '××
+*        ANS('/*VS1-4/VS2-3 VERSION-- 06/09/74 LEVEL 00   '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*THIS IS THE OUTPUT FOR THE EXECUTE FORM.  '××
+*        ANS('/*THIS IS THE OUTPUT FOR THE EXECUTE FORM.  '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*THE LIST FORM OF THIS MACRO SHOULD BE     '××
+*        ANS('/*THE LIST FORM OF THIS MACRO SHOULD BE     '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*INVOKED FIRST IN ORDER TO SET UP NECESSARY'××
+*        ANS('/*INVOKED FIRST IN ORDER TO SET UP NECESSARY'||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*DECLARES.  IF THE COMPLETE ARGUMENT IS    '××
+*        ANS('/*DECLARES.  IF THE COMPLETE ARGUMENT IS    '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*SPECIFIED THE REQ BLOCK WILL BE ZEROED.   '××
+*        ANS('/*SPECIFIED THE REQ BLOCK WILL BE ZEROED.   '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************** @Y30LB02*/')SKIP;
 */*                                                          @Y30LB02*/
 *        ANS('RFY(TUNER1)RSTD;/*RESTRICT REG 1 @Y30LB02*/')SKIP;
-*        ANS('TUNER1=ADDR('××MF(2)××');/*R1 POINTER TO'××
+*        ANS('TUNER1=ADDR('||MF(2)||');/*R1 POINTER TO'||
 *        ' REQUEST BLOCK @Y30LB02*/')SKIP;
 *   IF MF(3) = 'COMPLETE' THEN  /*COMPLETE SPECIFIED?        @Y30LB02*/
 *     DO;                       /*PREPARE TO ZERO BLK        @Y30LB02*/
-*        ANS(' '××MF(2)××'='××MF(2)××'&&'××MF(2)××';'××
+*        ANS(' '||MF(2)||'='||MF(2)||'&&'||MF(2)||';'||
 *        '/*ZERO REQUEST BLOCK @Y30LB02*/')SKIP;
 *     END;                      /*                           @Y30LB02*/
-*        ANS('TUNELEN= '××QUOTE(TUNLEN)××'X;/*LENGTH '××
+*        ANS('TUNELEN= '||QUOTE(TUNLEN)||'X;/*LENGTH '||
 *        ' OF TUNING REQUEST @Y30LB02*/')SKIP;
-*        ANS('TUNEOPCD= '××QUOTE(OPCODE)××'X;/*TUNING'××
+*        ANS('TUNEOPCD= '||QUOTE(OPCODE)||'X;/*TUNING'||
 *        ' OPCODE @Y30LB02*/')SKIP;
 */*                                                          @Y30LB02*/
 *CKSW:
@@ -639,7 +639,7 @@ TUNEDATA DC   XL4'00000000'       2-BYTE RESERVED AREA         @Y30LB02
 *     DO;                   /*                               @Y30LB02*/
 *        ERSW=1;            /*SET ERROR SWITCH TO 1          @Y30LB02*/
 *        RETCODE=12;        /*SET RETURN CODE TO 12          @Y30LB02*/
-*        ANS MSG('  ICB615I - INVALID MF PARAMETER'××
+*        ANS MSG('  ICB615I - INVALID MF PARAMETER'||
 *                ' SPECIFIED, MUST BE L,E, OR NULL')SKIP;  /*@Y30LB02*/
 *        GO TO CKSW2;       /*BRANCH TO CK SWITCH            @Y30LB02*/
 *     END;                  /*                               @Y30LB02*/
@@ -648,7 +648,7 @@ TUNEDATA DC   XL4'00000000'       2-BYTE RESERVED AREA         @Y30LB02
 *     DO;                   /*                               @Y30LB02*/
 *        ERSW=1;            /*SET ERROR SWITCH TO 1          @Y30LB02*/
 *        RETCODE=12;        /*SET RETURN CODE TO 12          @Y30LB02*/
-*        ANS MSG('  ICB607I - FLAGS MUST BE SPECIFIED  '××
+*        ANS MSG('  ICB607I - FLAGS MUST BE SPECIFIED  '||
 *        'FOR STANDARD FORM MACRO ')SKIP;                  /*@Y30LB02*/
 *        GO TO CKSW2;       /*BRANCH TO CK SWITCH            @Y30LB02*/
 *     END;                  /*                               @Y30LB02*/
@@ -660,75 +660,75 @@ TUNEDATA DC   XL4'00000000'       2-BYTE RESERVED AREA         @Y30LB02
 */*                                                          @Y30LB02*/
 *   IF TUNETES = 1 THEN     /*STANDARD FORM INVOKED BEFORE?  @Y30LB02*/
 *     DO;                   /*DO NOT PUT OUT DECLARES        @Y30LB02*/
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************** @Y30LB02*/')SKIP;
-*        ANS('/*MACMEAN  MSSC TUNING MACRO                '××
+*        ANS('/*MACMEAN  MSSC TUNING MACRO                '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '××
+*        ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*THIS IS THE OUTPUT FOR A SECONDARY        '××
+*        ANS('/*THIS IS THE OUTPUT FOR A SECONDARY        '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*INVOCATION OF THE STANDARD FORM MACRO     '××
+*        ANS('/*INVOCATION OF THE STANDARD FORM MACRO     '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************** @Y30LB02*/')SKIP;
 *        ANS('RFY(TUNER1)RSTD;/*RESTRICT REG 1 @Y30LB02*/')SKIP;
 *        ANS('TUNER1=ADDR(TUNELEN);/*R1 PTR TO BLK @Y30LB02*/')SKIP;
-*        ANS('TUNELEN= '××QUOTE(TUNLEN)××'X;/*LENGTH OF '××
+*        ANS('TUNELEN= '||QUOTE(TUNLEN)||'X;/*LENGTH OF '||
 *        'TUNING REQUEST @Y30LB02*/')SKIP;
-*        ANS('TUNEOPCD='××QUOTE(OPCODE)××'X;/*TUNING'××
+*        ANS('TUNEOPCD='||QUOTE(OPCODE)||'X;/*TUNING'||
 *        ' OPCODE @Y30LB02*/')SKIP;
 *        GO TO COMPROC;       /*BRANCH TO CK PARAMETERS      @Y30LB02*/
 *     END;                    /*                             @Y30LB02*/
 */*                                                          @Y30LB02*/
 *   ELSE                      /*PUT OUT DECLARES             @Y30LB02*/
 *     DO;                     /*                             @Y30LB02*/
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************** @Y30LB02*/')SKIP;
-*        ANS('/*MACMEAN  MSSC TUNING MACRO                '××
+*        ANS('/*MACMEAN  MSSC TUNING MACRO                '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '××
+*        ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*THIS IS THE STANDARD FORM - TUNING MACRO  '××
+*        ANS('/*THIS IS THE STANDARD FORM - TUNING MACRO  '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************** @Y30LB02*/')SKIP;
 */*                                                          @Y30LB02*/
 *        ANS('RFY(TUNER1)RSTD;/*RESTRICT REG 1 @Y30LB02*/')SKIP;
-*        ANS('TUNER1=ADDR(TUNELEN);/*R1 PTR  '××
+*        ANS('TUNER1=ADDR(TUNELEN);/*R1 PTR  '||
 *        'TO LIST @Y30LB02*/')SKIP;
-*        ANS('DCL 1 TUNELST  STATIC LOCAL,'××
+*        ANS('DCL 1 TUNELST  STATIC LOCAL,'||
 *        ' /*TUNING REQUEST BLOCK @Y30LB02*/')SKIP;
-*        ANS('    2  TUNELEN  FIXED(31)INIT('××QUOTE
-*        ('14')××'X),/*LEN OF TUNING REQ BLK @Y30LB02*/')SKIP;
-*        ANS('    2  TUNEOPCD CHAR(1)INIT('××QUOTE
-*        ('1C')××'X),/*TUNING MACRO OPCODE @YM02853*/')SKIP;
-*        ANS('    2  TUNERES1 CHAR(1)INIT('××QUOTE
-*        ('00')××'X),/*RESERVED AND ZERO @Y30LB02*/')SKIP;
-*        ANS('    2  TUNEFLAG BIT(16)INIT('××QUOTE
-*        ('0000000000000000')××'B),/*TWO BYTE ATTRI'××
+*        ANS('    2  TUNELEN  FIXED(31)INIT('||QUOTE
+*        ('14')||'X),/*LEN OF TUNING REQ BLK @Y30LB02*/')SKIP;
+*        ANS('    2  TUNEOPCD CHAR(1)INIT('||QUOTE
+*        ('1C')||'X),/*TUNING MACRO OPCODE @YM02853*/')SKIP;
+*        ANS('    2  TUNERES1 CHAR(1)INIT('||QUOTE
+*        ('00')||'X),/*RESERVED AND ZERO @Y30LB02*/')SKIP;
+*        ANS('    2  TUNEFLAG BIT(16)INIT('||QUOTE
+*        ('0000000000000000')||'B),/*TWO BYTE ATTRI'||
 *        'BUTE AREA @Y30LB02*/')SKIP;
-*        ANS('       3  TUNMODE BIT(1),/*IF ON, THEN'××
+*        ANS('       3  TUNMODE BIT(1),/*IF ON, THEN'||
 *        ' MODIFY MODE-OFF RESULT IN DISPLAY @Y30LB02*/')SKIP;
-*        ANS('       3  TUNRES1 BIT(7),/*SEVEN BITS'××
+*        ANS('       3  TUNRES1 BIT(7),/*SEVEN BITS'||
 *        ' RESERVED @Y30LB02*/')SKIP;
-*        ANS('       3  TUNTHRES BIT(1),/*DISPLAY OR'××
+*        ANS('       3  TUNTHRES BIT(1),/*DISPLAY OR'||
 *        ' MODIFY THRESHOLDS @Y30LB02*/')SKIP;
-*        ANS('       3  TUNSLICE BIT(1),/*DISPLAY OR'××
+*        ANS('       3  TUNSLICE BIT(1),/*DISPLAY OR'||
 *        ' MODIFY SLICE RANGES @Y30LB02*/')SKIP;
-*        ANS('       3  TUNCLOCK BIT(1),/*DISPLAY OR'××
+*        ANS('       3  TUNCLOCK BIT(1),/*DISPLAY OR'||
 *        ' MODIFY LRU CLOCK @Y30LB02*/')SKIP;
-*        ANS('       3  TUNRES2 BIT(5),/*5 BITS'××
+*        ANS('       3  TUNRES2 BIT(5),/*5 BITS'||
 *        ' RESERVED @Y30LB02*/')SKIP;
-*        ANS('    2  TUNESDGN  FIXED(8) INIT(0),'××
+*        ANS('    2  TUNESDGN  FIXED(8) INIT(0),'||
 *        '/*STAGING DRIVE GROUP NUMBER @Y30LB02*/')SKIP;
-*        ANS('    2  TUNERES2  CHAR(1) INIT('××QUOTE
-*        ('00')××'X),/*RESERVED AREA @Y30LB02*/')SKIP;
-*        ANS('    2  TUNEASID  CHAR(2) INIT('××QUOTE
-*        ('0000')××'X),/*ADDRESS SPACE ID @Y30LB02*/')SKIP;
-*        ANS('    2  TUNEECB  FIXED(31) INIT(0),'××
+*        ANS('    2  TUNERES2  CHAR(1) INIT('||QUOTE
+*        ('00')||'X),/*RESERVED AREA @Y30LB02*/')SKIP;
+*        ANS('    2  TUNEASID  CHAR(2) INIT('||QUOTE
+*        ('0000')||'X),/*ADDRESS SPACE ID @Y30LB02*/')SKIP;
+*        ANS('    2  TUNEECB  FIXED(31) INIT(0),'||
 *        '/*EVENT CONTROL BLOCK @Y30LB02*/')SKIP;
-*        ANS('    2  TUNEDATA  FIXED(31)INIT(0);'××
+*        ANS('    2  TUNEDATA  FIXED(31)INIT(0);'||
 *        '/*DATA PARAMETER @Y30LB02*/')SKIP;
 *        TUNETES=TUNETES+1;   /*INCREMENT INVOCATION CTR     @Y30LB02*/
 *        GO TO COMPROC;       /*BRANCH TO CHECK PARAMETERS   @Y30LB02*/
@@ -742,19 +742,19 @@ TUNEDATA DC   XL4'00000000'       2-BYTE RESERVED AREA         @Y30LB02
 */*********************************************************  @Y30LB02*/
 *COMPROC:
 *   IF FLAGS ^= '' THEN       /*FLAGS SPECIFIED?             @Y30LB02*/
-*        ANS('TUNEFLAG= '××FLAGS××';/*VALUE OF FLAGS '××
+*        ANS('TUNEFLAG= '||FLAGS||';/*VALUE OF FLAGS '||
 *        'PARAMETER @Y30LB02*/')SKIP;
 */*                                                          @Y30LB02*/
 *   IF SDGNUM ^= '' THEN      /*STAGING DRIVE GROUP SPECD    @Y30LB02*/
-*        ANS('TUNESDGN= '××SDGNUM××';/*STAGING DRIVE'××
+*        ANS('TUNESDGN= '||SDGNUM||';/*STAGING DRIVE'||
 *        ' GROUP NUMBER LOADED @Y30LB02*/')SKIP;
 */*                                                          @Y30LB02*/
 *   IF DATA ^= '' THEN        /*DATA SPECIFIED?              @Y30LB02*/
-*        ANS('TUNEDATA= '××DATA××';/*VALUE OF DATA '××
+*        ANS('TUNEDATA= '||DATA||';/*VALUE OF DATA '||
 *        'PARAMETER @Y30LB02*/')SKIP;
 */*                                                          @Y30LB02*/
 *   IF ECB ^= '' THEN         /*ECB SPECIFIED?               @Y30LB02*/
-*        ANS('TUNEECB=ADDR'××ECB××';/*EVENT CONTROL'××
+*        ANS('TUNEECB=ADDR'||ECB||';/*EVENT CONTROL'||
          ' BLOCK ADDRESS LOADED @Y30LB02*/')SKIP;
 */********************************************************   @Y30LB02*/
 */*      THIS SECTION OF CODE WILL INVOKE SVC 126 AND        @Y30LB02*/

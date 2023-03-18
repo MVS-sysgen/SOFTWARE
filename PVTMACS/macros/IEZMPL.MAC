@@ -83,7 +83,7 @@ MPLSIZE  EQU   *-MPL -        LENGTH OF MPL
 *DECLARE
 *  1 MPL BASED(MPLPTR)                   /* DECLARE MPL LEVEL ONE    */
 *        % GOTO MPLL4;                   /* SKIP LEVEL N DECLARE     */
-*%MPLL3:  MPLDUM=MPLLEVEL××' MPL';       /* SET LEVEL FOR MINOR
+*%MPLL3:  MPLDUM=MPLLEVEL||' MPL';       /* SET LEVEL FOR MINOR
 *                                           STRUCTURE                */
 *        MPLDUM                          /* MINOR STRUCTURE NAME     */
 *%MPLL4:;

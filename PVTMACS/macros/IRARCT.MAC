@@ -85,7 +85,7 @@ RCTLEN   EQU   RCTEND-RCT -        LENGTH OF RCT
 *DECLARE                           /*                                */
 *  1 RCT BASED(RCTPTR)             /* RESOURCE CONTROL TABLE         */
 *    %GOTO RCTPLS4;                /* MAJOR STRUCTURE                */
-*%RCTPLS3: RCTDUM=RCTLEVEL××' RCT'; /* CONCATENATE AS MINOR STRUCTURE*/
+*%RCTPLS3: RCTDUM=RCTLEVEL||' RCT'; /* CONCATENATE AS MINOR STRUCTURE*/
 *  RCTDUM                          /* RESOURCE CONTROL TABLE         */
 *%RCTPLS4:;
 *        BDY(DWORD),

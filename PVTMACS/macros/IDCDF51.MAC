@@ -121,7 +121,7 @@
    @EJECT;                                                 /*@Y30LB38*/
      /*  IF CARTRIDGE WERE SUCCESSFULLY EJECTED; ISSUE THE   @Y30LB38
          APPROPRIATE MESSAGE                                 @Y30LB38*/
-   IF TESTRC = LASTCC00 × TESTRC = LASTCC12 THEN
+   IF TESTRC = LASTCC00 | TESTRC = LASTCC12 THEN
      DO;                                                   /*@Y30LB38*/
      /*  IF AN ERROR OCCURRES UPDATING INVENTORY, SET A      @Y30LB38
          FLAG ON FOR THE CALLER                              @Y30LB38*/

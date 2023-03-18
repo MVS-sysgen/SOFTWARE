@@ -115,7 +115,7 @@ PCBRLEN  EQU   *-PCBR          LENGTH OF ROOT PCB
 *          %THEN %GOTO PCBRPLS1;    /* THEN SKIP DCL                 */
 *DCL 1 PCBR BASED (PCBRPTR)         /* DECLARE PCBR LEVEL 1          */
 *        %GO TO PCBRPLS2;           /* AND SKIP LEVEL TWO DCL        */
-*%PCBRPLS1: PCBRDUM=PCBRLEVL ××' PCBR'; /* SET LEVEL FOR MINOR       */
+*%PCBRPLS1: PCBRDUM=PCBRLEVL ||' PCBR'; /* SET LEVEL FOR MINOR       */
 *    PCBRDUM                        /* MINOR STRUCTURE NAME PARM     */
 *%PCBRPLS2:;
 *        BDY(WORD),

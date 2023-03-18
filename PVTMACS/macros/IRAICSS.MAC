@@ -73,7 +73,7 @@
 *   DCL
 *     1 ICSS BASED(ICSSPTR) BDY(WORD),
 *            %GOTO ICSSPLS4;        /* SKIP USER-GIVEN LEVEL         */
-*%ICSSPLS3:  ICSSDUM = ICSSLEVL××' ICSS';  /* PICK UP GIVEN LEVEL    */
+*%ICSSPLS3:  ICSSDUM = ICSSLEVL||' ICSS';  /* PICK UP GIVEN LEVEL    */
 *     ICSSDUM BDY(WORD),
 *%ICSSPLS4:  ;
 *       10 ICSSNAME CHAR(4),        /* SUBSYSTEM NAME                */

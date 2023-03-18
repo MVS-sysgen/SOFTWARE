@@ -99,9 +99,9 @@
 *                     PLACED IN THE REQUEST BLOCK.           @G24LB22
 *                                                            @G24LB22
 *                                                            @G24LB22
-*                REQUEST          × ORDER    × CODE          @G24LB22
+*                REQUEST          | ORDER    | CODE          @G24LB22
 *                --------------------------------------      @G24LB22
-*                MODIFYC          × HEX'11'  × N/A           @G24LB22
+*                MODIFYC          | HEX'11'  | N/A           @G24LB22
 *                                                            @G24LB22
 *                                                            @G24LB22
 *01*  EXIT-NORMAL = VALID INVOCATION                         @G24LB22
@@ -166,7 +166,7 @@
 */* END OF DECLARES AND INITIALIZATION                       @G24LB22*/
 *   IF MODTSTR1=0 THEN                 /*HAS R1 BEEN DCL'D?  @G24LB22*/
 *             DO;                      /*NO,DECLARE IT       @G24LB22*/
-*                  ANS('DCL MODBR1 PTR REG(1) ;'××
+*                  ANS('DCL MODBR1 PTR REG(1) ;'||
 *                       '/*WILL CONTAIN BLOCK ADDRESS @G24LB22*/')
 *                       SKIP(1);                           /*@G24LB22*/
 *                  MODTSTR1=1;         /*MODTSTR1 SET TO 1   @G24LB22*/
@@ -176,8 +176,8 @@
 *   IF MF(2)='' THEN                   /*WAS A NAME GIVEN?   @G24LB22*/
 *        DO;                           /*NO,TURN ESW ON AND  @G24LB22*/
 *             ESW=1;                   /*PRINT ERROR MSG     @G24LB22*/
-*             ANS MSG('  ICB602I - A NAME FOR THE '××
-*                  'REQUEST BLOCK MUST BE SPECIFIED '××
+*             ANS MSG('  ICB602I - A NAME FOR THE '||
+*                  'REQUEST BLOCK MUST BE SPECIFIED '||
 *                  'IN MF(2)')SKIP(5);                     /*@G24LB22*/
 *             RETCODE=12;              /*SET RETURN CODE     @G24LB22*/
 *        END;                          /*                    @G24LB22*/
@@ -206,8 +206,8 @@
 *        IF CTR > 0 THEN      /*COUNTER GT ZERO?             @G24LB22*/
 *          DO;                /*YES,PRINT WARNING MSG        @G24LB22*/
 *             RETCODE = 4;    /*SET RETURN CODE TO 4         @G24LB22*/
-*             ANS MSG('  ICB604I - WARNING-ONLY'××
-*                 ' THE MF PARAMETER IS VALID FOR THE'××
+*             ANS MSG('  ICB604I - WARNING-ONLY'||
+*                 ' THE MF PARAMETER IS VALID FOR THE'||
 *                 ' LIST FORM  ')SKIP;                     /*@G24LB22*/
 *          END;               /*                             @G24LB22*/
 */*                                                          @G24LB22*/
@@ -216,82 +216,82 @@
 */*********************************************************  @G24LB22*/
 */*                                                          @G24LB22*/
 */*                                                          @G24LB22*/
-*   ANS('/*******************************************'××
+*   ANS('/*******************************************'||
 *       '************* @G24LB22*/')SKIP;
-*   ANS('/*   MSSC MODIFY CARTRIDGE MACRO    '××
+*   ANS('/*   MSSC MODIFY CARTRIDGE MACRO    '||
 *       '              @G24LB22*/')SKIP;
-*   ANS('/*VS1-6/VS2-3 VERSION--04/23/76 LEVEL 00    '××
+*   ANS('/*VS1-6/VS2-3 VERSION--04/23/76 LEVEL 00    '||
 *       '              @G24LB22*/')SKIP;
-*   ANS('/*THIS IS THE UNINITIALIZED LIST FORM       '××
+*   ANS('/*THIS IS THE UNINITIALIZED LIST FORM       '||
 *       '              @G24LB22*/')SKIP;
-*   ANS('/*******************************************'××
+*   ANS('/*******************************************'||
 *       '************* @G24LB22*/')SKIP;
 *   IF MF(3) ^= '' THEN DO;            /*PLS ATTR SPCD?      @G24LB22*/
-*   ANS('DCL 1  '××MF(2)××' '××MF(3)××','××
+*   ANS('DCL 1  '||MF(2)||' '||MF(3)||','||
 *   '/*MODIFYC REQUEST BLOCK*/ ') SKIP(1);
 *       END;
 *     ELSE
 *       DO;
-*   ANS('DCL 1  '××MF(2)××','××' /*MF2 REQUEST BLOCK'××
+*   ANS('DCL 1  '||MF(2)||','||' /*MF2 REQUEST BLOCK'||
 *        '@G24LB22*/') SKIP(1);
 *       END;
-*   ANS('      2  MODLEN FIXED(31), /*LENGTH'××
+*   ANS('      2  MODLEN FIXED(31), /*LENGTH'||
 *        ' = 52 BYTES (DEC.) @G24LB22*/')SKIP(1);
-*   ANS('      2  MODORDER FIXED(8), /*OPCODE='××
+*   ANS('      2  MODORDER FIXED(8), /*OPCODE='||
 *        ' 11 HEX @G24LB22*/') SKIP(1);
 *   ANS('      2  MODRES1 CHAR(1), /*RESERVED @G24LB22*/') SKIP(1);
-*   ANS('      2  MODFUNC BIT(8),'××
+*   ANS('      2  MODFUNC BIT(8),'||
 *        ' /*FUNCTION FIELD @G24LB22*/') SKIP(1);
-*   ANS('        3  MODUPDTE BIT(1), /*UPDATE'××
+*   ANS('        3  MODUPDTE BIT(1), /*UPDATE'||
 *        'CARTRIDGE LABEL @G24LB22*/') SKIP(1);
-*   ANS('        3  MODCREAT BIT(1), /*CREATE'××
+*   ANS('        3  MODCREAT BIT(1), /*CREATE'||
 *        'SCRATCH CARTRIDGE @G24LB22*/') SKIP(1);
-*   ANS('        3  MODMOVE BIT(1), /*MOVE CARTRIDGE'××
+*   ANS('        3  MODMOVE BIT(1), /*MOVE CARTRIDGE'||
 *        'TO CAS @G24LB22*/') SKIP(1);
 *   ANS('        3  *      BIT(5), /*RESERVED @G24LB22*/') SKIP(1);
-*   ANS('      2  MODLOCAT BIT(8),'××
+*   ANS('      2  MODLOCAT BIT(8),'||
 *        ' /*LOCATE ATTRIBUTE @G24LB22*/') SKIP(1);
-*   ANS('        3  MODLCSN BIT(1), /*LOCATE'××
+*   ANS('        3  MODLCSN BIT(1), /*LOCATE'||
 *        ' USING CSN @G24LB22*/') SKIP(1);
-*   ANS('        3  MODLVOL BIT(1), /*LOCATE'××
+*   ANS('        3  MODLVOL BIT(1), /*LOCATE'||
 *        ' USING VOLID @G24LB22*/') SKIP(1);
-*   ANS('        3  MODLLXYZ BIT(1), /*LOCATE'××
+*   ANS('        3  MODLLXYZ BIT(1), /*LOCATE'||
 *        ' USING LXYZ @G24LB22*/') SKIP(1);
-*   ANS('        3  MODLSEQ1 BIT(1), /*UPDTE-MOVE'××
+*   ANS('        3  MODLSEQ1 BIT(1), /*UPDTE-MOVE'||
 *        ' SEQ1 CART @G24LB22*/') SKIP(1);
-*   ANS('        3  MODLSEQ2 BIT(1), /*UPDTE-MOVE'××
+*   ANS('        3  MODLSEQ2 BIT(1), /*UPDTE-MOVE'||
 *        ' SEQ2 CART @G24LB22*/') SKIP(1);
-*   ANS('        3  *       BIT(3), /*RESERVED BITS '××
+*   ANS('        3  *       BIT(3), /*RESERVED BITS '||
 *        'AND MUST BE ZERO @G24LB22*/') SKIP(1);
-*   ANS('      2  MODVOLID CHAR(6),'××
+*   ANS('      2  MODVOLID CHAR(6),'||
 *        ' /*CURRENT VOLID @G24LB22*/') SKIP(1);
-*   ANS('      2  MODLXYZ FIXED(16), /*CURRENT '××
+*   ANS('      2  MODLXYZ FIXED(16), /*CURRENT '||
 *        'LOC OF CART @G24LB22*/') SKIP(1);
-*   ANS('      2  MODCSN CHAR(12),'××
+*   ANS('      2  MODCSN CHAR(12),'||
 *        ' /*CURRENT CSN @G24LB22*/') SKIP(1);
-*   ANS('      2  MODNVOL CHAR(6), /*SUPPLIED '××
+*   ANS('      2  MODNVOL CHAR(6), /*SUPPLIED '||
 *        'VOLID FOR UPDTE @G24LB22*/') SKIP(1);
-*   ANS('      2  MODNLXYZ FIXED(16), /*SUPPLIED '××
+*   ANS('      2  MODNLXYZ FIXED(16), /*SUPPLIED '||
 *        'LXYZ FOR UPDTE @G24LB22*/') SKIP(1);
-*   ANS('      2  MODNCSN CHAR(12), /*CSN OF PAIR '××
+*   ANS('      2  MODNCSN CHAR(12), /*CSN OF PAIR '||
 *        'FOR UPDTE @G24LB22*/') SKIP(1);
 *   ANS('      2  MODVFLG BIT(8), /*VOLUME FLAGS @G24LB22*/')
 *        SKIP(1);                                          /*@G24LB22*/
-*   ANS('        3  *       BIT(2), /*RESERVED BITS '××
+*   ANS('        3  *       BIT(2), /*RESERVED BITS '||
 *        'AND MUST BE ZERO @G24LB22*/') SKIP(1);
-*   ANS('        3  MODSECUR BIT(1), /*SECURE'××
+*   ANS('        3  MODSECUR BIT(1), /*SECURE'||
 *        ' VOLUME @G24LB22*/') SKIP(1);
-*   ANS('        3  MODEXCL BIT(1), /*EXCLUSIVE'××
+*   ANS('        3  MODEXCL BIT(1), /*EXCLUSIVE'||
 *        ' VOLUME @G24LB22*/') SKIP(1);
-*   ANS('        3  MODSCR BIT(1), /*SCRATCH'××
+*   ANS('        3  MODSCR BIT(1), /*SCRATCH'||
 *        ' CARTRIDGE @G24LB22*/') SKIP(1);
-*   ANS('        3  MODBIND BIT(1), /*BOUND'××
+*   ANS('        3  MODBIND BIT(1), /*BOUND'||
 *        ' VOLUME @G24LB22*/') SKIP(1);
-*   ANS('        3  MODWINH BIT(1), /*WRITE'××
+*   ANS('        3  MODWINH BIT(1), /*WRITE'||
 *        ' INHIBIT @G24LB22*/') SKIP(1);
-*   ANS('        3  *       BIT(1), /*RESERVED BITS '××
+*   ANS('        3  *       BIT(1), /*RESERVED BITS '||
 *        'AND MUST BE ZERO @G24LB22*/') SKIP(1);
-*   ANS('      2  MODSEQNO CHAR(1), /*ID OF CARTRIDGE '××
+*   ANS('      2  MODSEQNO CHAR(1), /*ID OF CARTRIDGE '||
 *        'OF PAIR @G24LB22*/') SKIP(1);
 *   ANS('      2  *       CHAR(2); /*RESERVED @G24LB22*/')
 *        SKIP(1);                                          /*@G24LB22*/
@@ -306,7 +306,7 @@
 *             GO TO EXFORM;            /*YES, BRANCH         @G24LB22*/
 *   ESW=1;                             /*TURN EXIT-SWTCH ON  @G24LB22*/
 *   DO;                                /*PRINT THIS ERR MSG  @G24LB22*/
-*        ANS MSG('  ICB620I - INVALID MF PARAMETER'××
+*        ANS MSG('  ICB620I - INVALID MF PARAMETER'||
 *             ' SPECIFIED, MUST BE L OR E') SKIP(5);       /*@G24LB22*/
 *   END;                                /*                   @G24LB22*/
 *   RETCODE=12;                        /*SET RETURN CODE     @G24LB22*/
@@ -314,110 +314,110 @@
 *EXFORM: IF MF(2)='' THEN              /*ADDR OF LIST GIVEN  @G24LB22*/
 *             DO;                      /*NO,PRINT ERROR MSG  @G24LB22*/
 *                  ESW=1;              /*TURN EXIT-SWTCH ON  @G24LB22*/
-*                  ANS MSG('  ICB612I - MF(2) MUST '××
-*                  'CONTAIN REQ BLK NAME IF '××
+*                  ANS MSG('  ICB612I - MF(2) MUST '||
+*                  'CONTAIN REQ BLK NAME IF '||
 *                  'EXEC MACRO FORM REQUESTED ') SKIP(5);  /*@G24LB22*/
 *                  RETCODE=12;         /*SET RETURN CODE     @G24LB22*/
 *                  GO TO TEST1;        /*BRANCH              @G24LB22*/
 *             END;                     /*                    @G24LB22*/
-*   ANS('/*******************************************'××
+*   ANS('/*******************************************'||
 *       '************* @G24LB22*/')SKIP;
-*   ANS('/*  MSSC MODIFY CARTRIDGE MACRO     '××
+*   ANS('/*  MSSC MODIFY CARTRIDGE MACRO     '||
 *       '              @G24LB22*/')SKIP;
-*   ANS('/*VS1-6/VS2-3 VERSION-- 04/23/76 LEVEL 00   '××
+*   ANS('/*VS1-6/VS2-3 VERSION-- 04/23/76 LEVEL 00   '||
 *       '              @G24LB22*/')SKIP;
-*   ANS('/*THIS IS THE OUTPUT FOR THE EXECUTE FORM.  '××
+*   ANS('/*THIS IS THE OUTPUT FOR THE EXECUTE FORM.  '||
 *       '              @G24LB22*/')SKIP;
-*   ANS('/*THE LIST FORM OF THIS MACRO SHOULD BE     '××
+*   ANS('/*THE LIST FORM OF THIS MACRO SHOULD BE     '||
 *       '              @G24LB22*/')SKIP;
-*   ANS('/*INVOKED FIRST IN ORDER TO SET UP NECESSARY'××
+*   ANS('/*INVOKED FIRST IN ORDER TO SET UP NECESSARY'||
 *       '              @G24LB22*/')SKIP;
-*   ANS('/*DECLARES.  IF THE COMPLETE ARGUMENT IS    '××
+*   ANS('/*DECLARES.  IF THE COMPLETE ARGUMENT IS    '||
 *       '              @G24LB22*/')SKIP;
-*   ANS('/*SPECIFIED THE REQ BLOCK WILL BE ZEROED.   '××
+*   ANS('/*SPECIFIED THE REQ BLOCK WILL BE ZEROED.   '||
 *       '              @G24LB22*/')SKIP;
-*   ANS('/*******************************************'××
+*   ANS('/*******************************************'||
 *       '************* @G24LB22*/')SKIP;
 *   ANS('RFY(MODBR1)RSTD; /*RESTRICT REGISTER 1 @G24LB22*/')SKIP;
-*   ANS('MODBR1=ADDR('××MF(2)××
+*   ANS('MODBR1=ADDR('||MF(2)||
 *        '); /*SET MODBR1 TO ADDR OF REQ BLK @G24LB22*/') SKIP(1);
 *  IF MF(3) = 'COMPLETE' THEN    /*REQUEST TO ZERO?          @G24LB22*/
 *   DO;                          /*YES,ZERO BLK              @G24LB22*/
-*   ANS(' '××MF(2)××'='××MF(2)××'&&'××MF(2)××';'××         /*@G24LB22*/
+*   ANS(' '||MF(2)||'='||MF(2)||'&&'||MF(2)||';'||         /*@G24LB22*/
 *       '/*ZERO REQUEST BLOCK @G24LB22*/')SKIP;
 *   END;                        /*                           @G24LB22*/
-*   ANS('MODLEN='××QUOTE(LENGTH)××'X;'××
+*   ANS('MODLEN='||QUOTE(LENGTH)||'X;'||
 *       '/*SET LENGTH FIELD @G24LB22*/')SKIP(1);
-*   ANS('MODORDER='××QUOTE(MODCODE)××'X; /*OPCODE @G24LB22*/') SKIP(1);
+*   ANS('MODORDER='||QUOTE(MODCODE)||'X; /*OPCODE @G24LB22*/') SKIP(1);
 *TEST1:                                                    /*@G24LB22*/
 *   IF ESW=1 THEN                      /*EXIT-SWITCH ON?     @G24LB22*/
 *        GO TO EXIT;                   /*YES, BRANCH TO END  @G24LB22*/
 *   IF ATTR1 ^='' THEN                 /*ATTR1 SPECIFIED?    @G24LB22*/
 *        DO;
-*   ANS('MODFUNC='××ATTR1××';/*FILL IN FUNCTION FIELD @G24LB22*/')
+*   ANS('MODFUNC='||ATTR1||';/*FILL IN FUNCTION FIELD @G24LB22*/')
 *        SKIP(1);                                          /*@G24LB22*/
 *        END;                          /*                    @G24LB22*/
 *   IF ESW=1 THEN                      /*EXIT-SWITCH ON?     @G24LB22*/
 *        GO TO EXIT;                   /*YES, BRANCH TO END  @G24LB22*/
 *   IF ATTR2 ^='' THEN                 /*ATTR2 SPECIFIED?    @G24LB22*/
 *        DO;
-*   ANS('MODLOCAT='××ATTR2××';/*FILL IN SEARCH FIELD @G24LB22*/')
+*   ANS('MODLOCAT='||ATTR2||';/*FILL IN SEARCH FIELD @G24LB22*/')
 *        SKIP(1);                                          /*@G24LB22*/
 *        END;                          /*                    @G24LB22*/
 *   IF ESW=1 THEN                      /*EXIT-SWITCH ON?     @G24LB22*/
 *        GO TO EXIT;                   /*YES, BRANCH TO END  @G24LB22*/
 *   IF VOLID ^='' THEN                 /*VOLID SPECIFIED?    @G24LB22*/
 *        DO;
-*   ANS('MODVOLID='××VOLID××';/*FILL IN CURRENT VOLID @G24LB22*/')
+*   ANS('MODVOLID='||VOLID||';/*FILL IN CURRENT VOLID @G24LB22*/')
 *        SKIP(1);                                          /*@G24LB22*/
 *        END;                          /*                    @G24LB22*/
 *   IF ESW=1 THEN                      /*EXIT-SWITCH ON?     @G24LB22*/
 *        GO TO EXIT;                   /*YES, BRANCH TO END  @G24LB22*/
 *   IF LOC1 ^='' THEN                 /*LXYZ SPECIFIED?      @G24LB22*/
 *        DO;
-*   ANS('MODLXYZ='××LOC1××';/*FILL IN CURRENT LOCATION @G24LB22*/')
+*   ANS('MODLXYZ='||LOC1||';/*FILL IN CURRENT LOCATION @G24LB22*/')
 *        SKIP(1);                                          /*@G24LB22*/
 *        END;                          /*                    @G24LB22*/
 *   IF ESW=1 THEN                      /*EXIT-SWITCH ON?     @G24LB22*/
 *        GO TO EXIT;                   /*YES, BRANCH TO END  @G24LB22*/
 *   IF CSN ^='' THEN                 /*CSN SPECIFIED?      @G24LB22*/
 *        DO;
-*   ANS('MODCSN='××CSN××';/*FILL IN CURRENT CSN @G24LB22*/')
+*   ANS('MODCSN='||CSN||';/*FILL IN CURRENT CSN @G24LB22*/')
 *        SKIP(1);                                          /*@G24LB22*/
 *        END;                          /*                    @G24LB22*/
 *   IF ESW=1 THEN                      /*EXIT-SWITCH ON?     @G24LB22*/
 *        GO TO EXIT;                   /*YES, BRANCH TO END  @G24LB22*/
 *   IF NVOLID ^='' THEN                /*VOLID SPECIFIED?    @G24LB22*/
 *        DO;                           /*                    @G24LB22*/
-*   ANS('MODVOLID='××NVOLID××';/*FILL IN NEW VOLID @G24LB22*/')
+*   ANS('MODVOLID='||NVOLID||';/*FILL IN NEW VOLID @G24LB22*/')
 *        SKIP(1);
 *        END;                          /*                    @G24LB22*/
 *   IF ESW=1 THEN                      /*EXIT-SWITCH ON?     @G24LB22*/
 *        GO TO EXIT;                   /*YES, GO TO END      @G24LB22*/
 *   IF LOC2 ^='' THEN                 /*LXYZ SPECIFIED?      @G24LB22*/
 *        DO;
-*   ANS('MODNLXYZ='××LOC2××';/*FILL IN NEW LOCATION @G24LB22*/')
+*   ANS('MODNLXYZ='||LOC2||';/*FILL IN NEW LOCATION @G24LB22*/')
 *        SKIP(1);                                          /*@G24LB22*/
 *        END;                          /*                    @G24LB22*/
 *   IF ESW=1 THEN                      /*EXIT-SWITCH ON?     @G24LB22*/
 *        GO TO EXIT;                   /*YES, BRANCH TO END  @G24LB22*/
 *   IF CSNPAIR ^='' THEN             /*CSN SPECIFIED?        @G24LB22*/
 *        DO;
-*   ANS('MODNCSN='××CSNPAIR××';/*FILL IN CURRENT CSN @G24LB22*/')
+*   ANS('MODNCSN='||CSNPAIR||';/*FILL IN CURRENT CSN @G24LB22*/')
 *        SKIP(1);                                          /*@G24LB22*/
 *        END;                          /*                    @G24LB22*/
 *   IF ESW=1 THEN                      /*EXIT-SWITCH ON?     @G24LB22*/
 *        GO TO EXIT;                   /*YES, BRANCH TO END  @G24LB22*/
 *   IF VOLFLG ^='' THEN              /*VOLFLG  SPECIFIED?    @G24LB22*/
 *        DO;                           /*                    @G24LB22*/
-*   ANS('MODVFLG='××VOLFLG××';/*FILL IN VOLUME FLAGS @G24LB22*/')
+*   ANS('MODVFLG='||VOLFLG||';/*FILL IN VOLUME FLAGS @G24LB22*/')
 *        SKIP(1);                                          /*@G24LB22*/
 *        END;                          /*                    @G24LB22*/
 *   IF ESW=1 THEN                      /*EXIT-SWITCH ON?     @G24LB22*/
 *        GO TO EXIT;                   /*YES, GO TO END      @G24LB22*/
 *   IF SEQNO ^='' THEN               /*SEQNO  SPECIFIED?     @G24LB22*/
 *        DO;
-*   ANS('MODSEQNO='××SEQNO××';/*FILL IN SEQUENCE NO. @G24LB22*/')
+*   ANS('MODSEQNO='||SEQNO||';/*FILL IN SEQUENCE NO. @G24LB22*/')
 *        SKIP(1);
 *        END;                          /*                    @G24LB22*/
 *   IF ESW=1 THEN                      /*EXIT-SWITCH ON?     @G24LB22*/

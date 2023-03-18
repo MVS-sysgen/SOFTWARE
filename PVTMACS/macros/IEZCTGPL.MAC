@@ -41,7 +41,7 @@
 *   %THEN %CTGPL999 = ';';          /*   THEN CLOSE DCL STATEMENT    */
 *%IF CTGPLLVL  = ''                 /* IF BLOCK NOT CONCATENATED,    */
 *   %THEN %GOTO CTGPL001;           /*   THEN GENERATE DCL           */
-*%CTGPLDUM = CTGPLLVL××' CTGPL';    /* SET MINOR LEVEL NUMBER        */
+*%CTGPLDUM = CTGPLLVL||' CTGPL';    /* SET MINOR LEVEL NUMBER        */
 *        CTGPLDUM                   /* CTGPL CONCATENATED LEVEL      */
 *%GOTO CTGPL002;                    /* SKIP DECLARE                  */
 *%CTGPL001:;                        /* DECLARE                       */

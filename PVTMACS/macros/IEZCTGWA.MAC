@@ -25,7 +25,7 @@
 *  %THEN %CTGWA999 = ';';           /*   THEN CLOSE DECLARE STMNT    */
 *%IF CTGWALVL  = ''                 /* IF BLOCK NOT CONCATENATED,    */
 *  %THEN %GOTO CTGWA001;            /*   THEN GENERATE DECLARE       */
-*%CTGWADUM = CTGWALVL××' CTGWA';    /* SET MINOR LEVEL NUMBER        */
+*%CTGWADUM = CTGWALVL||' CTGWA';    /* SET MINOR LEVEL NUMBER        */
 *   CTGWADUM                        /* CTGWA CONCATENATED LEVEL      */
 *%GOTO CTGWA002;                    /* SKIP DECLARE                  */
 *%CTGWA001:;                        /* DECLARE                       */

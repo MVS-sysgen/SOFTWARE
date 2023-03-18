@@ -111,7 +111,7 @@ MCTLEN   EQU   MCTEND-MCT -        LENGTH OF MCT
 *DECLARE                           /*                                */
 *  1 MCT BASED(MCTPTR)             /* STORAGE CONTROL TABLE          */
 *    %GOTO MCTPLS4;                /* MAJOR STRUCTURE                */
-*%MCTPLS3: MCTDUM=MCTLEVEL××' MCT'; /* CONCATENATE AS MINOR STRUCTURE*/
+*%MCTPLS3: MCTDUM=MCTLEVEL||' MCT'; /* CONCATENATE AS MINOR STRUCTURE*/
 *  MCTDUM                          /* STORAGE CONTROL TABLE          */
 *%MCTPLS4:;
 *        BDY(DWORD),

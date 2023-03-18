@@ -1423,5 +1423,5 @@ CTCLASS  EQU  7                        COUNT MONITOR CALL CLASS EQUATE
          MEND
 *   */
 *%COUNT: MACRO;
-*  ANS('?' ×× MACLABEL ×× 'COUNTP' ×× MACLIST ×× MACKEYS ××';');
+*  ANS('?' || MACLABEL || 'COUNTP' || MACLIST || MACKEYS ||';');
 *%END COUNT;

@@ -110,7 +110,7 @@
     /* A RETURN CODE OF 0 OR 12 INDICATES THAT THE MACRO WAS EXECUTED
        SUCCESSFULLY.                                         @Y30LB11*/
 
-    IF TESTRC=RCOK×TESTRC=RCVVIERR THEN                    /*@Y30LB11*/
+    IF TESTRC=RCOK|TESTRC=RCVVIERR THEN                    /*@Y30LB11*/
       DO;                                                  /*@Y30LB11*/
 
         /* IF A RETURN CODE OF 12 IS PASSED, SCERRFLG IS SET ON
@@ -192,8 +192,8 @@
             /* IF EITHER OR BOTH CARTRIDGES ARE NOT IN THE MSF
              A MESSAGE INDICATING THAT SITUATION IS PRINTED. @Y30LB11*/
 
-            IF SCMSGCD=SCNOCSN1 ×                          /*@Y30LB11*/
-               SCMSGCD=SCNOCSN2 ×                          /*@Y30LB11*/
+            IF SCMSGCD=SCNOCSN1 |                          /*@Y30LB11*/
+               SCMSGCD=SCNOCSN2 |                          /*@Y30LB11*/
                SCMSGCD=SCNOCSNS THEN                       /*@Y30LB11*/
               DO;                                          /*@Y30LB11*/
 

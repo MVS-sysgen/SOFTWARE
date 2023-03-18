@@ -47,7 +47,7 @@ CTGFL    DSECT ,                        */
 *  %THEN %CTGFL999 = ';';           /*   THEN CLOSE DECLARE STMNT    */
 *%IF CTGFLLVL  = ''                 /* IF BLOCK NOT CONCATENATED,    */
 *  %THEN %GOTO CTGFL001;            /*   THEN GENERATE DECLARE       */
-*%CTGFLDUM = CTGFLLVL××' CTGFL';    /* SET MINOR LEVEL NUMBER        */
+*%CTGFLDUM = CTGFLLVL||' CTGFL';    /* SET MINOR LEVEL NUMBER        */
 *   CTGFLDUM                        /* CTGFL CONCATENATED LEVEL      */
 *%GOTO CTGFL002;                    /* SKIP DECLARE                  */
 *%CTGFL001:;                        /* DECLARE                       */

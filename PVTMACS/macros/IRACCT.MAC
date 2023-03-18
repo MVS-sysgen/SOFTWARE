@@ -118,7 +118,7 @@ CCTLEN   EQU   CCVEND-CCT -        LENGTH OF CCT
 *DECLARE                           /*                                */
 *  1 CCT BASED(CCTPTR)             /*     CPU CONTROL TABLE          */
 *    %GOTO CCTPLS4;                /* MAJOR STRUCTURE                */
-*%CCTPLS3: CCTDUM=CCTLEVEL××' CCT'; /* CONCATENATE AS MINOR STRUCTURE*/
+*%CCTPLS3: CCTDUM=CCTLEVEL||' CCT'; /* CONCATENATE AS MINOR STRUCTURE*/
 *  CCTDUM                          /*     CPU CONTROL TABLE          */
 *%CCTPLS4:;
 *          BDY(DWORD),

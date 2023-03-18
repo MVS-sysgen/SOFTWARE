@@ -95,9 +95,9 @@
 *                     IN THE REQUEST BLOCK.                  @Z40LB22
 *                                                            @Z40LB22
 *                                                            @Z40LB22
-*                REQUEST          × ORDER    × CODE          @Z40LB22
+*                REQUEST          | ORDER    | CODE          @Z40LB22
 *                --------------------------------------      @Z40LB22
-*                NULLIFYC         × HEX'09'  × N/A           @Z40LB22
+*                NULLIFYC         | HEX'09'  | N/A           @Z40LB22
 *                                                            @Z40LB22
 *02*    INVOCATION PARAMETERS (CCW 27)                       @Z40LB22
 *                                                            @Z40LB22
@@ -203,7 +203,7 @@
 */* END OF DECLARES AND INITIALIZATION                       @Y40LB22*/
 *   IF NULTSTR1=0 THEN                 /*HAS R1 BEEN DCL'D?  @Y40LB22*/
 *             DO;                      /*NO,DECLARE IT       @Y40LB22*/
-*                  ANS('DCL NULBR1 PTR REG(1) ;'××         /*@Y40LB22*/
+*                  ANS('DCL NULBR1 PTR REG(1) ;'||         /*@Y40LB22*/
 *                       '/*WILL CONTAIN BLOCK ADDRESS @Y40LB22*/')
 *                       SKIP(1);                           /*@Y40LB22*/
 *                  NULTSTR1=1;         /*NULTSTR1 SET TO 1   @Y40LB22*/
@@ -213,8 +213,8 @@
 *   IF MF(2)='' THEN                   /*WAS A NAME GIVEN?   @Y40LB22*/
 *        DO;                           /*NO,TURN ESW ON AND  @Y40LB22*/
 *             ESW=1;                   /*PRINT ERROR MSG     @Y40LB22*/
-*             ANS MSG('  ICB602I - A NAME FOR THE '××
-*                  'REQUEST BLOCK MUST BE SPECIFIED '××
+*             ANS MSG('  ICB602I - A NAME FOR THE '||
+*                  'REQUEST BLOCK MUST BE SPECIFIED '||
 *                  'IN MF(2)')SKIP(5);                     /*@Y40LB22*/
 *             RETCODE=12;              /*SET RETURN CODE     @Y40LB22*/
 *        END;                          /*                    @Y40LB22*/
@@ -231,8 +231,8 @@
 *        IF CTR > 0 THEN      /*COUNTER GT ZERO?             @Y40LB22*/
 *          DO;                /*YES,PRINT WARNING MSG        @Y40LB22*/
 *             RETCODE = 4;    /*SET RETURN CODE TO 4         @Y40LB22*/
-*             ANS MSG('  ICB604I - WARNING-ONLY'××
-*                 ' THE MF PARAMETER IS VALID FOR THE'××
+*             ANS MSG('  ICB604I - WARNING-ONLY'||
+*                 ' THE MF PARAMETER IS VALID FOR THE'||
 *                 ' LIST FORM  ')SKIP;                     /*@Y40LB22*/
 *          END;               /*                             @Y40LB22*/
 */*                                                          @Y40LB22*/
@@ -241,52 +241,52 @@
 */*********************************************************  @Y40LB22*/
 */*                                                          @Y40LB22*/
 */*                                                          @Y40LB22*/
-*   ANS('/*******************************************'××
+*   ANS('/*******************************************'||
 *       '************* @Y40LB22*/')SKIP;
-*   ANS('/*   MSSC NULLIFY VOLUME/CARTRIDGE MACRO    '××
+*   ANS('/*   MSSC NULLIFY VOLUME/CARTRIDGE MACRO    '||
 *       '              @Y40LB22*/')SKIP;
-*   ANS('/*VS1-4/VS2-3 VERSION--03/14/75 LEVEL 00    '××
+*   ANS('/*VS1-4/VS2-3 VERSION--03/14/75 LEVEL 00    '||
 *       '              @Y40LB22*/')SKIP;
-*   ANS('/*THIS IS THE UNINITIALIZED LIST FORM       '××
+*   ANS('/*THIS IS THE UNINITIALIZED LIST FORM       '||
 *       '              @Y40LB22*/')SKIP;
-*   ANS('/*******************************************'××
+*   ANS('/*******************************************'||
 *       '************* @Y40LB22*/')SKIP;
 *   IF MF(3) ^= '' THEN DO;            /*PLS ATTR SPCD?      @Y40LB22*/
-*   ANS('DCL 1  '××MF(2)××' '××MF(3)××','××
+*   ANS('DCL 1  '||MF(2)||' '||MF(3)||','||
 *   '/*NULLIFYC REQUEST BLOCK*/ ') SKIP(1);
 *       END;
 *     ELSE
 *       DO;
-*   ANS('DCL 1  '××MF(2)××','××' /*MF2 REQUEST BLOCK'××
+*   ANS('DCL 1  '||MF(2)||','||' /*MF2 REQUEST BLOCK'||
 *        '@Y40LB22*/') SKIP(1);
 *       END;
-*   ANS('      2  NULENGTH FIXED(31), /*LENGTH'××
+*   ANS('      2  NULENGTH FIXED(31), /*LENGTH'||
 *        ' = 44 BYTES (DEC.) @Y40LB22*/')SKIP(1);
-*   ANS('      2  NULORDER CHAR(1), /*OPCODE='××
+*   ANS('      2  NULORDER CHAR(1), /*OPCODE='||
 *        ' 09 HEX @Y40LB22*/') SKIP(1);
 *   ANS('      2  NULRES1 CHAR(1), /*RESERVED @Y40LB22*/') SKIP(1);
-*   ANS('      2  NULFLAGA BIT(16),'××
+*   ANS('      2  NULFLAGA BIT(16),'||
 *        ' /*FLAGS FIELD @Y40LB22*/') SKIP(1);
-*   ANS('        3  NULVOL BIT(1), /*AN ACTIVE VOLUME'××
+*   ANS('        3  NULVOL BIT(1), /*AN ACTIVE VOLUME'||
 *        'IS BEING NULLIFIED @Y40LB22*/') SKIP(1);
-*   ANS('        3  NULTRAN BIT(1), /*A TRANSIENT VOLUME'××
+*   ANS('        3  NULTRAN BIT(1), /*A TRANSIENT VOLUME'||
 *        'IS BEING NULLIFIED @Y40LB22*/') SKIP(1);
-*   ANS('        3  NULSCRC BIT(1), /*A SCRATCH CARTRIDGE'××
+*   ANS('        3  NULSCRC BIT(1), /*A SCRATCH CARTRIDGE'||
 *        'IS BEING NULLIFIED @Y40LB22*/') SKIP(1);
 *   ANS('        3  *      BIT(2), /*UNUSED @Y40LB22*/') SKIP(1);
-*   ANS('        3  NULCART1 BIT(1), /*CARTRIDGE 1'××
+*   ANS('        3  NULCART1 BIT(1), /*CARTRIDGE 1'||
 *        ' IS MISSING @Y40LB22*/') SKIP(1);
-*   ANS('        3  NULCART2 BIT(1), /*CARTRIDGE 2'××
+*   ANS('        3  NULCART2 BIT(1), /*CARTRIDGE 2'||
 *        ' IS MISSING @Y40LB22*/') SKIP(1);
-*   ANS('        3  *       BIT(9), /*RESERVED BITS '××
+*   ANS('        3  *       BIT(9), /*RESERVED BITS '||
 *        'AND MUST BE ZERO @Y40LB22*/') SKIP(1);
-*   ANS('      2  NULVOLID CHAR(6),'××
+*   ANS('      2  NULVOLID CHAR(6),'||
 *        ' /*VOLID FIELD @Y40LB22*/') SKIP(1);
-*   ANS('      2  NULASID CHAR(2), /*ASID AREA '××
+*   ANS('      2  NULASID CHAR(2), /*ASID AREA '||
 *        'USED BY THE SVC @Y40LB22*/') SKIP(1);
 *   ANS('      2  NULECB FIXED(31), /*ADDR OF ECB @Y40LB22*/')
 *        SKIP(1);                                          /*@Y40LB22*/
-*   ANS('      2  NULCSN CHAR(12), /*SERIAL NO OF CARTRIDGE '××
+*   ANS('      2  NULCSN CHAR(12), /*SERIAL NO OF CARTRIDGE '||
 *        'TO BE ACTED UPON @Y40LB22*/') SKIP(1);
 *   ANS('      2  NULRES2 CHAR(12); /*RESERVED @Y40LB22*/')
 *        SKIP(1);                                          /*@Y40LB22*/
@@ -301,7 +301,7 @@
 *             GO TO EXFORM;            /*YES, BRANCH         @Y40LB22*/
 *   ESW=1;                             /*TURN EXIT-SWTCH ON  @Y40LB22*/
 *   DO;                                /*PRINT THIS ERR MSG  @Y40LB22*/
-*        ANS MSG('  ICB620I - INVALID MF PARAMETER'××
+*        ANS MSG('  ICB620I - INVALID MF PARAMETER'||
 *             ' SPECIFIED, MUST BE L OR E') SKIP(5);       /*@Y40LB22*/
 *   END;                                /*                   @Y40LB22*/
 *   RETCODE=12;                        /*SET RETURN CODE     @Y40LB22*/
@@ -309,68 +309,68 @@
 *EXFORM: IF MF(2)='' THEN              /*ADDR OF LIST GIVEN  @Y40LB22*/
 *             DO;                      /*NO,PRINT ERROR MSG  @Y40LB22*/
 *                  ESW=1;              /*TURN EXIT-SWTCH ON  @Y40LB22*/
-*                  ANS MSG('  ICB612I - MF(2) MUST '××
-*                  'CONTAIN REQ BLK NAME IF '××
+*                  ANS MSG('  ICB612I - MF(2) MUST '||
+*                  'CONTAIN REQ BLK NAME IF '||
 *                  'EXEC MACRO FORM REQUESTED ') SKIP(5);  /*@Y40LB22*/
 *                  RETCODE=12;         /*SET RETURN CODE     @Y40LB22*/
 *                  GO TO TEST1;        /*BRANCH              @Y40LB22*/
 *             END;                     /*                    @Y40LB22*/
-*   ANS('/*******************************************'××
+*   ANS('/*******************************************'||
 *       '************* @Y40LB22*/')SKIP;
-*   ANS('/*  MSSC NULLIFY VOLUME/CARTRIDGE MACRO     '××
+*   ANS('/*  MSSC NULLIFY VOLUME/CARTRIDGE MACRO     '||
 *       '              @Y40LB22*/')SKIP;
-*   ANS('/*VS1-4/VS2-3 VERSION-- 03/14/75 LEVEL 00   '××
+*   ANS('/*VS1-4/VS2-3 VERSION-- 03/14/75 LEVEL 00   '||
 *       '              @Y40LB22*/')SKIP;
-*   ANS('/*THIS IS THE OUTPUT FOR THE EXECUTE FORM.  '××
+*   ANS('/*THIS IS THE OUTPUT FOR THE EXECUTE FORM.  '||
 *       '              @Y40LB22*/')SKIP;
-*   ANS('/*THE LIST FORM OF THIS MACRO SHOULD BE     '××
+*   ANS('/*THE LIST FORM OF THIS MACRO SHOULD BE     '||
 *       '              @Y40LB22*/')SKIP;
-*   ANS('/*INVOKED FIRST IN ORDER TO SET UP NECESSARY'××
+*   ANS('/*INVOKED FIRST IN ORDER TO SET UP NECESSARY'||
 *       '              @Y40LB22*/')SKIP;
-*   ANS('/*DECLARES.  IF THE COMPLETE ARGUMENT IS    '××
+*   ANS('/*DECLARES.  IF THE COMPLETE ARGUMENT IS    '||
 *       '              @Y40LB22*/')SKIP;
-*   ANS('/*SPECIFIED THE REQ BLOCK WILL BE ZEROED.   '××
+*   ANS('/*SPECIFIED THE REQ BLOCK WILL BE ZEROED.   '||
 *       '              @Y40LB22*/')SKIP;
-*   ANS('/*******************************************'××
+*   ANS('/*******************************************'||
 *       '************* @Y40LB22*/')SKIP;
 *   ANS('RFY(NULBR1)RSTD; /*RESTRICT REGISTER 1 @Y40LB22*/')SKIP;
-*   ANS('NULBR1=ADDR('××MF(2)××
+*   ANS('NULBR1=ADDR('||MF(2)||
 *        '); /*SET NULBR1 TO ADDR OF REQ BLK @Y40LB22*/') SKIP(1);
 *  IF MF(3) = 'COMPLETE' THEN    /*REQUEST TO ZERO?          @Y40LB22*/
 *   DO;                          /*YES,ZERO BLK              @Y40LB22*/
-*   ANS(' '××MF(2)××'='××MF(2)××'&&'××MF(2)××';'××         /*@Y40LB22*/
+*   ANS(' '||MF(2)||'='||MF(2)||'&&'||MF(2)||';'||         /*@Y40LB22*/
 *       '/*ZERO REQUEST BLOCK @Y40LB22*/')SKIP;
 *   END;                        /*                           @Y40LB22*/
-*   ANS('NULENGTH='××QUOTE(LENGTH)××'X;'××
+*   ANS('NULENGTH='||QUOTE(LENGTH)||'X;'||
 *       '/*SET LENGTH FIELD @Y40LB22*/')SKIP(1);
-*   ANS('NULORDER='××QUOTE(NULCODE)××'X; /*OPCODE @Y40LB22*/') SKIP(1);
+*   ANS('NULORDER='||QUOTE(NULCODE)||'X; /*OPCODE @Y40LB22*/') SKIP(1);
 *TEST1:                                                    /*@Y40LB22*/
 *   IF ESW=1 THEN                      /*EXIT-SWITCH ON?     @Y40LB22*/
 *        GO TO EXIT;                   /*YES, BRANCH TO END  @Y40LB22*/
 *   IF FLAGS ^='' THEN                 /*FLAGS SPECIFIED?    @Y40LB22*/
 *        DO;
-*   ANS('NULFLAGA='××FLAGS××';/*FILL IN FLAGS FIELD @Y40LB22*/')
+*   ANS('NULFLAGA='||FLAGS||';/*FILL IN FLAGS FIELD @Y40LB22*/')
 *        SKIP(1);                                          /*@Y40LB22*/
 *        END;                          /*                    @Y40LB22*/
 *   IF ESW=1 THEN                      /*EXIT-SWITCH ON?     @Y40LB22*/
 *        GO TO EXIT;                   /*YES, BRANCH TO END  @Y40LB22*/
 *   IF VOLID ^='' THEN                 /*VOLID SPECIFIED?    @Y40LB22*/
 *        DO;                           /*                    @Y40LB22*/
-*   ANS('NULVOLID='××VOLID××';/*FILL IN VOLID FIELD @Y40LB22*/')
+*   ANS('NULVOLID='||VOLID||';/*FILL IN VOLID FIELD @Y40LB22*/')
 *        SKIP(1);
 *        END;                          /*                    @Y40LB22*/
 *   IF ESW=1 THEN                      /*EXIT-SWITCH ON?     @Y40LB22*/
 *        GO TO EXIT;                   /*YES, GO TO END      @Y40LB22*/
 *   IF ECB ^='' THEN                   /*ECB   SPECIFIED?    @Y40LB22*/
 *        DO;                           /*                    @Y40LB22*/
-*   ANS('NULECB=ADDR'××ECB××';/*FILL IN ECB FIELD @Y40LB22*/')
+*   ANS('NULECB=ADDR'||ECB||';/*FILL IN ECB FIELD @Y40LB22*/')
 *        SKIP(1);                                          /*@Y40LB22*/
 *        END;                          /*                    @Y40LB22*/
 *   IF ESW=1 THEN                      /*EXIT-SWITCH ON?     @Y40LB22*/
 *        GO TO EXIT;                   /*YES, GO TO END      @Y40LB22*/
 *   IF CSN ^='' THEN                    /*EXTS  SPECIFIED?    @Y40LB22*/
 *        DO;
-*   ANS('NULCSN='××CSN××';/*FILL IN CSN FIELD @Y40LB22*/') SKIP(1);
+*   ANS('NULCSN='||CSN||';/*FILL IN CSN FIELD @Y40LB22*/') SKIP(1);
 *        END;                          /*                    @Y40LB22*/
 *   IF ESW=1 THEN                      /*EXIT-SWITCH ON?     @Y40LB22*/
 *        GO TO EXIT;                   /*YES, GO TO END      @Y40LB22*/

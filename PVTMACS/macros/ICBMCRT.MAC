@@ -125,9 +125,9 @@
 .*           FLAGS FIELD IS SHOWN BELOW:                       @Y30LB02
 .*                                                             @Y30LB02
 .*   ---------------------------------                         @Y30LB02
-.*   × 0 × 0 × X × X × 0 × 0 × 0 × 0 ×                         @Y30LB02
+.*   | 0 | 0 | X | X | 0 | 0 | 0 | 0 |                         @Y30LB02
 .*   ---------------------------------                         @Y30LB02
-.*   BITS 0-1-------       ×RESERVED - MUST BE SET TO ZERO×    @Y30LB02
+.*   BITS 0-1-------       |RESERVED - MUST BE SET TO ZERO|    @Y30LB02
 .*                                                             @Y30LB02
 .*   BIT 2----------'1'B   MOVE TRANSIENT VOLUME               @Y30LB02
 .*                  '0'B   NO FUNCTION REQUESTED (DEFAULT)     @Y30LB02
@@ -135,9 +135,9 @@
 .*   BIT 3----------'1'B   MOVE SCRATCH                        @Y30LB02
 .*                  '0'B   NO FUNCTION REQUESTED (DEFAULT)     @Y30LB02
 .*                                                             @Y30LB02
-.*   BITS 4-5 -------      ×UNUSED AND MUST BE SET TO ZERO×    @Y30LB02
+.*   BITS 4-5 -------      |UNUSED AND MUST BE SET TO ZERO|    @Y30LB02
 .*                                                             @Y30LB02
-.*   BITS 6-7 -------      ×RESERVED - MUST BE SET TO ZERO×    @Y30LB02
+.*   BITS 6-7 -------      |RESERVED - MUST BE SET TO ZERO|    @Y30LB02
 .*                                                             @Y30LB02
 .*   NOTE:   BITS 0-7 ARE 'MUTUALLY EXCLUSIVE'                 @Y30LB02
 .*                                                             @Y30LB02
@@ -167,9 +167,9 @@
 .*         BELOW:                                              @Y30LB02
 .*                                                             @Y30LB02
 .*   ----------------------------------                        @Y30LB02
-.*   × 0 × 0 × 0 × 0 × 0 × 0 × X × X ×                         @Y30LB02
+.*   | 0 | 0 | 0 | 0 | 0 | 0 | X | X |                         @Y30LB02
 .*   ----------------------------------                        @Y30LB02
-.*   BITS 0-5 --------     ×IGNORED - MUST BE SET TO ZERO×     @Y30LB02
+.*   BITS 0-5 --------     |IGNORED - MUST BE SET TO ZERO|     @Y30LB02
 .*                                                             @Y30LB02
 .*   BITS 6-7 --------     MAY BE SET TO BINARY 0,1,2, OR 3    @Y30LB02
 .*                                                             @Y30LB02
@@ -428,7 +428,7 @@ MCRTVEXT DC    XL4'00000000'       4-BYTE VVICEXT AREA         @Y30LB02
 */*                                                          @Y30LB02*/
 *     IF MCTESTR1=0 THEN     /*REG 1 DECLARED?               @Y30LB02*/
 *        DO;                 /*NO,DECLARE IT                 @Y30LB02*/
-*             ANS('DCL MCR1 REG(1) PTR ;/*ADDRESS OF '××
+*             ANS('DCL MCR1 REG(1) PTR ;/*ADDRESS OF '||
 *             'REQUEST BLOCK @Y30LB02*/')SKIP;
 *             MCTESTR1=MCTESTR1+1; /*INCREM REG DCLD CTR     @Y30LB02*/
 *        END;                      /*                        @Y30LB02*/
@@ -439,7 +439,7 @@ MCRTVEXT DC    XL4'00000000'       4-BYTE VVICEXT AREA         @Y30LB02
 *     DO;                          /*PRINT ERROR MESSAGE     @Y30LB02*/
 *        ERSW = 1;                 /*SET ERROR SWITCH        @Y30LB02*/
 *        RETCODE = 12;             /*SET ERROR RETURN TO 12  @Y30LB02*/
-*        ANS MSG('  ICB602I - A NAME FOR THE '××
+*        ANS MSG('  ICB602I - A NAME FOR THE '||
 *        'REQUEST BLOCK MUST BE SPECIFIED IN MF(2)')SKIP;  /*@Y30LB02*/
 *        GO TO FINISH;             /*BRANCH TO END PROCES    @Y30LB02*/
 *     END;                         /*                        @Y30LB02*/
@@ -464,8 +464,8 @@ MCRTVEXT DC    XL4'00000000'       4-BYTE VVICEXT AREA         @Y30LB02
 *        IF CTR  > 0  THEN      /*COUNTER GREATER THAN 0?    @Y30LB02*/
 *          DO;                  /*YES,WARN USER              @Y30LB02*/
 *             RETCODE = 4;      /*SET RETURN CODE TO 4       @Y30LB02*/
-*             ANS MSG('  ICB604I - WARNING-ONLY'××
-*                 ' THE MF PARAMETER IS VALID FOR'××
+*             ANS MSG('  ICB604I - WARNING-ONLY'||
+*                 ' THE MF PARAMETER IS VALID FOR'||
 *                 ' LIST FORM ')SKIP;                      /*@Y30LB02*/
 *          END;                 /*                           @Y30LB02*/
 *     END;                      /*                           @Y30LB02*/
@@ -473,102 +473,102 @@ MCRTVEXT DC    XL4'00000000'       4-BYTE VVICEXT AREA         @Y30LB02
 *        GO TO ATTRLST;         /*BRCH,PROCESS ATTRIBUTE     @Y30LB02*/
 *     ELSE                      /*PUT OUT INITIALIZED LIST   @Y30LB02*/
 *       DO;                     /*OUTPUT DECLARES            @Y30LB02*/
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************** @Y30LB02*/')SKIP;
-*        ANS('/*   MACMEAN  MSSC MOVE CARTRIDGE MACRO     '××
+*        ANS('/*   MACMEAN  MSSC MOVE CARTRIDGE MACRO     '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '××
+*        ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*THIS IS THE INITIALIZED LIST FORM         '××
+*        ANS('/*THIS IS THE INITIALIZED LIST FORM         '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************** @Y30LB02*/')SKIP;
-*        ANS('DCL 1 '××MF(2)××' STATIC LOCAL,'××
+*        ANS('DCL 1 '||MF(2)||' STATIC LOCAL,'||
 *        '/*MOVE CARTRIDGE REQUEST BLOCK @Y30LB02*/')SKIP;
-*        ANS('    2  MCRTLEN  FIXED(31)INIT('××QUOTE('30')××
+*        ANS('    2  MCRTLEN  FIXED(31)INIT('||QUOTE('30')||
 *        'X),/*LENG OF MOVE CARTRIDGE REQUEST BLK @Y30LB02*/')SKIP;
-*        ANS('    2  MCRTOPCD  FIXED(8)INIT('××QUOTE('0E')××
+*        ANS('    2  MCRTOPCD  FIXED(8)INIT('||QUOTE('0E')||
 *        'X), /*MOVE CARTRIDGE OPCODE @Y30LB02*/')SKIP;
-*        ANS('    2  MCRTRES1 CHAR(1)INIT('××QUOTE
-*        ('00')××'X),/*RESERVED AND ZERO @Y30LB02*/')SKIP;
-*        ANS('    2  MCRTFLG   BIT(8)INIT('××QUOTE
-*        ('00000000')××'B),/*ONE BYTE FLAGS AREA @Y30LB02*/')SKIP;
-*        ANS('       3  *      BIT(2),/*RESERVED AND'××
+*        ANS('    2  MCRTRES1 CHAR(1)INIT('||QUOTE
+*        ('00')||'X),/*RESERVED AND ZERO @Y30LB02*/')SKIP;
+*        ANS('    2  MCRTFLG   BIT(8)INIT('||QUOTE
+*        ('00000000')||'B),/*ONE BYTE FLAGS AREA @Y30LB02*/')SKIP;
+*        ANS('       3  *      BIT(2),/*RESERVED AND'||
 *        ' MUST BE ZERO @Y30LB02*/')SKIP;
-*        ANS('       3  MCRTTRAN  BIT(1),/*SOURCE WITH'××
+*        ANS('       3  MCRTTRAN  BIT(1),/*SOURCE WITH'||
 *        ' TRANSIENT CSN1 SPECD @Y30LB02*/')SKIP;
-*        ANS('       3  MCRTSCT  BIT(1),/*SOURCE WITH'××
+*        ANS('       3  MCRTSCT  BIT(1),/*SOURCE WITH'||
 *        ' SCRATCH ATTRIBUTE @Y30LB02*/')SKIP;
-*        ANS('       3  *       BIT(4),/*RESERVED AND'××
+*        ANS('       3  *       BIT(4),/*RESERVED AND'||
 *        ' MUST BE ZERO @Y30LB02*/')SKIP;
-*        ANS('    2  MCRTLIB  BIT(8)INIT('××QUOTE
-*        ('00000000')××'B), /*ONE BYTE-LIBID @Y30LB02*/')SKIP;
-*        ANS('       3  *       BIT(5),/*RESERVED AND'××
+*        ANS('    2  MCRTLIB  BIT(8)INIT('||QUOTE
+*        ('00000000')||'B), /*ONE BYTE-LIBID @Y30LB02*/')SKIP;
+*        ANS('       3  *       BIT(5),/*RESERVED AND'||
 *        ' MUST BE ZERO @Y30LB02*/')SKIP;
-*        ANS('       3  MCRTLD    BIT(2),/*BINARY NUMBER'××
+*        ANS('       3  MCRTLD    BIT(2),/*BINARY NUMBER'||
 *        ' ZERO TO THREE @Y30LB02*/')SKIP;
 *        ANS('    2  MCRTRES2 CHAR(8) ,/*RESERVED @Y30LB02*/')SKIP;
-*        ANS('     3  *(8) CHAR(1)INIT((8)'××QUOTE
-*        ('00')××'X),/*INIT RESERVED AREA TO ZERO @Y30LB02*/')SKIP;
+*        ANS('     3  *(8) CHAR(1)INIT((8)'||QUOTE
+*        ('00')||'X),/*INIT RESERVED AREA TO ZERO @Y30LB02*/')SKIP;
 *        ANS('    2  MCRTRES3 CHAR(8) ,/*RESERVED @Y30LB02*/')SKIP;
-*        ANS('     3  *(8) CHAR(1)INIT((8)'××QUOTE
-*        ('00')××'X),/*INIT RES AREA TO ZERO @Y30LB02*/')SKIP;
+*        ANS('     3  *(8) CHAR(1)INIT((8)'||QUOTE
+*        ('00')||'X),/*INIT RES AREA TO ZERO @Y30LB02*/')SKIP;
 *        ANS('    2  MCRTCSN  CHAR(12) ,/*CART SER NO @Y30LB02*/')SKIP;
-*        ANS('     3  *(12) CHAR(1)INIT((12)'××QUOTE
-*        ('00')××'X),/*INIT CSN AREA TO ZERO @Y30LB02*/')SKIP;
-*        ANS('     2  MCRTRES4 CHAR(2) INIT('××
-*        QUOTE('0000')××'X),/*RESERVED @Y30LB02*/')SKIP;
-*        ANS('     2  MCRTASID CHAR(2) INIT('××
-*        QUOTE('0000')××'X),/*ASID FIELD @Y30LB02*/')SKIP;
-*        ANS('     2  MCRTECB  FIXED(31)INIT(0),/*EVENT '××
+*        ANS('     3  *(12) CHAR(1)INIT((12)'||QUOTE
+*        ('00')||'X),/*INIT CSN AREA TO ZERO @Y30LB02*/')SKIP;
+*        ANS('     2  MCRTRES4 CHAR(2) INIT('||
+*        QUOTE('0000')||'X),/*RESERVED @Y30LB02*/')SKIP;
+*        ANS('     2  MCRTASID CHAR(2) INIT('||
+*        QUOTE('0000')||'X),/*ASID FIELD @Y30LB02*/')SKIP;
+*        ANS('     2  MCRTECB  FIXED(31)INIT(0),/*EVENT '||
 *        'CONTROL BLOCK ADDRESS @Y30LB02*/')SKIP;
-*        ANS('     2  MCRTVEXT  FIXED(31)INIT(0);/*MSVC '××
+*        ANS('     2  MCRTVEXT  FIXED(31)INIT(0);/*MSVC '||
 *        'EXTENSION AREA @Y30LB02*/')SKIP;
 *        GO TO FINISH;   /*BRANCH TO END                     @Y30LB02*/
 *      END;              /*                                  @Y30LB02*/
 */*                                                          @Y30LB02*/
 *ATTRLST:
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************** @Y30LB02*/')SKIP;
-*        ANS('/*   MACMEAN  MSSC MOVE CARTRIDGE MACRO     '××
+*        ANS('/*   MACMEAN  MSSC MOVE CARTRIDGE MACRO     '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '××
+*        ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*THIS IS THE UNINITIALIZED LIST FORM       '××
+*        ANS('/*THIS IS THE UNINITIALIZED LIST FORM       '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************** @Y30LB02*/')SKIP;
-*        ANS('DCL 1 '××MF(2)××' '××MF(3)××','××
+*        ANS('DCL 1 '||MF(2)||' '||MF(3)||','||
 *        ' /*MOVE CARTRIDGE REQUEST BLOCK @Y30LB02*/')SKIP;
-*        ANS('    2  MCRTLEN  FIXED(31),/*LENGTH OF'××
+*        ANS('    2  MCRTLEN  FIXED(31),/*LENGTH OF'||
 *        ' MOVE CARTRIDGE REQUEST BLK = 30 HEX @Y30LB02*/')SKIP;
-*        ANS('    2  MCRTOPCD  FIXED(8)'××
+*        ANS('    2  MCRTOPCD  FIXED(8)'||
 *        ' , /*MOVE CARTRIDGE OPCODE = 0E HEX @Y30LB02*/')SKIP;
-*        ANS('    2  MCRTRES1  CHAR(1),/*RESERVED'××
+*        ANS('    2  MCRTRES1  CHAR(1),/*RESERVED'||
 *        ' AND ZERO @Y30LB02*/')SKIP;
-*        ANS('    2  MCRTFLG   BIT(8),'××
+*        ANS('    2  MCRTFLG   BIT(8),'||
 *        '/*ONE BYTE FLAGS AREA @Y30LB02*/')SKIP;
-*        ANS('       3  *      BIT(2),/*RESERVED AND'××
+*        ANS('       3  *      BIT(2),/*RESERVED AND'||
 *        ' MUST BE ZERO @Y30LB02*/')SKIP;
-*        ANS('       3  MCRTTRAN  BIT(1),/*SOURCE WITH'××
+*        ANS('       3  MCRTTRAN  BIT(1),/*SOURCE WITH'||
 *        ' TRANSIENT CSN1 SPECD @Y30LB02*/')SKIP;
-*        ANS('       3  MCRTSCT  BIT(1),/*SOURCE WITH'××
+*        ANS('       3  MCRTSCT  BIT(1),/*SOURCE WITH'||
 *        ' SCRATCH ATTRIBUTE @Y30LB02*/')SKIP;
-*        ANS('       3  *       BIT(4),/*RESERVED AND'××
+*        ANS('       3  *       BIT(4),/*RESERVED AND'||
 *        ' MUST BE ZERO @Y30LB02*/')SKIP;
 *        ANS('    2  MCRTLIB  BIT(8) ,/*BYTE-LIBID @Y30LB02*/')SKIP;
-*        ANS('       3  *       BIT(6),/*RESERVED AND'××
+*        ANS('       3  *       BIT(6),/*RESERVED AND'||
 *        ' MUST BE ZERO @Y30LB02*/')SKIP;
-*        ANS('       3  MCRTLD    BIT(2),/*BINARY NUMBER'××
+*        ANS('       3  MCRTLD    BIT(2),/*BINARY NUMBER'||
 *        ' ZERO TO THREE @Y30LB02*/')SKIP;
 *        ANS('    2  MCRTRES2 CHAR(8) ,/*8-BYTE RES  @Y30LB02*/')SKIP;
 *        ANS('    2  MCRTRES3 CHAR(8) ,/*8-BYTE RES @Y30LB02*/')SKIP;
 *        ANS('    2  MCRTCSN  CHAR(12) ,/*CART SER NO @Y30LB02*/')SKIP;
 *        ANS('    2  MCRTRES4 CHAR(2) ,/*RESERVED @Y30LB02*/')SKIP;
 *        ANS('    2  MCRTASID CHAR(2) ,/*ASID AREA @Y30LB02*/')SKIP;
-*        ANS('    2  MCRTECB  FIXED(31),/*EVENT '××
+*        ANS('    2  MCRTECB  FIXED(31),/*EVENT '||
 *        'CONTROL BLOCK ADDRESS @Y30LB02*/')SKIP;
-*        ANS('    2  MCRTVEXT  FIXED(31);/*MSVC '××
+*        ANS('    2  MCRTVEXT  FIXED(31);/*MSVC '||
 *        'EXTENSION AREA @Y30LB02*/')SKIP;
 *        GO TO FINISH;    /*BRANCH TO END                    @Y30LB02*/
 */*                                                          @Y30LB02*/
@@ -581,42 +581,42 @@ MCRTVEXT DC    XL4'00000000'       4-BYTE VVICEXT AREA         @Y30LB02
 *     DO;                    /*PRINT ERROR MESSAGE           @Y30LB02*/
 *        ERSW = 1;           /*SET SET ERROR SWITCH TO 1     @Y30LB02*/
 *        RETCODE = 12;       /*SET RETURN CODE TO 12         @Y30LB02*/
-*        ANS MSG('  ICB612I - MF(2) MUST CONTAIN '××
+*        ANS MSG('  ICB612I - MF(2) MUST CONTAIN '||
 *        'REQ BLK NAME IF EXEC MACRO FORM REQUESTED')SKIP; /*@Y30LB02*/
 *        GO TO CKSW;         /*BRANCH                        @Y30LB02*/
 *     END;                   /*                              @Y30LB02*/
 */*                                                          @Y30LB02*/
 *   ELSE                    /*PROCESS EXECUTE FORM           @Y30LB02*/
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************* @Y30LB02*/')SKIP;
-*        ANS('/*    MACMEAN  MSSC MOVE CARTRIDGE MACRO    '××
+*        ANS('/*    MACMEAN  MSSC MOVE CARTRIDGE MACRO    '||
 *            '              @Y30LB02*/')SKIP;
-*        ANS('/*VS1-4/VS2-3 VERSION-- 06/09/74 LEVEL 00   '××
+*        ANS('/*VS1-4/VS2-3 VERSION-- 06/09/74 LEVEL 00   '||
 *            '              @Y30LB02*/')SKIP;
-*        ANS('/*THIS IS THE OUTPUT FOR THE EXECUTE FORM.  '××
+*        ANS('/*THIS IS THE OUTPUT FOR THE EXECUTE FORM.  '||
 *            '              @Y30LB02*/')SKIP;
-*        ANS('/*THE LIST FORM OF THIS MACRO SHOULD BE     '××
+*        ANS('/*THE LIST FORM OF THIS MACRO SHOULD BE     '||
 *            '              @Y30LB02*/')SKIP;
-*        ANS('/*INVOKED FIRST IN ORDER TO SET UP NECESSARY'××
+*        ANS('/*INVOKED FIRST IN ORDER TO SET UP NECESSARY'||
 *            '              @Y30LB02*/')SKIP;
-*        ANS('/*DECLARES.  IF THE COMPLETE ARGUMENT IS    '××
+*        ANS('/*DECLARES.  IF THE COMPLETE ARGUMENT IS    '||
 *            '              @Y30LB02*/')SKIP;
-*        ANS('/*SPECIFIED THE REQ BLOCK WILL BE ZEROED.   '××
+*        ANS('/*SPECIFIED THE REQ BLOCK WILL BE ZEROED.   '||
 *            '              @Y30LB02*/')SKIP;
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************* @Y30LB02*/')SKIP;
 *    IF MF(3) = 'COMPLETE' THEN  /*COMPLETE SPECIFIED?       @Y30LB02*/
 *      DO;                       /*                          @Y30LB02*/
-*          ANS(' '××MF(2)××'='××MF(2)××'&&'××MF(2)××';'××  /*@Y30LB02*/
+*          ANS(' '||MF(2)||'='||MF(2)||'&&'||MF(2)||';'||  /*@Y30LB02*/
 *          '/*ZERO OUT REQUEST BLOCK @Y30LB02*/')SKIP;
 *      END;                      /*                          @Y30LB02*/
 */*                                                          @Y30LB02*/
 *        ANS('RFY(MCR1)RSTD;/*RESTRICT REG 1 @Y30LB02*/')SKIP;
-*        ANS('MCR1= ADDR('××MF(2)××'); /*R1 PTR'××
+*        ANS('MCR1= ADDR('||MF(2)||'); /*R1 PTR'||
 *        '  TO REQUEST BLOCK @Y30LB02*/')SKIP;
-*        ANS('MCRTLEN= '××QUOTE(MCRTLN)××'X; '××           /*@Y30LB02*/
+*        ANS('MCRTLEN= '||QUOTE(MCRTLN)||'X; '||           /*@Y30LB02*/
 *        '/*LENGTH-MOVE REQUEST @Y30LB02*/')SKIP;
-*        ANS('MCRTOPCD= '××QUOTE(MCRTCD)××'X;'××           /*@Y30LB02*/
+*        ANS('MCRTOPCD= '||QUOTE(MCRTCD)||'X;'||           /*@Y30LB02*/
 *        '/*MOVE CARTRIDGE OPCODE @Y30LB02*/')SKIP;
 */*                                                          @Y30LB02*/
 *CKSW:
@@ -630,7 +630,7 @@ MCRTVEXT DC    XL4'00000000'       4-BYTE VVICEXT AREA         @Y30LB02
 *     DO;                      /*NO,PROCESS ERROR            @Y30LB02*/
 *        ERSW = 1;             /*SET ERROR SWITCH TO 1       @Y30LB02*/
 *        RETCODE = 12;         /*SET RETURN CODE TO 12       @Y30LB02*/
-*        ANS MSG('  ICB615I - INVALID MF PARAMETER '××
+*        ANS MSG('  ICB615I - INVALID MF PARAMETER '||
 *             'SPECIFIED, MUST BE L, E, OR NULL')SKIP;     /*@Y30LB02*/
 *        GO TO CKSW2;         /*BRANCH,CHECK ERROR SWITCH    @Y30LB02*/
 *     END;                    /*                             @Y30LB02*/
@@ -639,7 +639,7 @@ MCRTVEXT DC    XL4'00000000'       4-BYTE VVICEXT AREA         @Y30LB02
 *     DO;                     /*NO,PRINT ERROR MESSAGE       @Y30LB02*/
 *        ERSW = 1;            /*SET ERROR SWITCH             @Y30LB02*/
 *        RETCODE = 12;        /*SET RETURN CODE TO 12        @Y30LB02*/
-*        ANS MSG('  ICB607I - FLAGS MUST BE SPECIFIED '××
+*        ANS MSG('  ICB607I - FLAGS MUST BE SPECIFIED '||
 *        'FOR STANDARD FORM MACRO')SKIP;                   /*@Y30LB02*/
 *        GO TO CKSW2;         /*BRANCH TO CK ERROR SWITCH    @Y30LB02*/
 *     END;                    /*                             @Y30LB02*/
@@ -647,7 +647,7 @@ MCRTVEXT DC    XL4'00000000'       4-BYTE VVICEXT AREA         @Y30LB02
 *     DO;                     /*PRINT OUT ERROR MSG          @Y30LB02*/
 *        ERSW = 1;            /*SET ERROR SWITCH             @Y30LB02*/
 *        RETCODE = 12;        /*SET RETURN CODE              @Y30LB02*/
-*        ANS MSG('  ICB605I - ECB MUST BE SPECIFIED '××
+*        ANS MSG('  ICB605I - ECB MUST BE SPECIFIED '||
 *        'FOR STANDARD FORM MACRO')SKIP;                   /*@Y30LB02*/
 *     END;                                                 /*@Y30LB02*/
 */*                                                          @Y30LB02*/
@@ -656,81 +656,81 @@ MCRTVEXT DC    XL4'00000000'       4-BYTE VVICEXT AREA         @Y30LB02
 *     GO TO FINISH;          /*YES,BRANCH TO END             @Y30LB02*/
 *   IF TESTMCRT = 1 THEN     /*STD FORM INVOKED BEFORE?      @Y30LB02*/
 *     DO;                    /*YES,NO DECLARES               @Y30LB02*/
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *           '************** @Y30LB02*/')SKIP;
-*        ANS('/*    MACMEAN  MSSC MOVE CARTRIDGE MACRO    '××
+*        ANS('/*    MACMEAN  MSSC MOVE CARTRIDGE MACRO    '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '××
+*        ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*THIS IS THE OUTPUT FOR A SECONDARY        '××
+*        ANS('/*THIS IS THE OUTPUT FOR A SECONDARY        '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*INVOCATION OF THE STANDARD FORM MACRO     '××
+*        ANS('/*INVOCATION OF THE STANDARD FORM MACRO     '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************** @Y30LB02*/')SKIP;
 *        ANS('RFY(MCR1)RSTD;/*RESTRICT REG 1 @Y30LB02*/')SKIP;
 *        ANS('MCR1=ADDR(MCRTLEN); /*R1 PTR TO REQ @Y30LB02*/')SKIP;
-*        ANS('MCRTLEN= '××QUOTE(MCRTLN)××'X; '××           /*@Y30LB02*/
+*        ANS('MCRTLEN= '||QUOTE(MCRTLN)||'X; '||           /*@Y30LB02*/
 *        '/*LENGTH-MOVE REQUEST @Y30LB02*/')SKIP;
-*        ANS('MCRTOPCD= '××QUOTE(MCRTCD)××'X;'××           /*@Y30LB02*/
+*        ANS('MCRTOPCD= '||QUOTE(MCRTCD)||'X;'||           /*@Y30LB02*/
 *        '/*MOVE CARTRIDGE OPCODE @Y30LB02*/')SKIP;
 *        GO TO COMPROC;      /*BRCH,CK PARAMETERS            @Y30LB02*/
 *     END;                   /*                              @Y30LB02*/
 */*                                                          @Y30LB02*/
 *   ELSE                     /*1ST INVOC STD FORM            @Y30LB02*/
 *     DO;                    /*PUT OUT DECLARES              @Y30LB02*/
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************** @Y30LB02*/')SKIP;
-*        ANS('/*   MACMEAN  MSSC MOVE CARTRIDGE MACRO     '××
+*        ANS('/*   MACMEAN  MSSC MOVE CARTRIDGE MACRO     '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '××
+*        ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*INVOCATION OF THE STANDARD FORM MACRO     '××
+*        ANS('/*INVOCATION OF THE STANDARD FORM MACRO     '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************** @Y30LB02*/')SKIP;
 *        ANS('RFY(MCR1)RSTD;/*RESTRICT REG 1 @Y30LB02*/')SKIP;
 *        ANS('MCR1=ADDR(MCRTLEN);/*R1 PTR TO REQBLK @Y30LB02*/')SKIP;
-*        ANS('DCL 1  MCRTSF01  STATIC LOCAL,'××
+*        ANS('DCL 1  MCRTSF01  STATIC LOCAL,'||
 *        '/*MOVE CART REQUEST BLOCK @Y30LB02*/')SKIP;
-*        ANS('    2  MCRTLEN  FIXED(31)INIT('××QUOTE('30')××
+*        ANS('    2  MCRTLEN  FIXED(31)INIT('||QUOTE('30')||
 *        'X),/*LENG OF MOVE CARTRIDGE REQUEST BLK @Y30LB02*/')SKIP;
-*        ANS('    2  MCRTOPCD  FIXED(8)INIT('××QUOTE('0E')××
+*        ANS('    2  MCRTOPCD  FIXED(8)INIT('||QUOTE('0E')||
 *        'X), /*MOVE CARTRIDGE OPCODE @Y30LB02*/')SKIP;
-*        ANS('    2  MCRTRES1 CHAR(1)INIT('××QUOTE
-*        ('00')××'X),/*RESERVED AND ZERO @Y30LB02*/')SKIP;
-*        ANS('    2  MCRTFLG   BIT(8)INIT('××QUOTE
-*        ('00000000')××'B),/*ONE BYTE FLAGS AREA @Y30LB02*/')SKIP;
-*        ANS('       3  *      BIT(2),/*RESERVED AND'××
+*        ANS('    2  MCRTRES1 CHAR(1)INIT('||QUOTE
+*        ('00')||'X),/*RESERVED AND ZERO @Y30LB02*/')SKIP;
+*        ANS('    2  MCRTFLG   BIT(8)INIT('||QUOTE
+*        ('00000000')||'B),/*ONE BYTE FLAGS AREA @Y30LB02*/')SKIP;
+*        ANS('       3  *      BIT(2),/*RESERVED AND'||
 *        ' MUST BE ZERO @Y30LB02*/')SKIP;
-*        ANS('       3  MCRTTRAN  BIT(1),/*SOURCE WITH'××
+*        ANS('       3  MCRTTRAN  BIT(1),/*SOURCE WITH'||
 *        ' TRANSIENT CSN1 SPECD @Y30LB02*/')SKIP;
-*        ANS('       3  MCRTSCT  BIT(1),/*SOURCE WITH'××
+*        ANS('       3  MCRTSCT  BIT(1),/*SOURCE WITH'||
 *        ' SCRATCH ATTRIBUTE @Y30LB02*/')SKIP;
-*        ANS('       3  *       BIT(4),/*RESERVED AND'××
+*        ANS('       3  *       BIT(4),/*RESERVED AND'||
 *        ' MUST BE ZERO @Y30LB02*/')SKIP;
-*        ANS('    2  MCRTLIB  BIT(8)INIT('××QUOTE
-*        ('00000000')××'B), /*ONE BYTE-LIBID @Y30LB02*/')SKIP;
-*        ANS('       3  *       BIT(5),/*RESERVED AND'××
+*        ANS('    2  MCRTLIB  BIT(8)INIT('||QUOTE
+*        ('00000000')||'B), /*ONE BYTE-LIBID @Y30LB02*/')SKIP;
+*        ANS('       3  *       BIT(5),/*RESERVED AND'||
 *        ' MUST BE ZERO @Y30LB02*/')SKIP;
-*        ANS('       3  MCRTLD    BIT(2),/*BINARY NUMBER'××
+*        ANS('       3  MCRTLD    BIT(2),/*BINARY NUMBER'||
 *        ' ZERO TO THREE @Y30LB02*/')SKIP;
 *        ANS('    2  MCRTRES2 CHAR(8) ,/*RESERVED @Y30LB02*/')SKIP;
-*        ANS('     3  *(8) CHAR(1)INIT((8)'××QUOTE
-*        ('00')××'X),/*INIT RESERVED AREA TO ZERO @Y30LB02*/')SKIP;
+*        ANS('     3  *(8) CHAR(1)INIT((8)'||QUOTE
+*        ('00')||'X),/*INIT RESERVED AREA TO ZERO @Y30LB02*/')SKIP;
 *        ANS('    2  MCRTRES3 CHAR(8) ,/*RESERVED @Y30LB02*/')SKIP;
-*        ANS('     3  *(8) CHAR(1)INIT((8)'××QUOTE
-*        ('00')××'X),/*INIT RES AREA TO ZERO @Y30LB02*/')SKIP;
+*        ANS('     3  *(8) CHAR(1)INIT((8)'||QUOTE
+*        ('00')||'X),/*INIT RES AREA TO ZERO @Y30LB02*/')SKIP;
 *        ANS('    2  MCRTCSN  CHAR(12) ,/*CART SER NO @Y30LB02*/')SKIP;
-*        ANS('     3  *(12) CHAR(1)INIT((12)'××QUOTE
-*        ('00')××'X),/*INIT CSN AREA TO ZERO @Y30LB02*/')SKIP;
-*        ANS('    2  MCRTRES4 CHAR(2) INIT('××
-*        QUOTE('0000')××'X),/*RESERVED @Y30LB02*/')SKIP;
-*        ANS('    2  MCRTASID CHAR(2) INIT('××
-*        QUOTE('0000')××'X),/*ASID AREA @Y30LB02*/')SKIP;
-*        ANS('    2  MCRTECB  FIXED(31)INIT(0),/*EVENT '××
+*        ANS('     3  *(12) CHAR(1)INIT((12)'||QUOTE
+*        ('00')||'X),/*INIT CSN AREA TO ZERO @Y30LB02*/')SKIP;
+*        ANS('    2  MCRTRES4 CHAR(2) INIT('||
+*        QUOTE('0000')||'X),/*RESERVED @Y30LB02*/')SKIP;
+*        ANS('    2  MCRTASID CHAR(2) INIT('||
+*        QUOTE('0000')||'X),/*ASID AREA @Y30LB02*/')SKIP;
+*        ANS('    2  MCRTECB  FIXED(31)INIT(0),/*EVENT '||
 *        'CONTROL BLOCK ADDRESS @Y30LB02*/')SKIP;
-*        ANS('    2  MCRTVEXT  FIXED(31)INIT(0);/*MSVC '××
+*        ANS('    2  MCRTVEXT  FIXED(31)INIT(0);/*MSVC '||
 *        'EXTENSION AREA @Y30LB02*/')SKIP;
 *        TESTMCRT = TESTMCRT + 1; /*INCREM STD FORM CTR      @Y30LB02*/
 *     END;                        /*                         @Y30LB02*/
@@ -740,22 +740,22 @@ MCRTVEXT DC    XL4'00000000'       4-BYTE VVICEXT AREA         @Y30LB02
 *COMPROC:
 *   IF FLAGS ^= '' THEN       /*FLAGS SPECIFIED?             @Y30LB02*/
 */*                                                          @Y30LB02*/
-*        ANS('MCRTFLG= ' ××FLAGS××';/*VALUE OF FLAGS'××
+*        ANS('MCRTFLG= ' ||FLAGS||';/*VALUE OF FLAGS'||
 *        ' @Y30LB02*/')SKIP;
 */*                                                          @Y30LB02*/
 *   IF LIBID ^= '' THEN      /*MSF ID SPECIFIED?             @Y30LB02*/
-*        ANS('MCRTLIB= '××LIBID××';/*VALUE OF LIBID @Y30LB02*/')SKIP;
+*        ANS('MCRTLIB= '||LIBID||';/*VALUE OF LIBID @Y30LB02*/')SKIP;
 */*                                                          @Y30LB02*/
 *   IF CSN ^= '' THEN        /*CART SERIAL NUMBER SPCD?      @Y30LB02*/
-*        ANS('MCRTCSN= '××CSN××';/*CARTRIDGE SERIAL'××
+*        ANS('MCRTCSN= '||CSN||';/*CARTRIDGE SERIAL'||
 *        ' NUMBER @Y30LB02*/')SKIP;
 */*                                                          @Y30LB02*/
 *   IF ECB ^= '' THEN        /*ECB SPECIFIED?                @Y30LB02*/
-*        ANS('MCRTECB=ADDR' ××ECB×× ';/*ADDRESS OF EVENT '××
+*        ANS('MCRTECB=ADDR' ||ECB|| ';/*ADDRESS OF EVENT '||
 *        'CONTROL BLOCK @Y30LB02*/')SKIP;
 */*                                                          @Y30LB02*/
 *   IF VVICEXT ^= '' THEN    /*MSVC EXTENSION SPECIFIED?     @Y30LB02*/
-*        ANS('MCRTVEXT=ADDR'××VVICEXT×× ';/*MSVC '××
+*        ANS('MCRTVEXT=ADDR'||VVICEXT|| ';/*MSVC '||
 *        'EXTENSION AREA @Y30LB02*/')SKIP;
 */*      INVOKE THE SVC AND END PROCESSING                   @Y30LB02*/
 */*                                                          @Y30LB02*/

@@ -33,7 +33,7 @@
 *  %THEN %CTGFV999 = ';';           /*   THEN CLOSE DECLARE STMNT    */
 *%IF CTGFVLVL = ''                  /* IF BLOCK NOT CONCATENATED,    */
 *  %THEN %GOTO CTGFV001;            /*   THEN GENERATE THE DECLARE   */
-*%CTGFVDUM = CTGFVLVL××' CTGFV';    /* SET MINOR LEVEL NUMBER        */
+*%CTGFVDUM = CTGFVLVL||' CTGFV';    /* SET MINOR LEVEL NUMBER        */
 *  CTGFVDUM                         /* CTGFV CONCATENATED LEVEL      */
 *%GOTO CTGFV002;                    /* SKIP THE DECLARE STATEMENT    */
 *%CTGFV001:;                        /* DECLARE                       */

@@ -39,10 +39,10 @@
            IF TYPE(1) = ''               /*IF NOT SPEC.             */
              THEN NUSW = 'NES' ;         /*SUPPLY DEFAULT           */
              ELSE NUSW = TYPE(1) ;
-           TITLEC = IESW ×× 'ERNALLY' ;  /*INITIALIZE TITLE VARS.   */
+           TITLEC = IESW || 'ERNALLY' ;  /*INITIALIZE TITLE VARS.   */
            IF NUSW = 'NES'
-             THEN TITLET = NUSW ×× 'TED' ;
-             ELSE TITLET = NUSW ×× 'ESTED' ;
+             THEN TITLET = NUSW || 'TED' ;
+             ELSE TITLET = NUSW || 'ESTED' ;
            IF IGGGVCCT = '' THEN         /*1ST TIME INVOKED  @Y30SSPJ*/
              DO;                         /* YES-FIRST TIME   @Y30SSPJ*/
                ANS ( COMMENT(ASTERICS) ) COL(2);           /*@Y30SSPJ*/
@@ -57,7 +57,7 @@
                ANS ( COMMENT(ASTERICS) ) COL(2);           /*@Y30SSPJ*/
                GOTO PO ;            /*GO BUILD OUTER PROC    @Y30SSPJ*/
              END;                                          /*@Y30SSPJ*/
-           SFIDNAMELOVAR = 'CL8' ×× QUOTE(PROCNAME);
+           SFIDNAMELOVAR = 'CL8' || QUOTE(PROCNAME);
            IF IGGGVCCT ^= '1' THEN      /*NOT 1ST PROC              */
              DO;
                ANS ('CALL EXIT;') SKIP COL(12);
@@ -97,7 +97,7 @@
            ANS ('/') COL(71);                              /*@Y30SSPJ*/
            ANS ( COMMENT(BLANKS) ) COL(2);                 /*@Y30SSPJ*/
            ANS ( COMMENT(ASTERICS) ) COL(2);               /*@Y30SSPJ*/
-           ANS (PROCNAME ×× ':') SKIP RESCAN COL(2);
+           ANS (PROCNAME || ':') SKIP RESCAN COL(2);
            ANS ('PROC OPTIONS(NOSAVEAREA,NOSAVE);') COL(12);
            ANS ('/* SPECIFY PROCEDURE OPTIONS */') COL(37);/*@Y30SSDW*/
            IF IESW = 'EXT' THEN
@@ -113,7 +113,7 @@
                    COL(37);                               /* @Y30SSDW*/
              END;                                         /* @Y30SSDW*/
            GOTO PP;
- PO:       ANS (PROCNAME ×× ':') SKIP COL(2);
+ PO:       ANS (PROCNAME || ':') SKIP COL(2);
            ANS ('PROC OPTIONS') COL(12);
            ANS ('(REENTRANT,NOSAVEAREA,NOSAVE,NOCODEREG,NODATAREG,
                   ID);') SKIP COL(18);
@@ -122,19 +122,19 @@
            ANS ('/* MODULE BASE REGISTER     */') COL(41);
            IF IGGBASE2 ^= '' THEN   /* BASE REG 2 SPECIFIED? @ZA95164*/
              DO;                    /* YES                   @ZA95164*/
-               ANS('DECLARE IGGSEGB2 REG('××IGGBASE2××')PTR(31)RSTD;')
+               ANS('DECLARE IGGSEGB2 REG('||IGGBASE2||')PTR(31)RSTD;')
                SKIP COL(12);        /* GEN 2ND BASE DECLARE  @ZA95164*/
                ANS('/* BASE 2 REGISTER */') COL(41);       /*@ZA95164*/
              END;                   /*                       @ZA95164*/
            ELSE;                    /*                       @ZA95164*/
- PP:       ANS ('Z' ×× MACINDEX(2:4) ×× ':') SKIP COL(2);  /*@Y30SSPJ*/
+ PP:       ANS ('Z' || MACINDEX(2:4) || ':') SKIP COL(2);  /*@Y30SSPJ*/
            ANS ('/* LABEL FOR PROCEDURE TRACKING  */')
                COL(37);                                   /* @Y30SSDW*/
-           ANS ('Z' ×× MACINDEX(2:4) ×× PROCNAME(5:LENGTH(PROCNAME))
-              ×× ':') SKIP COL(2);
+           ANS ('Z' || MACINDEX(2:4) || PROCNAME(5:LENGTH(PROCNAME))
+              || ':') SKIP COL(2);
            ANS ('/* LABEL FOR PROCEDURE TRACKING  */')
                COL(37);                                   /* @Y30SSDW*/
-           ANS ('RFY ('××RX5××RX6××RX7××RX8××RX9××RX10××') UNRSTD;')
+           ANS ('RFY ('||RX5||RX6||RX7||RX8||RX9||RX10||') UNRSTD;')
              SKIP COL(12);          /*                       @ZA95164*/
            ANS ( '/* PL/S COMPILER WORK REGISTERS */')
               COL(37);                                    /* @Y30SSDW*/
@@ -164,10 +164,10 @@
                    COL(37);                               /* @Y30SSDW*/
                IF IGGBASE2 ^= '' THEN/*BASE REG 2 SPECIFIED? @ZA95164*/
                  DO;                /* YES                   @ZA95164*/
-                   ANS ('GEN(USING *+4095,'××IGGBASE2××');')
+                   ANS ('GEN(USING *+4095,'||IGGBASE2||');')
                      SKIP COL(12);  /*GEN USING FOR 2ND BASE @ZA95164*/
                    ANS('/* INDICATE AVAILABLE BASE REGS */') COL(37);
-                   ANS('GEN(LA '××IGGBASE2××',4095(0,12));') COL(37);
+                   ANS('GEN(LA '||IGGBASE2||',4095(0,12));') COL(37);
                    ANS('/* LOAD BAS 2 REG */') COL(37);/*    @ZA95164*/
                  END;               /*                       @ZA95164*/
                ELSE;                /*                       @ZA95164*/
@@ -184,7 +184,7 @@
              BEGLABEL='IGGSEGST';   /* SET LABEL             @ZA29164*/
              IF IGGBASE2 = '' THEN  /*EXTERNALLY CALLED?     @ZA95164*/
                DO;                  /* NO, ONLY 1 BASE REG   @ZA95164*/
-                 ANS ('GEN(LA 15,*-'××BEGLABEL××'(0,0));')
+                 ANS ('GEN(LA 15,*-'||BEGLABEL||'(0,0));')
                    SKIP COL(12);    /*                       @ZA95164*/
                  ANS ('/* COMPUTE MODULE BASE      */')
                    COL(41);         /*                       @ZA95164*/
@@ -199,19 +199,19 @@
                    COL(37);         /*                       @ZA95164*/
                  ANS('GEN(B *+6);') SKIP COL(12); /*         @ZA95164*/
                ANS('/* BRANCH AROUND CONSTANT */')COL(37); /*@ZA95164*/
-                 ANS('GEN(DC AL2(*-'××BEGLABEL××'-4));')  /* @ZA95164*/
+                 ANS('GEN(DC AL2(*-'||BEGLABEL||'-4));')  /* @ZA95164*/
                    COL(12);         /*                       @ZA29164*/
                 ANS('/* OFFSET TO MODULE BASE 1*/')COL(37);/*@ZA95164*/
                  ANS('GEN(SH 12,*-2);') COL(12);           /*@ZA95164*/
                  ANS('/* COMPUTE MODULE BASE 1 */')COL(37);/*@ZA95164*/
-                 ANS('GEN(LA '××IGGBASE2××',4095(0,12));')
+                 ANS('GEN(LA '||IGGBASE2||',4095(0,12));')
                    COL(12);         /*                       @ZA95164*/
              ANS('/* LOAD BASE 2 REG WITH 4095 */')COL(37);/*@ZA95164*/
-               ANS('GEN(USING '××BEGLABEL××',12);') SKIP   /*@ZA95164*/
+               ANS('GEN(USING '||BEGLABEL||',12);') SKIP   /*@ZA95164*/
                    COL(12);         /*                       @ZA29164*/
                  ANS('/* INDICATE AVAILABLE BASE REG1 */')
                  COL(41);           /*                       @ZA95164*/
-                 ANS('GEN(USING '××BEGLABEL××'+4095,'××IGGBASE2××');')
+                 ANS('GEN(USING '||BEGLABEL||'+4095,'||IGGBASE2||');')
                    SKIP COL(12);    /*                       @ZA95164*/
                  ANS('/* INDICATE AVAILABLE BASE REG2 */')
                    COL(37);         /*                       @ZA95164*/

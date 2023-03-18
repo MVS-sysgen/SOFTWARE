@@ -180,7 +180,7 @@ RCALENTH EQU   *-RCA -       LENGTH OF RCA
 *          %THEN %GOTO RCAPLS1;     /* THEN SKIP DCL                 */
 *DCL 1 RCA BASED (RCAPTR)           /* DECLARE RCA LEVEL 1           */
 *        %GO TO RCAPLS2;            /* AND SKIP LEVEL TWO DCL        */
-*%RCAPLS1: RCADUM=RCALEVEL××' RCA'; /* SET LEVEL FOR MINOR STRUCTURE */
+*%RCAPLS1: RCADUM=RCALEVEL||' RCA'; /* SET LEVEL FOR MINOR STRUCTURE */
 *    RCADUM                         /* MINOR STRUCTURE NAME PARM     */
 *%RCAPLS2:;
 *        BDY(WORD),

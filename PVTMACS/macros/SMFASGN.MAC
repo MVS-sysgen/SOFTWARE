@@ -48,35 +48,35 @@
   SINK=MACLIST(2);
   VAL=MACLIST(3);
   FCN=MACLIST(4);
-  IDENT=MACLABEL××MACNAME××MACLIST;
+  IDENT=MACLABEL||MACNAME||MACLIST;
   ANS(COMMENT(IDENT)) SKIP;
-  ANS(MACLABEL××' DO;') SKIP;
+  ANS(MACLABEL||' DO;') SKIP;
   ANS('RFY (R2,R3) RSTD;') SKIP;
-  ANS('R2 = '××SRC××';') SKIP;
-  ANS('LUP'××MACINDEX××':') SKIP;
+  ANS('R2 = '||SRC||';') SKIP;
+  ANS('LUP'||MACINDEX||':') SKIP;
   IF SINK ^= SRC THEN
-     ANS(SINK××' = R2;') SKIP;
+     ANS(SINK||' = R2;') SKIP;
   IF FCN = 'SET' THEN
-     ANS('R3 = '××VAL××';') SKIP;
+     ANS('R3 = '||VAL||';') SKIP;
      ELSE
      IF FCN = '' THEN
-     ANS('R3 = '××VAL××';') SKIP;
+     ANS('R3 = '||VAL||';') SKIP;
      ELSE
       IF FCN = 'INC' THEN
-         ANS('R3 = R2 + '××VAL××';') SKIP;
+         ANS('R3 = R2 + '||VAL||';') SKIP;
          ELSE
           IF FCN = 'DEC' THEN
-             ANS('R3 = R2 - '××VAL××';') SKIP;
+             ANS('R3 = R2 - '||VAL||';') SKIP;
              ELSE
               DO;
-                IDENT = 'INVALID FUNCTION SPECIFIED: '××FCN ;
+                IDENT = 'INVALID FUNCTION SPECIFIED: '||FCN ;
                 ANS(COMMENT(IDENT)) SKIP;
                 ANS('RFY (R2,R3) UNRSTD;');
                 ANS ('END;') SKIP;
                 RETURN CODE(8);
               END;
-  ANS('CS(R2,R3,'××SRC××');') SKIP;
-  ANS('BC(4,LUP'××MACINDEX××');') SKIP;
+  ANS('CS(R2,R3,'||SRC||');') SKIP;
+  ANS('BC(4,LUP'||MACINDEX||');') SKIP;
   ANS('END;') SKIP;
   ANS('RFY (R2,R3) UNRSTD;') SKIP;
  %END;

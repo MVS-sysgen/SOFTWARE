@@ -59,7 +59,7 @@ $DCT&SYSNDX LA        &REG,&FLD       PICK UP TARGET ADDRESS   @Y17XAMO
 *         DCL (REG,FLD,LEN)    CHAR;
 *         DCL (MREG,MFLD,MLEN,SLEN) CHAR;
 *         DCL FLEN             FIXED;
-*         MREG='?'××MACLABEL××' '××MACNAME××' '××MACKEYS××';';
+*         MREG='?'||MACLABEL||' '||MACNAME||' '||MACKEYS||';';
 *         ANS(COMMENT(MREG)) SKIP  COL(MACCOL);
 *         IF REG(1)='' THEN
 *            ANS('/* THE ''REG'' KEYWORD MUST BE SPECIFIED */')  SKIP
@@ -67,25 +67,25 @@ $DCT&SYSNDX LA        &REG,&FLD       PICK UP TARGET ADDRESS   @Y17XAMO
 *         ELSE DO;
 *              MREG=REG(1);   MFLD=FLD(1);
 * ANS('/* SET UP ADDRESSABILITY TO THE DCT ENTRY */') COL(9);
-* ANS(MACLABEL××MREG××'=AVTCSTCS+(TRMCHCIN-1)*AVTDCTLN;') SKIP COL(10);
+* ANS(MACLABEL||MREG||'=AVTCSTCS+(TRMCHCIN-1)*AVTDCTLN;') SKIP COL(10);
 *              IF MFLD^='' THEN DO; /* MOVE REQUESTED            */
 *              MLEN=LEN(1);
 *              IF MLEN='' THEN MLEN='4';
 *              ELSE IF INDEX('0123456789',MLEN(1:1))^=0 THEN DO;
 *              FLEN=FIXED(MLEN); IF FLEN>6 THEN MLEN='4';
 *              ELSE IF FLEN<2 THEN MLEN='4';                 END;
-*              IF INDEX(MFLD,'(')=0 THEN SLEN='(1:'××MLEN××')';
+*              IF INDEX(MFLD,'(')=0 THEN SLEN='(1:'||MLEN||')';
 *              ELSE SLEN='';
 * ANS('/* MOVE THE DCT ENTRY TO THE SPECIFIED WORKAREA */') COL(9);
-* ANS(MFLD××SLEN××' = '××MREG××'->IEDDCT(1:'××MLEN××');') SKIP COL(10);
+* ANS(MFLD||SLEN||' = '||MREG||'->IEDDCT(1:'||MLEN||');') SKIP COL(10);
 * ANS('/* SET POINTER TO THE TARGET ADDRESS */') COL(9);
-* ANS(MREG××'=ADDR('××MFLD××'); /*SET UP PTR*/') SKIP COL(15);
+* ANS(MREG||'=ADDR('||MFLD||'); /*SET UP PTR*/') SKIP COL(15);
 * ANS('/* IS THE DCT FOR AN LU WITH 3270 DATA STREAM */') COL(9);
-* ANS('IF (TRMPREF=''1''B  & TRMTYPE=TRMLUNT & (TRMSIBPT->SIBLUTYP = '××
-*'''0000000''B × TRMSIBPT->SIBLUTYP=''0000010''B × TRMSIBPT->SIBLUTYP'××
+* ANS('IF (TRMPREF=''1''B  & TRMTYPE=TRMLUNT & (TRMSIBPT->SIBLUTYP = '||
+*'''0000000''B | TRMSIBPT->SIBLUTYP=''0000010''B | TRMSIBPT->SIBLUTYP'||
 *' = ''0000011''B)) THEN') COL(10);
 * ANS('/* YES - THEN SET THE DCT3270 BIT IN THE COPY MADE */') COL(9);
-* ANS(MREG××'->DCT3270 = ''1''B; /* SET 3270 BIT */') SKIP COL(15);
+* ANS(MREG||'->DCT3270 = ''1''B; /* SET 3270 BIT */') SKIP COL(15);
 *              END; END;
 *%END IEDDCT;                         /*
 .DONE    ANOP

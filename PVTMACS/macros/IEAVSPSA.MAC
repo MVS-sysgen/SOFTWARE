@@ -143,7 +143,7 @@
    REGSAPTR = SAVAREA;              /* RESTORE REGISTER 13           */
   RFY (REGSAPTR) UNRSTD;
   RFY (LNGREG) RSTD;
-         IF LOCKRC=ZZERO × LOCKRC=FFOUR THEN /*WAS LOCK SET?         */
+         IF LOCKRC=ZZERO | LOCKRC=FFOUR THEN /*WAS LOCK SET?         */
  LOCKSET:       DO;                         /*YES PROCEED FOR GM/FM  */
      RFY (LOCKRC) UNRSTD;
                 LNGREG = LGTH               /*LENGTH IN REGISTER 0   */
@@ -198,7 +198,7 @@
  /* WORK/SAVE AREAS MUST BEGIN ON DOUBLE WORD BOUNDARIES.  ALL WORK/ */
  /* SAVE AREAS ARE MULTIPLES OF 8 BYTES IN SIZE.  THUS IF THE FIRST  */
  /* WORK/SAVE AREA IS ON A DOUBLE WORD BOUNDARY, THEY ALL WILL BE.   */
-    SAPTR = ((SAPTR + SEVEN) × SEVEN) && SEVEN;
+    SAPTR = ((SAPTR + SEVEN) | SEVEN) && SEVEN;
           RFY (TBLPTR) UNRSTD;
    NSIZEPTR = ADDR(FSIZE);         /* PICK UP ADDR. OF FIELD
                                       CONTAINING FIRST WORK/SAVE
@@ -266,7 +266,7 @@
  @ENDGEN
    REGSAPTR = SAVAREA;              /* RESTORE REGISTER 13           */
   RFY (REGSAPTR) UNRSTD;
-                IF (LOCKRC=ZZERO) ×
+                IF (LOCKRC=ZZERO) |
                 (LOCKRC=FFOUR)              /*LOCK NOT RELEASED?     */
                   THEN RTCODE=HOLDRC;       /*RETURN CODE INDICATOR  */
                   ELSE RTCODE=FFOUR;        /*0 RETURN FROM SETLOCK  */

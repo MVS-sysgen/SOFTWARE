@@ -118,7 +118,7 @@ STMMMGNX DS    0C                   NEXT AVAILABLE POSITION IN DSECT
 *      KEY = '';                    /* KEY WORD IS BLANKS            */
 *    ELSE
 *      KEY = 'ATTRIBUT';            /* PRINT KEYWORD NAME            */
-*    ANS('/* ?'××MACLABEL××MACNAME××' '××MACLIST××KEY××ATTRIBUT××' */'
+*    ANS('/* ?'||MACLABEL||MACNAME||' '||MACLIST||KEY||ATTRIBUT||' */'
 *       ) SKIP;
 *
 *    /* ANSWER DECLARE, STRUCTURE NAME, INPUT ATTRIBUTES OF STRUCTURE*/
@@ -131,7 +131,7 @@ STMMMGNX DS    0C                   NEXT AVAILABLE POSITION IN DSECT
 *                        (*)                                          '
 *       )SKIP;
 *    ANS(
-*              '        '××ATTRIBUT(1)××'                             '
+*              '        '||ATTRIBUT(1)||'                             '
 *       )SKIP;
 *    ANS(
 *              '        BDY(WORD),                                    '

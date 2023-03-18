@@ -146,7 +146,7 @@
 .*  ONE AND ONLY ONE FLAG BIT MUST BE SET TO '1'B.             @Y30LB02
 .*                                                             @Y30LB02
 .*       -------------------------------------------------     @Y30LB02
-.*       × X × X × X × X ×OTHER BITS MUST BE SET TO ZERO ×     @Y30LB02
+.*       | X | X | X | X |OTHER BITS MUST BE SET TO ZERO |     @Y30LB02
 .*       -------------------------------------------------     @Y30LB02
 .*                                                             @Y30LB02
 .*       BIT 0------------'1'B     STAGING DASD                @Y30LB02
@@ -161,8 +161,8 @@
 .*       BIT 3------------'1'B     TEST DASD                   @Y30LB02
 .*                         '0'B    NO FUNCTION                 @Y30LB02
 .*                                                             @Y30LB02
-.*       BITS 4-15--------         ×RESERVED AND MUST BE       @Y30LB02
-.*                                  ZERO×                      @Y30LB02
+.*       BITS 4-15--------         |RESERVED AND MUST BE       @Y30LB02
+.*                                  ZERO|                      @Y30LB02
 .*                                                             @Y30LB02
 .*  STAGING DASD                                               @Y30LB02
 .*                                                             @Y30LB02
@@ -493,7 +493,7 @@ VONRES2  DC    XL2'0000'           2-BYTE RESERVED AREA        @Y30LB02
 *   IF TYPE='' THEN              /*TYPE SPECIFIED?           @Y30LB02*/
 *     DO;                        /*NO,PROCESS ERROR MSG      @Y30LB02*/
 *        ERSW=1;                 /*SET ERROR SWITCH TO 1     @Y30LB02*/
-*        ANS MSG('  ICB600I - TYPE MUST BE '××
+*        ANS MSG('  ICB600I - TYPE MUST BE '||
 *                'SPECIFIED')SKIP;                         /*@Y30LB02*/
 *        RETCODE=12;        /*SET RETURN CODE TO 12          @Y30LB02*/
 *        GO TO FINISH;      /*BRANCH TO END                  @Y30LB02*/
@@ -502,7 +502,7 @@ VONRES2  DC    XL2'0000'           2-BYTE RESERVED AREA        @Y30LB02
 *        GO TO FINISH;      /*YES,BRCH END PROCES            @Y30LB02*/
 *   IF ICBTESTR = 0 THEN    /*REG 1 ALREADY DCLD?            @Y30LB02*/
 *      DO;                  /*NO,PRINT DECLARE               @Y30LB02*/
-*        ANS('DCL ICBR1 REG(1) PTR ;/*'××
+*        ANS('DCL ICBR1 REG(1) PTR ;/*'||
 *        'ADDRESS OF REQUEST BLOCK @Y30LB02*/')SKIP;
 *        ICBTESTR=1;        /*INCREM DCL COUNTER             @Y30LB02*/
 *      END;                 /*                               @Y30LB02*/
@@ -514,7 +514,7 @@ VONRES2  DC    XL2'0000'           2-BYTE RESERVED AREA        @Y30LB02
 */*      INVALID 'TYPE' WILL CREATE THE FOLLOWING ERR MSGS   @Y30LB02*/
 */*                                                          @Y30LB02*/
 *   ERSW=1;                 /*SET ERROR SWITCH TO ONE        @Y30LB02*/
-*   ANS MSG('  ICB601I - TYPE IS INCORRECTLY '××
+*   ANS MSG('  ICB601I - TYPE IS INCORRECTLY '||
 *           'SPECIFIED')SKIP(3);                           /*@Y30LB02*/
 *   RETCODE=12;             /*SET RETURN CODE TO 12          @Y30LB02*/
 *   IF ERSW=1 THEN          /*ERROR SWITCH SET TO ONE?       @Y30LB02*/
@@ -526,8 +526,8 @@ VONRES2  DC    XL2'0000'           2-BYTE RESERVED AREA        @Y30LB02
 *   IF MF(2) ^= '' THEN     /*LIST NAME SPECIFIED?           @Y30LB02*/
 *        GO TO LISTFORM;    /*YES,BRCH PROCESS REQUEST       @Y30LB02*/
 *   ERSW=1;                 /*NO,SET ERROR SWITCH            @Y30LB02*/
-*   ANS MSG('  ICB602I - A NAME FOR THE '××
-*           'REQUEST BLOCK MUST BE SPECIFIED IN '××
+*   ANS MSG('  ICB602I - A NAME FOR THE '||
+*           'REQUEST BLOCK MUST BE SPECIFIED IN '||
 *           'MF(2) ')SKIP(3);                              /*@Y30LB02*/
 *   RETCODE=12;             /*SET RETURN CODE TO 12          @Y30LB02*/
 *   IF ERSW=1 THEN          /*CHECK THE ERROR SWITCH         @Y30LB02*/
@@ -548,8 +548,8 @@ VONRES2  DC    XL2'0000'           2-BYTE RESERVED AREA        @Y30LB02
 *   IF CTR > 0 THEN         /*COUNTER GT ZERO?               @Y30LB02*/
 *     DO;                   /*YES,WARN USER                  @Y30LB02*/
 *        RETCODE=4;         /*SET RETURN CODE TO 4           @Y30LB02*/
-*        ANS MSG('  ICB603I - WARNING-ONLY MF'××
-*             ' AND TYPE PARAMETERS ARE VALID FOR'××
+*        ANS MSG('  ICB603I - WARNING-ONLY MF'||
+*             ' AND TYPE PARAMETERS ARE VALID FOR'||
 *             ' LIST FORM  ')SKIP(3);                      /*@Y30LB02*/
 *     END;                  /*                               @Y30LB02*/
 */*                                                          @Y30LB02*/
@@ -557,161 +557,161 @@ VONRES2  DC    XL2'0000'           2-BYTE RESERVED AREA        @Y30LB02
 *       GO TO ATTRLST;      /*YES,PROCESS IT                 @Y30LB02*/
 *   IF TYPE(1)='VON' THEN   /*IS TYPE VARYON?                @Y30LB02*/
 *     DO;                   /*YES,PUT VARYON REQ BLOCK       @Y30LB02*/
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************** @Y30LB02*/')SKIP;
-*        ANS('/*MACMEAN  MSSC VARYON MACRO                '××
+*        ANS('/*MACMEAN  MSSC VARYON MACRO                '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '××
+*        ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*THIS IS THE INITIALIZED LIST FORM         '××
+*        ANS('/*THIS IS THE INITIALIZED LIST FORM         '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *           '************** @Y30LB02*/')SKIP;
-*        ANS('DCL 1 ' ××MF(2)×× '  STATIC LOCAL,'××
+*        ANS('DCL 1 ' ||MF(2)|| '  STATIC LOCAL,'||
 *        ' /*VARYON REQ BLOCK @Y30LB02*/')SKIP;
-*        ANS('    2  VONLEN  FIXED(31)INIT('××QUOTE
-*        ('0C')××'X),/*LENGTH OF VON REQUEST BLOCK @Y30LB02*/')SKIP;
-*        ANS('    2  VONOPCD CHAR(1)INIT('××QUOTE('0A')××
+*        ANS('    2  VONLEN  FIXED(31)INIT('||QUOTE
+*        ('0C')||'X),/*LENGTH OF VON REQUEST BLOCK @Y30LB02*/')SKIP;
+*        ANS('    2  VONOPCD CHAR(1)INIT('||QUOTE('0A')||
 *        'X),/*VARYON OPCODE @Y30LB02*/')SKIP;
-*        ANS('    2  VONRES1 CHAR(1)INIT('××QUOTE('00')××
+*        ANS('    2  VONRES1 CHAR(1)INIT('||QUOTE('00')||
 *        'X), /*ONE BYTE OF ZERO @Y30LB02*/')SKIP;
-*        ANS('    2  VONFLG BIT(16)INIT('××QUOTE
-*        ('0000000000000000')××'B), /*FLAGS AREA @Y30LB02*/')SKIP;
-*        ANS('     3  VONSTAG  BIT(1), /*STAGING '××
+*        ANS('    2  VONFLG BIT(16)INIT('||QUOTE
+*        ('0000000000000000')||'B), /*FLAGS AREA @Y30LB02*/')SKIP;
+*        ANS('     3  VONSTAG  BIT(1), /*STAGING '||
 *        'ATTRIBUTE @Y30LB02*/')SKIP;
-*        ANS('     3  VONREAL  BIT(1), /*REAL '××
+*        ANS('     3  VONREAL  BIT(1), /*REAL '||
 *        'ATTRIBUTE @Y30LB02*/')SKIP;
-*        ANS('     3  *      BIT(14),'××
+*        ANS('     3  *      BIT(14),'||
 *        ' /*FOURTEEN BITS RESERVED @Y30LB02*/')SKIP;
-*        ANS('    2  VONSSID  FIXED(15) INIT(0),'××
+*        ANS('    2  VONSSID  FIXED(15) INIT(0),'||
 *        ' /*SUBSYSTEM ID  @Y30LB02*/')SKIP;
-*        ANS('    2  VONRES2  CHAR(2) INIT('××QUOTE
-*        ('0000')××'X);/*RESERVED AREA @Y30LB02*/')SKIP;
+*        ANS('    2  VONRES2  CHAR(2) INIT('||QUOTE
+*        ('0000')||'X);/*RESERVED AREA @Y30LB02*/')SKIP;
 *        GO TO FINISH;                                     /*@Y30LB02*/
 *     END;                                                 /*@Y30LB02*/
 */*                                                          @Y30LB02*/
 *  ELSE
 *     DO;                                                  /*@Y30LB02*/
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************** @Y30LB02*/')SKIP;
-*        ANS('/*MACMEAN  MSSC VARYOFF MACRO               '××
+*        ANS('/*MACMEAN  MSSC VARYOFF MACRO               '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '××
+*        ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*THIS IS THE INITIALIZED LIST FORM         '××
+*        ANS('/*THIS IS THE INITIALIZED LIST FORM         '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************** @Y30LB02*/')SKIP;
-*        ANS('DCL 1 ' ××MF(2)×× '  STATIC LOCAL,'××
+*        ANS('DCL 1 ' ||MF(2)|| '  STATIC LOCAL,'||
 *        ' /*VARYOFF REQ BLOCK @Y30LB02*/')SKIP;
-*        ANS('    2  VOFLEN  FIXED(31)INIT('××QUOTE
-*        ('18')××'X),/*LENGTH OF VOF REQUEST BLK @Y30LB02*/')SKIP;
-*        ANS('    2  VOFOPCD CHAR(1)INIT('××QUOTE('0C')××
+*        ANS('    2  VOFLEN  FIXED(31)INIT('||QUOTE
+*        ('18')||'X),/*LENGTH OF VOF REQUEST BLK @Y30LB02*/')SKIP;
+*        ANS('    2  VOFOPCD CHAR(1)INIT('||QUOTE('0C')||
 *        'X),/*VARYOFF OPCODE @Y30LB02*/')SKIP;
-*        ANS('    2  VOFRES1 CHAR(1)INIT('××QUOTE('00')××
+*        ANS('    2  VOFRES1 CHAR(1)INIT('||QUOTE('00')||
 *        'X), /*ONE BYTE OF ZERO @Y30LB02*/')SKIP;
-*        ANS('    2  VOFFLG BIT(16)INIT('××QUOTE
-*        ('0000000000000000')××'B), /*FLAGS AREA @Y30LB02*/')SKIP;
-*        ANS('     3  VOFSTAG  BIT(1), /*VIRTUAL '××
+*        ANS('    2  VOFFLG BIT(16)INIT('||QUOTE
+*        ('0000000000000000')||'B), /*FLAGS AREA @Y30LB02*/')SKIP;
+*        ANS('     3  VOFSTAG  BIT(1), /*VIRTUAL '||
 *        'ATTRIBUTE @Y30LB02*/')SKIP;
-*        ANS('     3  VOFREAL  BIT(1), /*REAL '××
+*        ANS('     3  VOFREAL  BIT(1), /*REAL '||
 *        'ATTRIBUTE @Y30LB02*/')SKIP;
-*        ANS('     3  VOFNEUT  BIT(1), /*NEUTRAL '××
+*        ANS('     3  VOFNEUT  BIT(1), /*NEUTRAL '||
 *        'ATTRIBUTE @Y30LB02*/')SKIP;
-*        ANS('     3  VOFTEST  BIT(1), /*TEST '××
+*        ANS('     3  VOFTEST  BIT(1), /*TEST '||
 *        'ATTRIBUTE @Y30LB02*/')SKIP;
-*        ANS('     3  *      BIT(12),'××
+*        ANS('     3  *      BIT(12),'||
 *        ' /*TWELVE BITS RESERVED @Y30LB02*/')SKIP;
-*        ANS('    2  VOFSSID  FIXED(15) INIT(0),'××
+*        ANS('    2  VOFSSID  FIXED(15) INIT(0),'||
 *        ' /*SUBSYSTEM ID  @Y30LB02*/')SKIP;
-*        ANS('    2  VOFRUA  FIXED(15) INIT(0),'××
+*        ANS('    2  VOFRUA  FIXED(15) INIT(0),'||
 *        ' /*REAL UNIT ADDRESS  @Y30LB02*/')SKIP;
-*        ANS('    2  VOFHOST  CHAR(5) INIT('××QUOTE
-*        ('0000000000')××'X),/*HOSTID AREA @Y30LB02*/')SKIP;
-*        ANS('    2  *     CHAR(1) INIT('××QUOTE
-*        ('00')××'X),/*RESERVED AREA @Y30LB02*/')SKIP;
-*        ANS('    2  VOFASID CHAR(2) INIT('××QUOTE
-*        ('0000')××'X),/*ASID AREA @Y30LB02*/')SKIP;
-*        ANS('    2  VOFECB  FIXED(31) INIT(0);'××
+*        ANS('    2  VOFHOST  CHAR(5) INIT('||QUOTE
+*        ('0000000000')||'X),/*HOSTID AREA @Y30LB02*/')SKIP;
+*        ANS('    2  *     CHAR(1) INIT('||QUOTE
+*        ('00')||'X),/*RESERVED AREA @Y30LB02*/')SKIP;
+*        ANS('    2  VOFASID CHAR(2) INIT('||QUOTE
+*        ('0000')||'X),/*ASID AREA @Y30LB02*/')SKIP;
+*        ANS('    2  VOFECB  FIXED(31) INIT(0);'||
 *        ' /* EVENT CONTROL BLOCK AREA @Y30LB02*/')SKIP;
 *        GO TO FINISH;       /*BRCH TO END                   @Y30LB02*/
 *     END;                   /*                              @Y30LB02*/
 *ATTRLST:
 *   IF TYPE(1)='VON' THEN    /*VARYON REQUEST                @Y30LB02*/
 *     DO;                    /*OUTPUT UNINIT REQ BLOCK       @Y30LB02*/
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************* @Y30LB02*/')SKIP;
-*        ANS('/*MACMEAN  MSSC VARYON MACRO                '××
+*        ANS('/*MACMEAN  MSSC VARYON MACRO                '||
 *            '              @Y30LB02*/')SKIP;
-*        ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '××
+*        ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '||
 *            '              @Y30LB02*/')SKIP;
-*        ANS('/*THIS IS THE UNINITIALIZED LIST FORM       '××
+*        ANS('/*THIS IS THE UNINITIALIZED LIST FORM       '||
 *            '              @Y30LB02*/')SKIP;
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************* @Y30LB02*/')SKIP;
-*        ANS('DCL 1 ' ××MF(2)××'  '××MF(3)××','××
+*        ANS('DCL 1 ' ||MF(2)||'  '||MF(3)||','||
 *        ' /*VARYON REQ BLOCK @Y30LB02*/')SKIP;
-*        ANS('    2  VONLEN  FIXED(31), /*LENGTH'××
+*        ANS('    2  VONLEN  FIXED(31), /*LENGTH'||
 *        ' OF BLOCK = 0C BYTES HEX @Y30LB02*/')SKIP;
-*        ANS('    2  VONOPCD CHAR(1),/*VARYON'××
+*        ANS('    2  VONOPCD CHAR(1),/*VARYON'||
 *        ' OPCODE = 0A HEX @Y30LB02*/')SKIP;
-*        ANS('    2  VONRES1 CHAR(1),/*ONE '××
+*        ANS('    2  VONRES1 CHAR(1),/*ONE '||
 *        ' BYTE OF ZERO @Y30LB02*/')SKIP;
 *        ANS('    2  VONFLG BIT(16), /*FLAGS AREA @Y30LB02*/')SKIP;
-*        ANS('     3  VONSTAG  BIT(1), /*STAGING '××
+*        ANS('     3  VONSTAG  BIT(1), /*STAGING '||
 *        'ATTRIBUTE @Y30LB02*/')SKIP;
-*        ANS('     3  VONREAL  BIT(1), /*REAL '××
+*        ANS('     3  VONREAL  BIT(1), /*REAL '||
 *        'ATTRIBUTE @Y30LB02*/')SKIP;
-*        ANS('     3  *      BIT(14),'××
+*        ANS('     3  *      BIT(14),'||
 *        ' /*FOURTEEN BITS RESERVED @Y30LB02*/')SKIP;
-*        ANS('    2  VONSSID  FIXED(15),'××
+*        ANS('    2  VONSSID  FIXED(15),'||
 *        ' /*SUBSYSTEM ID  @Y30LB02*/')SKIP;
-*        ANS('    2  VONRES2  CHAR(2);'××
+*        ANS('    2  VONRES2  CHAR(2);'||
 *        '/*RESERVED AREA @Y30LB02*/')SKIP;
 *        GO TO FINISH;           /*BRCH TO END               @Y30LB02*/
 *     END;                       /*                          @Y30LB02*/
 */*                                                          @Y30LB02*/
 *  ELSE                          /*VARYOFF REQUEST           @Y30LB02*/
 *     DO;                        /*OUTPUT VARYOFF BLOCK      @Y30LB02*/
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************** @Y30LB02*/')SKIP;
-*        ANS('/*MACMEAN  MSSC VARYOFF MACRO               '××
+*        ANS('/*MACMEAN  MSSC VARYOFF MACRO               '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '××
+*        ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*THIS IS THE UNINITIALIZED LIST FORM       '××
+*        ANS('/*THIS IS THE UNINITIALIZED LIST FORM       '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************** @Y30LB02*/')SKIP;
-*        ANS('DCL 1 ' ××MF(2)××'  '××MF(3)××','××
+*        ANS('DCL 1 ' ||MF(2)||'  '||MF(3)||','||
 *        ' /*VARYOFF REQ BLOCK @Y30LB02*/')SKIP;
-*        ANS('    2  VOFLEN  FIXED(31),/*LENGTH OF'××
+*        ANS('    2  VOFLEN  FIXED(31),/*LENGTH OF'||
 *        ' REQUEST BLOCK = 18 HEX @Y30LB02*/')SKIP;
-*        ANS('    2  VOFOPCD CHAR(1), '××
+*        ANS('    2  VOFOPCD CHAR(1), '||
 *        '/*VARYOFF OPCODE = 0C HEX @Y30LB02*/')SKIP;
-*        ANS('    2  VOFRES1  CHAR(1),/*ONE '××
+*        ANS('    2  VOFRES1  CHAR(1),/*ONE '||
 *        'BYTE OF ZERO @Y30LB02*/')SKIP;
 *        ANS('    2  VOFFLG BIT(16),/*FLAGS AREA @Y30LB02*/')SKIP;
-*        ANS('     3  VOFSTAG  BIT(1), /*STAGING '××
+*        ANS('     3  VOFSTAG  BIT(1), /*STAGING '||
 *        'ATTRIBUTE @Y30LB02*/')SKIP;
-*        ANS('     3  VOFREAL  BIT(1), /*REAL '××
+*        ANS('     3  VOFREAL  BIT(1), /*REAL '||
 *        'ATTRIBUTE @Y30LB02*/')SKIP;
-*        ANS('     3  VOFNEUT  BIT(1), /*NEUTRAL '××
+*        ANS('     3  VOFNEUT  BIT(1), /*NEUTRAL '||
 *        'ATTRIBUTE @Y30LB02*/')SKIP;
-*        ANS('     3  VOFTEST  BIT(1), /*TEST '××
+*        ANS('     3  VOFTEST  BIT(1), /*TEST '||
 *        'ATTRIBUTE @Y30LB02*/')SKIP;
-*        ANS('     3  *      BIT(12),'××
+*        ANS('     3  *      BIT(12),'||
 *        ' /*TWELVE BITS RESERVED @Y30LB02*/')SKIP;
-*        ANS('    2  VOFSSID FIXED(15),'××
+*        ANS('    2  VOFSSID FIXED(15),'||
 *        ' /*SUBSYSTEM ID  @Y30LB02*/')SKIP;
-*        ANS('    2  VOFRUA  FIXED(15),'××
+*        ANS('    2  VOFRUA  FIXED(15),'||
 *        ' /*REAL UNIT ADDRESS  @Y30LB02*/')SKIP;
-*        ANS('    2  VOFHOST  CHAR(5),'××
+*        ANS('    2  VOFHOST  CHAR(5),'||
 *        '/*HOSTID AREA @Y30LB02*/')SKIP;
 *        ANS('    2  * CHAR(1) ,/*RESERVED AREA @Y30LB02*/')SKIP;
-*        ANS('    2  VOFASID  CHAR(2),'××
+*        ANS('    2  VOFASID  CHAR(2),'||
 *        '/*ASID AREA @Y30LB02*/')SKIP;
-*        ANS('    2  VOFECB  FIXED(31);'××
+*        ANS('    2  VOFECB  FIXED(31);'||
 *        ' /* EVENT CONTROL BLOCK AREA @Y30LB02*/')SKIP;
 *        GO TO FINISH;           /*BRANCH TO END             @Y30LB02*/
 */*                                                          @Y30LB02*/
@@ -724,41 +724,41 @@ VONRES2  DC    XL2'0000'           2-BYTE RESERVED AREA        @Y30LB02
 *        GO TO SFORM;         /*NO,CHECK FOR STANDARD        @Y30LB02*/
 *   IF MF(2)='' THEN          /* BLOCK NAME SPECIFIED?       @Y30LB02*/
 *     DO;                     /*YES,PRINT ERROR MESSAGE      @Y30LB02*/
-*        ANS MSG('  ICB612I - MF(2) MUST CONTAIN'××
-*                ' REQ BLK NAME IF EXEC'××
+*        ANS MSG('  ICB612I - MF(2) MUST CONTAIN'||
+*                ' REQ BLK NAME IF EXEC'||
 *                ' MACRO FORM REQUESTED')SKIP(3);          /*@Y30LB02*/
 *        RETCODE=12;          /*SET RETURN CODE TO 12        @Y30LB02*/
 *        ERSW = 1;            /*SET ERROR SWITCH             @Y30LB02*/
 *        GO TO COMPROC;       /*BRCH TO CHECK SWITCH         @Y30LB02*/
 *     END;                    /*                             @Y30LB02*/
 */*                                                          @Y30LB02*/
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************** @Y30LB02*/')SKIP;
-*        ANS('/*MACMEAN  MSSC VARYON/VARYOFF MACRO        '××
+*        ANS('/*MACMEAN  MSSC VARYON/VARYOFF MACRO        '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*VS1-4/VS2-3 VERSION-- 06/09/74 LEVEL 00   '××
+*        ANS('/*VS1-4/VS2-3 VERSION-- 06/09/74 LEVEL 00   '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*THIS IS THE OUTPUT FOR THE EXECUTE FORM.  '××
+*        ANS('/*THIS IS THE OUTPUT FOR THE EXECUTE FORM.  '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*THE LIST FORM OF THIS MACRO SHOULD BE     '××
+*        ANS('/*THE LIST FORM OF THIS MACRO SHOULD BE     '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*INVOKED FIRST IN ORDER TO SET UP NECESSARY'××
+*        ANS('/*INVOKED FIRST IN ORDER TO SET UP NECESSARY'||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*DECLARES.  IF THE COMPLETE ARGUMENT IS    '××
+*        ANS('/*DECLARES.  IF THE COMPLETE ARGUMENT IS    '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*SPECIFIED THE REQ BLOCK WILL BE ZEROED.   '××
+*        ANS('/*SPECIFIED THE REQ BLOCK WILL BE ZEROED.   '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************** @Y30LB02*/')SKIP;
 *        ANS('RFY(ICBR1)RSTD;/*RESTRICT REG 1 @Y30LB02*/')SKIP;
-*        ANS('ICBR1=ADDR('××MF(2)××'); /*R1 PTR'××
+*        ANS('ICBR1=ADDR('||MF(2)||'); /*R1 PTR'||
 *        ' TO REQUEST BLOCK @Y30LB02*/')SKIP(2);
 *   IF MF(3) = 'COMPLETE' THEN     /*COMPLETE SPECIFIED      @Y30LB02*/
 *        GO TO EXCOMP;             /*YES,BRCH TO ZERO BLK    @Y30LB02*/
 *   ELSE                           /*NO ZERO REQUESTED       @Y30LB02*/
 *        GO TO COMPROC;            /*BRANCH TO CK PARAMETERS @Y30LB02*/
 *EXCOMP:
-*        ANS(' '××MF(2)××'='××MF(2)××'&&'××MF(2)××';/*ZERO'××
+*        ANS(' '||MF(2)||'='||MF(2)||'&&'||MF(2)||';/*ZERO'||
 *        ' REQUEST BLOCK @Y30LB02*/')SKIP;
 *        GO TO COMPROC;           /*BRANCH TO CK PARAMETERS  @Y30LB02*/
 */*                                                          @Y30LB02*/
@@ -766,7 +766,7 @@ VONRES2  DC    XL2'0000'           2-BYTE RESERVED AREA        @Y30LB02
 *SFORM:
 *   IF MF(1) ^= '' THEN       /* FORM STANDARD?              @Y30LB02*/
 *     DO;                     /*PRINT OUT ERROR MESSAGE      @Y30LB02*/
-*        ANS MSG('  ICB615I - INVALID MF PARAMETER'××
+*        ANS MSG('  ICB615I - INVALID MF PARAMETER'||
 *                ' SPECIFIED, MUST BE L,E, OR NULL')SKIP;  /*@Y30LB02*/
 *        ERSW = 1;            /*SET ERROR SWITCH TO 1        @Y30LB02*/
 *        RETCODE=12;          /*SET RETURN CODE TO 12        @Y30LB02*/
@@ -777,17 +777,17 @@ VONRES2  DC    XL2'0000'           2-BYTE RESERVED AREA        @Y30LB02
 *   IF TYPE(1)='VON' THEN     /*TYPE EQUAL VARYON?           @Y30LB02*/
 *     IF VONTEST => 1 THEN    /*1ST VARYON STD FORM?         @Y30LB02*/
 *      DO;                    /*NO,DON'T PRINT DCLS          @Y30LB02*/
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************* @Y30LB02*/')SKIP;
-*        ANS('/*MACMEAN  MSSC VARYON MACRO                '××
+*        ANS('/*MACMEAN  MSSC VARYON MACRO                '||
 *            '              @Y30LB02*/')SKIP;
-*        ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '××
+*        ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '||
 *            '              @Y30LB02*/')SKIP;
-*        ANS('/*THIS IS THE OUTPUT FOR A SECONDARY        '××
+*        ANS('/*THIS IS THE OUTPUT FOR A SECONDARY        '||
 *            '              @Y30LB02*/')SKIP;
-*        ANS('/*INVOCATION OF THE STANDARD FORM MACRO     '××
+*        ANS('/*INVOCATION OF THE STANDARD FORM MACRO     '||
 *           '              @Y30LB02*/')SKIP;
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************* @Y30LB02*/')SKIP;
 *        ANS('RFY(ICBR1)RSTD;/*RESTRICT REG 1 @Y30LB02*/')SKIP;
 *        ANS('ICBR1=ADDR(VONLEN);/*PTR TO REQ BLK @Y30LB02*/')SKIP;
@@ -796,38 +796,38 @@ VONRES2  DC    XL2'0000'           2-BYTE RESERVED AREA        @Y30LB02
 */*                                                          @Y30LB02*/
 *     IF TYPE(1) = 'VON' THEN  /*TYPE EQUAL VARYON?          @Y30LB02*/
 *      DO;                     /*PUT OUT THE DCLS            @Y30LB02*/
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************* @Y30LB02*/')SKIP;
-*        ANS('/*MACMEAN  MSSC VARYON MACRO                '××
+*        ANS('/*MACMEAN  MSSC VARYON MACRO                '||
 *            '              @Y30LB02*/')SKIP;
-*        ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '××
+*        ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '||
 *            '              @Y30LB02*/')SKIP;
-*        ANS('/*THIS IS THE STANDARD FORM - VARYON MACRO  '××
+*        ANS('/*THIS IS THE STANDARD FORM - VARYON MACRO  '||
 *            '              @Y30LB02*/')SKIP;
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************* @Y30LB02*/')SKIP;
 *        ANS('RFY(ICBR1)RSTD;/*RESTRICT REG 1 @Y30LB02*/')SKIP;
 *        ANS('ICBR1=ADDR(VONLEN);/*R1 PTR TO REQ BLK @Y30LB02*/')SKIP;
-*        ANS('DCL 1  VONLST01  STATIC LOCAL,'××
+*        ANS('DCL 1  VONLST01  STATIC LOCAL,'||
 *        ' /*VARYON REQUEST BLOCK @Y30LB02*/')SKIP;
-*        ANS('    2  VONLEN  FIXED(31)INIT('××QUOTE('0C')××
+*        ANS('    2  VONLEN  FIXED(31)INIT('||QUOTE('0C')||
 *        'X),/*LENGTH OF VARYON REQ BLK @Y30LB02*/')SKIP;
-*        ANS('    2  VONOPCD CHAR(1)INIT('××QUOTE('0A')××
+*        ANS('    2  VONOPCD CHAR(1)INIT('||QUOTE('0A')||
 *        'X),/*VARYON OPCODE @Y30LB02*/')SKIP;
-*        ANS('    2  VONRES1 CHAR(1)INIT('××QUOTE('00')××
+*        ANS('    2  VONRES1 CHAR(1)INIT('||QUOTE('00')||
 *        'X), /*ONE BYTE OF ZERO @Y30LB02*/')SKIP;
-*        ANS('    2  VONFLG BIT(16)INIT('××QUOTE
-*        ('0000000000000000')××'B), /*FLAGS AREA @Y30LB02*/')SKIP;
-*        ANS('     3  VONSTAG  BIT(1), /*STAGING '××
+*        ANS('    2  VONFLG BIT(16)INIT('||QUOTE
+*        ('0000000000000000')||'B), /*FLAGS AREA @Y30LB02*/')SKIP;
+*        ANS('     3  VONSTAG  BIT(1), /*STAGING '||
 *        'ATTRIBUTE @Y30LB02*/')SKIP;
-*        ANS('     3  VONREAL  BIT(1), /*REAL '××
+*        ANS('     3  VONREAL  BIT(1), /*REAL '||
 *        'ATTRIBUTE @Y30LB02*/')SKIP;
-*        ANS('     3  *      BIT(14),'××
+*        ANS('     3  *      BIT(14),'||
 *        ' /*FOURTEEN BITS RESERVED @Y30LB02*/')SKIP;
-*        ANS('    2  VONSSID  FIXED(15) INIT(0),'××
+*        ANS('    2  VONSSID  FIXED(15) INIT(0),'||
 *        ' /*SUBSYSTEM ID  @Y30LB02*/')SKIP;
-*        ANS('    2  VONRES2  CHAR(2) INIT('××QUOTE
-*        ('0000')××'X);/*RESERVED AREA @Y30LB02*/')SKIP;
+*        ANS('    2  VONRES2  CHAR(2) INIT('||QUOTE
+*        ('0000')||'X);/*RESERVED AREA @Y30LB02*/')SKIP;
 *        VONTEST=VONTEST+1;    /*INCREMENT STD FORM CTR      @Y30LB02*/
 *        GO TO COMPROC;        /*BRANCH TO CK PARAMETERS     @Y30LB02*/
 *     END;                     /*                            @Y30LB02*/
@@ -835,17 +835,17 @@ VONRES2  DC    XL2'0000'           2-BYTE RESERVED AREA        @Y30LB02
 *   ELSE                       /*VARYOFF PROCESSING          @Y30LB02*/
 *     IF VOFTES1 => 1 THEN     /*1ST VARYOFF STD FORM?       @Y30LB02*/
 *      DO;                     /*NO,DON'T PRINT DCLS         @Y30LB02*/
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************** @Y30LB02*/')SKIP;
-*        ANS('/*MACMEAN  MSSC VARYOFF MACRO               '××
+*        ANS('/*MACMEAN  MSSC VARYOFF MACRO               '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '××
+*        ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*THIS IS THE OUTPUT FOR A SECONDARY        '××
+*        ANS('/*THIS IS THE OUTPUT FOR A SECONDARY        '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*INVOCATION OF THE STANDARD FORM MACRO     '××
+*        ANS('/*INVOCATION OF THE STANDARD FORM MACRO     '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************** @Y30LB02*/')SKIP;
 *        ANS('RFY(ICBR1)RSTD;/*RESTRICT REG 1 @Y30LB02*/')SKIP;
 *        ANS('ICBR1=ADDR(VOFLEN);/*PTR TO REQ BLK @Y30LB02*/')SKIP;
@@ -853,49 +853,49 @@ VONRES2  DC    XL2'0000'           2-BYTE RESERVED AREA        @Y30LB02
 *      END;                    /*                            @Y30LB02*/
 *     IF VOFTES1=0 THEN        /*1ST VARYOFF STD FORM        @Y30LB02*/
 *     DO;                      /*PUT OUT THE DCLS            @Y30LB02*/
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************* @Y30LB02*/')SKIP;
-*        ANS('/*MACMEAN  MSSC VARYOFF MACRO               '××
+*        ANS('/*MACMEAN  MSSC VARYOFF MACRO               '||
 *            '              @Y30LB02*/')SKIP;
-*        ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '××
+*        ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '||
 *            '              @Y30LB02*/')SKIP;
-*        ANS('/*THIS IS THE STANDARD FORM - VARYOFF MACRO '××
+*        ANS('/*THIS IS THE STANDARD FORM - VARYOFF MACRO '||
 *            '              @Y30LB02*/')SKIP;
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************* @Y30LB02*/')SKIP;
 *        ANS('RFY(ICBR1)RSTD;/*RESTRICT REG 1 @Y30LB02*/')SKIP;
 *        ANS('ICBR1=ADDR(VOFLEN);/*R1 PTR TO REQ BLK @Y30LB02*/')SKIP;
-*        ANS('DCL 1 VOFLST01  STATIC LOCAL,'××
+*        ANS('DCL 1 VOFLST01  STATIC LOCAL,'||
 *        ' /*VARYOFF REQUEST BLOCK @Y30LB02*/')SKIP;
-*        ANS('    2  VOFLEN  FIXED(31)INIT('××QUOTE('18')××
+*        ANS('    2  VOFLEN  FIXED(31)INIT('||QUOTE('18')||
 *        'X),/*LENGTH OF VOF REQ BLOCK @Y30LB02*/')SKIP;
-*        ANS('    2  VOFOPCD CHAR(1)INIT('××QUOTE('0C')××
+*        ANS('    2  VOFOPCD CHAR(1)INIT('||QUOTE('0C')||
 *        'X),/*VARYOFF OPCODE @Y30LB02*/')SKIP;
-*        ANS('    2  VOFRES1 CHAR(1)INIT('××QUOTE('00')××
+*        ANS('    2  VOFRES1 CHAR(1)INIT('||QUOTE('00')||
 *        'X), /*ONE BYTE OF ZERO @Y30LB02*/')SKIP;
-*        ANS('    2  VOFFLG BIT(16)INIT('××QUOTE
-*        ('0000000000000000')××'B), /*FLAGS AREA @Y30LB02*/')SKIP;
-*        ANS('     3  VOFSTAG  BIT(1), /*STAGING '××
+*        ANS('    2  VOFFLG BIT(16)INIT('||QUOTE
+*        ('0000000000000000')||'B), /*FLAGS AREA @Y30LB02*/')SKIP;
+*        ANS('     3  VOFSTAG  BIT(1), /*STAGING '||
 *        'ATTRIBUTE @Y30LB02*/')SKIP;
-*        ANS('     3  VOFREAL  BIT(1), /*REAL '××
+*        ANS('     3  VOFREAL  BIT(1), /*REAL '||
 *        'ATTRIBUTE @Y30LB02*/')SKIP;
-*        ANS('     3  VOFNEUT  BIT(1), /*NEUTRAL '××
+*        ANS('     3  VOFNEUT  BIT(1), /*NEUTRAL '||
 *        'ATTRIBUTE @Y30LB02*/')SKIP;
-*        ANS('     3  VOFTEST  BIT(1), /*TEST '××
+*        ANS('     3  VOFTEST  BIT(1), /*TEST '||
 *        'ATTRIBUTE @Y30LB02*/')SKIP;
-*        ANS('     3  *      BIT(12),'××
+*        ANS('     3  *      BIT(12),'||
 *        ' /*TWELVE BITS RESERVED @Y30LB02*/')SKIP;
-*        ANS('    2  VOFSSID  FIXED(15) INIT(0),'××
+*        ANS('    2  VOFSSID  FIXED(15) INIT(0),'||
 *        ' /*SUBSYSTEM ID  @Y30LB02*/')SKIP;
-*        ANS('    2  VOFRUA  FIXED(15) INIT(0),'××
+*        ANS('    2  VOFRUA  FIXED(15) INIT(0),'||
 *        ' /*REAL UNIT ADDRESS  @Y30LB02*/')SKIP;
-*        ANS('    2  VOFHOST CHAR(5) INIT('××QUOTE
-*        ('0000000000')××'X),/*HOSTID AREA @Y30LB02*/')SKIP;
-*        ANS('    2  *     CHAR(1) INIT('××QUOTE
-*        ('00')××'X),/*RESERVED AREA @Y30LB02*/')SKIP;
-*        ANS('    2  VOFASID  CHAR(2) INIT('××QUOTE
-*        ('0000')××'X),/*ASID AREA @Y30LB02*/')SKIP;
-*        ANS('    2  VOFECB  FIXED(31) INIT(0);'××
+*        ANS('    2  VOFHOST CHAR(5) INIT('||QUOTE
+*        ('0000000000')||'X),/*HOSTID AREA @Y30LB02*/')SKIP;
+*        ANS('    2  *     CHAR(1) INIT('||QUOTE
+*        ('00')||'X),/*RESERVED AREA @Y30LB02*/')SKIP;
+*        ANS('    2  VOFASID  CHAR(2) INIT('||QUOTE
+*        ('0000')||'X),/*ASID AREA @Y30LB02*/')SKIP;
+*        ANS('    2  VOFECB  FIXED(31) INIT(0);'||
 *        ' /* EVENT CONTROL BLOCK AREA @Y30LB02*/')SKIP;
 *        VOFTES1=VOFTES1+1;    /*INCREM VOF STD FORM CTR     @Y30LB02*/
 *     END;                     /*                            @Y30LB02*/
@@ -907,45 +907,45 @@ VONRES2  DC    XL2'0000'           2-BYTE RESERVED AREA        @Y30LB02
 */*                                                          @Y30LB02*/
 *   IF TYPE(1)='VON' THEN  /*VARYON REQUEST?                 @Y30LB02*/
 *    DO;                   /*PROCESS LEN AND OPCOD           @Y30LB02*/
-*     ANS('VONLEN=' ××QUOTE(VNLEN)×× 'X;'××
+*     ANS('VONLEN=' ||QUOTE(VNLEN)|| 'X;'||
 *     '  /*LENG-VARYON REQUEST BLOCK @Y30LB02*/')SKIP;
-*     ANS('VONOPCD=' ××QUOTE(VONCOD)×× 'X;/*VARYON '××
+*     ANS('VONOPCD=' ||QUOTE(VONCOD)|| 'X;/*VARYON '||
 *     ' OPCODE @Y30LB02*/')SKIP;
 *    END;                   /*                               @Y30LB02*/
 */*                                                          @Y30LB02*/
 *   ELSE                    /*PROCESS LEN AND OPC FOR VOF    @Y30LB02*/
 *    DO;                    /*                               @Y30LB02*/
-*     ANS('VOFLEN=' ××QUOTE(VFLEN)×× 'X;'××
+*     ANS('VOFLEN=' ||QUOTE(VFLEN)|| 'X;'||
 *     '  /*LENG-VARYOFF REQUEST BLOCK @Y30LB02*/')SKIP;
-*     ANS('VOFOPCD=' ××QUOTE(VOFCOD)×× 'X;/*OPCODE FOR'××
+*     ANS('VOFOPCD=' ||QUOTE(VOFCOD)|| 'X;/*OPCODE FOR'||
 *    ' VARYOFF REQ @Y30LB02*/')SKIP;
 *    END;                                                  /*@Y30LB02*/
 */*                                                          @Y30LB02*/
 *   IF TYPE(1)='VON' THEN     /*VARYON REQUEST?              @Y30LB02*/
 *    IF FLAGS ^= '' THEN      /*FLAGS SPECIFIED              @Y30LB02*/
-*     ANS('VONFLG=' ××FLAGS×× '; /*VALUE OF FLAGS @Y30LB02*/')SKIP;
+*     ANS('VONFLG=' ||FLAGS|| '; /*VALUE OF FLAGS @Y30LB02*/')SKIP;
 */*                                                          @Y30LB02*/
 *   IF TYPE(1)='VOF' THEN     /*VARYOFF SPECIFIED?           @Y30LB02*/
 *    IF FLAGS ^= '' THEN      /*FLAGS SPECIFIED?             @Y30LB02*/
-*     ANS('VOFFLG=' ××FLAGS×× '; /*VALUE OF FLAGS @Y30LB02*/')SKIP;
+*     ANS('VOFFLG=' ||FLAGS|| '; /*VALUE OF FLAGS @Y30LB02*/')SKIP;
 */*                                                          @Y30LB02*/
 *   IF SSID ^= '' THEN          /*SSID SPECIFIED?            @Y30LB02*/
 *    IF TYPE(1) = 'VON' THEN   /*VARYON SPECIFIED?           @Y30LB02*/
-*     ANS('VONSSID=' ××SSID×× '; /*VALUE OF SSID @Y30LB02*/')SKIP;
+*     ANS('VONSSID=' ||SSID|| '; /*VALUE OF SSID @Y30LB02*/')SKIP;
 */*                                                          @Y30LB02*/
 *   IF SSID ^= '' THEN          /*SSID SPECIFIED ?           @Y30LB02*/
 *    IF TYPE(1) = 'VOF' THEN    /*VARYOFF SPECIFIED?         @Y30LB02*/
-*     ANS('VOFSSID= ' ××SSID×× ';/*VALUE OF SSID @Y30LB02*/')SKIP;
+*     ANS('VOFSSID= ' ||SSID|| ';/*VALUE OF SSID @Y30LB02*/')SKIP;
 */*                                                          @Y30LB02*/
 *   IF TYPE(1) = 'VON' THEN     /*TYPE EQUAL VARYON?         @Y30LB02*/
 *     GO TO LINK;               /*BRCH TO LINK TO SVC        @Y30LB02*/
 */*                                                          @Y30LB02*/
 *   IF RUA ^= '' THEN           /*RUA SPECIFIED?             @Y30LB02*/
 *    IF TYPE(1) = 'VOF' THEN    /*TYPE EQUAL VARRYOFF?       @Y30LB02*/
-*     ANS('VOFRUA= ' ××RUA×× ';/*VALUE OF RUA @Y30LB02*/')SKIP;
+*     ANS('VOFRUA= ' ||RUA|| ';/*VALUE OF RUA @Y30LB02*/')SKIP;
 */*                                                          @Y30LB02*/
 *   IF ECB ^= ''  THEN    /*ECB SPECIFIED?                   @Y30LB02*/
-*        ANS('VOFECB=ADDR' ××ECB××';/*ADDRESS OF ECB'××
+*        ANS('VOFECB=ADDR' ||ECB||';/*ADDRESS OF ECB'||
 *        ' @Y30LB02*/')SKIP;
 */*                                                          @Y30LB02*/
 *LINK:

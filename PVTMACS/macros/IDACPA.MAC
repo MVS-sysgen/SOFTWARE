@@ -71,40 +71,40 @@
 */*                                                                  */
 */* (CPAWCPS POINTER MINUS 8)     (EXTRA CCW SLOT IF RPS DEVICE)     */
 */* CPAWCPS->                     SEEKH       CPAWSEEK,CC,6          */
-*/*                         __  × SRCH ID EQ  SA,CC,5                */
-*/*                        ×  _ × TIC         *-8                    */
-*/*                        ×    × WD          DA1,(CC,IDAL),LL       */
-*/*                        ×                                         */
-*/*                        ×    × SRCH ID EQ  SA+5,(CC,MT),5         */
-*/*                        ×   -× TIC         *-8                    */
-*/*                        ×    × WD          DA2,(CC,IDAL),LL       */
-*/*            N GROUPS  --×       .                                 */
-*/*            OF 3 CCW-S  ×       .                                 */
+*/*                         __  | SRCH ID EQ  SA,CC,5                */
+*/*                        |  _ | TIC         *-8                    */
+*/*                        |    | WD          DA1,(CC,IDAL),LL       */
+*/*                        |                                         */
+*/*                        |    | SRCH ID EQ  SA+5,(CC,MT),5         */
+*/*                        |   -| TIC         *-8                    */
+*/*                        |    | WD          DA2,(CC,IDAL),LL       */
+*/*            N GROUPS  --|       .                                 */
+*/*            OF 3 CCW-S  |       .                                 */
 */*                                .                                 */
-*/*                        ×    × SRCH ID EQ  SA+5*(N-1),(CC,MT),5   */
-*/*                        ×   -× TIC         *-8                    */
-*/*                        ×__  × WD          DA(N),(CC,IDAL),LL     */
+*/*                        |    | SRCH ID EQ  SA+5*(N-1),(CC,MT),5   */
+*/*                        |   -| TIC         *-8                    */
+*/*                        |__  | WD          DA(N),(CC,IDAL),LL     */
 */*                               NOP                                */
 */*                                                                  */
-*/*                               ×-------------------------------×  */
-*/* CPAIDAL->               DA1   ×                               ×  */
-*/*                               ×  IF LL=4K, 2*N 4 BYTE ENTRIES ×  */
-*/*  IF LL=4K,              DA2   ×                               ×  */
-*/*     DA(N)=DA(N-1)+8           ×  IF LL<4K, N 4 BYTE ENTRIES   ×  */
-*/*  IF LL<4K,              DA(N) ×                               ×  */
-*/*     DA(N)=DA(N-1)+4           ×                               ×  */
-*/*                               ×-------------------------------×  */
-*/* CPAVPL->                      ×                               ×  */
-*/*                               ×                               ×  */
-*/*                               ×                               ×  */
-*/*                               ×     SAME AS ABOVE             ×  */
-*/*                               ×                               ×  */
-*/*                               ×                               ×  */
-*/*                               ×------------------------------ ×  */
+*/*                               |-------------------------------|  */
+*/* CPAIDAL->               DA1   |                               |  */
+*/*                               |  IF LL=4K, 2*N 4 BYTE ENTRIES |  */
+*/*  IF LL=4K,              DA2   |                               |  */
+*/*     DA(N)=DA(N-1)+8           |  IF LL<4K, N 4 BYTE ENTRIES   |  */
+*/*  IF LL<4K,              DA(N) |                               |  */
+*/*     DA(N)=DA(N-1)+4           |                               |  */
+*/*                               |-------------------------------|  */
+*/* CPAVPL->                      |                               |  */
+*/*                               |                               |  */
+*/*                               |                               |  */
+*/*                               |     SAME AS ABOVE             |  */
+*/*                               |                               |  */
+*/*                               |                               |  */
+*/*                               |------------------------------ |  */
 */*                                                                  */
-*/* CPAWSID->               SA    ×-------------------------------×  */
-*/*                               ×  N 5 BYTE ENTRIES             ×  */
-*/*                               ×------------------------------ ×  */
+*/* CPAWSID->               SA    |-------------------------------|  */
+*/*                               |  N 5 BYTE ENTRIES             |  */
+*/*                               |------------------------------ |  */
 */*                                                                  */
 */*                                                                  */
 */*  BYTES REQUIRED BY CCW-S = (3*N+2(+1,IF RPS))*8                  */
@@ -131,28 +131,28 @@
 */*                                SRCH ID EQ CPARSID,CC,5           */
 */*                                TIC        *-8                    */
 */*                            --- RD         DA1,(CC,IDAL),LL       */
-*/*                           ×    RD         DA2,(CC,IDAL,MT),LL    */
-*/*            N READ         ×     .                                */
-*/*            DATA CCW-S  ---×     .                                */
-*/*                           ×     .                                */
-*/*                           ×--- RD         DA(N),(CC,IDAL,MT),LL  */
+*/*                           |    RD         DA2,(CC,IDAL,MT),LL    */
+*/*            N READ         |     .                                */
+*/*            DATA CCW-S  ---|     .                                */
+*/*                           |     .                                */
+*/*                           |--- RD         DA(N),(CC,IDAL,MT),LL  */
 */*                                NOP                               */
 */*                                                                  */
-*/*                                ×------------------------------×  */
-*/* CPAIDAL->                DA1   ×                              ×  */
-*/*                                ×  IF LL=4K, 2*N 4 BYTE ENTRIES×  */
-*/*  IF LL=4K,               DA2   ×                              ×  */
-*/*     DA(N)=DA(N-1)+8            ×  IF LL<4K, N 4 BYTE ENTRIES  ×  */
-*/*  IF LL<4K,               DA(N) ×                              ×  */
-*/*     DA(N)=DA(N-1)+4            ×                              ×  */
-*/*                                ×------------------------------×  */
-*/* CPAVPL->                       ×                              ×  */
-*/*                                ×                              ×  */
-*/*                                ×                              ×  */
-*/*                                ×    SAME AS ABOVE             ×  */
-*/*                                ×                              ×  */
-*/*                                ×                              ×  */
-*/*                                ×------------------------------×  */
+*/*                                |------------------------------|  */
+*/* CPAIDAL->                DA1   |                              |  */
+*/*                                |  IF LL=4K, 2*N 4 BYTE ENTRIES|  */
+*/*  IF LL=4K,               DA2   |                              |  */
+*/*     DA(N)=DA(N-1)+8            |  IF LL<4K, N 4 BYTE ENTRIES  |  */
+*/*  IF LL<4K,               DA(N) |                              |  */
+*/*     DA(N)=DA(N-1)+4            |                              |  */
+*/*                                |------------------------------|  */
+*/* CPAVPL->                       |                              |  */
+*/*                                |                              |  */
+*/*                                |                              |  */
+*/*                                |    SAME AS ABOVE             |  */
+*/*                                |                              |  */
+*/*                                |                              |  */
+*/*                                |------------------------------|  */
 */*                                                                  */
 */*                                                                  */
 */*  BYTES REQUIRED BY CCW-S = (N+4(+1 IF RPS))*8                    */
@@ -182,13 +182,13 @@
 */*                               NOP         ,SILI,2                */
 */*                                                                  */
 */*                                                                  */
-*/* CPAFWCNT->             FWCA1  ×-------------------------------×  */
-*/*                               ×                               ×  */
-*/*                               × N 8 BYTE ENTRIES - USED TO    ×  */
-*/*                               ×                               ×  */
-*/*                               × FORM COUNT FIELDS - CCHHRKDD  ×  */
-*/*                               ×                               ×  */
-*/*                               ×-------------------------------×  */
+*/* CPAFWCNT->             FWCA1  |-------------------------------|  */
+*/*                               |                               |  */
+*/*                               | N 8 BYTE ENTRIES - USED TO    |  */
+*/*                               |                               |  */
+*/*                               | FORM COUNT FIELDS - CCHHRKDD  |  */
+*/*                               |                               |  */
+*/*                               |-------------------------------|  */
 */*                                                                  */
 */*                                                                  */
 */* THE REST OF THE ITEMS IN THE ABOVE FORMAT WRITE CHANNEL          */
@@ -215,11 +215,11 @@
 */*                                SRCH ID EQ SA*,CC,5               */
 */*                                TIC        *-8                    */
 */*                            --- RD         DA1,(CC,NT),LL         */
-*/*                           ×    RD         DA2,(CC,NT,MT),LL      */
-*/*             N READ        ×     .                                */
-*/*             DATA CCW-S ---×     .                                */
-*/*                           ×     .                                */
-*/*                           ×--- RD         DA(N),(CC,NT,MT),LL    */
+*/*                           |    RD         DA2,(CC,NT,MT),LL      */
+*/*             N READ        |     .                                */
+*/*             DATA CCW-S ---|     .                                */
+*/*                           |     .                                */
+*/*                           |--- RD         DA(N),(CC,NT,MT),LL    */
 */*                                NOP                               */
 */*                                                                  */
 */*   *SA = CPAWCHR FOR UPDATE WRITE                                 */

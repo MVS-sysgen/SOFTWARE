@@ -127,13 +127,13 @@
 *            MARCO. THE FOLLOWING TABLE GIVES THE ORDERS     @Z40LB22
 *            AND CODES FOR EACH REQUEST.                     @Z40LB22
 *                                                            @Z40LB22
-*                REQUEST          × ORDER    × CODE          @Z40LB22
+*                REQUEST          | ORDER    | CODE          @Z40LB22
 *                --------------------------------------      @Z40LB22
-*                READ MSC WCS     × HEX'0B'  × HEX'03'       @Z40LB22
-*                READ MSC TABLES  × HEX'05'  × HEX'06'       @Z40LB22
-*                LABEL READ       × HEX'05'  × HEX'08'       @Z40LB22
-*                READ SA WCS      × HEX'05'  × HEX'10'       @Z40LB22
-*                CELL AUDIT       × HEX'07'  × N/A           @Z40LB22
+*                READ MSC WCS     | HEX'0B'  | HEX'03'       @Z40LB22
+*                READ MSC TABLES  | HEX'05'  | HEX'06'       @Z40LB22
+*                LABEL READ       | HEX'05'  | HEX'08'       @Z40LB22
+*                READ SA WCS      | HEX'05'  | HEX'10'       @Z40LB22
+*                CELL AUDIT       | HEX'07'  | N/A           @Z40LB22
 *                                                            @Z40LB22
 *02*    INVOCATION PARAMETERS                                @Z40LB22
 *       WITH THE SINGLE EXCEPTION OF THE RESERVED FIELDS,    @Z40LB22
@@ -363,7 +363,7 @@
 *   IF QUERYREG=0 THEN                 /*WAS R1 ALREADY      @Z40LB22*/
 *                                      /*DECLARED?           @Z40LB22*/
 *        DO;                           /*NO,PRT DCL FOR R1   @Z40LB22*/
-*             ANS('DCL QUERR1  REG(1) PTR; '××             /*@Z40LB22*/
+*             ANS('DCL QUERR1  REG(1) PTR; '||             /*@Z40LB22*/
 *                  '/* WILL CONTAIN BLK ADDRESS @Z40LB22*/') SKIP(1);
 *             QUERYREG=1;              /*TURN SWITCH ON      @Z40LB22*/
 *        END;                                              /*@Z40LB22*/
@@ -373,8 +373,8 @@
 *        DO;                           /*IF NOT, THEN        @Z40LB22*/
 *             ESW=1;                   /*TURN ON ESW         @Z40LB22*/
 *                                      /*AND,PRT ERROR MSG   @Z40LB22*/
-*             ANS MSG('  ICB602I - A NAME FOR THE '××
-*                  'REQUEST BLOCK MUST BE SPECIFIED '××
+*             ANS MSG('  ICB602I - A NAME FOR THE '||
+*                  'REQUEST BLOCK MUST BE SPECIFIED '||
 *                  'IN MF(2)')SKIP(5);                     /*@Z40LB22*/
 *             RETCODE=12;                                  /*@Z40LB22*/
 *        END;                                              /*@Z40LB22*/
@@ -410,8 +410,8 @@
 *   IF CTR > 0 THEN                 /*CTR GT ZERO?           @Z40LB22*/
 *      DO;                          /*YES, PRINT WARNING MSG @Z40LB22*/
 *        RETCODE = 4;               /*SET RETURN CODE TO 4   @Z40LB22*/
-*        ANS MSG('  ICB604I - WARNING-ONLY'××
-*            ' THE MF PARAMETER IS VALID FOR THE'××
+*        ANS MSG('  ICB604I - WARNING-ONLY'||
+*            ' THE MF PARAMETER IS VALID FOR THE'||
 *            ' LIST FORM  ')SKIP;
 *      END;                                                /*@Z40LB22*/
 *   IF MF(3) ^= '' THEN                /*ATTRIBUTE GIVEN?    @Z40LB22*/
@@ -420,147 +420,147 @@
 */*********************************************************  @Z40LB22*/
 */*                                                          @Z40LB22*/
 *ATTRLST:
-*   ANS('/*******************************************'××
+*   ANS('/*******************************************'||
 *       '************* @Z40LB22*/')SKIP;
-*   ANS('/*MSSC QMWCS/QLAB/QTAB/QSWCS/QCEL MACRO'××
+*   ANS('/*MSSC QMWCS/QLAB/QTAB/QSWCS/QCEL MACRO'||
 *       '             @Z40LB22*/')SKIP;
-*   ANS('/*OS/VS2 VERSION--03/21/75 LEVEL 00    '××
+*   ANS('/*OS/VS2 VERSION--03/21/75 LEVEL 00    '||
 *       '              @Z40LB22*/')SKIP;
-*   ANS('/*THIS IS THE UNINITIALIZED LIST FORM       '××
+*   ANS('/*THIS IS THE UNINITIALIZED LIST FORM       '||
 *       '              @Z40LB22*/')SKIP;
-*   ANS('/*GENERAL AREA TO BE OVERLAID BY SPECIFIC '××
+*   ANS('/*GENERAL AREA TO BE OVERLAID BY SPECIFIC '||
 *       'ORDERS        @Z40LB22*/')SKIP;
-*   ANS('/*******************************************'××
+*   ANS('/*******************************************'||
 *       '************* @Z40LB22*/')SKIP;
-*   ANS('DCL 1   '××MF(2)××' '××MF(3)××','××
+*   ANS('DCL 1   '||MF(2)||' '||MF(3)||','||
 *              '/*REQUEST BLOCK @Z40LB22*/') SKIP(1);
-*            ANS('       2  QULEN  FIXED(31),  '××
+*            ANS('       2  QULEN  FIXED(31),  '||
 *                  ' /*LENGTH = 44 BYTES @Z40LB22*/')  SKIP(1);
-*            ANS('       2  QUORD  CHAR(1),    '××
-*                  ' /*ORDER - COULD BE FOR QMWCS '××
-*                  ' (0B), QLAB (05), QTAB (05), '××
-*                  ' QSWCS (05), OR QCEL (07) '××
+*            ANS('       2  QUORD  CHAR(1),    '||
+*                  ' /*ORDER - COULD BE FOR QMWCS '||
+*                  ' (0B), QLAB (05), QTAB (05), '||
+*                  ' QSWCS (05), OR QCEL (07) '||
 *                  ' @Z40LB22*/')  SKIP(1);
-*            ANS('       2  QURES  CHAR(1),    '××
+*            ANS('       2  QURES  CHAR(1),    '||
 *                  ' /*RESERVED BITS @Z40LB22*/')  SKIP(1);
-*            ANS('       2  QUCODE BIT(8),     '××
-*                  ' /*CODE - COULD BE FOR QMWCS '××
-*                  ' (03), QLAB (08), QTAB (06), '××
+*            ANS('       2  QUCODE BIT(8),     '||
+*                  ' /*CODE - COULD BE FOR QMWCS '||
+*                  ' (03), QLAB (08), QTAB (06), '||
 *                  ' OR QSWCS (10) @Z40LB22*/') SKIP(1);
-*            ANS('        3  QULIB BIT(8),     '××
-*                  ' /*QCEL ONLY - ID OF THE MSF '××
+*            ANS('        3  QULIB BIT(8),     '||
+*                  ' /*QCEL ONLY - ID OF THE MSF '||
 *                  ' TO BE AUDITED @Z40LB22*/')  SKIP(1);
-*            ANS('       2  QUSECT  BIT(8),    '××
-*                  ' /*QMWCS AND QSWCS ONLY - THE '××
-*                  ' SECTOR OF CODE TO BE READ '××
+*            ANS('       2  QUSECT  BIT(8),    '||
+*                  ' /*QMWCS AND QSWCS ONLY - THE '||
+*                  ' SECTOR OF CODE TO BE READ '||
 *                  ' @Z40LB22*/') SKIP(1);
-*            ANS('        3  QUXADDR BIT(8),   '××
-*                  ' /*QCEL ONLY - THE START X '××
-*                  ' ADDR OF CELLS TO BE AUDITED '××
+*            ANS('        3  QUXADDR BIT(8),   '||
+*                  ' /*QCEL ONLY - THE START X '||
+*                  ' ADDR OF CELLS TO BE AUDITED '||
 *                  ' @Z40LB22*/') SKIP (1);
-*            ANS('         4  QUFLAG  BIT(8),  '××
-*                  ' /*QLAB ONLY - SET TO HEX 10, '××
-*                  ' THE LZYX OF CART IS SUPPLIED'××
+*            ANS('         4  QUFLAG  BIT(8),  '||
+*                  ' /*QLAB ONLY - SET TO HEX 10, '||
+*                  ' THE LZYX OF CART IS SUPPLIED'||
 *                  ' @Z40LB22*/') SKIP(1);
-*            ANS('          5  QURES1  CHAR(1), '××
-*                 ' /*QTAB ONLY - RESERVED BITS '××
+*            ANS('          5  QURES1  CHAR(1), '||
+*                 ' /*QTAB ONLY - RESERVED BITS '||
 *                 ' @Z40LB22*/')  SKIP (1);
-*             ANS('      2  QUPARM  CHAR(32),  '××
-*                  ' /*PARM AREA FOR ANY SPECIFIED '××
+*             ANS('      2  QUPARM  CHAR(32),  '||
+*                  ' /*PARM AREA FOR ANY SPECIFIED '||
 *                  ' @Z40LB22*/')  SKIP(1);
-*             ANS('      2  QUPTR  FIXED(31);  '××
-*                  ' /*ADDR OF A 512 BYTE DATA AREA'××
+*             ANS('      2  QUPTR  FIXED(31);  '||
+*                  ' /*ADDR OF A 512 BYTE DATA AREA'||
 *                  ' @Z40LB22*/')  SKIP(1);
  /*  READ MSC WCS (QMWCS) AND READ SA WCS (QSWCS) QUPARM AREA */
-*             ANS('DCL  1  QWPARM  DEFINED(QUPARM),'××
+*             ANS('DCL  1  QWPARM  DEFINED(QUPARM),'||
 *                  '/*MSC AND SA WCS READ @Z40LB22*/') SKIP (1);
-*             ANS('      2  QWRES1  CHAR(2),   '××
-*                  '/*MSC WCS ONLY - RESERVED BITS'××
+*             ANS('      2  QWRES1  CHAR(2),   '||
+*                  '/*MSC WCS ONLY - RESERVED BITS'||
 *                  ' @Z40LB22*/')  SKIP(1);
-*             ANS('       3  QWSSID  CHAR(2),  '××
-*                  '/*SA WCS ONLY - SUBSYSTEM  '××
+*             ANS('       3  QWSSID  CHAR(2),  '||
+*                  '/*SA WCS ONLY - SUBSYSTEM  '||
 *                  ' ID OF THE SA @Z40LB22*/')  SKIP(1);
-*             ANS('      2  QWFLAG  BIT(8),    '××
+*             ANS('      2  QWFLAG  BIT(8),    '||
 *                  ' /*READ INDICATOR @Z40LB22*/') SKIP(1);
-*             ANS('       3  QWMEM  BIT(1),    '××
-*                  ' /*BIT 0=0 READ FROM MAIN STORAGE '××
-*                  ' BIT 0=1 READ FROM EXTENDED STORAGE '××
+*             ANS('       3  QWMEM  BIT(1),    '||
+*                  ' /*BIT 0=0 READ FROM MAIN STORAGE '||
+*                  ' BIT 0=1 READ FROM EXTENDED STORAGE '||
 *                  ' @Z40LB22*/')  SKIP(1);
-*             ANS('       3  *      BIT(6), /*UNUSED '××
+*             ANS('       3  *      BIT(6), /*UNUSED '||
 *                  ' @ZA27590*/')  SKIP(1);
-*             ANS('       3  QWALTMSC BIT(1), '××
-*                  ' /*BIT 7=0 DUMP PRIMARY MSC '××
-*                  ' BIT 7=1 DUMP ALTERNATE MSC '××
+*             ANS('       3  QWALTMSC BIT(1), '||
+*                  ' /*BIT 7=0 DUMP PRIMARY MSC '||
+*                  ' BIT 7=1 DUMP ALTERNATE MSC '||
 *                  ' @ZA27590*/')  SKIP(1);
-*             ANS('      2  QWRES2  CHAR(29);   '××
+*             ANS('      2  QWRES2  CHAR(29);   '||
 *                  ' /*RESERVED BITS @Z40LB22*/') SKIP(1);
  /*  SPECIFIC QUPARM AREA FOR READ MSC TABLES (QTAB) @Z40LB22*/
-*             ANS('DCL  1  QTPARM  DEFINED(QUPARM), '××
+*             ANS('DCL  1  QTPARM  DEFINED(QUPARM), '||
 *                  '/*QTAB REQUEST BLOCK @Z40LB22*/') SKIP(1);
-*             ANS('      2  QTID  BIT(8),  '××
+*             ANS('      2  QTID  BIT(8),  '||
 *                  '/*@Z40LB22*/')  SKIP(1);
-*             ANS('       3  QTTABID  BIT(4),       '××
+*             ANS('       3  QTTABID  BIT(4),       '||
 *                  '/*TABLE ID @Z40LB22*/')  SKIP(1);
-*             ANS('      2  QTFLAG  BIT(8), /* READ CHR '××
-*                  ' BIT 3=1 BLOCK CHR SUPPLIED '××
+*             ANS('      2  QTFLAG  BIT(8), /* READ CHR '||
+*                  ' BIT 3=1 BLOCK CHR SUPPLIED '||
 *                  ' BIT 7=1 READ REQUEST @Z40LB22*/') SKIP(1);
-*             ANS('      2  QTDATA CHAR(18), /* TABLE '××
+*             ANS('      2  QTDATA CHAR(18), /* TABLE '||
 *                  ' DEPENDENT DATA @Z40LB22*/') SKIP(1);
-*             ANS('      2  QTDASCHR BIT(32), /* THE '××
-*                  ' CHR OF RECORD TO BE READ '××
+*             ANS('      2  QTDASCHR BIT(32), /* THE '||
+*                  ' CHR OF RECORD TO BE READ '||
 *                  ' ORDER @Z40LB22*/')  SKIP (1);
-*             ANS('      2  QTRES CHAR(8); /* '××
+*             ANS('      2  QTRES CHAR(8); /* '||
 *                  ' RESERVED @Z40LB22*/') SKIP(1);
  /*  SPECIFIC QUPARM AREA FOR READ LABEL (QLAB) @Z40LB22*/
-*             ANS('DCL  1  QLPARM  DEFINED(QUPARM), '××
+*             ANS('DCL  1  QLPARM  DEFINED(QUPARM), '||
 *                  '/*QLAB REQUEST BLOCK @Z40LB22*/') SKIP(1);
-*             ANS('      2  QLZYX  FIXED(15), /*THE MSF '××
-*                  ' AND CELL ADDR OF CART. TO BE READ '××
+*             ANS('      2  QLZYX  FIXED(15), /*THE MSF '||
+*                  ' AND CELL ADDR OF CART. TO BE READ '||
 *                  ' @Z40LB22*/')  SKIP(1);
-*             ANS('      2  QLRES  CHAR(30); /*RESERVED '××
+*             ANS('      2  QLRES  CHAR(30); /*RESERVED '||
 *                  ' @Z40LB22*/')  SKIP(1);
  /*  SPECIFIC QUPARM AREA FOR CELL AUDIT (QCEL) @Z40LB22*/
-*             ANS('DCL  1  QCPARM  DEFINED(QUPARM), '××
+*             ANS('DCL  1  QCPARM  DEFINED(QUPARM), '||
 *                  '/*QCEL 8 WORD BIT MAP @Z40LB22*/') SKIP(1);
-*             ANS('      2  QCMAD0Z0 BIT(32), /*WORD 1 '××
-*                  ' OF CELL ADDR TO BE TESTED '××
+*             ANS('      2  QCMAD0Z0 BIT(32), /*WORD 1 '||
+*                  ' OF CELL ADDR TO BE TESTED '||
 *                  ' @Z40LB22*/')  SKIP(1);
-*             ANS('      2  QCMAD0Z1 BIT(32), /*WORD 2 '××
-*                  ' OF CELL ADDR TO BE TESTED '××
+*             ANS('      2  QCMAD0Z1 BIT(32), /*WORD 2 '||
+*                  ' OF CELL ADDR TO BE TESTED '||
 *                  ' @Z40LB22*/')  SKIP(1);
-*             ANS('      2  QCMAD1Z0 BIT(32), /*WORD 3 '××
-*                  ' OF CELL ADDR TO BE TESTED '××
+*             ANS('      2  QCMAD1Z0 BIT(32), /*WORD 3 '||
+*                  ' OF CELL ADDR TO BE TESTED '||
 *                  ' @Z40LB22*/')  SKIP(1);
-*             ANS('      2  QCMAD1Z1 BIT(32), /*WORD 4 '××
-*                  ' OF CELL ADDR TO BE TESTED '××
+*             ANS('      2  QCMAD1Z1 BIT(32), /*WORD 4 '||
+*                  ' OF CELL ADDR TO BE TESTED '||
 *                  ' @Z40LB22*/')  SKIP(1);
-*             ANS('      2  QCMAD2Z0 BIT(32), /*WORD 5 '××
-*                  ' OF CELL ADDR TO BE TESTED '××
+*             ANS('      2  QCMAD2Z0 BIT(32), /*WORD 5 '||
+*                  ' OF CELL ADDR TO BE TESTED '||
 *                  ' @Z40LB22*/')  SKIP(1);
-*             ANS('      2  QCMAD2Z1 BIT(32), /*WORD 6 '××
-*                  ' OF CELL ADDR TO BE TESTED '××
+*             ANS('      2  QCMAD2Z1 BIT(32), /*WORD 6 '||
+*                  ' OF CELL ADDR TO BE TESTED '||
 *                  ' @Z40LB22*/')  SKIP(1);
-*             ANS('      2  QCMAD3Z0 BIT(32), /*WORD 7 '××
-*                  ' OF CELL ADDR TO BE TESTED '××
+*             ANS('      2  QCMAD3Z0 BIT(32), /*WORD 7 '||
+*                  ' OF CELL ADDR TO BE TESTED '||
 *                  ' @Z40LB22*/')  SKIP(1);
-*             ANS('      2  QCMAD3Z1 BIT(32); /*WORD 8 '××
-*                  ' OF CELL ADDR TO BE TESTED '××
+*             ANS('      2  QCMAD3Z1 BIT(32); /*WORD 8 '||
+*                  ' OF CELL ADDR TO BE TESTED '||
 *                  ' @Z40LB22*/')  SKIP(1);
 *   GO TO EXIT;
 */*                                                          @Z40LB22*/
-*   ANS('/*******************************************'××
+*   ANS('/*******************************************'||
 *       '************* @Z40LB22*/')SKIP;
-*   ANS('/*END OF DCLS TO BE PRINTED OUT FOR REQUEST '××
+*   ANS('/*END OF DCLS TO BE PRINTED OUT FOR REQUEST '||
 *       'BLOCK         @Z40LB22*/')SKIP;
-*   ANS('/*******************************************'××
+*   ANS('/*******************************************'||
 *       '************* @Z40LB22*/')SKIP;
 */*                                                          @Z40LB22*/
 */*                                                          @Z40LB22*/
-*   ANS('/*******************************************'××
+*   ANS('/*******************************************'||
 *       '************* @Z40LB22*/')SKIP;
-*   ANS('/*THE MACRO BRANCHES HERE IF EXECUTABLE FORM '××
+*   ANS('/*THE MACRO BRANCHES HERE IF EXECUTABLE FORM '||
 *       'WAS REQUESTED @Z40LB22*/')SKIP;
-*   ANS('/*******************************************'××
+*   ANS('/*******************************************'||
 *       '************* @Z40LB22*/')SKIP;
 */*                                                          @Z40LB22*/
 *EXCHECK:                                                  /*@Z40LB22*/
@@ -577,12 +577,12 @@
 *   ESW=1;                             /*TURN ON ESW         @Z40LB22*/
 *   IF TYPE(1)='' THEN                 /*IS TYPE NULL?       @Z40LB22*/
 *        DO;                           /*YES,PRT ERROR MSG   @Z40LB22*/
-*             ANS MSG('  ICB600I - TYPE'××
+*             ANS MSG('  ICB600I - TYPE'||
 *                  ' MUST BE SPECIFIED') SKIP(5);          /*@Z40LB22*/
 *        END;                                              /*@Z40LB22*/
 *   ELSE                               /*PRINT ERROR MSG     @Z40LB22*/
 *        DO;                                               /*@Z40LB22*/
-*             ANS MSG('  ICB601I - TYPE'××
+*             ANS MSG('  ICB601I - TYPE'||
 *                  ' IS INCORRECTLY SPECIFIED') SKIP(5);   /*@Z40LB22*/
 *        END;                                              /*@Z40LB22*/
 *   RETCODE=12;                                            /*@Z40LB22*/
@@ -592,7 +592,7 @@
 *             GO TO EXFORM;            /*YES, BRANCH         @Z40LB22*/
 *   ESW=1;                             /*TURN ON ESW         @Z40LB22*/
 *   DO;                                /*PRINT ERROR MSG     @Z40LB22*/
-*        ANS MSG('  ICB620I - INVALID MF PARAMETER SPECIFIED,'××
+*        ANS MSG('  ICB620I - INVALID MF PARAMETER SPECIFIED,'||
 *             ' MUST BE L OR E ') SKIP(1);                 /*@Z40LB22*/
 *   END;                                /*                   @Z40LB22*/
 *   RETCODE=12;                        /*SET RETURN CODE     @Z40LB22*/
@@ -600,185 +600,185 @@
 *EXFORM: IF MF(2)='' THEN              /*ADDRESS GIVEN?      @Z40LB22*/
 *             DO;                      /*NO,TURN ON ESW AND  @Z40LB22*/
 *                  ESW=1;              /*PRINT ERROR MSG     @Z40LB22*/
-*                  ANS MSG('  ICB612I - MF(2) MUST CONTAIN'××
-*                       ' REQ BLK NAME IF EXEC MACRO '××
+*                  ANS MSG('  ICB612I - MF(2) MUST CONTAIN'||
+*                       ' REQ BLK NAME IF EXEC MACRO '||
 *                       'FORM REQUESTED')SKIP(5);          /*@Z40LB22*/
 *                  RETCODE=12;         /*SET RETURN CODE     @Z40LB22*/
 *                  GO TO EXIT;        /*BRANCH              @Z40LB22*/
 *             END;                                         /*@Z40LB22*/
-*   ANS('/*******************************************'××
+*   ANS('/*******************************************'||
 *       '************* @Z40LB22*/')SKIP;
-*   ANS('/*MSSC ICBQUERY QSWCS/QLAB/QTAB/QSWCS QCEL  '××
+*   ANS('/*MSSC ICBQUERY QSWCS/QLAB/QTAB/QSWCS QCEL  '||
 *       'MACRO         @Z40LB22*/')SKIP;
-*   ANS('/*OS/VS2 VERSION-- 03/21/75 LEVEL 00        '××
+*   ANS('/*OS/VS2 VERSION-- 03/21/75 LEVEL 00        '||
 *       '              @Z40LB22*/')SKIP;
-*   ANS('/*THIS IS THE OUTPUT FOR THE EXECUTE FORM.  '××
+*   ANS('/*THIS IS THE OUTPUT FOR THE EXECUTE FORM.  '||
 *       '              @Z40LB22*/')SKIP;
-*   ANS('/*THE LIST FORM OF THIS MACRO SHOULD BE     '××
+*   ANS('/*THE LIST FORM OF THIS MACRO SHOULD BE     '||
 *       '              @Z40LB22*/')SKIP;
-*   ANS('/*INVOKED FIRST IN ORDER TO SET UP NECESSARY'××
+*   ANS('/*INVOKED FIRST IN ORDER TO SET UP NECESSARY'||
 *       '              @Z40LB22*/')SKIP;
-*   ANS('/*DECLARES.  IF THE COMPLETE ARGUMENT IS    '××
+*   ANS('/*DECLARES.  IF THE COMPLETE ARGUMENT IS    '||
 *       '              @Z40LB22*/')SKIP;
-*   ANS('/*SPECIFIED THE REQ BLOCK WILL BE ZEROED.   '××
+*   ANS('/*SPECIFIED THE REQ BLOCK WILL BE ZEROED.   '||
 *       '              @Z40LB22*/')SKIP;
-*   ANS('/*******************************************'××
+*   ANS('/*******************************************'||
 *       '************* @Z40LB22*/')SKIP;
 *   ANS ('RFY(QUERR1)RSTD;/*RESTRICT  R1 @Z40LB22*/')SKIP;
-*   ANS('QUERR1=ADDR('××MF(2)××
+*   ANS('QUERR1=ADDR('||MF(2)||
 *        '); /*SET QUERR1 TO REQ BLOCK @Z40LB22*/')  SKIP(1);
 *   IF MF(3) = 'COMPLETE' THEN
 *      DO;                                                 /*@Z40LB22*/
-*        ANS(' '××MF(2)××'='××MF(2)××'&&'××MF(2)××';'××    /*@Z40LB22*/
+*        ANS(' '||MF(2)||'='||MF(2)||'&&'||MF(2)||';'||    /*@Z40LB22*/
 *           '/*ZERO REQUEST BLOCK @Z40LB22*/')SKIP;
 *      END;                                                /*@Z40LB22*/
 *   IF TYPE(1)='QMWCS' THEN             /*SET LENGTH FLD=44  @Z40LB22*/
 *      DO;
-*        ANS('QULEN='××QUOTE(LENGTH)××'X; /*SET LENGTH '××
+*        ANS('QULEN='||QUOTE(LENGTH)||'X; /*SET LENGTH '||
 *            'FIELD @Z40LB22*/')SKIP(1);
-*        ANS('QUORD='××QUOTE(QMCODE)××'X; /*SET OPCODE '××
+*        ANS('QUORD='||QUOTE(QMCODE)||'X; /*SET OPCODE '||
 *            'FIELD @Z40LB22*/') SKIP(1);
-*        ANS('QUCODE='××QUOTE(QMTYPE)××'X; /*SET CODE '××
+*        ANS('QUCODE='||QUOTE(QMTYPE)||'X; /*SET CODE '||
 *            'TYPE @Z40LB22*/') SKIP(1);
 *      END;
 *   ELSE
 *         GO TO CKTAB;
 *   IF SECT ^='' THEN                  /*SECT SPECIFIED?     @Z40LB22*/
 *      DO;                                                 /*@Z40LB22*/
-*   ANS('QUSECT='××SECT××';          /*FILL IN SECTOR ID   @Z40LB22*/')
+*   ANS('QUSECT='||SECT||';          /*FILL IN SECTOR ID   @Z40LB22*/')
 *      SKIP(1);                                            /*@Z40LB22*/
 *      END;                                                /*@Z40LB22*/
 *   IF FLAGS ^='' THEN                /*FLAGS SPECIFIED?     @Z40LB22*/
 *      DO;                                                 /*@Z40LB22*/
-*   ANS('QWFLAG='××FLAGS××';       /*FILL IN FLAGS FIELD   @ZA09556*/')
+*   ANS('QWFLAG='||FLAGS||';       /*FILL IN FLAGS FIELD   @ZA09556*/')
 *      SKIP(1);                                            /*@Z40LB22*/
 *      END;                                                /*@Z40LB22*/
 *   IF DATAPTR ^='' THEN           /*DATAPTR SPECIFIED?     @Z40LB22*/
 *      DO;                                                 /*@Z40LB22*/
-*   ANS('QUPTR=ADDR'××DATAPTR××';  /*ADDR OF DATAPTR FIELD @Z40LB22*/')
+*   ANS('QUPTR=ADDR'||DATAPTR||';  /*ADDR OF DATAPTR FIELD @Z40LB22*/')
 *      SKIP(1);                                            /*@Z40LB22*/
 *      END;                                                /*@Z40LB22*/
 *    GO TO LINK;
 *CKTAB:
 *   IF TYPE(1)='QTAB' THEN             /*SET LENGTH FLD=44  @Z40LB22*/
 *      DO;
-*        ANS('QULEN='××QUOTE(LENGTH)××'X; /*SET LENGTH '××
+*        ANS('QULEN='||QUOTE(LENGTH)||'X; /*SET LENGTH '||
 *            'FIELD @Z40LB22*/')SKIP(1);
-*        ANS('QUORD='××QUOTE(QTCODE)××'X; /*SET OPCODE '××
+*        ANS('QUORD='||QUOTE(QTCODE)||'X; /*SET OPCODE '||
 *            'FIELD @Z40LB22*/') SKIP(1);
-*        ANS('QUCODE='××QUOTE(QTTYPE)××'X; /*SET CODE '××
+*        ANS('QUCODE='||QUOTE(QTTYPE)||'X; /*SET CODE '||
 *            'TYPE @Z40LB22*/') SKIP(1);
 *      END;
 *   ELSE
 *         GO TO CKLAB;
 *   IF PARMS ^='' THEN               /*PARMS SPECIFIED?      @Z40LB22*/
 *      DO;                                                 /*@Z40LB22*/
-*   ANS('QUPARM='××PARMS××';       /*FILL IN PARAMETERS    @Z40LB22*/')
+*   ANS('QUPARM='||PARMS||';       /*FILL IN PARAMETERS    @Z40LB22*/')
 *      SKIP(1);                                            /*@Z40LB22*/
 *      END;                                                /*@Z40LB22*/
 *   IF DASDCHR ^='' THEN               /*CHR SPECIFIED?      @Z40LB22*/
 *      DO;                                                 /*@Z40LB22*/
-*   ANS('QTDASCHR='××DASDCHR××';     /*FILL IN CHR         @Z40LB22*/')
+*   ANS('QTDASCHR='||DASDCHR||';     /*FILL IN CHR         @Z40LB22*/')
 *      SKIP(1);                                            /*@Z40LB22*/
 *      END;                                                /*@Z40LB22*/
 *   IF DATAPTR ^='' THEN           /*DATAPTR SPECIFIED?     @Z40LB22*/
 *      DO;                                                 /*@Z40LB22*/
-*   ANS('QUPTR=ADDR'××DATAPTR××';  /*ADDR OF DATAPTR FIELD @Z40LB22*/')
+*   ANS('QUPTR=ADDR'||DATAPTR||';  /*ADDR OF DATAPTR FIELD @Z40LB22*/')
 *      SKIP(1);                                            /*@Z40LB22*/
 *      END;                                                /*@Z40LB22*/
 *    GO TO LINK;
 *CKLAB:
 *   IF TYPE(1)='QLAB' THEN             /*INITIALIZE FIELDS  @Z40LB22*/
 *      DO;
-*        ANS('QULEN='××QUOTE(LENGTH)××'X; /*SET LENGTH '××
+*        ANS('QULEN='||QUOTE(LENGTH)||'X; /*SET LENGTH '||
 *            'FIELD @Z40LB22*/')SKIP(1);
-*        ANS('QUORD='××QUOTE(QLCODE)××'X; /*SET OPCODE '××
+*        ANS('QUORD='||QUOTE(QLCODE)||'X; /*SET OPCODE '||
 *            'FIELD @Z40LB22*/') SKIP(1);
-*        ANS('QUCODE='××QUOTE(QLTYPE)××'X; /*SET CODE '××
+*        ANS('QUCODE='||QUOTE(QLTYPE)||'X; /*SET CODE '||
 *            'TYPE @Z40LB22*/') SKIP(1);
-*        ANS('QUFLAG='××QUOTE(QLFLAG)××'X; /*SET CODE '××
+*        ANS('QUFLAG='||QUOTE(QLFLAG)||'X; /*SET CODE '||
 *            'FLAG @Z40LB22*/') SKIP(1);
 *      END;
 *   ELSE
 *         GO TO CKQSWCS;
 *   IF LZYX ^='' THEN               /*CELL ADDR SPECIFIED?   @Z40LB22*/
 *      DO;                                                 /*@Z40LB22*/
-*   ANS('QLZYX='××LZYX××';         /*FILL IN LZYX          @Z40LB22*/')
+*   ANS('QLZYX='||LZYX||';         /*FILL IN LZYX          @Z40LB22*/')
 *      SKIP(1);                                            /*@Z40LB22*/
 *      END;                                                /*@Z40LB22*/
 *   IF DATAPTR ^='' THEN           /*DATAPTR SPECIFIED?     @Z40LB22*/
 *      DO;                                                 /*@Z40LB22*/
-*   ANS('QUPTR=ADDR'××DATAPTR××';  /*ADDR OF DATAPTR FIELD @Z40LB22*/')
+*   ANS('QUPTR=ADDR'||DATAPTR||';  /*ADDR OF DATAPTR FIELD @Z40LB22*/')
 *      SKIP(1);                                            /*@Z40LB22*/
 *      END;                                                /*@Z40LB22*/
 *    GO TO LINK;
 *CKQSWCS:
 *   IF TYPE(1)='QSWCS' THEN             /*INITIALIZE FIELDS  @Z40LB22*/
 *      DO;
-*        ANS('QULEN='××QUOTE(LENGTH)××'X; /*SET LENGTH '××
+*        ANS('QULEN='||QUOTE(LENGTH)||'X; /*SET LENGTH '||
 *            'FIELD @Z40LB22*/')SKIP(1);
-*        ANS('QUORD='××QUOTE(QSCODE)××'X; /*SET OPCODE '××
+*        ANS('QUORD='||QUOTE(QSCODE)||'X; /*SET OPCODE '||
 *            'FIELD @Z40LB22*/') SKIP(1);
-*        ANS('QUCODE='××QUOTE(QSTYPE)××'X; /*SET CODE '××
+*        ANS('QUCODE='||QUOTE(QSTYPE)||'X; /*SET CODE '||
 *            'TYPE @Z40LB22*/') SKIP(1);
 *      END;
 *   ELSE
 *         GO TO CKCEL;
 *   IF SECT ^='' THEN                /*SECTOR ID SPECIFIED?  @Z40LB22*/
 *      DO;                                                 /*@Z40LB22*/
-*   ANS('QUSECT='××SECT××';       /*FILL IN SECTOR ID      @Z40LB22*/')
+*   ANS('QUSECT='||SECT||';       /*FILL IN SECTOR ID      @Z40LB22*/')
 *      SKIP(1);                                            /*@Z40LB22*/
 *      END;                                                /*@Z40LB22*/
 *   IF SSID ^='' THEN               /*SUBSYSTEM ID?          @Z40LB22*/
 *      DO;                                                 /*@Z40LB22*/
-*   ANS('QWSSID='××SSID××';        /*FILL SUBSYSTEM ID     @Z40LB22*/')
+*   ANS('QWSSID='||SSID||';        /*FILL SUBSYSTEM ID     @Z40LB22*/')
 *      SKIP(1);                                            /*@Z40LB22*/
 *      END;                                                /*@Z40LB22*/
 *   IF FLAGS ^='' THEN               /*READ INDICATOR?       @Z40LB22*/
 *      DO;                                                 /*@Z40LB22*/
-*   ANS('QWFLAG='××FLAGS××';        /*FILL IN FLAG FIELD   @ZA09556*/')
+*   ANS('QWFLAG='||FLAGS||';        /*FILL IN FLAG FIELD   @ZA09556*/')
 *      SKIP(1);                                            /*@Z40LB22*/
 *      END;                                                /*@Z40LB22*/
 *   IF DATAPTR ^='' THEN           /*DATAPTR SPECIFIED?     @Z40LB22*/
 *      DO;                                                 /*@Z40LB22*/
-*   ANS('QUPTR=ADDR'××DATAPTR××';  /*ADDR OF DATAPTR FIELD @Z40LB22*/')
+*   ANS('QUPTR=ADDR'||DATAPTR||';  /*ADDR OF DATAPTR FIELD @Z40LB22*/')
 *      SKIP(1);                                            /*@Z40LB22*/
 *      END;                                                /*@Z40LB22*/
 *    GO TO LINK;
 *CKCEL:
 *   IF TYPE(1)='QCEL' THEN              /*INITIALIZE FIELDS  @Z40LB22*/
 *      DO;
-*        ANS('QULEN='××QUOTE(LENGTH)××'X; /*SET LENGTH '××
+*        ANS('QULEN='||QUOTE(LENGTH)||'X; /*SET LENGTH '||
 *            'FIELD @Z40LB22*/')SKIP(1);
-*        ANS('QUORD='××QUOTE(QCCODE)××'X; /*SET OPCODE '××
+*        ANS('QUORD='||QUOTE(QCCODE)||'X; /*SET OPCODE '||
 *            'FIELD @Z40LB22*/') SKIP(1);
 *      END;
 *   ELSE
 *         GO TO EXIT;
 *   IF MSFID ^='' THEN                /*MSF ID SPECIFIED?    @Z40LB22*/
 *      DO;                                                 /*@Z40LB22*/
-*   ANS('QULIB='××MSFID××';       /*MSF TO BE AUDITED ID   @Z40LB22*/')
+*   ANS('QULIB='||MSFID||';       /*MSF TO BE AUDITED ID   @Z40LB22*/')
 *      SKIP(1);                                            /*@Z40LB22*/
 *      END;                                                /*@Z40LB22*/
 *   IF LOC ^='' THEN                /*START X ADDR?          @Z40LB22*/
 *      DO;                                                 /*@Z40LB22*/
-*   ANS('QUXADDR='××LOC××';        /*FILL IN X ADDR        @Z40LB22*/')
+*   ANS('QUXADDR='||LOC||';        /*FILL IN X ADDR        @Z40LB22*/')
 *      SKIP(1);                                            /*@Z40LB22*/
 *      END;                                                /*@Z40LB22*/
 *   IF CMAP ^='' THEN               /*CELL MAP SPECIFIED?    @Z40LB22*/
 *      DO;                                                 /*@Z40LB22*/
-*   ANS('QUPARM='××CMAP××';        /*FILL IN CELL BIT MAP  @Z40LB22*/')
+*   ANS('QUPARM='||CMAP||';        /*FILL IN CELL BIT MAP  @Z40LB22*/')
 *      SKIP(1);                                            /*@Z40LB22*/
 *      END;                                                /*@Z40LB22*/
 *   IF DATAPTR ^='' THEN           /*DATAPTR SPECIFIED?     @Z40LB22*/
 *      DO;                                                 /*@Z40LB22*/
-*   ANS('QUPTR=ADDR'××DATAPTR××';  /*ADDR OF DATAPTR FIELD @Z40LB22*/')
+*   ANS('QUPTR=ADDR'||DATAPTR||';  /*ADDR OF DATAPTR FIELD @Z40LB22*/')
 *      SKIP(1);                                            /*@Z40LB22*/
 *      END;                                                /*@Z40LB22*/
 *   IF ESW=1 THEN                      /*ESW ON?             @Z40LB22*/
 *        GO TO EXIT;                   /*YES, BRANCH         @Z40LB22*/
 *LINK: ANS('SVC  (126); /*ISSUE SVC INST.  @Z40LB22*/') SKIP(1);
-*      ANS ('RFY(QUERR1)UNRSTD;/*UNRESTRICT'××
+*      ANS ('RFY(QUERR1)UNRSTD;/*UNRESTRICT'||
 *           ' R1 @Z40LB22*/')SKIP;
 *EXIT: RETURN CODE(RETCODE);                               /*@Z40LB22*/
 *   %END;                                                  /*@Z40LB22*/

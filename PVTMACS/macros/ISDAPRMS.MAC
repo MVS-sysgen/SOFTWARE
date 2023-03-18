@@ -19,8 +19,8 @@
     DCL                             /* SDA CONTROL PARAMATERS@Y30LB55*/
       1 ISDAPRMS BASED(LPARMPTR),
        2 CINPUT CHAR(2),            /* (XY) = INPUT SOURCE   @Y30LB55*/
-        3 CLOGIN CHAR(1),           /* (Y×N) = LOGREC        @Y30LB55*/
-        3 CHISTIN CHAR(1),          /* (Y×N) = HISTORY       @Y30LB55*/
+        3 CLOGIN CHAR(1),           /* (Y|N) = LOGREC        @Y30LB55*/
+        3 CHISTIN CHAR(1),          /* (Y|N) = HISTORY       @Y30LB55*/
        2 CSTART CHAR(4),            /* (00YYDDDF) = START DATE
                                                              @Y30LB55*/
         3 CSTYEAR CHAR(2),          /* (00YY) = YEAR         @ZD00192*/
@@ -29,7 +29,7 @@
         3 CENDYEAR CHAR(2),         /* (00YY) = YEAR         @ZD00192*/
         3 CENDDAY  CHAR(2),         /* (DDDF) = DAY          @ZD00192*/
        2 CSUMMARY CHAR(1),          /* (X) = Y OR N          @Y30LB55*/
-       2 CTYPE CHAR(2),             /* (XX) = SA×RC×RD×CS×DA @Y30LB55*/
+       2 CTYPE CHAR(2),             /* (XX) = SA|RC|RD|CS|DA @Y30LB55*/
        2 CFSCONLY CHAR(4),          /* (FSC)=FAULT SYMPTOM CODE (HEX)
                                                              @Y30LB55*/
         3 CFSC12 CHAR(2),           /* 2 BYTE FSC FOR FMT 4 AND 5

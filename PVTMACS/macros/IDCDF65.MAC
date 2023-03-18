@@ -22,9 +22,9 @@
          /* INVOCATION - ?FUNRCD DS(DSOPT) FOR(FOROPT);              */
          /*                                                          */
          /* INPUT -                                                  */
-         /*            FUN = LOAD × ADD × GET × UPD × POS            */
-         /*            DSOPT = IN × OUT                              */
-         /*            FOROPT = NUP × UPD                            */
+         /*            FUN = LOAD | ADD | GET | UPD | POS            */
+         /*            DSOPT = IN | OUT                              */
+         /*            FOROPT = NUP | UPD                            */
          /*                                                          */
          /* OUTPUT - APPRORIATE BITS ARE SET IN WFREQ                */
          /*                                                          */
@@ -154,11 +154,11 @@
          INDEX2 = 2;
          ANS('DO;') SKIP COL(MACCOL);
          ANS('CKREQ = CKREQ && CKREQ;') SKIP COL(MACCOL+2);
-         ANS('CKRERN = '××MACLIST(1)××';') SKIP COL(MACCOL+2);
+         ANS('CKRERN = '||MACLIST(1)||';') SKIP COL(MACCOL+2);
          IF NUMBER(MACLIST) > 1
            THEN
  MVAR:       DO;
-               ANS('CKRMVAR(INDEX1) = ADDR('××MACLIST(INDEX2)××');')
+               ANS('CKRMVAR(INDEX1) = ADDR('||MACLIST(INDEX2)||');')
                  SKIP COL(MACCOL+2);
                INDEX1 = INDEX1 + 1;
                INDEX2 = INDEX2 + 1;
@@ -193,10 +193,10 @@
   MOVELONG: MACRO KEYS(TARGET,SOURCE);
          ANS('RFY (REG2,REG3,REG4,REG5) RSTD;')
                    SKIP COL(MACCOL);
-         ANS('REG2 = '××TARGET(1)××';') SKIP COL(MACCOL);
-         ANS('REG3 = '××TARGET(2)××';') SKIP COL(MACCOL);
-         ANS('REG4 = '××SOURCE(1)××';') SKIP COL(MACCOL);
-         ANS('REG5 = '××SOURCE(2)××';') SKIP COL(MACCOL);
+         ANS('REG2 = '||TARGET(1)||';') SKIP COL(MACCOL);
+         ANS('REG3 = '||TARGET(2)||';') SKIP COL(MACCOL);
+         ANS('REG4 = '||SOURCE(1)||';') SKIP COL(MACCOL);
+         ANS('REG5 = '||SOURCE(2)||';') SKIP COL(MACCOL);
          ANS('MVCL (REG2,REG4);') SKIP COL(MACCOL);
          ANS('RFY(REG2,REG3,REG4,REG5) UNRSTD;')
                    SKIP COL(MACCOL);

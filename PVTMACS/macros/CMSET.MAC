@@ -346,20 +346,20 @@
 * DCL CMT CHAR;                        /* COMMENT FOR DO-END STMTS   */
 *
 * RC=12;                               /* INITIALIZE BAD RETURN CODE */
-* CMT=' '××MACNAME××' '××MACLIST××' '××MACKEYS××
+* CMT=' '||MACNAME||' '||MACLIST||' '||MACKEYS||
 *       ' MACDATE(06/03/80)';          /* INITIALIZE MACRO COMMENT   */
 * IF MACLABEL^='' THEN                 /* LABEL ON MACRO?            */
 *   ANS(MACLABEL) COL(MACLMAR);        /* YES GENERATE LABEL         */
-* ANS('DO; '××COMMENT(CMT)) COL(MACCOL);  /* GENERATE DO AND COMMENT */
+* ANS('DO; '||COMMENT(CMT)) COL(MACCOL);  /* GENERATE DO AND COMMENT */
 * IF NUMBER(MACLIST)=0 THEN            /* TYPE SPECIFIED?            */
 *   DO;
-*     ANS MSG('AHA0013 ''MACLIST(1)'' IS REQUIRED BUT IS NOT '××
+*     ANS MSG('AHA0013 ''MACLIST(1)'' IS REQUIRED BUT IS NOT '||
 *             'SUPPLIED, NO TEXT IS GENERATED');
 *     GOTO LHA0400;
 *   END;
 * IF NUMBER(MACLIST)>1 THEN            /* MORE THAN ONE TYPE?        */
 *   DO;
-*     ANS MSG('AHA0033 ''MACLIST'' IS TOO LONG, '××
+*     ANS MSG('AHA0033 ''MACLIST'' IS TOO LONG, '||
 *             'NO TEXT IS GENERATED');
 *     GOTO LHA0400;
 *   END;
@@ -368,31 +368,31 @@
 *     IF MACLIST(1)^='SSARTO' THEN
 *       IF MACLIST(1)^='SSARBACK' THEN
 *         DO;
-*           ANS MSG('AHA0023 CMSET OPTION '''××MACLIST(1)××''' IS '××
+*           ANS MSG('AHA0023 CMSET OPTION '''||MACLIST(1)||''' IS '||
 *                   'INVALID, NO TEXT IS GENERATED') COL(MACCOL);
 *           GOTO LHA0400;
 *         END;
 * IF NUMBER(ASCB)>1 THEN               /* MORE THAN ONE ASCB?        */
 *   DO;
-*     ANS MSG('AHA0033 ''ASCB'' IS TOO LONG, '××
+*     ANS MSG('AHA0033 ''ASCB'' IS TOO LONG, '||
 *             'NO TEXT IS GENERATED');
 *     GOTO LHA0400;
 *   END;
 * IF NUMBER(XMSAVE)>1 THEN             /* MORE THAN ONE XMSAVE?      */
 *   DO;
-*     ANS MSG('AHA0033 ''XMSAVE'' IS TOO LONG, '××
+*     ANS MSG('AHA0033 ''XMSAVE'' IS TOO LONG, '||
 *             'NO TEXT IS GENERATED');
 *     GOTO LHA0400;
 *   END;
 * IF NUMBER(CHKAUTH)>1 THEN            /* MORE THAN ONE CHKAUTH?     */
 *   DO;
-*     ANS MSG('AHA0033 ''CHKAUTH'' IS TOO LONG, '××
+*     ANS MSG('AHA0033 ''CHKAUTH'' IS TOO LONG, '||
 *             'NO TEXT IS GENERATED');
 *     GOTO LHA0400;
 *   END;
 * IF NUMBER(CHKICMA)>1 THEN            /* MORE THAN ONE CHKICMA?     */
 *   DO;
-*     ANS MSG('AHA0033 ''CHKICMA'' IS TOO LONG, '××
+*     ANS MSG('AHA0033 ''CHKICMA'' IS TOO LONG, '||
 *             'NO TEXT IS GENERATED');
 *     GOTO LHA0400;
 *   END;
@@ -400,7 +400,7 @@
 *    IF MACLIST(1)^='SET' THEN         /*  CHKICMA MAY ONLY BE
 *                                      SPECIFIED ON A SET            */
 *      DO;
-*        ANS MSG('AHA0043 ''CHKICMA'' IS INVALID WITH '××MACLIST(1)××
+*        ANS MSG('AHA0043 ''CHKICMA'' IS INVALID WITH '||MACLIST(1)||
 *                ' OPTION, NO TEXT IS GENERATED');
 *        GOTO LHA0400;
 *      END;
@@ -408,14 +408,14 @@
 *   IF MACLIST(1)^='RESET' THEN        /*  CHKAUTH MAY ONLY BE
 *                                      SPECIFIED ON A RESET          */
 *      DO;
-*        ANS MSG('AHA0043 ''CHKAUTH'' IS INVALID WITH '××MACLIST(1)××
+*        ANS MSG('AHA0043 ''CHKAUTH'' IS INVALID WITH '||MACLIST(1)||
 *                ' OPTION, NO TEXT IS GENERATED');
 *        GOTO LHA0400;
 *      END;
 */********************************************************************/
 */*    GENERATE REGISTER RESPECIFY                                   */
 */********************************************************************/
-* ANS('RFY (GPR00F,GPR01F,GPR14F,GPR15F) RSTD;  /* RESTRICT '××
+* ANS('RFY (GPR00F,GPR01F,GPR14F,GPR15F) RSTD;  /* RESTRICT '||
 *     'REGISTERS USED BY CMSET */') COL(MACCOL+2);
 * IF MACLIST(1)='SET' THEN
 *   DO;
@@ -424,7 +424,7 @@
 */********************************************************************/
 *     IF NUMBER(ASCB)=0 THEN           /* ASCB REQUIRED ON SET       */
 *       DO;
-*         ANS MSG('AHA0013 ''ASCB'' KEYWORD REQUIRED WITH SET '××
+*         ANS MSG('AHA0013 ''ASCB'' KEYWORD REQUIRED WITH SET '||
 *                 'OPTION, NO TEXT IS GENERATED');
 *         GOTO LHA0300;
 *       END;
@@ -432,22 +432,22 @@
 *       IF CHKICMA(1)^='YES' THEN
 *         IF CHKICMA(1)^='NO' THEN
 *           DO;
-*             ANS MSG('AHA0043 CHKICMA MUST BE ''YES'' OR ''NO'', '××
+*             ANS MSG('AHA0043 CHKICMA MUST BE ''YES'' OR ''NO'', '||
 *                     'NO TEXT IS GENERATED');
 *             GOTO LHA0300;
 *           END;
-*     ANS('GPR01F='××ASCB(1)××'; /* PUT ASCB ADDRESS IN '××
+*     ANS('GPR01F='||ASCB(1)||'; /* PUT ASCB ADDRESS IN '||
 *         'REGISTER 1 */') COL(MACCOL+2);
 *     IF CHKICMA(1)='NO' THEN
-*         ANS('GPR01F=GPR01F&''7FFFFFFF''X; /* ICMA IS NOT TO BE '××
+*         ANS('GPR01F=GPR01F&''7FFFFFFF''X; /* ICMA IS NOT TO BE '||
 *             'CHECKED */') COL(MACCOL+2);
 *       ELSE
-*         ANS('GPR01F=GPR01F×''80000000''X; /* ICMA IS TO BE '××
+*         ANS('GPR01F=GPR01F|''80000000''X; /* ICMA IS TO BE '||
 *             'CHECKED */') COL(MACCOL+2);
 *     IF XMSAVE(1)='' THEN
 *         ANS('GPR00F=0; /* INDICATE NO XMSAVE AREA */') COL(MACCOL+2);
 *       ELSE
-*         ANS('GPR00F=ADDR('××XMSAVE(1)××'); /* PUT XMSAVE ADDRESS '××
+*         ANS('GPR00F=ADDR('||XMSAVE(1)||'); /* PUT XMSAVE ADDRESS '||
 *             'REGISTER 0  */') COL(MACCOL+2);
 *     ANS('CALL IEAVCMS1; /* CALL CMSET SET ROUTINE */') COL(MACCOL+2);
 *     GOTO LHA0200;
@@ -459,30 +459,30 @@
 */********************************************************************/
 *     IF NUMBER(XMSAVE)=0 THEN         /* XMSAVE REQUIRED FOR RESET  */
 *       DO;
-*         ANS MSG('AHA0013 ''XMSAVE'' KEYWORD REQUIRED WITH '××
+*         ANS MSG('AHA0013 ''XMSAVE'' KEYWORD REQUIRED WITH '||
 *                  'RESET OPTION, NO TEXT IS GENERATED') COL(MACCOL);
 *         GOTO LHA0300;
 *       END;
 *     IF NUMBER(CHKAUTH)=0 THEN        /* CHKAUTH REQUIRED FOR RESET */
 *       DO;
-*         ANS MSG('AHA0013 ''CHKAUTH'' KEYWORD REQUIRED WITH '××
+*         ANS MSG('AHA0013 ''CHKAUTH'' KEYWORD REQUIRED WITH '||
 *                  'RESET OPTION, NO TEXT IS GENERATED') COL(MACCOL);
 *         GOTO LHA0300;
 *       END;
 *     IF NUMBER(ASCB)^=0 THEN          /* ASCB NOT ALLOWED ON RESET  */
 *       DO;
-*         ANS MSG('AHA0023 ''ASCB'' IS INVALID WITH RESET OPTION, '××
+*         ANS MSG('AHA0023 ''ASCB'' IS INVALID WITH RESET OPTION, '||
 *                 'NO TEXT IS GENERATED') COL(MACCOL);
 *         GOTO LHA0300;
 *       END;
 *     IF CHKAUTH(1)^='YES' THEN
 *       IF CHKAUTH(1)^='NO' THEN
 *         DO;
-*           ANS MSG('AHA0043 ''CHKAUTH'' MUST BE ''YES'' '××
+*           ANS MSG('AHA0043 ''CHKAUTH'' MUST BE ''YES'' '||
 *                 'OR ''NO'', NO TEXT IS GENERATED') COL(MACCOL);
 *           GOTO LHA0300;
 *         END;
-*     ANS('GPR01F=ADDR('××XMSAVE(1)××'); /* PUT XMSAVE ADDRESS '××
+*     ANS('GPR01F=ADDR('||XMSAVE(1)||'); /* PUT XMSAVE ADDRESS '||
 *          'IN REGISTER 1  */') COL(MACCOL+2);
 *     IF CHKAUTH(1)='YES' THEN
 *       ANS('CALL IEAVCMR1; /* CALL CMSET RESET/AUTH CHECK */')
@@ -497,15 +497,15 @@
 * IF NUMBER(RELATED)=0 THEN            /* RELATED REQUIRED FOR
 *                                         SSARTO AND SSARBACK        */
 *   DO;
-*     ANS MSG('AHA0013 ''RELATED'' KEYWORD REQUIRED WITH '××
-*         MACLIST(1)××' OPTION, NO TEXT IS GENERATED') COL(MACCOL);
+*     ANS MSG('AHA0013 ''RELATED'' KEYWORD REQUIRED WITH '||
+*         MACLIST(1)||' OPTION, NO TEXT IS GENERATED') COL(MACCOL);
 *     GOTO LHA0300;
 *   END;
 * IF NUMBER(XMSAVE)^=0 THEN            /* XMSAVE NOT ALLOWED ON
 *                                         SSARTO AND SSARBACK        */
 *   DO;
-*     ANS MSG('AHA0023 ''XMSAVE'' KEYWORD IS INVALID WITH '××
-*         MACLIST(1)××' OPTION, NO TEXT IS GENERATED') COL(MACCOL);
+*     ANS MSG('AHA0023 ''XMSAVE'' KEYWORD IS INVALID WITH '||
+*         MACLIST(1)||' OPTION, NO TEXT IS GENERATED') COL(MACCOL);
 *     GOTO LHA0300;
 *   END;
 * IF MACLIST(1)='SSARTO' THEN
@@ -515,15 +515,15 @@
 */********************************************************************/
 *     IF NUMBER(ASCB)=0 THEN           /* ASCB REQUIRED FOR SSARTO   */
 *       DO;
-*         ANS MSG('AHA0013 ''ASCB'' KEYWORD REQUIRED WITH SSARTO '××
+*         ANS MSG('AHA0013 ''ASCB'' KEYWORD REQUIRED WITH SSARTO '||
 *                 'OPTION, NO TEXT IS GENERATED') COL(MACCOL);
 *         GOTO LHA0300;
 *       END;
-*     ANS('GPR01F='××ASCB(1)××'; /* PUT ASCB ADDRESS INTO '××
+*     ANS('GPR01F='||ASCB(1)||'; /* PUT ASCB ADDRESS INTO '||
 *         'REGISTER 1 */') COL(MACCOL+2);
 *     ANS('CALL IEAVCMST;  /* CALL CMSET SSARTO ROUTINE */')
 *         COL(MACCOL+2);
-*     ANS('/* REGISTER ONE NOW CONTAINS A TOKEN WHICH IS '××
+*     ANS('/* REGISTER ONE NOW CONTAINS A TOKEN WHICH IS '||
 *         'REQUIRED FOR THE CMSET SSARBACK */') COL(10);
 *     GOTO LHA0200;
 *   END;
@@ -534,11 +534,11 @@
 */********************************************************************/
 *     IF NUMBER(ASCB)^=0 THEN        /* ASCB NOT ALLOWED ON SSARBACK */
 *       DO;
-*         ANS MSG('AHA0023 ''ASCB'' KEYWORD IS INVALID WITH '××
+*         ANS MSG('AHA0023 ''ASCB'' KEYWORD IS INVALID WITH '||
 *             'SSARBACK OPTION, NO TEXT IS GENERATED') COL(MACCOL);
 *         GOTO LHA0300;
 *       END;
-*     ANS('/* REGISTER ONE MUST NOW CONTAIN THE TOKEN WHICH '××
+*     ANS('/* REGISTER ONE MUST NOW CONTAIN THE TOKEN WHICH '||
 *         'WAS RETURNED BY THE CMSET SSARTO ROUTINE */') COL(10);
 *     ANS('CALL IEAVCMSB; /* CALL CMSET SSARBACK ROUTINE */')
 *         COL(MACCOL+2);
@@ -547,17 +547,17 @@
 *LHA0200:
 * RC=0;                                /* SET GOOD RETURN CODE      */
 *LHA0300:
-* ANS('RFY (GPR00F,GPR01F,GPR14F,GPR15F) UNRSTD; '××
+* ANS('RFY (GPR00F,GPR01F,GPR14F,GPR15F) UNRSTD; '||
 *     '/* UNRESTRICT REGISTERS USED BY CMSET */') COL(MACCOL);
 * IF INDEX(EHAREGS,'00F')=0 THEN
-*   EHAREGS=EHAREGS××'00F';
+*   EHAREGS=EHAREGS||'00F';
 * IF INDEX(EHAREGS,'01F')=0 THEN
-*   EHAREGS=EHAREGS××'01F';
+*   EHAREGS=EHAREGS||'01F';
 * IF INDEX(EHAREGS,'14F')=0 THEN
-*   EHAREGS=EHAREGS××'14F';
+*   EHAREGS=EHAREGS||'14F';
 * IF INDEX(EHAREGS,'15F')=0 THEN
-*   EHAREGS=EHAREGS××'15F';
+*   EHAREGS=EHAREGS||'15F';
 *LHA0400:
-* ANS('END; '××COMMENT(CMT)) COL(MACCOL);
+* ANS('END; '||COMMENT(CMT)) COL(MACCOL);
 * RETURN CODE(RC);
 * % END CMSET;

@@ -217,7 +217,7 @@
              CONVDAYS = MAXDAYS;                           /*@Z40LB35*/
            END;                                            /*@Z40LB35*/
          ELSE
-           IF CONVYEAR < MINYEAR × CONVDAYS < MINDAYS THEN
+           IF CONVYEAR < MINYEAR | CONVDAYS < MINDAYS THEN
              DO;                                           /*@Z40LB35*/
                CONVYEAR = MINYEAR;                         /*@Z40LB35*/
                CONVDAYS = MINDAYS;                         /*@Z40LB35*/

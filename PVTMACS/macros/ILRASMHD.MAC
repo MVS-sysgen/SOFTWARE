@@ -125,7 +125,7 @@ ASHLGEQ     DS          A             ADDRESS OF FIRST LGE IN QUEUE
 *  1 ASMHD BASED(ASMHDPTR) BDY(WORD), /* ASM HEADER                  */
 *          %GOTO ASHPLS2;             /* SKIP LEVEL 2 DECLARE        */
 *%ASHPLS1:
-*     ASHNUM = ASHLEVEL ×× ' ASMHD BDY(WORD),'; /* SET MINOR LEVEL   */
+*     ASHNUM = ASHLEVEL || ' ASMHD BDY(WORD),'; /* SET MINOR LEVEL   */
 *     ASHNUM                          /* STRUCTURE                   */
 *%ASHPLS2:;
 *    4 ASHFLAG1 BIT(8),               /* I/O CONTROL FLAGS           */

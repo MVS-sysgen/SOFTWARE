@@ -38,7 +38,7 @@
 *          %THEN %GOTO SPCTPLS1;    /* THEN SKIP DCL                 */
 *DCL 1 SPCT BASED (SPCTPTR)         /* DECLARE SPCT LEVEL 1          */
 *        %GO TO SPCTPLS2;           /* AND SKIP LEVEL TWO DCL        */
-*%SPCTPLS1: SPCTDUM=SPCTLEVL ××' SPCT'; /* SET LEVEL FOR MINOR       */
+*%SPCTPLS1: SPCTDUM=SPCTLEVL ||' SPCT'; /* SET LEVEL FOR MINOR       */
 *    SPCTDUM                        /* MINOR STRUCTURE NAME PARM     */
 *%SPCTPLS2:;
 *        BDY(WORD),

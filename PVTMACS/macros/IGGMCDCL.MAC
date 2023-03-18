@@ -349,36 +349,36 @@
      DCL IGGBASE2 EXT;              /* SECONDARY BASE REG    @ZA29164*/
      DCL (XMODTBL,XMODTBLB,WARG) CHAR;  /* WORK VARIABLES    @Y30SSPJ*/
      DCL (HIT1,HIT2) FIXED;         /* WORK VARIABLES        @Y30SSPJ*/
-     XMODTBL='-SLEN-SLIV-AA;-ACDV-AB;-MCO-AC;-MCO2-TINQ'×× /*@Y30SSPJ*/
-  '-TIDQ-RAOP-AD;-DCME-MEBM-AE;-DELC-EMSG-EMIO-AF;-IORA'×× /*@Y30SSPJ*/
-       '-ISCI-PUPC-PDE-PDEC-PAD-PADC-AOCI-AXCI-RCCR'    ×× /*@Y30SSPJ*/
-       '-CCCR-XIO-AG;-SCAT-QNQC-AH;-FDSP-DFM1-AI;-DBDI' ×× /*@Y30SSPJ*/
-       '-AJ;-DCMB-AK;-DTIM-DEF-AL;-DBVC-SLOC-SLEI-SLEL' ×× /*@Y30SSPJ*/
-  '-AM;-DRDA-DSCB-DCCE-PSEM-AN;-DEFB-DEFX-AO;-DCDA-AP;' ×× /*@Y30SSPJ*/
-  '-DEFS-AQ;-SALL-AR;-DCRC-DEFC-AS;-CDVR-ARFS-AT;-SALS' ×× /*@Y30SSPJ*/
-       '-AU;-MOD-UPD-DEL2-SGOP-AV;-ADGO-GNEX-GREL-IGOP' ×× /*@Y30SSPJ*/
-       '-PREC-AW;-ALT2-EXPD-SHNK-MGO-DGO-DGOP-AX;-SCNC' ×× /*@Y30SSPJ*/
-       '-AY;-EXT-LOC-AZ;-GLOC-GDGL-A2;-SC2-GRE-RPLM'    ×× /*@Y30SSPJ*/
-       '-RPLF-A3;-DGDS-ERUG-A4;-DELX-DALL-DELB'         ×× /*@Y30SSPJ*/
-     '-A5;-DFS2-BJFB-CBPT-CRTC-A6;-VMSC-DEMV-DVMV-DUSC' ×× /*@Y30SSDW*/
+     XMODTBL='-SLEN-SLIV-AA;-ACDV-AB;-MCO-AC;-MCO2-TINQ'|| /*@Y30SSPJ*/
+  '-TIDQ-RAOP-AD;-DCME-MEBM-AE;-DELC-EMSG-EMIO-AF;-IORA'|| /*@Y30SSPJ*/
+       '-ISCI-PUPC-PDE-PDEC-PAD-PADC-AOCI-AXCI-RCCR'    || /*@Y30SSPJ*/
+       '-CCCR-XIO-AG;-SCAT-QNQC-AH;-FDSP-DFM1-AI;-DBDI' || /*@Y30SSPJ*/
+       '-AJ;-DCMB-AK;-DTIM-DEF-AL;-DBVC-SLOC-SLEI-SLEL' || /*@Y30SSPJ*/
+  '-AM;-DRDA-DSCB-DCCE-PSEM-AN;-DEFB-DEFX-AO;-DCDA-AP;' || /*@Y30SSPJ*/
+  '-DEFS-AQ;-SALL-AR;-DCRC-DEFC-AS;-CDVR-ARFS-AT;-SALS' || /*@Y30SSPJ*/
+       '-AU;-MOD-UPD-DEL2-SGOP-AV;-ADGO-GNEX-GREL-IGOP' || /*@Y30SSPJ*/
+       '-PREC-AW;-ALT2-EXPD-SHNK-MGO-DGO-DGOP-AX;-SCNC' || /*@Y30SSPJ*/
+       '-AY;-EXT-LOC-AZ;-GLOC-GDGL-A2;-SC2-GRE-RPLM'    || /*@Y30SSPJ*/
+       '-RPLF-A3;-DGDS-ERUG-A4;-DELX-DALL-DELB'         || /*@Y30SSPJ*/
+     '-A5;-DFS2-BJFB-CBPT-CRTC-A6;-VMSC-DEMV-DVMV-DUSC' || /*@Y30SSDW*/
        '-MCRA-DF4T-A7;-DFRS-A8;-CMRR-CCBC-A9;' ;           /*@Y30SSPJ*/
-     XMODTBLB='-TSTS-GVAL-GREC-BA;-UPDE-BB;-INIT-SVOL'  ×× /*@Y30SSPJ*/
-       '-BC;-ALT-BD;-ALVL-ALEC-ANVV-BE;-SSCR-BF;-DEL'   ×× /*@Y30SSPJ*/
-       '-DOPN-DEXA-DLXT-BG;-DEFA-DAVO-BH;-GET-GETC-TNXO'×× /*@Y30SSPJ*/
-       '-UCRS-TXO-BI;-GDSP-BJ;-LSP-LDCS-BK;-DELS-DUCB'  ×× /*@Y30SSPJ*/
-       '-DLVM-DLET-BL;-CKAU-BM;-ALVR-VRD-ALMD-ALSV-BN;' ×× /*@Y30SSPJ*/
-       '-RAPA-RAPU-RAG-RAPD-RARC-XRIO-RASC-BO;-SPAC-RET1'××/*@Y30SSPJ*/
-       '-BP;-LSTC-BQ;-BMR-BR;-XVAL-XEXT-BS;-XMOD-XLT2'  ×× /*@Y30SSPJ*/
-       '-XEL2-XDGO-BT;-F4RD-F4WR-F4DQ-BU;-SMFA-SMFF-SMFS'××/*@Y30SSPJ*/
-       '-SMFL-SMFR-SMFZ-BV;-DEIN-BW;-DSPC-BX;-DRSP-BY;' ×× /*@Y30SSPJ*/
-       '-CONV-GALO-VALI-BZ;'                            ×× /*@Y30SSSG*/
-       '-DCNV-ITER-CMKY-DPBI-DCCO-FPDA-B0;'             ×× /*@Y30SSSG*/
-       '-UADD-UDEL-B1;-AUPG-B2;'                        ×× /*@Y30SSDW*/
-       '-SMF-SMFG-B3;-DCRA-B4;-DEAX-DIAX-DEPT-DIPT'     ×× /*@Y30SSDW*/
-       '-DCLS-DUPG-B5;-WTSO-SPSC-INMD-B6;-RUS-B7;-DFBO' ×× /*@Y30SSPJ*/
-       '-DUND-CNBO-B8;-PAIX-PATH-B9;'                   ×× /*@Y30SSDW*/
+     XMODTBLB='-TSTS-GVAL-GREC-BA;-UPDE-BB;-INIT-SVOL'  || /*@Y30SSPJ*/
+       '-BC;-ALT-BD;-ALVL-ALEC-ANVV-BE;-SSCR-BF;-DEL'   || /*@Y30SSPJ*/
+       '-DOPN-DEXA-DLXT-BG;-DEFA-DAVO-BH;-GET-GETC-TNXO'|| /*@Y30SSPJ*/
+       '-UCRS-TXO-BI;-GDSP-BJ;-LSP-LDCS-BK;-DELS-DUCB'  || /*@Y30SSPJ*/
+       '-DLVM-DLET-BL;-CKAU-BM;-ALVR-VRD-ALMD-ALSV-BN;' || /*@Y30SSPJ*/
+       '-RAPA-RAPU-RAG-RAPD-RARC-XRIO-RASC-BO;-SPAC-RET1'||/*@Y30SSPJ*/
+       '-BP;-LSTC-BQ;-BMR-BR;-XVAL-XEXT-BS;-XMOD-XLT2'  || /*@Y30SSPJ*/
+       '-XEL2-XDGO-BT;-F4RD-F4WR-F4DQ-BU;-SMFA-SMFF-SMFS'||/*@Y30SSPJ*/
+       '-SMFL-SMFR-SMFZ-BV;-DEIN-BW;-DSPC-BX;-DRSP-BY;' || /*@Y30SSPJ*/
+       '-CONV-GALO-VALI-BZ;'                            || /*@Y30SSSG*/
+       '-DCNV-ITER-CMKY-DPBI-DCCO-FPDA-B0;'             || /*@Y30SSSG*/
+       '-UADD-UDEL-B1;-AUPG-B2;'                        || /*@Y30SSDW*/
+       '-SMF-SMFG-B3;-DCRA-B4;-DEAX-DIAX-DEPT-DIPT'     || /*@Y30SSDW*/
+       '-DCLS-DUPG-B5;-WTSO-SPSC-INMD-B6;-RUS-B7;-DFBO' || /*@Y30SSPJ*/
+       '-DUND-CNBO-B8;-PAIX-PATH-B9;'                   || /*@Y30SSDW*/
        '-RAPV-MODI-WCRA-WCAT-DA;' ;                        /*@Y30SSDW*/
-     WARG='-'××MACLIST(1)××'-';     /* SEARCH AGUMENT        @Y30SSPJ*/
+     WARG='-'||MACLIST(1)||'-';     /* SEARCH AGUMENT        @Y30SSPJ*/
      HIT1=INDEX(XMODTBL,WARG);      /* SEARCH TABLE A        @Y30SSPJ*/
      IF HIT1=0 THEN                 /* NAME FOUND TABLE A?   @Y30SSPJ*/
        DO;                          /* NO-NOT FOUND IN TBL A @Y30SSPJ*/
@@ -394,25 +394,25 @@
            DO;                                             /*@Y30SSPJ*/
              ANS ('/') SKIP COL(MACCOL);                   /*@Y30SSPJ*/
              ANS ('*') COL(MACCOL+1);                      /*@Y30SSPJ*/
-             ANS(' CALL TO MODULE IGG0CL' ××               /*@Y30SSPJ*/
-                       XMODTBL(HIT2-2:HIT2-1) ×× ' ')
+             ANS(' CALL TO MODULE IGG0CL' ||               /*@Y30SSPJ*/
+                       XMODTBL(HIT2-2:HIT2-1) || ' ')
                          COL(MACCOL+2);                    /*@Y30SSPJ*/
              ANS('*') COL(70);      /*GENERATE COMMENT       @Y30SSPJ*/
              ANS('/') COL(71);      /*GENERATE COMMENT       @Y30SSPJ*/
            END;                                            /*@Y30SSPJ*/
          ELSE;                                             /*@Y30SSPJ*/
        END;                             /*                   @Y30SSPJ*/
-     ANS ('Z' ×× MACINDEX(2:4) ×× MACLIST(1) ×× ':') SKIP COL(2);
+     ANS ('Z' || MACINDEX(2:4) || MACLIST(1) || ':') SKIP COL(2);
      IF IGGBASE2 ^= '' THEN         /* BASE REG 2 SPECIFIED? @ZA29164*/
        DO;                          /* YES                   @ZA29164*/
          ANS('DO;') COL(MACCOL);    /*                       @ZA29164*/
-         ANS('CALL IGGP'××MACLIST(1)××';') COL(MACCOL+2);/*  @ZA29164*/
-         ANS('GEN(RLDSBREG IGGP'××MACLIST(1)××');') COL(MACCOL+2);
+         ANS('CALL IGGP'||MACLIST(1)||';') COL(MACCOL+2);/*  @ZA29164*/
+         ANS('GEN(RLDSBREG IGGP'||MACLIST(1)||');') COL(MACCOL+2);
          ANS('/* RELOAD SECONDARY BASE REG */') COL(37);/*   @ZA29164*/
          ANS('END;') COL(MACCOL);   /*                       @ZA29164*/
        END;                         /*                       @ZA29164*/
      ELSE                           /* NO BASE REG 2         @ZA29164*/
-       ANS ('CALL IGGP' ×× MACLIST(1) ×× ';') COL(MACCOL); /*@Y30SSPJ*/
+       ANS ('CALL IGGP' || MACLIST(1) || ';') COL(MACCOL); /*@Y30SSPJ*/
      ANS (' ') SKIP COL(MACCOL+LENGTH(MACLIST)+7);         /*@Y30SSPJ*/
  % END ;
  % CATPROB:                         /* PROBLEM DETERMINATION @Y30SSPJ*/
@@ -423,17 +423,17 @@
      DCL (HIT1,HIT2,RCODE) FIXED;   /* WORK VARIABLES        @Y30SSPJ*/
      RCODE = 0;                     /* INTERNAL RETURN CODE  @Y30SSPJ*/
      RNUM = '0,1,2,3,4,5,6,7,8,9,'; /* NUMERIC SEARCH TABLE  @Y30SSPJ*/
-     RSNTBL = '0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,'××
-              '30,32,34,36,38,40,42,44,46,48,50,52,54,' ××
-              '56,58,60,62,64,66,68,70,72,74,76,78,80,' ××
-              '82,84,86,88,90,92,94,96,98,100,102,104,' ××
-              '106,108,110,112,114,116,118,120,122,124,'××
+     RSNTBL = '0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,'||
+              '30,32,34,36,38,40,42,44,46,48,50,52,54,' ||
+              '56,58,60,62,64,66,68,70,72,74,76,78,80,' ||
+              '82,84,86,88,90,92,94,96,98,100,102,104,' ||
+              '106,108,110,112,114,116,118,120,122,124,'||
               '126,' ;              /* REASON SEARCH TABLE   @Y30SSPJ*/
      IF MODID(1) = '*' THEN         /* MODULE ID ONLY?       @Y30SSPJ*/
        DO;                          /* YES-MODULE ID ONLY    @Y30SSPJ*/
          ANS('/') SKIP COL(MACCOL);                        /*@Y30SSPJ*/
          ANS('*') COL(MACCOL+1);                           /*@Y30SSPJ*/
-         ANS(' SET CCAMODID=' ×× IGGMODID ××
+         ANS(' SET CCAMODID=' || IGGMODID ||
           ', CCAREASN=RSN0, CCARETRN=RCS ' ) COL(MACCOL+2);/*@Y30SSPJ*/
          ANS('*') COL(70);                                 /*@Y30SSPJ*/
          ANS('/') COL(71);                                 /*@Y30SSPJ*/
@@ -452,15 +452,15 @@
      IF REASON ^= '' THEN           /*REASON SPECIFIED?      @Y30SSPJ*/
        IF REASON(1:1) ^= '(' THEN   /*YES-IS IT IN A FIELD?  @Y30SSPJ*/
          DO;                        /*NO-NOT IN A FIELD      @Y30SSPJ*/
-           CARG = REASON(1:1)××','; /*FORM SEARCH ARGUMENT   @Y30SSPJ*/
+           CARG = REASON(1:1)||','; /*FORM SEARCH ARGUMENT   @Y30SSPJ*/
            HIT1 = INDEX(RNUM,CARG); /*SEARCH FOR NUMERIC     @Y30SSPJ*/
            IF HIT1 = 0 THEN         /*1ST CHAR NUMERIC?      @Y30SSPJ*/
              DO;                    /*NO-INVALID SPECIFIED   @Y30SSPJ*/
                RCODE = 12;          /*SET RETURN CODE        @Y30SSPJ*/
-               ERRCOM = '   ***ERROR***   RCD(' ×× REASON ××
+               ERRCOM = '   ***ERROR***   RCD(' || REASON ||
                  ') IS NOT AN VALID NUMERIC REASON CODE.'; /*@Y30SSPJ*/
                ANS(COMMENT(ERRCOM)) SKIP COL(2);           /*@Y30SSPJ*/
-               REASON = '(' ×× REASON ×× ')';              /*@Y30SSPJ*/
+               REASON = '(' || REASON || ')';              /*@Y30SSPJ*/
                GO TO BV;            /*BYPASS FURTHER TESTS   @Y30SSPJ*/
              END;                                          /*@Y30SSPJ*/
            ELSE;                                           /*@Y30SSPJ*/
@@ -470,19 +470,19 @@
                GO TO BU;            /*NO-LOOP TIL DONE       @Y30SSPJ*/
              ELSE;                                         /*@Y30SSPJ*/
            ELSE;                                           /*@Y30SSPJ*/
-           CARG = REASON(HIT2:LENGTH(REASON)) ×× ',';      /*@Y30SSPJ*/
+           CARG = REASON(HIT2:LENGTH(REASON)) || ',';      /*@Y30SSPJ*/
            HIT1 = INDEX(RSNTBL,CARG); /*SEARCH FOR REASON    @Y30SSPJ*/
            IF HIT1 = 0 THEN         /*VALID REASON CODE?     @Y30SSPJ*/
              DO;                    /*NO-NONE FOUND          @Y30SSPJ*/
                RCODE = 12;          /*SET RETURN CODE        @Y30SSPJ*/
-               ERRCOM = '   ***ERROR***   RCD(' ×× REASON ××
+               ERRCOM = '   ***ERROR***   RCD(' || REASON ||
                  ') IS NOT A VALID REASON CODE.';          /*@Y30SSPJ*/
                ANS(COMMENT(ERRCOM)) SKIP COL(2);           /*@Y30SSPJ*/
-               REASON = '(' ×× REASON ×× ')';              /*@Y30SSPJ*/
+               REASON = '(' || REASON || ')';              /*@Y30SSPJ*/
                GO TO BV;            /*SKIP FURTHER TESTS     @Y30SSPJ*/
              END;                                          /*@Y30SSPJ*/
            ELSE;                                           /*@Y30SSPJ*/
-           REASON = 'RSN'××REASON(HIT2:LENGTH(REASON));    /*@Y30SSPJ*/
+           REASON = 'RSN'||REASON(HIT2:LENGTH(REASON));    /*@Y30SSPJ*/
          END;                                              /*@Y30SSPJ*/
        ELSE;                                               /*@Y30SSPJ*/
      ELSE                           /*NO-NO REASON CODE      @Y30SSPJ*/
@@ -501,12 +501,12 @@
              DO;                    /*YES-ALL TRUE           @Y30SSPJ*/
                ANS('/') SKIP COL(MACCOL);                  /*@Y30SSPJ*/
                ANS('*') COL(MACCOL+1);                     /*@Y30SSPJ*/
-               ANS(' SET CCAMODID=' ×× IGGMODID ××
-                 ', CCAREASN=' ×× REASON ×× ', CCARETRN='××
+               ANS(' SET CCAMODID=' || IGGMODID ||
+                 ', CCAREASN=' || REASON || ', CCARETRN='||
                  ERROR ) COL(MACCOL+2);                    /*@Y30SSPJ*/
                ANS('*') COL(70);                           /*@Y30SSPJ*/
                ANS('/') COL(71);                           /*@Y30SSPJ*/
-               ANS('CCAPROB=IGGSEGID+('××REASON××'*K256)+'××ERROR××';')
+               ANS('CCAPROB=IGGSEGID+('||REASON||'*K256)+'||ERROR||';')
                   COL(MACCOL);                             /*@Y30SSPJ*/
                ANS(' ') COL(MACCOL+LENGTH(MACKEYS)+8);     /*@Y30SSPJ*/
                RETURN CODE(RCODE);  /* RETURN                @Y30SSPJ*/
@@ -531,7 +531,7 @@
      ANS('DO;') COL(MACCOL);                               /*@Y30SSPJ*/
      IF MODID(1) ^= 'NO' THEN       /*MODID NOT NO?          @Y30SSPJ*/
        DO;                          /*YES-GENERATE MODULE ID @Y30SSPJ*/
-         ANS('CCAMODID='××IGGMODID××';')SKIP COL(MACCOL+2);/*@Y30SSPJ*/
+         ANS('CCAMODID='||IGGMODID||';')SKIP COL(MACCOL+2);/*@Y30SSPJ*/
          ANS(COMMENT('SET MODULE ID')) COL(MACCOL+17);     /*@Y30SSPJ*/
        END;                                                /*@Y30SSPJ*/
      ELSE;                                                 /*@Y30SSPJ*/
@@ -540,13 +540,13 @@
          IF REASON(1:1) = '(' THEN  /*REASON IN A FIELD/REG? @Y30SSPJ*/
            REASON=REASON(2:LENGTH(REASON)-1);/*YES-DEL PAREN @Y30SSPJ*/
          ELSE;                                             /*@Y30SSPJ*/
-         ANS('CCAREASN='××REASON××';') SKIP COL(MACCOL+2); /*@Y30SSPJ*/
+         ANS('CCAREASN='||REASON||';') SKIP COL(MACCOL+2); /*@Y30SSPJ*/
          ANS(COMMENT('SET REASON CODE')) COL(MACCOL+LENGTH(REASON)+13);
        END;                                                /*@Y30SSPJ*/
      ELSE;                                                 /*@Y30SSPJ*/
      IF ERROR ^= '' THEN            /*ERROR NOT NULL?        @Y30SSPJ*/
        DO;                          /*YES-GENERATE ERROR     @Y30SSPJ*/
-         ANS('CCARETRN='××ERROR××';') COL(MACCOL+2);       /*@Y30SSPJ*/
+         ANS('CCARETRN='||ERROR||';') COL(MACCOL+2);       /*@Y30SSPJ*/
          ANS(COMMENT('SET RETURN CODE')) COL(MACCOL+LENGTH(ERROR)+13);
        END;                                                /*@Y30SSPJ*/
      ELSE;                                                 /*@Y30SSPJ*/
@@ -609,7 +609,7 @@
              THEN GOTO IOIM ;
            IOI1 = RAB(1) ;
            IF LENGTH(IOI1) = 1
-             THEN IOI1 = 'CCARAB' ×× RAB(1) ;
+             THEN IOI1 = 'CCARAB' || RAB(1) ;
      ANS ('CCAURAB = ADDR( IOI1 ) ; /*SET RAB PTR*/')
              SKIP RESCAN COL(MACCOL) ;
  IOIM:
@@ -671,7 +671,7 @@
                                         /*GEN SPILL,PUSH,TRK   Y02020*/
                ANS ('/') SKIP COL(MACCOL);                /* @Y30SSDW*/
                ANS ('*') COL(MACCOL+1);                   /* @Y30SSDW*/
-               ANS (' RELEASE MAIN STORAGE FROM ' ×× POOLTYPE)
+               ANS (' RELEASE MAIN STORAGE FROM ' || POOLTYPE)
                    COL(MACCOL+3);                         /* @Y30SSDW*/
                ANS ('*') COL(70);                         /* @Y30SSDW*/
                ANS ('/') COL(71);                         /* @Y30SSDW*/
@@ -682,7 +682,7 @@
              DO;
                ANS ('/') SKIP COL(MACCOL);                /* @Y30SSDW*/
                ANS ('*') COL(MACCOL+1);                   /* @Y30SSDW*/
-               ANS (' ALLOCATE MAIN STORAGE FROM ' ×× POOLTYPE)
+               ANS (' ALLOCATE MAIN STORAGE FROM ' || POOLTYPE)
                    COL(MACCOL+3);                         /* @Y30SSDW*/
                ANS ('*') COL(70);                         /* @Y30SSDW*/
                ANS ('/') COL(71);                         /* @Y30SSDW*/
@@ -722,7 +722,7 @@
          DCL (STADD,EDADD) CHAR;
          STADD=START(1);
          EDADD=LENG(1);
- CKN1:   VALC2 = 'V1' ×× MACINDEX;
+ CKN1:   VALC2 = 'V1' || MACINDEX;
          ANS('RFY (R7,R8,R9,R10,R13,R14,R15) RESTRICTED;')  /* Y02020*/
                SKIP COL(MACCOL);                            /* Y02020*/
          ANS('R7=R4;') SKIP COL(MACCOL);                    /* Y02020*/
@@ -756,12 +756,12 @@
          ANS('/* INVOKE VALIDITY CHK RTN */') COL(41);      /* Y02020*/
          ANS('R2=R13;') SKIP COL(MACCOL);                   /* Y02020*/
          ANS('RFY (R1) UNRESTRICTED;') SKIP COL(MACCOL);    /* Y02020*/
-         ANS('BC (8,VL'××MACINDEX××');') SKIP COL(MACCOL);  /* Y02020*/
+         ANS('BC (8,VL'||MACINDEX||');') SKIP COL(MACCOL);  /* Y02020*/
          ANS('/* SKIP IF AREA VALID */') COL(41);           /* Y02020*/
          ANS('?CATPROB ECD(RCBLKVCK) RCD(2);') SKIP COL(MACCOL);
                                         /*USE PROB DET MACRO @Y30SSPJ*/
          ANS('/* SET RETURN CODE */') COL(41);              /* Y02020*/
-         ANS('VL'××MACINDEX××':') SKIP COL(MACCOL);         /* Y02020*/
+         ANS('VL'||MACINDEX||':') SKIP COL(MACCOL);         /* Y02020*/
          ANS('RFY (R14,R15) RESTRICTED;') SKIP COL(MACCOL); /* Y02020*/
          ANS('GEN REFS(PSALITA,FLC)                         /* Y02020*/
                SETS(R11,R12,R13,R14,R15)                    /* Y02020*/
@@ -793,8 +793,8 @@
            IF R(1)^='' THEN
              DO;
                ANS ('/****************************/') SKIP COL(41);
-               ANS ('/' ×× '*' ×× R(1) ) SKIP COL(41);
-               ANS ('*' ×× '/') COL(69);
+               ANS ('/' || '*' || R(1) ) SKIP COL(41);
+               ANS ('*' || '/') COL(69);
                ANS ('/****************************/') SKIP COL(41);
              END;
            ANS ('DO;') SKIP COL(MACCOL);
@@ -802,14 +802,14 @@
              GOTO CB;
            IF TYPE(1) ^= '*' THEN
              DO;
-               ANS ('CCACD1='×× TYPE(1) ××';') SKIP COL(MACCOL+2);
+               ANS ('CCACD1='|| TYPE(1) ||';') SKIP COL(MACCOL+2);
                ANS ('/*STORE ERROR TYPE CODE     */') COL(41);
              END;
  CB:       IF REASON(1) = '' THEN
              GOTO CC;
            IF REASON(1) ^= '*' THEN
              DO;
-               ANS ('CCACD2='×× REASON(1) ××';') SKIP COL(MACCOL+2);
+               ANS ('CCACD2='|| REASON(1) ||';') SKIP COL(MACCOL+2);
                ANS ('/* STORE REASON CODE        */') COL(41);
              END;
  CC:       IF CCHN(1) = 'YES' THEN

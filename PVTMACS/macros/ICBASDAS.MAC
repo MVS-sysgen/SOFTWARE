@@ -168,7 +168,7 @@
 .*       THE FORMAT OF THE FLAGS FIELD IS                      @Y30LB02
 .*                                                             @Y30LB02
 .*      ____________________________________________________   @Y30LB02
-.*      × X × X × 0 × 0 × 0 × X × X ×BITS 7-15 MUST BE ZERO×   @Y30LB02
+.*      | X | X | 0 | 0 | 0 | X | X |BITS 7-15 MUST BE ZERO|   @Y30LB02
 .*      -----------------------------------------------------  @Y30LB02
 .*      BIT 0------------'1'B          ASSOCIATE CPUS          @Y30LB02
 .*                       '0'B          DON'T ASSOCIATE         @Y30LB02
@@ -176,7 +176,7 @@
 .*      BIT 1------------'1'B          DISASSOCIATE CPUS       @Y30LB02
 .*                       '0'B          DON'T DISASSOCIATE      @Y30LB02
 .*                                                             @Y30LB02
-.*      BITS 2-4 --------              ×RESERVED,MUST BE ZERO× @Y30LB02
+.*      BITS 2-4 --------              |RESERVED,MUST BE ZERO| @Y30LB02
 .*                                                             @Y30LB02
 .*      BIT 5------------'1'B          DEINITIALIZE INTERFACE  @Y30LB02
 .*                       '0'B          DON'T DENITIALIZE       @Y30LB02
@@ -184,7 +184,7 @@
 .*      BIT 6------------'1'B          DEMOUNT                 @Y30LB02
 .*                       '0'B          DON'T DEMOUNT           @Y30LB02
 .*                                                             @Y30LB02
-.*      BITS 7-15-------               ×UNUSED,MUST BE ZERO×   @Y30LB02
+.*      BITS 7-15-------               |UNUSED,MUST BE ZERO|   @Y30LB02
 .*                                                             @Y30LB02
 .*      HOSTID - HOSTID IDENTIFIER:  THE 5 BYTE AREA WHICH     @Y30LB02
 .*               CONTAINS THE MANUFACTURER'S CPU IDENTI-       @Y30LB02
@@ -388,7 +388,7 @@ ASDA002  DC   XL3'000000'         3-BYTE RESERVED AREA         @Y30LB02
 */********************************************************   @Y30LB02*/
 *        IF ASTESTR1=0 THEN   /*REGISTER ONE DECLARED?       @Y30LB02*/
 *             DO;             /*NO,DECLARE REGISTER ONE      @Y30LB02*/
-*                  ANS('DCL ASDAR1 REG(1) PTR;/*PTR'××
+*                  ANS('DCL ASDAR1 REG(1) PTR;/*PTR'||
 *                  ' TO REQUEST BLOCK @Y30LB02*/')SKIP;
 *                  ASTESTR1=ASTESTR1+1; /*INCREM REG CTR     @Y30LB02*/
 *             END;           /*                              @Y30LB02*/
@@ -398,7 +398,7 @@ ASDA002  DC   XL3'000000'         3-BYTE RESERVED AREA         @Y30LB02
 *        DO;                 /*NO, DO ERROR PROCESSING       @Y30LB02*/
 *             ERSW=1;        /*SET ERROR SWITCH TO ONE       @Y30LB02*/
 *             RETCODE=12;    /*SET RETURN CODE TO 12         @Y30LB02*/
-*             ANS MSG('  ICB602I - A NAME FOR THE REQUEST BLOCK '××
+*             ANS MSG('  ICB602I - A NAME FOR THE REQUEST BLOCK '||
 *             'MUST BE SPECIFIED IN MF(2) ')SKIP;          /*@Y30LB02*/
 *             GO TO FINISH;  /*BRANCH TO END PROCESSING      @Y30LB02*/
 *        END;                /*                              @Y30LB02*/
@@ -410,92 +410,92 @@ ASDA002  DC   XL3'000000'         3-BYTE RESERVED AREA         @Y30LB02
 *   IF CTR > 0 THEN          /*INCREMENT CTR > ZERO?         @Y30LB02*/
 *        DO;                 /*DO ERROR PROCESSING           @Y30LB02*/
 *           RETCODE=4;     /*SET RETRUN CODE TO 4            @Y30LB02*/
-*           ANS MSG('  ICB604I - WARNING-ONLY THE MF PARAMETER'××
+*           ANS MSG('  ICB604I - WARNING-ONLY THE MF PARAMETER'||
 *             ' IS VALID FOR LIST FORM')SKIP;              /*@Y30LB02*/
 *        END;                /*                              @Y30LB02*/
 *   IF MF(3) ^= '' THEN      /*PLS ATTRIBUTE SPECIFIED?      @Y30LB02*/
 *        GO TO ATTRLST;      /*BRANCH TO UNINITL LIST FORM   @Y30LB02*/
 */*                                                          @Y30LB02*/
-*             ANS('/*******************************************'××
+*             ANS('/*******************************************'||
 *                 '************** @Y30LB02*/')SKIP;
-*             ANS('/*     MACMEAN  MSSC ASSOCIATE MACRO        '××
+*             ANS('/*     MACMEAN  MSSC ASSOCIATE MACRO        '||
 *                 '               @Y30LB02*/')SKIP;
-*             ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '××
+*             ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '||
 *                 '               @Y30LB02*/')SKIP;
-*             ANS('/*THIS IS THE INITIALIZED LIST FORM         '××
+*             ANS('/*THIS IS THE INITIALIZED LIST FORM         '||
 *                 '               @Y30LB02*/')SKIP;
-*             ANS('/*******************************************'××
+*             ANS('/*******************************************'||
 *                 '************** @Y30LB02*/')SKIP;
-*             ANS('DCL 1 '××MF(2)××'  STATIC LOCAL,'××
+*             ANS('DCL 1 '||MF(2)||'  STATIC LOCAL,'||
 *             ' /*ASSOCIATE REQUEST BLOCK @Y30LB02*/')SKIP;
-*             ANS('    2  ASDALEN  FIXED(31)INIT('××QUOTE
-*             ('10')××'X),/*LENG OF ASSOC REQ BLK @Y30LB02*/')SKIP;
-*             ANS('    2  ASDAOPC CHAR(1)INIT('××QUOTE('2C')××
+*             ANS('    2  ASDALEN  FIXED(31)INIT('||QUOTE
+*             ('10')||'X),/*LENG OF ASSOC REQ BLK @Y30LB02*/')SKIP;
+*             ANS('    2  ASDAOPC CHAR(1)INIT('||QUOTE('2C')||
 *             'X),/*ASSOCIATE OPCODE @Y30LB02*/')SKIP;
-*             ANS('    2  ASDA001 CHAR(1)INIT('××QUOTE('00')××
+*             ANS('    2  ASDA001 CHAR(1)INIT('||QUOTE('00')||
 *             'X),/*RESERVED AND ZERO @Y30LB02*/')SKIP;
-*             ANS('    2  ASDAFLG BIT(16)INIT('××QUOTE
-*             ('0000000000000000')××'B),/*TWO BYTE ATTRI'××
+*             ANS('    2  ASDAFLG BIT(16)INIT('||QUOTE
+*             ('0000000000000000')||'B),/*TWO BYTE ATTRI'||
 *             'BUTE AREA @Y30LB02*/')SKIP;
-*             ANS('       3  ASASSOC BIT(1),/*ASSOCIATE'××
+*             ANS('       3  ASASSOC BIT(1),/*ASSOCIATE'||
 *             ' ATTRIBUTE @Y30LB02*/')SKIP;
-*             ANS('       3  ASDASSOC BIT(1),/*DISASSOCIATE'××
+*             ANS('       3  ASDASSOC BIT(1),/*DISASSOCIATE'||
 *             ' ATTRIBUTE @Y30LB02*/')SKIP;
-*             ANS('       3  *    BIT(3),/*THREE BITS'××
+*             ANS('       3  *    BIT(3),/*THREE BITS'||
 *             ' RESERVE @Y30LB02*/')SKIP;
-*             ANS('       3  ASDEINT BIT(1),/*DISASSOC'××
-*             ' AND DEINITIALIZE THE INTERFACE FOR THE'××
-*             ' OTHER CPU SPECIFIED IN THE CPU ASSOCIATE'××
+*             ANS('       3  ASDEINT BIT(1),/*DISASSOC'||
+*             ' AND DEINITIALIZE THE INTERFACE FOR THE'||
+*             ' OTHER CPU SPECIFIED IN THE CPU ASSOCIATE'||
 *             ' TABLE @Y30LB02*/')SKIP;
-*             ANS('       3  ASDMNT BIT(1),/*ASSOC'××
-*             ' CPUS AND DEMOUNT ALL VOLUMES FOR BOTH'××
+*             ANS('       3  ASDMNT BIT(1),/*ASSOC'||
+*             ' CPUS AND DEMOUNT ALL VOLUMES FOR BOTH'||
 *             ' CPUS @Y30LB02*/')SKIP;
-*             ANS('       3  *      BIT(9),/*RESERVED AND'××
+*             ANS('       3  *      BIT(9),/*RESERVED AND'||
 *             ' MUST BE ZERO @Y30LB02*/')SKIP;
-*             ANS('    2  ASDACPU  CHAR(5) INIT('××QUOTE
-*             ('0000000000')××'X),/*HOSTID @Y30LB02*/')SKIP;
-*             ANS('    2  ASDA002  CHAR(3) INIT('××QUOTE
-*             ('000000')××'X);/*RESERVED AREA @Y30LB02*/')SKIP;
+*             ANS('    2  ASDACPU  CHAR(5) INIT('||QUOTE
+*             ('0000000000')||'X),/*HOSTID @Y30LB02*/')SKIP;
+*             ANS('    2  ASDA002  CHAR(3) INIT('||QUOTE
+*             ('000000')||'X);/*RESERVED AREA @Y30LB02*/')SKIP;
 *             GO TO FINISH;                                /*@Y30LB02*/
 */*                                                          @Y30LB02*/
 *ATTRLST:
-*             ANS('/*******************************************'××
+*             ANS('/*******************************************'||
 *                 '************** @Y30LB02*/')SKIP;
-*             ANS('/*      MACMEAN  MSSC ASSOCIATE MACRO       '××
+*             ANS('/*      MACMEAN  MSSC ASSOCIATE MACRO       '||
 *                 '               @Y30LB02*/')SKIP;
-*             ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '××
+*             ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '||
 *                 '               @Y30LB02*/')SKIP;
-*             ANS('/*THIS IS THE UNINITIALIZED LIST FORM       '××
+*             ANS('/*THIS IS THE UNINITIALIZED LIST FORM       '||
 *                 '               @Y30LB02*/')SKIP;
-*             ANS('/*******************************************'××
+*             ANS('/*******************************************'||
 *                 '************** @Y30LB02*/')SKIP;
-*             ANS('DCL 1 '××MF(2)××' '××MF(3)××','××
+*             ANS('DCL 1 '||MF(2)||' '||MF(3)||','||
 *             ' /*ASSOCIATE REQUEST BLOCK @Y30LB02*/')SKIP;
-*             ANS('    2  ASDALEN  FIXED(31),/*LENG'××
+*             ANS('    2  ASDALEN  FIXED(31),/*LENG'||
 *             'TH OF ASSOCIATE REQ BLOCK=10 HEX @Y30LB02*/')SKIP;
-*             ANS('    2  ASDAOPC CHAR(1),'××
+*             ANS('    2  ASDAOPC CHAR(1),'||
 *             '/*ASSOCIATE OPCODE=2C HEX @Y30LB02*/')SKIP;
-*             ANS('    2  ASDA001 CHAR(1),'××
+*             ANS('    2  ASDA001 CHAR(1),'||
 *             ' /*RESERVED AND ZERO @Y30LB02*/')SKIP;
-*             ANS('    2  ASDAFLG BIT(16),'××
+*             ANS('    2  ASDAFLG BIT(16),'||
 *             '/*TWO BYTE ATTRIBUTE AREA @Y30LB02*/')SKIP;
-*             ANS('       3  ASASSOC BIT(1),/*ASSOCIATE'××
+*             ANS('       3  ASASSOC BIT(1),/*ASSOCIATE'||
 *             ' ATTRIBUTE @Y30LB02*/')SKIP;
-*             ANS('       3  ASDASSOC BIT(1),/*DISASSOCIATE'××
+*             ANS('       3  ASDASSOC BIT(1),/*DISASSOCIATE'||
 *             ' ATTRIBUTE @Y30LB02*/')SKIP;
-*             ANS('       3  *    BIT(3),/*THREE BITS'××
+*             ANS('       3  *    BIT(3),/*THREE BITS'||
 *             ' RESERVE @Y30LB02*/')SKIP;
-*             ANS('       3  ASDEINT BIT(1),/*DISASSOC'××
-*             ' AND DEINITIALIZE THE INTERFACE FOR THE'××
-*             ' OTHER CPU SPECIFIED IN THE CPU ASSOCIATE'××
+*             ANS('       3  ASDEINT BIT(1),/*DISASSOC'||
+*             ' AND DEINITIALIZE THE INTERFACE FOR THE'||
+*             ' OTHER CPU SPECIFIED IN THE CPU ASSOCIATE'||
 *             ' TABLE @Y30LB02*/')SKIP;
-*             ANS('       3  ASDMNT BIT(1),/*ASSOC'××
-*             ' CPUS AND DEMOUNT ALL VOLUMES FOR BOTH'××
+*             ANS('       3  ASDMNT BIT(1),/*ASSOC'||
+*             ' CPUS AND DEMOUNT ALL VOLUMES FOR BOTH'||
 *             ' CPUS @Y30LB02*/')SKIP;
-*             ANS('       3  *      BIT(9),/*RESERVED AND'××
+*             ANS('       3  *      BIT(9),/*RESERVED AND'||
 *             ' MUST BE ZERO @Y30LB02*/')SKIP;
 *             ANS('    2  ASDACPU  CHAR(5),/*HOSTID @Y30LB02*/')SKIP;
-*             ANS('    2  ASDA002  CHAR(3);/*RESERVED'××
+*             ANS('    2  ASDA002  CHAR(3);/*RESERVED'||
 *             ' AREA @Y30LB02*/')SKIP;
 *             GO TO FINISH;                                /*@Y30LB02*/
 */*                                                          @Y30LB02*/
@@ -508,43 +508,43 @@ ASDA002  DC   XL3'000000'         3-BYTE RESERVED AREA         @Y30LB02
 *        DO;                 /*DO ERROR PROCESSING           @Y30LB02*/
 *             ERSW=1;        /*SET ERROR SWITCH TO ONE       @Y30LB02*/
 *             RETCODE=12;    /*SET ERROR RETURN CODE TO 12   @Y30LB02*/
-*             ANS MSG('  ICB612I - MF(2) MUST CONTAIN'××
-*                ' REQ BLK NAME IF EXEC '××
+*             ANS MSG('  ICB612I - MF(2) MUST CONTAIN'||
+*                ' REQ BLK NAME IF EXEC '||
 *                ' MACRO FORM REQUESTED')SKIP;             /*@Y30LB02*/
 *             GO TO CKSW;    /*BRCH TO CK ERROR CONDITION    @Y30LB02*/
 *        END;                /*                              @Y30LB02*/
 */*                                                          @Y30LB02*/
 *   ELSE                     /*EXECUTE FORM PROCESSING       @Y30LB02*/
 */*                                                          @Y30LB02*/
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************* @Y30LB02*/')SKIP;
-*        ANS('/*     MACMEAN  MSSC ASSOCIATE MACRO        '××
+*        ANS('/*     MACMEAN  MSSC ASSOCIATE MACRO        '||
 *            '              @Y30LB02*/')SKIP;
-*        ANS('/*VS1-4/VS2-3 VERSION-- 06/09/74 LEVEL 00   '××
+*        ANS('/*VS1-4/VS2-3 VERSION-- 06/09/74 LEVEL 00   '||
 *            '              @Y30LB02*/')SKIP;
-*        ANS('/*THIS IS THE OUTPUT FOR THE EXECUTE FORM.  '××
+*        ANS('/*THIS IS THE OUTPUT FOR THE EXECUTE FORM.  '||
 *            '              @Y30LB02*/')SKIP;
-*        ANS('/*THE LIST FORM OF THIS MACRO SHOULD BE     '××
+*        ANS('/*THE LIST FORM OF THIS MACRO SHOULD BE     '||
 *            '              @Y30LB02*/')SKIP;
-*        ANS('/*INVOKED FIRST IN ORDER TO SET UP NECESSARY'××
+*        ANS('/*INVOKED FIRST IN ORDER TO SET UP NECESSARY'||
 *            '              @Y30LB02*/')SKIP;
-*        ANS('/*DECLARES.  IF THE COMPLETE ARGUMENT IS    '××
+*        ANS('/*DECLARES.  IF THE COMPLETE ARGUMENT IS    '||
 *            '              @Y30LB02*/')SKIP;
-*        ANS('/*SPECIFIED THE REQ BLOCK WILL BE ZEROED.   '××
+*        ANS('/*SPECIFIED THE REQ BLOCK WILL BE ZEROED.   '||
 *            '              @Y30LB02*/')SKIP;
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************* @Y30LB02*/')SKIP;
 *        ANS('RFY(ASDAR1)RSTD;/*RESTRICT REG 1 @Y30LB02*/')SKIP;
-*        ANS('ASDAR1=ADDR('××MF(2)××');/*R1 POINTER TO'××
+*        ANS('ASDAR1=ADDR('||MF(2)||');/*R1 POINTER TO'||
 *        ' REQUEST BLOCK @Y30LB02*/')SKIP;
 *   IF MF(3) = 'COMPLETE' THEN   /*COMPLETE SPECIFIED        @Y30LB02*/
 *     DO;                        /*ZERO REQ BLOCK            @Y30LB02*/
-*        ANS(' '××MF(2)××'='××MF(2)××'&&'××MF(2)××';'××    /*@Y30LB02*/
+*        ANS(' '||MF(2)||'='||MF(2)||'&&'||MF(2)||';'||    /*@Y30LB02*/
 *        '/*ZERO BLOCK @Y30LB02*/')SKIP;
 *     END;                       /*                          @Y30LB02*/
-*        ANS('ASDALEN= '××QUOTE(ASDLEN)××'X;/* '××
+*        ANS('ASDALEN= '||QUOTE(ASDLEN)||'X;/* '||
 *        'LENGTH OF ASSOC REQUEST @Y30LB02*/')SKIP;
-*        ANS('ASDAOPC= '××QUOTE(ASDOP)××'X;/*ASSOCIATE'××
+*        ANS('ASDAOPC= '||QUOTE(ASDOP)||'X;/*ASSOCIATE'||
 *        ' OPCODE @Y30LB02*/')SKIP;
 */*                                                          @Y30LB02*/
 *CKSW:
@@ -558,7 +558,7 @@ ASDA002  DC   XL3'000000'         3-BYTE RESERVED AREA         @Y30LB02
 *     DO;                      /*NO,DO ERROR PROCESSING      @Y30LB02*/
 *        ERSW=1;               /*SET ERROR SWITCH TO ONE     @Y30LB02*/
 *        RETCODE=12;           /*SET RETURN CODE TO 12       @Y30LB02*/
-*        ANS MSG('  ICB615I - INVALID MF PARAMETER '××
+*        ANS MSG('  ICB615I - INVALID MF PARAMETER '||
 *                'SPECIFIED, MUST BE L, E, OR NULL')SKIP;  /*@Y30LB02*/
 *        GO TO CKSW2;          /*BRANCH TO CK ERROR SWITCH   @Y30LB02*/
 *     END;                                                 /*@Y30LB02*/
@@ -567,7 +567,7 @@ ASDA002  DC   XL3'000000'         3-BYTE RESERVED AREA         @Y30LB02
 *     DO;                      /*NO,DO ERROR PROCESSING      @Y30LB02*/
 *        ERSW=1;               /*SET ERROR SWITCH TO 1       @Y30LB02*/
 *        RETCODE=12;           /*SET RETURN CODE TO 12       @Y30LB02*/
-*        ANS MSG('  ICB607I - FLAGS MUST BE SPECIFIED  '××
+*        ANS MSG('  ICB607I - FLAGS MUST BE SPECIFIED  '||
 *        'FOR STANDARD FORM MACRO')SKIP;                   /*@Y30LB02*/
 *        GO TO CKSW2;          /*BRANCH TO CK SWITCH         @Y30LB02*/
 *     END;                     /*                            @Y30LB02*/
@@ -575,7 +575,7 @@ ASDA002  DC   XL3'000000'         3-BYTE RESERVED AREA         @Y30LB02
 *     DO;                      /*DO ERROR PROCESSING         @Y30LB02*/
 *        ERSW=1;               /*SET ERROR CODE TO ONE       @Y30LB02*/
 *        RETCODE=12;           /*SET RETURN CODE TO 12       @Y30LB02*/
-*        ANS MSG('  ICB608I - HOSTID MUST BE SPECIFIED  '××
+*        ANS MSG('  ICB608I - HOSTID MUST BE SPECIFIED  '||
 *        'FOR STANDARD FORM MACRO')SKIP;                   /*@Y30LB02*/
 *     END;                     /*                            @Y30LB02*/
 */*                                                          @Y30LB02*/
@@ -586,72 +586,72 @@ ASDA002  DC   XL3'000000'         3-BYTE RESERVED AREA         @Y30LB02
 */*                                                          @Y30LB02*/
 *   IF ASDATEST = 1 THEN       /*FIRST STANDARD FORM?        @Y30LB02*/
 *     DO;                      /*NO,PUT OUT NO DCLS          @Y30LB02*/
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************** @Y30LB02*/')SKIP;
-*        ANS('/*     MACMEAN  MSSC ASSOCIATE MACRO        '××
+*        ANS('/*     MACMEAN  MSSC ASSOCIATE MACRO        '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '××
+*        ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*THIS IS THE OUTPUT FOR A SECONDARY        '××
+*        ANS('/*THIS IS THE OUTPUT FOR A SECONDARY        '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*INVOCATION OF THE STANDARD FORM MACRO     '××
+*        ANS('/*INVOCATION OF THE STANDARD FORM MACRO     '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************** @Y30LB02*/')SKIP;
 *        ANS('RFY(ASDAR1)RSTD;/*RESTRICT REG 1 @Y30LB02*/')SKIP;
 *        ANS('ASDAR1=ADDR(ASDALEN);/*R1 PTR TO BLK @Y30LB02*/')SKIP;
-*        ANS('ASDALEN= '××QUOTE(ASDLEN)××'X;/* '××
+*        ANS('ASDALEN= '||QUOTE(ASDLEN)||'X;/* '||
 *        'LENGTH OF ASSOC REQUEST @Y30LB02*/')SKIP;
-*        ANS('ASDAOPC='××QUOTE(ASDOP)××'X;/*ASSOC'××
+*        ANS('ASDAOPC='||QUOTE(ASDOP)||'X;/*ASSOC'||
 *        ' OPCODE @Y30LB02*/')SKIP;
 *        GO TO COMPROC;      /*BRANCH TO CK PARAMETERS       @Y30LB02*/
 *     END;                   /*                              @Y30LB02*/
 */*                                                          @Y30LB02*/
 *   ELSE                     /*PUT OUT THE DECLARES          @Y30LB02*/
 *     DO;                    /*STANDARD FIRST TIME           @Y30LB02*/
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************** @Y30LB02*/')SKIP;
-*        ANS('/*    MACMEAN  MSSC ASSOCIATE MACRO         '××
+*        ANS('/*    MACMEAN  MSSC ASSOCIATE MACRO         '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '××
+*        ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*THIS IS THE STANDARD FORM  MACRO          '××
+*        ANS('/*THIS IS THE STANDARD FORM  MACRO          '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************** @Y30LB02*/')SKIP;
 *        ANS('RFY(ASDAR1)RSTD;/*RESTRICT REG 1 @Y30LB02*/')SKIP;
-*        ANS('ASDAR1=ADDR(ASDALEN);/*R1 PTR  '××
+*        ANS('ASDAR1=ADDR(ASDALEN);/*R1 PTR  '||
 *        'TO REQUEST BLOCK @Y30LB02*/')SKIP;
-*        ANS('DCL 1 ASDALST  STATIC LOCAL,'××
+*        ANS('DCL 1 ASDALST  STATIC LOCAL,'||
 *        ' /*ASSOCIATE REQUEST BLOCK @Y30LB02*/')SKIP;
-*        ANS('    2  ASDALEN  FIXED(31)INIT('××QUOTE
-*        ('10')××'X),/*LENG OF ASSOC REQ BLK @Y30LB02*/')SKIP;
-*        ANS('    2  ASDAOPC CHAR(1)INIT('××QUOTE('2C')××
+*        ANS('    2  ASDALEN  FIXED(31)INIT('||QUOTE
+*        ('10')||'X),/*LENG OF ASSOC REQ BLK @Y30LB02*/')SKIP;
+*        ANS('    2  ASDAOPC CHAR(1)INIT('||QUOTE('2C')||
 *        'X),/*ASSOCIATE OPCODE @Y30LB02*/')SKIP;
-*        ANS('    2  *      CHAR(1)INIT('××QUOTE('00')××
+*        ANS('    2  *      CHAR(1)INIT('||QUOTE('00')||
 *        'X),/*RESERVED AND ZERO @Y30LB02*/')SKIP;
-*        ANS('    2  ASDAFLG BIT(16)INIT('××QUOTE
-*        ('0000000000000000')××'B),/*TWO BYTE ATTRI'××
+*        ANS('    2  ASDAFLG BIT(16)INIT('||QUOTE
+*        ('0000000000000000')||'B),/*TWO BYTE ATTRI'||
 *        'BUTE AREA @Y30LB02*/')SKIP;
-*        ANS('       3  ASASSOC BIT(1),/*ASSOCIATE'××
+*        ANS('       3  ASASSOC BIT(1),/*ASSOCIATE'||
 *        ' ATTRIBUTE @Y30LB02*/')SKIP;
-*        ANS('       3  ASDASSOC BIT(1),/*DISASSOCIATE'××
+*        ANS('       3  ASDASSOC BIT(1),/*DISASSOCIATE'||
 *        ' ATTRIBUTE @Y30LB02*/')SKIP;
-*        ANS('       3  *     BIT(1),/*THREE BITS'××
+*        ANS('       3  *     BIT(1),/*THREE BITS'||
 *        ' RESERVE @Y30LB02*/')SKIP;
-*        ANS('       3  ASDEINT BIT(1),/*DISASSOC'××
-*        ' AND DEINITIALIZE THE INTERFACE FOR THE'××
-*        ' OTHER CPU SPECIFIED IN THE CPU ASSOCIATE'××
+*        ANS('       3  ASDEINT BIT(1),/*DISASSOC'||
+*        ' AND DEINITIALIZE THE INTERFACE FOR THE'||
+*        ' OTHER CPU SPECIFIED IN THE CPU ASSOCIATE'||
 *        ' TABLE @Y30LB02*/')SKIP;
-*        ANS('       3  ASDMNT BIT(1),/*ASSOC'××
-*        ' CPUS AND DEMOUNT ALL VOLUMES FOR BOTH'××
+*        ANS('       3  ASDMNT BIT(1),/*ASSOC'||
+*        ' CPUS AND DEMOUNT ALL VOLUMES FOR BOTH'||
 *        ' CPUS @Y30LB02*/')SKIP;
-*        ANS('       3  *      BIT(9),/*RESERVED AND'××
+*        ANS('       3  *      BIT(9),/*RESERVED AND'||
 *        ' MUST BE ZERO @Y30LB02*/')SKIP;
-*        ANS('    2  ASDACPU  CHAR(5) INIT('××QUOTE
-*        ('0000000000')××'X),/*HOSTID @Y30LB02*/')SKIP;
-*        ANS('    2  ASDA002  CHAR(3) INIT('××QUOTE
-*        ('000000')××'X);/*RESERVED AREA @Y30LB02*/')SKIP;
+*        ANS('    2  ASDACPU  CHAR(5) INIT('||QUOTE
+*        ('0000000000')||'X),/*HOSTID @Y30LB02*/')SKIP;
+*        ANS('    2  ASDA002  CHAR(3) INIT('||QUOTE
+*        ('000000')||'X);/*RESERVED AREA @Y30LB02*/')SKIP;
 *        ASDATEST=ASDATEST+1; /*INCREM STD FORM CTR          @Y30LB02*/
 *        GO TO COMPROC;       /*BRANCH,CK PARAMETERS         @Y30LB02*/
 *     END;                    /*                             @Y30LB02*/
@@ -664,11 +664,11 @@ ASDA002  DC   XL3'000000'         3-BYTE RESERVED AREA         @Y30LB02
 */*********************************************************  @Y30LB02*/
 *COMPROC:
 *   IF FLAGS ^= '' THEN      /*FLAGS SPECIFIED?              @Y30LB02*/
-*        ANS('ASDAFLG= '××FLAGS××';/*VALUE OF FLAGS '××
+*        ANS('ASDAFLG= '||FLAGS||';/*VALUE OF FLAGS '||
 *        'PARAMETER @Y30LB02*/')SKIP;
 */*                                                          @Y30LB02*/
 *   IF HOSTID ^= '' THEN    /*HOSTID SPECIFIED?              @Y30LB02*/
-*        ANS('ASDACPU= '××HOSTID××';/*HOSTID @Y30LB02*/')SKIP;
+*        ANS('ASDACPU= '||HOSTID||';/*HOSTID @Y30LB02*/')SKIP;
 */*                                                          @Y30LB02*/
 */********************************************************   @Y30LB02*/
 */*      THIS SECTION OF CODE WILL INVOKE SVC 126 AND        @Y30LB02*/

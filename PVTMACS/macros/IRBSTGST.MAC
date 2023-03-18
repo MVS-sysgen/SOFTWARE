@@ -114,7 +114,7 @@ STGSCYC  DS    2F                   SAMPLING CYCLE INTERVAL, BIT 51
 *      KEY = '';                    /* KEY WORD IS BLANKS            */
 *    ELSE
 *      KEY = 'ATTRIBUT';            /* PRINT KEYWORD NAME            */
-*    ANS('/* ?'××MACLABEL××MACNAME××' '××MACLIST××KEY××ATTRIBUT××' */'
+*    ANS('/* ?'||MACLABEL||MACNAME||' '||MACLIST||KEY||ATTRIBUT||' */'
 *       ) SKIP;
 *
 *    /* ANSWER DECLARE, STRUCTURE NAME, INPUT ATTRIBUTES OF STRUCTURE*/
@@ -126,7 +126,7 @@ STGSCYC  DS    2F                   SAMPLING CYCLE INTERVAL, BIT 51
 *          '  1 STGST               /* GLOBAL SUPERVISOR TABLE      */'
 *       )SKIP;
 *    ANS(
-*              '        '××ATTRIBUT(1)××'                             '
+*              '        '||ATTRIBUT(1)||'                             '
 *       )SKIP;
 *    ANS(
 *              '        BDY(WORD),                                    '

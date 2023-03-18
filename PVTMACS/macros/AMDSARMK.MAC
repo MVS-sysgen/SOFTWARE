@@ -34,18 +34,18 @@
  /*                                                      @G64APHE*/
  ANS('/*??????????????????????????????????????????????????????????*/')
  COLUMN(MACLMAR) SKIP;                                 /*@G64APHE*/
- ANS('DO; /*'××MACNAME××' '××MACKEYS××' */') SKIP; /*@G64APHE*/
+ ANS('DO; /*'||MACNAME||' '||MACKEYS||' */') SKIP; /*@G64APHE*/
  IF ERRET^='' THEN ANS('RFY RETCODE RSTD;') SKIP;      /*@G64APHE*/
- ANS('VCTCBADR=ADDR('××ITEM(1)××'); /* FILL IN THE VCHK PARM LIST */')
+ ANS('VCTCBADR=ADDR('||ITEM(1)||'); /* FILL IN THE VCHK PARM LIST */')
  SKIP;                                                 /*@G64APHE*/
- ANS('VCTCBIDN='××TOBE(1)××';') SKIP;                  /*@G64APHE*/
- ANS('SVC(VCKSVC); /* CALL AMDSAVCK TO CHECK THE VALIDITY OF '××ITEM(1)
- ××'.*/') SKIP;                                        /*@G64APHE*/
+ ANS('VCTCBIDN='||TOBE(1)||';') SKIP;                  /*@G64APHE*/
+ ANS('SVC(VCKSVC); /* CALL AMDSAVCK TO CHECK THE VALIDITY OF '||ITEM(1)
+ ||'.*/') SKIP;                                        /*@G64APHE*/
  IF ERRET^='' THEN                                     /*@G64APHE*/
- ANS('IF RETCODE^=0 THEN GO TO '××ERRET(1)××'; /* IF '××ITEM(1)××
+ ANS('IF RETCODE^=0 THEN GO TO '||ERRET(1)||'; /* IF '||ITEM(1)||
  ' DOES NOT PASS THE VALIDITY CHECK */ RFY RETCODE UNRSTD;')
  SKIP;                                                 /*@G64APHE*/
- ANS('END; /*'××MACNAME××' '××MACKEYS××' */')SKIP; /*@G64APHE*/
+ ANS('END; /*'||MACNAME||' '||MACKEYS||' */')SKIP; /*@G64APHE*/
  ANS('/*???????????????????????????????????????????????????????????*/')
  COLUMN(MACLMAR) SKIP;                                 /*@G64APHE*/
  %END;                                                 /*@G64APHE*/

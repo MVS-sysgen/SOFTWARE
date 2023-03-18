@@ -311,7 +311,7 @@
 * /*         - SAVE AREA USAGE IS SERIALIZED BY THE SRM LOCK.        */
 * /*                                                                 */
 * /* *************************************************************** */
-*    IRAEPNML = 'RMSB'××EPN(1) ;    /* REQUESTED SUBROUTINE POINTER  */
+*    IRAEPNML = 'RMSB'||EPN(1) ;    /* REQUESTED SUBROUTINE POINTER  */
 *    IRAEPNMS = 'IRAEPL05' ;        /* RTNE USES LEVEL 5 REG SAVEAR  */
 *    IF EPN(1) = 'SET' THEN         /* PROCESS NEWIPS SYSEVENT RTN   */
 *      GOTO EPNMPOK;
@@ -503,7 +503,7 @@
 * /*           BY THE NON-PREEMPTABILITY OF AN SRB.                  */
 * /*                                                                 */
 * /* *************************************************************** */
-*    IRAEPNML = 'EPST'××EPN(1) ;    /* REQUESTED SUBROUTINE POINTER  */
+*    IRAEPNML = 'EPST'||EPN(1) ;    /* REQUESTED SUBROUTINE POINTER  */
 *    IF EPN(1) = 'IL3' THEN         /* USER I/O LOD EVAL ACTION      */
 *      GOTO EPNMPOK;
 *    IF EPN(1) = 'CL3' THEN         /* USER CPU LOD EVAL ACTION      */
@@ -520,7 +520,7 @@
 * /*           USE SAVE AREA PROVIDED BY INVOKER.                    */
 * /*                                                                 */
 * /* *************************************************************** */
-*    IRAEPNML = 'RMEX'××EPN(1) ;    /* REQUESTED CTL ROUTNE POINTER  */
+*    IRAEPNML = 'RMEX'||EPN(1) ;    /* REQUESTED CTL ROUTNE POINTER  */
 *    IRAEPNMS = '';                 /* RTNE USES UNDEFIN REG SAVEAR  */
 *    IF EPN(1) = 'EVT' THEN         /* PROCESS INPUT SYSEVENT        */
 *      GOTO EPNMPOK;

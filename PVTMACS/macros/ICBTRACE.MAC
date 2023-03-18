@@ -126,13 +126,13 @@
 .*   FOLLOWS:                                                  @Y30LB02
 .*                                                             @Y30LB02
 .*   --------------------------------------------              @Y30LB02
-.*   × X ×   BITS 1-15 NOT USED - ALWAYS ZERO   ×              @Y30LB02
+.*   | X |   BITS 1-15 NOT USED - ALWAYS ZERO   |              @Y30LB02
 .*   --------------------------------------------              @Y30LB02
 .*                                                             @Y30LB02
 .*   BIT 0 ------------'1'B     TRACE ON                       @Y30LB02
 .*         ------------'0'B     TRACE OFF                      @Y30LB02
 .*                                                             @Y30LB02
-.*   BITS 1-15---------         ×NOT USED - ZERO×              @Y30LB02
+.*   BITS 1-15---------         |NOT USED - ZERO|              @Y30LB02
 .*                                                             @Y30LB02
 .*   TRACE ON:                                                 @Y30LB02
 .*                                                             @Y30LB02
@@ -350,7 +350,7 @@ TRACTIM  DC   XL8'0000'           8-BYTE TIME/DATE AREA        @Y30LB02
 */********************************************************   @Y30LB02*/
 *        IF TRTESTR1=0 THEN /*REG 1 DECLARED?                @Y30LB02*/
 *             DO;           /*NO,DECLARE IT                  @Y30LB02*/
-*                  ANS('DCL TRACR1 REG(1) PTR ;/*PTR'××
+*                  ANS('DCL TRACR1 REG(1) PTR ;/*PTR'||
 *                  ' TO REQUEST BLOCK @Y30LB02*/')SKIP;
 *                  TRTESTR1=TRTESTR1+1;  /*INCREM COUNTER    @Y30LB02*/
 *             END;               /*                          @Y30LB02*/
@@ -360,7 +360,7 @@ TRACTIM  DC   XL8'0000'           8-BYTE TIME/DATE AREA        @Y30LB02
 *        DO;                     /*NO,PRINT ERROR MSG        @Y30LB02*/
 *         ERSW=1;                /*SET ERROR SWITCH          @Y30LB02*/
 *         RETCODE=12;            /*SET RETURN CODE           @Y30LB02*/
-*         ANS MSG('  ICB602I -  A NAME FOR THE '××
+*         ANS MSG('  ICB602I -  A NAME FOR THE '||
 *         'REQUEST BLOCK MUST BE SPECIFIED IN MF(2)')SKIP; /*@Y30LB02*/
 *         GO TO FINISH;       /*BRANCH TO END PROCESSING     @Y30LB02*/
 *        END;                 /*                             @Y30LB02*/
@@ -372,67 +372,67 @@ TRACTIM  DC   XL8'0000'           8-BYTE TIME/DATE AREA        @Y30LB02
 *   IF CTR > 0 THEN          /*INCREMENT CTR > ZERO?         @Y30LB02*/
 *        DO;                 /*PRINT WARNING MESSAGE         @Y30LB02*/
 *             RETCODE=4;     /*SET RETURN CODE               @Y30LB02*/
-*             ANS MSG('  ICB604I - WARNING-ONLY'××
-*                 ' THE MF PARAMETER IS VALID FOR'××
+*             ANS MSG('  ICB604I - WARNING-ONLY'||
+*                 ' THE MF PARAMETER IS VALID FOR'||
 *                 ' LIST FORM ')SKIP;                      /*@Y30LB02*/
 *        END;                /*                              @Y30LB02*/
 *    IF MF(3) ^= '' THEN     /*PLS ATTRIBUTE SPECIFIED?      @Y30LB02*/
 *        GO TO ATTRLST;      /*BRANCH,PROCESS IT             @Y30LB02*/
 */*                                                          @Y30LB02*/
-*             ANS('/*******************************************'××
+*             ANS('/*******************************************'||
 *                 '************** @Y30LB02*/')SKIP;
-*             ANS('/*    MACMEAN  MSSC TRACE MACRO             '××
+*             ANS('/*    MACMEAN  MSSC TRACE MACRO             '||
 *                 '               @Y30LB02*/')SKIP;
-*             ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '××
+*             ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '||
 *                 '               @Y30LB02*/')SKIP;
-*             ANS('/*THIS IS THE INITIALIZED LIST FORM         '××
+*             ANS('/*THIS IS THE INITIALIZED LIST FORM         '||
 *                 '               @Y30LB02*/')SKIP;
-*             ANS('/*******************************************'××
+*             ANS('/*******************************************'||
 *                 '************** @Y30LB02*/')SKIP;
-*             ANS('DCL 1 '××MF(2)××'  STATIC LOCAL,'××
+*             ANS('DCL 1 '||MF(2)||'  STATIC LOCAL,'||
 *             ' /*TRACE REQUEST BLOCK @Y30LB02*/')SKIP;
-*             ANS('    2  TRACLEN  FIXED(31)INIT('××QUOTE
-*             ('10')××'X),/*LENGTH OF TRACE REQ BLK @Y30LB02*/')SKIP;
-*             ANS('    2  TRACOPC  CHAR(1)INIT('××QUOTE('24')××
+*             ANS('    2  TRACLEN  FIXED(31)INIT('||QUOTE
+*             ('10')||'X),/*LENGTH OF TRACE REQ BLK @Y30LB02*/')SKIP;
+*             ANS('    2  TRACOPC  CHAR(1)INIT('||QUOTE('24')||
 *             'X),/*TRACE OPCODE @Y30LB02*/')SKIP;
-*             ANS('    2  *      CHAR(1)INIT('××QUOTE('00')××
+*             ANS('    2  *      CHAR(1)INIT('||QUOTE('00')||
 *             'X),/*RESERVED AND ZERO @Y30LB02*/')SKIP;
-*             ANS('    2  TRACFLG BIT(16)INIT('××QUOTE
-*             ('0000000000000000')××'B),/*TWO BYTE ATTRI'××
+*             ANS('    2  TRACFLG BIT(16)INIT('||QUOTE
+*             ('0000000000000000')||'B),/*TWO BYTE ATTRI'||
 *             'BUTE AREA @Y30LB02*/')SKIP;
-*             ANS('       3  TRACEON BIT(1),/*TRACEON/OFF'××
+*             ANS('       3  TRACEON BIT(1),/*TRACEON/OFF'||
 *             ' ATTRIBUTE @Y30LB02*/')SKIP;
-*             ANS('       3  *      BIT(15),/*RESERVED AND'××
+*             ANS('       3  *      BIT(15),/*RESERVED AND'||
 *             ' MUST BE ZERO @Y30LB02*/')SKIP;
-*             ANS('    2  TRACTIM  CHAR(8) INIT('××QUOTE
-*             ('0000000000000000')××'X);/*TIME/DATE @Y30LB02*/')SKIP;
+*             ANS('    2  TRACTIM  CHAR(8) INIT('||QUOTE
+*             ('0000000000000000')||'X);/*TIME/DATE @Y30LB02*/')SKIP;
 *             GO TO FINISH;    /*BRANCH TO END PROCESSING    @Y30LB02*/
 */*                                                          @Y30LB02*/
 *ATTRLST:
-*             ANS('/*******************************************'××
+*             ANS('/*******************************************'||
 *                 '************** @Y30LB02*/')SKIP;
-*             ANS('/*     MACMEAN  MSSC TRACE MACRO            '××
+*             ANS('/*     MACMEAN  MSSC TRACE MACRO            '||
 *                 '               @Y30LB02*/')SKIP;
-*             ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '××
+*             ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '||
 *                 '               @Y30LB02*/')SKIP;
-*             ANS('/*THIS IS THE UNINITIALIZED LIST FORM       '××
+*             ANS('/*THIS IS THE UNINITIALIZED LIST FORM       '||
 *                 '               @Y30LB02*/')SKIP;
-*             ANS('/*******************************************'××
+*             ANS('/*******************************************'||
 *                 '************** @Y30LB02*/')SKIP;
-*             ANS('DCL 1 '××MF(2)××' '××MF(3)××','××
+*             ANS('DCL 1 '||MF(2)||' '||MF(3)||','||
 *             ' /*TRACE REQUEST BLOCK @Y30LB02*/')SKIP;
-*             ANS('    2  TRACLEN  FIXED(31),/*LENG'××
+*             ANS('    2  TRACLEN  FIXED(31),/*LENG'||
 *             'TH OF TRACE REQ BLK = 10 HEX @Y30LB02*/')SKIP;
-*             ANS('    2  TRACOPC  CHAR(1),'××
+*             ANS('    2  TRACOPC  CHAR(1),'||
 *             '/*TRACE OPCODE=24 HEX @Y30LB02*/')SKIP;
 *             ANS('    2  * CHAR(1) ,/*RESERVED  @Y30LB02*/')SKIP;
-*             ANS('    2  TRACFLG BIT(16),'××
+*             ANS('    2  TRACFLG BIT(16),'||
 *             '/*TWO BYTE ATTRIBUTE AREA @Y30LB02*/')SKIP;
-*             ANS('       3  TRACEON BIT(1),/*TRACEON/OFF'××
+*             ANS('       3  TRACEON BIT(1),/*TRACEON/OFF'||
 *             ' ATTRIBUTE @Y30LB02*/')SKIP;
-*             ANS('       3  *      BIT(15),/*RESERVED AND'××
+*             ANS('       3  *      BIT(15),/*RESERVED AND'||
 *             ' MUST BE ZERO @Y30LB02*/')SKIP;
-*             ANS('    2  TRACTIM  CHAR(8);'××
+*             ANS('    2  TRACTIM  CHAR(8);'||
 *             '/*TIME AND DATE @Y30LB02*/')SKIP;
 *             GO TO FINISH;    /*BRANCH TO END               @Y30LB02*/
 */*                                                          @Y30LB02*/
@@ -445,43 +445,43 @@ TRACTIM  DC   XL8'0000'           8-BYTE TIME/DATE AREA        @Y30LB02
 *        DO;                  /*NO,PRINNT ERROR MSG          @Y30LB02*/
 *             ERSW=1;         /*SET ERROR SWITCH             @Y30LB02*/
 *             RETCODE=12;     /*SET RETURN CODE              @Y30LB02*/
-*             ANS MSG('  ICB612I - MF(2) MUST '××
-*                'CONTAIN REQ BLK NAME IF '××
+*             ANS MSG('  ICB612I - MF(2) MUST '||
+*                'CONTAIN REQ BLK NAME IF '||
 *                'EXEC MACRO FORM REQUESTED ')SKIP(3);     /*@Y30LB02*/
 *             GO TO CKSW;     /*BRANCH TO CK SWITCH          @Y30LB02*/
 *        END;                 /*                             @Y30LB02*/
 */*                                                          @Y30LB02*/
 *   ELSE                      /*                             @Y30LB02*/
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************* @Y30LB02*/')SKIP;
-*        ANS('/*     MACMEAN  MSSC TRACE MACRO            '××
+*        ANS('/*     MACMEAN  MSSC TRACE MACRO            '||
 *            '              @Y30LB02*/')SKIP;
-*        ANS('/*VS1-4/VS2-3 VERSION-- 06/09/74 LEVEL 00   '××
+*        ANS('/*VS1-4/VS2-3 VERSION-- 06/09/74 LEVEL 00   '||
 *            '              @Y30LB02*/')SKIP;
-*        ANS('/*THIS IS THE OUTPUT FOR THE EXECUTE FORM.  '××
+*        ANS('/*THIS IS THE OUTPUT FOR THE EXECUTE FORM.  '||
 *            '              @Y30LB02*/')SKIP;
-*        ANS('/*THE LIST FORM OF THIS MACRO SHOULD BE     '××
+*        ANS('/*THE LIST FORM OF THIS MACRO SHOULD BE     '||
 *            '              @Y30LB02*/')SKIP;
-*        ANS('/*INVOKED FIRST IN ORDER TO SET UP NECESSARY'××
+*        ANS('/*INVOKED FIRST IN ORDER TO SET UP NECESSARY'||
 *            '              @Y30LB02*/')SKIP;
-*        ANS('/*DECLARES.  IF THE COMPLETE ARGUMENT IS    '××
+*        ANS('/*DECLARES.  IF THE COMPLETE ARGUMENT IS    '||
 *            '              @Y30LB02*/')SKIP;
-*        ANS('/*SPECIFIED THE REQ BLOCK WILL BE ZEROED.   '××
+*        ANS('/*SPECIFIED THE REQ BLOCK WILL BE ZEROED.   '||
 *            '              @Y30LB02*/')SKIP;
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************* @Y30LB02*/')SKIP;
 *    IF MF(3) = 'COMPLETE' THEN  /*COMPLETE SPECIFIED?       @Y30LB02*/
 *      DO;                       /*ZERO REQUSET BLOCK        @Y30LB02*/
-*        ANS(' '××MF(2)××'='××MF(2)××'&&'××MF(2)××';'××    /*@Y30LB02*/
+*        ANS(' '||MF(2)||'='||MF(2)||'&&'||MF(2)||';'||    /*@Y30LB02*/
 *        '/*ZERO OUT THE REQUEST BLOCK @Y30LB02*/')SKIP;
 *      END;                      /*                          @Y30LB02*/
 */*                                                          @Y30LB02*/
 *        ANS('RFY(TRACR1)RSTD;/*RESTRICT REG1 @Y30LB02*/')SKIP;
-*        ANS('TRACR1=ADDR('××MF(2)××');/*R1 POINTER TO'××
+*        ANS('TRACR1=ADDR('||MF(2)||');/*R1 POINTER TO'||
 *        ' REQUEST BLOCK @Y30LB02*/')SKIP;
-*        ANS('TRACLEN= '××QUOTE(TRLEN)××'X;/*LENGTH '××
+*        ANS('TRACLEN= '||QUOTE(TRLEN)||'X;/*LENGTH '||
 *        'OF TRACE REQUEST @Y30LB02*/')SKIP;
-*        ANS('TRACOPC= '××QUOTE(TRACOP)××'X;/*TRACE'××
+*        ANS('TRACOPC= '||QUOTE(TRACOP)||'X;/*TRACE'||
 *        ' OPCODE @Y30LB02*/')SKIP;
 */*                                                          @Y30LB02*/
 *CKSW:
@@ -495,7 +495,7 @@ TRACTIM  DC   XL8'0000'           8-BYTE TIME/DATE AREA        @Y30LB02
 *     DO;                     /*NO,PRINT ERROR MESSAGE       @Y30LB02*/
 *        ERSW=1;              /*SET ERROR SWITCH             @Y30LB02*/
 *        RETCODE=12;          /*SET ERROR RETURN CODE        @Y30LB02*/
-*        ANS MSG('  ICB615I - INVALID MF PARAMETER '××
+*        ANS MSG('  ICB615I - INVALID MF PARAMETER '||
 *             'SPECIFIED, MUST BE L, E, OR NULL')SKIP;     /*@Y30LB02*/
 *        GO TO CKSW2;         /*BRANCH TO CK SWITCH          @Y30LB02*/
 *     END;                    /*                             @Y30LB02*/
@@ -504,7 +504,7 @@ TRACTIM  DC   XL8'0000'           8-BYTE TIME/DATE AREA        @Y30LB02
 *     DO;                     /*NO,PRINT ERROR MESSAGE       @Y30LB02*/
 *        ERSW=1;              /*SET ERROR SWITCH             @Y30LB02*/
 *        RETCODE=12;          /*SET RETURN CODE              @Y30LB02*/
-*        ANS MSG('  ICB607I - FLAGS MUST BE SPECIFIED '××
+*        ANS MSG('  ICB607I - FLAGS MUST BE SPECIFIED '||
 *        'FOR STANDARD FORM MACRO')SKIP;                   /*@Y30LB02*/
 *        GO TO CKSW2;         /*BRANCH                       @Y30LB02*/
 *     END;                    /*                             @Y30LB02*/
@@ -512,7 +512,7 @@ TRACTIM  DC   XL8'0000'           8-BYTE TIME/DATE AREA        @Y30LB02
 *     DO;                     /*PRINT ERROR MESSAGE          @Y30LB02*/
 *        ERSW=1;              /*SET ERROR SWITCH             @Y30LB02*/
 *        RETCODE=12;          /*SET RETURN CODE              @Y30LB02*/
-*        ANS MSG('  ICB614I - TIMDAT MUST BE SPECIFIED'××
+*        ANS MSG('  ICB614I - TIMDAT MUST BE SPECIFIED'||
 *        ' FOR STANDARD FORM MACRO')SKIP;                  /*@Y30LB02*/
 *     END;                   /*                              @Y30LB02*/
 */*                                                          @Y30LB02*/
@@ -523,59 +523,59 @@ TRACTIM  DC   XL8'0000'           8-BYTE TIME/DATE AREA        @Y30LB02
 */*                                                          @Y30LB02*/
 *   IF TRACTEST = 1 THEN      /*STD FORM INVOKED BEFORE?     @Y30LB02*/
 *     DO;                     /*YES,DON'T PRINT DECLARES     @Y30LB02*/
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************** @Y30LB02*/')SKIP;
-*        ANS('/*     MACMEAN  MSSC TRACE MACRO            '××
+*        ANS('/*     MACMEAN  MSSC TRACE MACRO            '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '××
+*        ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*THIS IS THE OUTPUT FOR A SECONDARY        '××
+*        ANS('/*THIS IS THE OUTPUT FOR A SECONDARY        '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*INVOCATION OF THE STANDARD FORM MACRO     '××
+*        ANS('/*INVOCATION OF THE STANDARD FORM MACRO     '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************** @Y30LB02*/')SKIP;
 *        ANS('RFY(TRACR1)RSTD;/*RESTRICT REG1 @Y30LB02*/')SKIP;
 *        ANS('TRACR1=ADDR(TRACLEN);/*R1 PTR TO BLK @Y30LB02*/')SKIP;
-*        ANS('TRACLEN= '××QUOTE(TRLEN)××'X;/*LENGTH '××
+*        ANS('TRACLEN= '||QUOTE(TRLEN)||'X;/*LENGTH '||
 *        'OF TRACE REQUEST @Y30LB02*/')SKIP;
-*        ANS('TRACOPC='××QUOTE(TRACOP)××'X;/*TRACE'××
+*        ANS('TRACOPC='||QUOTE(TRACOP)||'X;/*TRACE'||
 *        ' OPCODE @Y30LB02*/')SKIP;
 *        GO TO COMPROC;       /*BRANCH TO CK PARAMETERS      @Y30LB02*/
 *     END;                    /*                             @Y30LB02*/
 */*                                                          @Y30LB02*/
 *   ELSE                      /*1ST INVOC OF STD FORM        @Y30LB02*/
 *     DO;                     /*PUT OUT THE DECLARES         @Y30LB02*/
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************** @Y30LB02*/')SKIP;
-*        ANS('/*    MACMEAN  MSSC TRACE MACRO             '××
+*        ANS('/*    MACMEAN  MSSC TRACE MACRO             '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '××
+*        ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*INVOCATION OF THE STANDARD FORM MACRO     '××
+*        ANS('/*INVOCATION OF THE STANDARD FORM MACRO     '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************** @Y30LB02*/')SKIP;
 *        ANS('RFY(TRACR1)RSTD;/*RESTRICT REG1 @Y30LB02*/')SKIP;
-*        ANS('TRACR1=ADDR(TRACLEN);/*R1 PTR  '××
+*        ANS('TRACR1=ADDR(TRACLEN);/*R1 PTR  '||
 *        'TO LIST @Y30LB02*/')SKIP;
-*        ANS('DCL 1 TRACLST  STATIC LOCAL,'××
+*        ANS('DCL 1 TRACLST  STATIC LOCAL,'||
 *        ' /*TRACE REQUEST BLOCK @Y30LB02*/')SKIP;
-*        ANS('    2  TRACLEN  FIXED(31)INIT('××QUOTE('10')××
+*        ANS('    2  TRACLEN  FIXED(31)INIT('||QUOTE('10')||
 *        'X),/*LENGTH OF TRACE REQ BLK @Y30LB02*/')SKIP;
-*        ANS('    2  TRACOPC  CHAR(1)INIT('××QUOTE('24')××
+*        ANS('    2  TRACOPC  CHAR(1)INIT('||QUOTE('24')||
 *        'X),/*TRACE OPCODE @Y30LB02*/')SKIP;
-*        ANS('    2  *      CHAR(1)INIT('××QUOTE('00')××
+*        ANS('    2  *      CHAR(1)INIT('||QUOTE('00')||
 *        'X),/*RESERVED AND ZERO @Y30LB02*/')SKIP;
-*        ANS('    2  TRACFLG BIT(16)INIT('××QUOTE
-*        ('0000000000000000')××'B),/*TWO BYTE ATTRI'××
+*        ANS('    2  TRACFLG BIT(16)INIT('||QUOTE
+*        ('0000000000000000')||'B),/*TWO BYTE ATTRI'||
 *        'BUTE AREA @Y30LB02*/')SKIP;
-*        ANS('       3  TRACEON BIT(1),/*TRACEON/OFF'××
+*        ANS('       3  TRACEON BIT(1),/*TRACEON/OFF'||
 *        ' ATTRIBUTE @Y30LB02*/')SKIP;
-*        ANS('       3  *      BIT(15),/*RESERVED AND'××
+*        ANS('       3  *      BIT(15),/*RESERVED AND'||
 *        ' MUST BE ZERO @Y30LB02*/')SKIP;
-*        ANS('    2  TRACTIM  CHAR(8) INIT('××QUOTE
-*        ('0000000000000000')××'X);/*TIME/DATE @Y30LB02*/')SKIP;
+*        ANS('    2  TRACTIM  CHAR(8) INIT('||QUOTE
+*        ('0000000000000000')||'X);/*TIME/DATE @Y30LB02*/')SKIP;
 *        TRACTEST=TRACTEST+1; /*INCREMENT STD FORM CTR       @Y30LB02*/
 *        GO TO COMPROC;       /*BRCH TO CK PARAMETERS        @Y30LB02*/
 *     END;                    /*                             @Y30LB02*/
@@ -588,11 +588,11 @@ TRACTIM  DC   XL8'0000'           8-BYTE TIME/DATE AREA        @Y30LB02
 */*********************************************************  @Y30LB02*/
 *COMPROC:
 *   IF FLAGS ^= '' THEN      /*FLAGS SPECIFIED?              @Y30LB02*/
-*        ANS('TRACFLG= '××FLAGS××';/*VALUE OF FLAGS '××
+*        ANS('TRACFLG= '||FLAGS||';/*VALUE OF FLAGS '||
 *        'PARAMETER @Y30LB02*/')SKIP;
 */*                                                          @Y30LB02*/
 *   IF TIMDAT ^= '' THEN     /*TIME AND DATE SPECIFIED?      @Y30LB02*/
-*        ANS('TRACTIM= '××TIMDAT××';/*TIME/DATE PARM @Y30LB02*/')SKIP;
+*        ANS('TRACTIM= '||TIMDAT||';/*TIME/DATE PARM @Y30LB02*/')SKIP;
 */*                                                          @Y30LB02*/
 */********************************************************   @Y30LB02*/
 */*      THE FOLLOWING CODE WILL INVOKE SVC 126.             @Y30LB02*/

@@ -164,9 +164,9 @@
 *
 *        IF MACLABEL^='' THEN          /*LABEL ON MACRO CALL?*/
 *          ANS(MACLABEL) COL(MACLMAR); /*YES: GEN LABEL*/
-*        CMT='?'××MACLABEL××' '××MACNAME××' '××MACLIST××MACKEYS××
+*        CMT='?'||MACLABEL||' '||MACNAME||' '||MACLIST||MACKEYS||
 *        ' MACDATE(78.290)';
-*        ANS ('DO; '××COMMENT(CMT)) SKIP COL(MACCOL);
+*        ANS ('DO; '||COMMENT(CMT)) SKIP COL(MACCOL);
 *
 *        /* INITIALIZE MACRO RETURN CODE */
 *
@@ -176,9 +176,9 @@
 *
 *        IF NUMBER(MACLIST)^=0 THEN    /*ANY POSITIONAL PARAMETERS?*/
 *          DO;                         /*YES: ERROR*/
-*            ANS MSG('AHA0023  ''MACLIST'' IS INVALID WITH GETSRB.'××
+*            ANS MSG('AHA0023  ''MACLIST'' IS INVALID WITH GETSRB.'||
 *            ' NO TEXT IS GENERATED.'); /*MSOURCE MSG*/
-*            ANS ('/*AHA0023  ''MACLIST'' IS INVALID WITH GETSRB.'××
+*            ANS ('/*AHA0023  ''MACLIST'' IS INVALID WITH GETSRB.'||
 *            ' NO TEXT IS GENERATED.*/') SKIP COL(10); /*TEXT MSG*/
 *            GOTO LHA03000;
 *          END;                        /*NO: CONTINUE*/
@@ -188,9 +188,9 @@
 *
 *        IF TYPE='' THEN               /*TYPE SUPPLIED?*/
 *          DO;                         /*NO: ERROR*/
-*            ANS MSG('AHA0013  ''TYPE'' IS REQUIRED BUT IS NOT '××
+*            ANS MSG('AHA0013  ''TYPE'' IS REQUIRED BUT IS NOT '||
 *            'SUPPLIED. NO TEXT IS GENERATED.'); /*MSOURCE MSG*/
-*            ANS ('/*AHA0013  ''TYPE'' IS REQUIRED BUT IS NOT '××
+*            ANS ('/*AHA0013  ''TYPE'' IS REQUIRED BUT IS NOT '||
 *            'SUPPLIED. NO TEXT IS GENERATED.*/')
 *            SKIP COL(10);             /*TEXT MSG*/
 *            GOTO LHA03000;
@@ -198,9 +198,9 @@
 *
 *        IF NUMBER(TYPE)>1 THEN        /*EXCESSIVE VALUES SUPPLIED?*/
 *          DO;                         /*YES: ERROR*/
-*            ANS MSG('AHA0033  TYPE'××TYPE××' IS TOO LONG. NO TEXT '××
+*            ANS MSG('AHA0033  TYPE'||TYPE||' IS TOO LONG. NO TEXT '||
 *            'IS GENERATED.');          /*MSOURCE MSG*/
-*            ANS ('/*AHA0033  TYPE'××TYPE××' IS TOO LONG. NO TEXT '××
+*            ANS ('/*AHA0033  TYPE'||TYPE||' IS TOO LONG. NO TEXT '||
 *            'IS GENERATED.*/') SKIP COL(10); /*TEXT MSG*/
 *            GOTO LHA03000;
 *          END;                        /*NO: CONTINUE*/
@@ -219,9 +219,9 @@
 *
 *        IF TYPE(1)^='EXPAND' THEN     /*TYPE VALID?*/
 *          DO;                         /*YES: ERROR*/
-*            ANS MSG('AHA0023  '××TYPE(1)××' IS INVALID WITH '××
+*            ANS MSG('AHA0023  '||TYPE(1)||' IS INVALID WITH '||
 *            '''TYPE''. NO TEXT IS GENERATED.'); /*MSOURCE MSG*/
-*            ANS ('/*AHA0023  '××TYPE(1)××' IS INVALID WITH '××
+*            ANS ('/*AHA0023  '||TYPE(1)||' IS INVALID WITH '||
 *            '''TYPE''. NO TEXT IS GENERATED.*/')
 *            SKIP COL(10);             /*TEXT MSG*/
 *            GOTO LHA03000;
@@ -235,9 +235,9 @@
 *
 *        IF REGS='' THEN               /*REGS SUPPLIED?*/
 *          DO;                         /*NO: ERROR*/
-*            ANS MSG('AHA0013  ''REGS'' IS REQUIRED BUT IS NOT '××
+*            ANS MSG('AHA0013  ''REGS'' IS REQUIRED BUT IS NOT '||
 *            'SUPPLIED. NO TEXT IS GENERATED.'); /*MSOURCE MSG*/
-*            ANS ('/*AHA0013  ''REGS'' IS REQUIRED BUT IS NOT '××
+*            ANS ('/*AHA0013  ''REGS'' IS REQUIRED BUT IS NOT '||
 *            'SUPPLIED. NO TEXT IS GENERATED.*/')
 *            SKIP COL(10);             /*TEXT MSG*/
 *            GOTO LHA03000;
@@ -245,9 +245,9 @@
 *
 *        IF NUMBER(REGS)>1 THEN        /*EXCESSIVE VALUES SUPPLIED?*/
 *          DO;                         /*YES: ERROR*/
-*            ANS MSG('AHA0033  REGS'××REGS××' IS TOO LONG. NO TEXT '××
+*            ANS MSG('AHA0033  REGS'||REGS||' IS TOO LONG. NO TEXT '||
 *            'IS GENERATED.');          /*MSOURCE MSG*/
-*            ANS ('/*AHA0033  REGS'××REGS××' IS TOO LONG. NO TEXT '××
+*            ANS ('/*AHA0033  REGS'||REGS||' IS TOO LONG. NO TEXT '||
 *            'IS GENERATED.*/') SKIP COL(10); /*TEXT MSG*/
 *            GOTO LHA03000;
 *          END;                        /*NO: CONTINUE*/
@@ -257,9 +257,9 @@
 *
 *        IF REGS(1)^='USE' THEN        /*REGS VALID?*/
 *          DO;                         /*NO: ERROR*/
-*            ANS MSG('AHA0023  '××REGS(1)××' IS INVALID WITH '××
+*            ANS MSG('AHA0023  '||REGS(1)||' IS INVALID WITH '||
 *            '''REGS''. NO TEXT IS GENERATED.'); /*MSOURCE MSG*/
-*            ANS ('/*AHA0023  '××REGS(1)××' IS INVALID WITH '××
+*            ANS ('/*AHA0023  '||REGS(1)||' IS INVALID WITH '||
 *            '''REGS''. NO TEXT IS GENERATED.*/')
 *            SKIP COL(10);             /*TEXT MSG*/
 *            GOTO LHA03000;
@@ -273,21 +273,21 @@
 *
 *        IF REGS(1)='SAVE' THEN        /*SAVE USERS REGS?*/
 *          DO;                         /*YES: GEN SAVE*/
-*            ANS('RFY (GPR00F,GPR01F,GPR05F,GPR13P) RSTD; '××
+*            ANS('RFY (GPR00F,GPR01F,GPR05F,GPR13P) RSTD; '||
 *            '/*RESTRICT REGS USED BY GETSRB*/') SKIP COL(MACCOL+2);
-*            ANS('STM(GPR02F,GPR05F,GPR13P->SA@); /*SAVE CALLERS '××
+*            ANS('STM(GPR02F,GPR05F,GPR13P->SA@); /*SAVE CALLERS '||
 *            'REGS 2-5*/') SKIP COL(MACCOL+2);
-*            ANS('STM(GPR11F,GPR12F,GPR13P->SA@(17:24)); /*SAVE '××
+*            ANS('STM(GPR11F,GPR12F,GPR13P->SA@(17:24)); /*SAVE '||
 *            'CALLERS REGS 11-12*/') SKIP COL(MACCOL+2);
 *            ANS('GPR05F=GPR13P; /*SAVE ADDRESS OF SAVE AREA*/')
 *            SKIP COL(MACCOL+2);
 *          END;
 *        ELSE                          /*NO: MUST BE REGS(USE)*/
-*          ANS('RFY (GPR00F,GPR01F,GPR02F,GPR03F,GPR04F,GPR11F,'××
+*          ANS('RFY (GPR00F,GPR01F,GPR02F,GPR03F,GPR04F,GPR11F,'||
 *          'GPR12F,GPR13P) RSTD; /*RESTRICT REGS USED BY GETSRB*/')
 *          SKIP COL(MACCOL+2);
 *
-*        ANS('GPR01F='××VAL××'; /*SET TYPE OPTION*/') SKIP
+*        ANS('GPR01F='||VAL||'; /*SET TYPE OPTION*/') SKIP
 *            COL(MACCOL+2);
 *        ANS('CALL IEAVSPM1; /*CALL GETSRB EP*/') SKIP COL(MACCOL+2);
 *
@@ -295,50 +295,50 @@
 *          DO;                         /*YES: GEN RESTORE*/
 *            ANS('GPR13P=GPR05F; /*RESTORE SAVE AREA ADDRESS*/')
 *            SKIP COL(MACCOL+2);
-*            ANS('LM(GPR02F,GPR05F,GPR13P->SA@); /*RESTORE CALLERS '××
+*            ANS('LM(GPR02F,GPR05F,GPR13P->SA@); /*RESTORE CALLERS '||
 *            'REGS 2-5*/') SKIP COL(MACCOL+2);
-*            ANS('LM(GPR11F,GPR12F,GPR13P->SA@(17:24)); /*RESTORE '××
+*            ANS('LM(GPR11F,GPR12F,GPR13P->SA@(17:24)); /*RESTORE '||
 *            'CALLERS REGS 11-12*/') SKIP COL(MACCOL+2);
-*            ANS('RFY (GPR00F,GPR01F,GPR05F,GPR13P) UNRSTD; '××
+*            ANS('RFY (GPR00F,GPR01F,GPR05F,GPR13P) UNRSTD; '||
 *            '/*UNRESTRICT REGS*/') SKIP COL(MACCOL+2);
 *          END;
 *        ELSE                          /*NO: MUST BE REGS(USE)*/
-*          ANS('RFY (GPR00F,GPR01F,GPR02F,GPR03F,GPR04F,GPR11F,'××
+*          ANS('RFY (GPR00F,GPR01F,GPR02F,GPR03F,GPR04F,GPR11F,'||
 *          'GPR12F,GPR13P) UNRSTD; /*UNRESTRICT REGS*/')
 *          SKIP COL(MACCOL+2);
 *
 *        /* REQUEST GLOBAL VARIABLE DECLARES FROM EPILOG */
 *
 *        IF INDEX(EHAREGS,'00F')=0 THEN /*DCL FOR R0 REQUESTED?*/
-*          EHAREGS=EHAREGS××'00F';     /* NO: REQUEST IT*/
+*          EHAREGS=EHAREGS||'00F';     /* NO: REQUEST IT*/
 *        IF INDEX(EHAREGS,'01F')=0 THEN /*DCL FOR R1 REQUESTED?*/
-*          EHAREGS=EHAREGS××'01F';     /* NO: REQUEST IT*/
+*          EHAREGS=EHAREGS||'01F';     /* NO: REQUEST IT*/
 *        IF INDEX(EHAREGS,'02F')=0 THEN /*DCL FOR R2 REQUESTED?*/
-*          EHAREGS=EHAREGS××'02F';     /* NO: REQUEST IT*/
+*          EHAREGS=EHAREGS||'02F';     /* NO: REQUEST IT*/
 *        IF INDEX(EHAREGS,'11F')=0 THEN /*DCL FOR R11 REQUESTED?*/
-*          EHAREGS=EHAREGS××'11F';     /* NO: REQUEST IT*/
+*          EHAREGS=EHAREGS||'11F';     /* NO: REQUEST IT*/
 *        IF INDEX(EHAREGS,'12F')=0 THEN /*DCL FOR R12 REQUESTED?*/
-*          EHAREGS=EHAREGS××'12F';     /* NO: REQUEST IT*/
+*          EHAREGS=EHAREGS||'12F';     /* NO: REQUEST IT*/
 *        IF INDEX(EHAREGS,'13P')=0 THEN /*DCL FOR R13 REQUESTED?*/
-*          EHAREGS=EHAREGS××'13P';     /* NO: REQUEST IT*/
+*          EHAREGS=EHAREGS||'13P';     /* NO: REQUEST IT*/
 *
 *        IF REGS(1)='USE' THEN         /*REGS(USE)?*/
 *          DO;                         /*YES: DCL REGS USED*/
 *            IF INDEX(EHAREGS,'03F')=0 THEN /*DCL FOR R3 REQUESTED?*/
-*              EHAREGS=EHAREGS××'03F'; /* NO: REQUEST IT*/
+*              EHAREGS=EHAREGS||'03F'; /* NO: REQUEST IT*/
 *            IF INDEX(EHAREGS,'04F')=0 THEN /*DCL FOR R4 REQUESTED?*/
-*              EHAREGS=EHAREGS××'04F'; /* NO: REQUEST IT*/
+*              EHAREGS=EHAREGS||'04F'; /* NO: REQUEST IT*/
 *          END;
 *        ELSE                          /*REGS(SAVE)*/
 *          DO;                         /*DCL REG AND SAVEAREA*/
 *            IF INDEX(EHAREGS,'05F')=0 THEN /*DCL FOR R5 REQUESTED?*/
-*              EHAREGS=EHAREGS××'05F'; /* NO: REQUEST IT*/
+*              EHAREGS=EHAREGS||'05F'; /* NO: REQUEST IT*/
 *            IF INDEX(EHAMAPS,'SA@')=0 THEN /*SAVEAREA DCL REQUESTED?*/
-*              EHAMAPS=EHAMAPS××'SA@,'; /* NO: REQUEST IT*/
+*              EHAMAPS=EHAMAPS||'SA@,'; /* NO: REQUEST IT*/
 *          END;
 *
 *LHA03000: ;
 *
-*        ANS ('END; '××COMMENT(CMT)) SKIP COL(MACCOL);
+*        ANS ('END; '||COMMENT(CMT)) SKIP COL(MACCOL);
 *        RETURN CODE(RC);              /*MACRO END*/
 *%       END GETSRB;

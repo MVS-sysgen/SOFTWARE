@@ -167,43 +167,43 @@ RMEPB&EPN EQU  *
 *@       LIST  POP;                 /* RESUME LIST STATUS FOR RMEP   */
 *        %RMEPLABL = 'RMEP';        /* INITIALIZE THE LABEL VARIABLE */
 *        %IF RMEPSFX ^= ' '         /* IS THIS THE DUPLICATE INCLUDE */
-*            %THEN %RMEPLABL = 'RMEP'××RMEPSFX; /* RENAME STRUCTURE  */
+*            %THEN %RMEPLABL = 'RMEP'||RMEPSFX; /* RENAME STRUCTURE  */
 *        %IF RMEP9999 ^= ','        /* DOES STRUCTURE CONTINUE       */
 *            %THEN %RMEP9999 = ';'; /* NO, END DECLARE STATEMENT     */
-*        %RMEPDUM = RMEPLABL××'PTR' ;  /* QUALIFY BASED POINTER NAME */
+*        %RMEPDUM = RMEPLABL||'PTR' ;  /* QUALIFY BASED POINTER NAME */
 *   DCL
 *     1 RMEPLABL BASED(RMEPDUM) BDY(DWORD),
-*         %RMEPLABL = 'RMEPEPB'××RMEPSFX       ;
+*         %RMEPLABL = 'RMEPEPB'||RMEPSFX       ;
 *       10 RMEPLABL CHAR(16) BDY(DWORD), /* ENTRY POINT BLOCK        */
-*         %RMEPLABL = 'RMEPEPA'××RMEPSFX       ;
+*         %RMEPLABL = 'RMEPEPA'||RMEPSFX       ;
 *         12 RMEPLABL PTR(31),      /* ENTRY POINT ADDRESS           */
-*         %RMEPLABL = 'RMEPERA'××RMEPSFX       ;
+*         %RMEPLABL = 'RMEPERA'||RMEPSFX       ;
 *         12 RMEPLABL PTR(31),      /* ERROR RETRY POINT ADDRESS     */
-*         %RMEPLABL = 'RMEPFLG'××RMEPSFX       ;
+*         %RMEPLABL = 'RMEPFLG'||RMEPSFX       ;
 *         12 RMEPLABL BIT(32) BDY(WORD), /* INVOCATION FLAG MASK     */
-*         %RMEPLABL = 'RMEPVFL'××RMEPSFX       ;
+*         %RMEPLABL = 'RMEPVFL'||RMEPSFX       ;
 *           14 RMEPLABL BIT(29),    /* RTNE INVOC FLAG FIELD @Z40BPCH*/
-*         %RMEPLABL = 'RMEPRCR'××RMEPSFX       ;
+*         %RMEPLABL = 'RMEPRCR'||RMEPSFX       ;
 *           14 RMEPLABL BIT(01),    /* CRITICAL ALGORITHM INDICATOR  */
-*         %RMEPLABL = 'RMEPTMD'××RMEPSFX       ;
+*         %RMEPLABL = 'RMEPTMD'||RMEPSFX       ;
 *           14 RMEPLABL BIT(01),    /* RTNE INVOKE TIME-DEPENDENT    */
-*         %RMEPLABL = 'RMEPACN'××RMEPSFX       ;
+*         %RMEPLABL = 'RMEPACN'||RMEPSFX       ;
 *           14 RMEPLABL BIT(01),    /* RTNE PERFORMS USER LEVL ACTN  */
-*         %RMEPLABL = 'RMEPPRV'××RMEPSFX       ;
+*         %RMEPLABL = 'RMEPPRV'||RMEPSFX       ;
 *         12 RMEPLABL PTR(31),      /* ADDRESS OF PREV RMEP BLOCK    */
-*         %RMEPLABL = 'RMEPEND'××RMEPSFX       ;
+*         %RMEPLABL = 'RMEPEND'||RMEPSFX       ;
 *       10 RMEPLABL CHAR(0) BDY(DWORD),  /* END OF BASE RMEP         */
-*         %RMEPLABL = 'RMEPSCH'××RMEPSFX       ;
+*         %RMEPLABL = 'RMEPSCH'||RMEPSFX       ;
 *       10 RMEPLABL CHAR(16) BDY(DWORD), /* SCHEDULING EXTENSN       */
-*         %RMEPLABL = 'RMEPFWD'××RMEPSFX       ;
+*         %RMEPLABL = 'RMEPFWD'||RMEPSFX       ;
 *         12 RMEPLABL PTR(31),      /* TIME DRIVEN CHAIN FORWRD PTR  */
-*         %RMEPLABL = 'RMEPBCK'××RMEPSFX       ;
+*         %RMEPLABL = 'RMEPBCK'||RMEPSFX       ;
 *         12 RMEPLABL PTR(31),      /* TIME DRIVEN CHAIN BCKWRD PTR  */
-*         %RMEPLABL = 'RMEPTME'××RMEPSFX       ;
+*         %RMEPLABL = 'RMEPTME'||RMEPSFX       ;
 *         12 RMEPLABL FIXED(32) UNSIGNED, /* TIME WHEN ENTRY SCHED   */
-*         %RMEPLABL = 'RMEPINT'××RMEPSFX       ;
+*         %RMEPLABL = 'RMEPINT'||RMEPSFX       ;
 *         12 RMEPLABL FIXED(32) UNSIGNED, /* INVOCATION INTERVAL     */
-*         %RMEPLABL = 'RMEPSND'××RMEPSFX       ;
+*         %RMEPLABL = 'RMEPSND'||RMEPSFX       ;
 *       10 RMEPLABL CHAR(0) BDY(DWORD)   /* END OF SCHD RMEP         */
 *   RMEP9999
 *   %RMEPLEN = 'LENGTH(RMEPEPB)' ;

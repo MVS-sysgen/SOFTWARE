@@ -170,7 +170,7 @@ PCBLEN   EQU   *-PCB           LENGTH OF PAGE CONTROL BLOCK
 * /*******************************************************************/
 *DCL 1 PCB BASED (PCBPTR)           /* DECLARE PCB LEVEL 1           */
 *        %GO TO PCBPLS2;            /* AND SKIP LEVEL TWO DCL        */
-*%PCBPLS1: PCBDUM=PCBLEVEL××' PCB'; /* SET LEVEL FOR MINOR STRUCTURE */
+*%PCBPLS1: PCBDUM=PCBLEVEL||' PCB'; /* SET LEVEL FOR MINOR STRUCTURE */
 *    PCBDUM                         /* MINOR STRUCTURE NAME PARM     */
 *%PCBPLS2:;
 *        BDY(WORD),

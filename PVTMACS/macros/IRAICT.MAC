@@ -105,7 +105,7 @@ ICTLEN   EQU   ICTEND-ICT -        LENGTH OF ICT
 *DECLARE                           /*                                */
 *  1 ICT BASED(ICTPTR)             /*     I/O CONTROL TABLE          */
 *    %GOTO ICTPLS4;                /* MAJOR STRUCTURE                */
-*%ICTPLS3: ICTDUM=ICTLEVEL××' ICT'; /* CONCATENATE AS MINOR STRUCTURE*/
+*%ICTPLS3: ICTDUM=ICTLEVEL||' ICT'; /* CONCATENATE AS MINOR STRUCTURE*/
 *  ICTDUM                          /*     I/O CONTROL TABLE          */
 *%ICTPLS4:;
 *          BDY(DWORD),

@@ -142,7 +142,7 @@
 .*   THE FORMAT OF THE LIBID FIELD IS SHOWN BELOW:             @Y30LB02
 .*                                                             @Y30LB02
 .*    ---------------------------------                        @Y30LB02
-.*    × 0 × 0 × 0 × 0 × 0 × 0 × X × X ×                        @Y30LB02
+.*    | 0 | 0 | 0 | 0 | 0 | 0 | X | X |                        @Y30LB02
 .*    ---------------------------------                        @Y30LB02
 .*                                                             @Y30LB02
 .* BITS 0-5 ---------------------IGNORED-MUST BE SET TO ZERO   @Y30LB02
@@ -153,7 +153,7 @@
 .* TO BE PERFORMED.  THE FORMAT OF THE FLAGS FIELD IS SHOWN    @Y30LB02
 .* BELOW:                                                      @Y30LB02
 .*    ---------------------------------                        @Y30LB02
-.*    × X × X × X × X × X × X × X × X ×                        @Y30LB02
+.*    | X | X | X | X | X | X | X | X |                        @Y30LB02
 .*    ---------------------------------                        @Y30LB02
 .*                                                             @Y30LB02
 .*         BIT 0-----------'1'B   CREATE VOLUME                @Y30LB02
@@ -270,7 +270,7 @@
 .*                                                             @Y30LB02
 .*                                                             @Y30LB02
 .*   ---------------------------------                         @Y30LB02
-.*   × X × 0 × X × X × 0 × X × X × 0 ×                         @Y30LB02
+.*   | X | 0 | X | X | 0 | X | X | 0 |                         @Y30LB02
 .*   ---------------------------------                         @Y30LB02
 .*                                                             @Y30LB02
 .*                                                             @Y30LB02
@@ -295,7 +295,7 @@
 .*   BIT 6-----------'1'B   WRITE INHIBIT                      @Y30LB02
 .*                   '0'B   NO FUNCTION                        @Y30LB02
 .*                                                             @Y30LB02
-.*   BIT 7-----------       ×UNUSED - MUST BE SET TO ZERO×     @Y30LB02
+.*   BIT 7-----------       |UNUSED - MUST BE SET TO ZERO|     @Y30LB02
 .*                                                             @Y30LB02
 .*   NOTE:  IF THE VOLFLG PARAMETER IS NOT SPECIFIED,          @Y30LB02
 .*   A VOLUME WILL BE DEFINED WITHOUT SPECIAL ATTRIBUTES.      @Y30LB02
@@ -670,7 +670,7 @@ DEFVVEXT DC    XL4'00000000'       4-BYTE VVICEXT AREA         @Y30LB02
 */*                                                          @Y30LB02*/
 *     IF DEFTESR1=0 THEN     /*REG 1 ALREADY DCLD?           @Y30LB02*/
 *        DO;                 /*NO,DECLARE IT                 @Y30LB02*/
-*          ANS('DCL DEFVR1 REG(1) PTR ;/*ADDRESS OF '××
+*          ANS('DCL DEFVR1 REG(1) PTR ;/*ADDRESS OF '||
 *          'REQUEST BLOCK @Y30LB02*/')SKIP;
 *          DEFTESR1=DEFTESR1+1;   /*INCREM REG COUNTER       @Y30LB02*/
 *        END;                     /*                         @Y30LB02*/
@@ -681,7 +681,7 @@ DEFVVEXT DC    XL4'00000000'       4-BYTE VVICEXT AREA         @Y30LB02
 *     DO;                    /*NO,PROCESS ERROR              @Y30LB02*/
 *        ERSW = 1;           /*SET ERROR SWITCH TO ONE       @Y30LB02*/
 *        RETCODE = 12;       /*SET RETURN CODE TO 12         @Y30LB02*/
-*        ANS MSG('  ICB602I -  A NAME FOR THE '××
+*        ANS MSG('  ICB602I -  A NAME FOR THE '||
 *        'REQUEST BLOCK MUST BE SPECIFIED IN MF(2)')SKIP;  /*@Y30LB02*/
 *        GO TO FINISH;       /*BRANCH TO END                 @Y30LB02*/
 *     END;                   /*                              @Y30LB02*/
@@ -716,8 +716,8 @@ DEFVVEXT DC    XL4'00000000'       4-BYTE VVICEXT AREA         @Y30LB02
 *        IF CTR > 0 THEN      /*COUNTER GT ZERO?             @Y30LB02*/
 *          DO;                /*YES,PRINT WARNING MSG        @Y30LB02*/
 *             RETCODE = 4;    /*SET RETURN CODE TO 4         @Y30LB02*/
-*             ANS MSG('  ICB604I -  WARNING-ONLY'××
-*                 ' THE MF PARAMETER IS VALID FOR THE'××
+*             ANS MSG('  ICB604I -  WARNING-ONLY'||
+*                 ' THE MF PARAMETER IS VALID FOR THE'||
 *                 ' LIST FORM  ')SKIP;                     /*@Y30LB02*/
 *          END;               /*                             @Y30LB02*/
 *     END;                    /*                             @Y30LB02*/
@@ -726,203 +726,203 @@ DEFVVEXT DC    XL4'00000000'       4-BYTE VVICEXT AREA         @Y30LB02
 */*                                                          @Y30LB02*/
 *   ELSE                      /*INITIALIZED LIST FORM        @Y30LB02*/
 *     DO;                     /*OUTPUT DECLARES FOR REQ BLK  @Y30LB02*/
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************** @Y30LB02*/')SKIP;
-*        ANS('/*    MACMEAN  MSSC DEFINE VOLUME MACRO     '××
+*        ANS('/*    MACMEAN  MSSC DEFINE VOLUME MACRO     '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '××
+*        ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*THIS IS THE INITIALIZED LIST FORM         '××
+*        ANS('/*THIS IS THE INITIALIZED LIST FORM         '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************** @Y30LB02*/')SKIP;
-*        ANS('DCL 1 '××MF(2)××'  STATIC LOCAL,'××
+*        ANS('DCL 1 '||MF(2)||'  STATIC LOCAL,'||
 *        '/*DEFINE VOLUME REQUEST BLOCK @Y30LB02*/')SKIP;
-*        ANS('    2  DEFVLEN  FIXED(31)INIT('××QUOTE('84')××
+*        ANS('    2  DEFVLEN  FIXED(31)INIT('||QUOTE('84')||
 *        'X),/*LENGTH OF DEFINE VOLUME REQ BLK @Y30LB02*/')SKIP;
-*        ANS('    2  DEFVOPCD  FIXED(8)INIT('××QUOTE('18')××
+*        ANS('    2  DEFVOPCD  FIXED(8)INIT('||QUOTE('18')||
 *        'X),/*DEFINE VOLUME OPCODE @Y30LB02*/')SKIP;
-*        ANS('    2  *       CHAR(1)INIT('××QUOTE('00')××
+*        ANS('    2  *       CHAR(1)INIT('||QUOTE('00')||
 *        'X),/*RESERVED AND ZERO @Y30LB02*/')SKIP;
-*        ANS('    2  DEFVFLG   BIT(8)INIT('××QUOTE
-*        ('00000000')××'B),/*ONE BYTE FLAGS  @Y30LB02*/')SKIP;
-*        ANS('       3  DEFVCR  BIT(1),/*CREATE ATTRI'××
+*        ANS('    2  DEFVFLG   BIT(8)INIT('||QUOTE
+*        ('00000000')||'B),/*ONE BYTE FLAGS  @Y30LB02*/')SKIP;
+*        ANS('       3  DEFVCR  BIT(1),/*CREATE ATTRI'||
 *        'BUTE @Y30LB02*/')SKIP;
-*        ANS('       3  DEFVELM BIT(1),/*ELIMINATE'××
+*        ANS('       3  DEFVELM BIT(1),/*ELIMINATE'||
 *        ' ATTRIBUTE @Y30LB02*/')SKIP;
-*        ANS('       3  DEFVRNM  BIT(1),/*RENAME ATTRI'××
+*        ANS('       3  DEFVRNM  BIT(1),/*RENAME ATTRI'||
 *        'BUTE @Y30LB02*/')SKIP;
-*        ANS('       3  DEFVREP  BIT(1),/*REPLACE VOLUME'××
+*        ANS('       3  DEFVREP  BIT(1),/*REPLACE VOLUME'||
 *        ' FLAGS @Y30LB02*/')SKIP;
-*        ANS('       3  DEFVELTR BIT(1),/*ELIMINATE TRAN'××
+*        ANS('       3  DEFVELTR BIT(1),/*ELIMINATE TRAN'||
 *        'SIENT VOLUME ATTRIBUTE @Y30LB02*/')SKIP;
-*        ANS('       3  DEFVRNTR BIT(1),/*RENAME TRAN'××
+*        ANS('       3  DEFVRNTR BIT(1),/*RENAME TRAN'||
 *        'SIENT VOLUME ATTRIBUTE @Y30LB02*/')SKIP;
-*        ANS('       3  DEFVACT BIT(1),/*ACTIVATE TRAN'××
+*        ANS('       3  DEFVACT BIT(1),/*ACTIVATE TRAN'||
 *        'SIENT VOLUME ATTRIBUTE @Y30LB02*/')SKIP;
-*        ANS('       3  DEFVDACT BIT(1),/*DEACTIVATE'××
+*        ANS('       3  DEFVDACT BIT(1),/*DEACTIVATE'||
 *        ' VOLUME ATTRIBUTE @Y30LB02*/')SKIP;
-*        ANS('    2  DEFVLIB  BIT(8)INIT('××QUOTE
-*        ('00000000')××'B), /*ONE BYTE LIBID @Y30LB02*/')SKIP;
-*        ANS('       3  *       BIT(6),/*RESERVED AND'××
+*        ANS('    2  DEFVLIB  BIT(8)INIT('||QUOTE
+*        ('00000000')||'B), /*ONE BYTE LIBID @Y30LB02*/')SKIP;
+*        ANS('       3  *       BIT(6),/*RESERVED AND'||
 *        ' MUST BE ZERO @Y30LB02*/')SKIP;
-*        ANS('       3  DEFVLID BIT(2),/*BINARY NUMBER'××
+*        ANS('       3  DEFVLID BIT(2),/*BINARY NUMBER'||
 *        ' ZERO TO THREE @Y30LB02*/')SKIP;
-*        ANS('    2  DEFVOLD CHAR(6) ,/*VOLUME IDENTIFI'××
+*        ANS('    2  DEFVOLD CHAR(6) ,/*VOLUME IDENTIFI'||
 *        'CATION @Y30LB02*/')SKIP;
-*        ANS('        3  *(6)  CHAR(1)INIT((6)'××QUOTE
-*        ('00')××'X),/*INIT VOLID AREA TO ZERO @Y30LB02*/')SKIP;
-*        ANS('    2  DEFVVFLG  BIT(8)INIT('××QUOTE
-*        ('00000000')××'B),/*VOLUME FLAG ATTRIB @Y30LB02*/')SKIP;
-*        ANS('       3  DEFVCECT BIT(1),/*CE CARTRIDGE'××
+*        ANS('        3  *(6)  CHAR(1)INIT((6)'||QUOTE
+*        ('00')||'X),/*INIT VOLID AREA TO ZERO @Y30LB02*/')SKIP;
+*        ANS('    2  DEFVVFLG  BIT(8)INIT('||QUOTE
+*        ('00000000')||'B),/*VOLUME FLAG ATTRIB @Y30LB02*/')SKIP;
+*        ANS('       3  DEFVCECT BIT(1),/*CE CARTRIDGE'||
 *        ' @Y30LB02*/')SKIP;
-*        ANS('       3  *  BIT(1),/*RESERVED BIT'××
+*        ANS('       3  *  BIT(1),/*RESERVED BIT'||
 *        ' @Y30LB02*/')SKIP;
-*        ANS('       3  DEFVSEC  BIT(1),/*SECURE VOLUME'××
+*        ANS('       3  DEFVSEC  BIT(1),/*SECURE VOLUME'||
 *        ' @Y30LB02*/')SKIP;
-*        ANS('       3  DEFVEXCL  BIT(1),/*EXCLUSIVE '××
+*        ANS('       3  DEFVEXCL  BIT(1),/*EXCLUSIVE '||
 *        'VOLUME @Y30LB02*/')SKIP;
-*        ANS('       3  *  BIT(1),/*RESERVED '××
+*        ANS('       3  *  BIT(1),/*RESERVED '||
 *        'BIT-USED BY THE SUBSYSTEM @Y30LB02*/')SKIP;
-*        ANS('       3  DEFVBIND  BIT(1),/*BIND VOLUME'××
+*        ANS('       3  DEFVBIND  BIT(1),/*BIND VOLUME'||
 *        ' @Y30LB02*/')SKIP;
-*        ANS('       3  DEFVWINH  BIT(1),/*WRITE INHIBIT'××
+*        ANS('       3  DEFVWINH  BIT(1),/*WRITE INHIBIT'||
 *        ' @Y30LB02*/')SKIP;
-*        ANS('       3  *       BIT(1),/*RESERVED-ZERO'××
+*        ANS('       3  *       BIT(1),/*RESERVED-ZERO'||
 *        ' @Y30LB02*/')SKIP;
-*        ANS('    2  *         CHAR(1)INIT('××QUOTE('00')××
+*        ANS('    2  *         CHAR(1)INIT('||QUOTE('00')||
 *        'X),/*1-BYTE RESERVED AREA @Y30LB02*/')SKIP;
 *        ANS('    2  DEFVNVOL  CHAR(6) ,/*NEW VOL ID @Y30LB02*/')SKIP;
-*        ANS('        3  *(6)  CHAR(1)INIT((6)'××QUOTE
-*        ('00')××'X),/*INIT AREA TO ZERO @Y30LB02*/')SKIP;
-*        ANS('    2  *          CHAR(2) ,/*2-BYTE RESERVED'××
+*        ANS('        3  *(6)  CHAR(1)INIT((6)'||QUOTE
+*        ('00')||'X),/*INIT AREA TO ZERO @Y30LB02*/')SKIP;
+*        ANS('    2  *          CHAR(2) ,/*2-BYTE RESERVED'||
 *        ' AREA @Y30LB02*/')SKIP;
-*        ANS('        3  *(2)  CHAR(1)INIT((2)'××QUOTE
-*        ('00')××'X),/*INIT RESERVED AREA TO ZERO @Y30LB02*/')SKIP;
-*        ANS('    2  DEFVCSN1  CHAR(12) ,/*CART SEQUENCE'××
+*        ANS('        3  *(2)  CHAR(1)INIT((2)'||QUOTE
+*        ('00')||'X),/*INIT RESERVED AREA TO ZERO @Y30LB02*/')SKIP;
+*        ANS('    2  DEFVCSN1  CHAR(12) ,/*CART SEQUENCE'||
 *        ' ONE @Y30LB02*/')SKIP;
-*        ANS('        3  *(12)  CHAR(1)INIT((12)'××QUOTE
-*        ('00')××'X),/*INIT CART ONE AREA TO ZERO @Y30LB02*/')SKIP;
-*        ANS('    2  DEFVCSN2     CHAR(12) ,/*CART SEQ'××
+*        ANS('        3  *(12)  CHAR(1)INIT((12)'||QUOTE
+*        ('00')||'X),/*INIT CART ONE AREA TO ZERO @Y30LB02*/')SKIP;
+*        ANS('    2  DEFVCSN2     CHAR(12) ,/*CART SEQ'||
 *        ' TWO @Y30LB02*/')SKIP;
-*        ANS('        3  *(12)  CHAR(1)INIT((12)'××QUOTE
-*        ('00')××'X),/*INIT CART TWO AREA TO ZERO @Y30LB02*/')SKIP;
-*        ANS('    2  *     CHAR(2) INIT('××
-*        QUOTE('0000')××'X),/*RESERVED @Y30LB02*/')SKIP;
-*        ANS('    2  DEFVASID CHAR(2) INIT('××
-*        QUOTE('0000')××'X),/*ASID AREA @Y30LB02*/')SKIP;
-*        ANS('    2  DEFVECB  FIXED(31)INIT(0),/*EVENT '××
+*        ANS('        3  *(12)  CHAR(1)INIT((12)'||QUOTE
+*        ('00')||'X),/*INIT CART TWO AREA TO ZERO @Y30LB02*/')SKIP;
+*        ANS('    2  *     CHAR(2) INIT('||
+*        QUOTE('0000')||'X),/*RESERVED @Y30LB02*/')SKIP;
+*        ANS('    2  DEFVASID CHAR(2) INIT('||
+*        QUOTE('0000')||'X),/*ASID AREA @Y30LB02*/')SKIP;
+*        ANS('    2  DEFVECB  FIXED(31)INIT(0),/*EVENT '||
 *        'CONTROL BLOCK ADDRESS @Y30LB02*/')SKIP;
-*        ANS('    2  DEFVDATA CHAR(72) INIT('××
-*        QUOTE('')××'B),/*USER DATA ARRAY @Y30LB02*/')SKIP;
-*        ANS('       3  DEFR50 CHAR(2),/*RESERVED AND MUST '××
+*        ANS('    2  DEFVDATA CHAR(72) INIT('||
+*        QUOTE('')||'B),/*USER DATA ARRAY @Y30LB02*/')SKIP;
+*        ANS('       3  DEFR50 CHAR(2),/*RESERVED AND MUST '||
 *        'ALWAYS BE ZERO/BLANK @Y30LB02*/')SKIP;
-*        ANS('       3  DEFACSEC CHAR(1),/*ACCESSI'××
+*        ANS('       3  DEFACSEC CHAR(1),/*ACCESSI'||
 *        'BILITY(SECURITY) @Y30LB02*/')SKIP;
-*        ANS('       3  DEFR55 CHAR(26),/*RESERVED AREA '××
+*        ANS('       3  DEFR55 CHAR(26),/*RESERVED AREA '||
 *        'MUST BE ZERO/BLANK @Y30LB02*/')SKIP;
-*        ANS('       3  DEFOWNID CHAR(14),/*OWNER'××
+*        ANS('       3  DEFOWNID CHAR(14),/*OWNER'||
 *        ' IDENTIFICATION @Y30LB02*/')SKIP;
-*        ANS('       3  DEFR60 CHAR(28),/*RESERVED AREA '××
+*        ANS('       3  DEFR60 CHAR(28),/*RESERVED AREA '||
 *        'MUST BE ZERO/BLANK @Y30LB02*/')SKIP;
-*        ANS('       3  DEFTLAB CHAR(1),/*T LABEL '××
+*        ANS('       3  DEFTLAB CHAR(1),/*T LABEL '||
 *        'STANDARD VERSION @Y30LB02*/')SKIP;
-*        ANS('    2  DEFVVEXT  FIXED(31)INIT(0);/*MSVC '××
+*        ANS('    2  DEFVVEXT  FIXED(31)INIT(0);/*MSVC '||
 *        'EXTENSION AREA @Y30LB02*/')SKIP;
 *        GO TO FINISH;         /*BRANCH TO END               @Y30LB02*/
 *     END;                     /*                            @Y30LB02*/
 */*                                                          @Y30LB02*/
 *ATTRLST:
 */*                                                          @Y30LB02*/
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************** @Y30LB02*/')SKIP;
-*        ANS('/*     MACMEAN  MSSC DEFINE VOLUME MACRO    '××
+*        ANS('/*     MACMEAN  MSSC DEFINE VOLUME MACRO    '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '××
+*        ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*THIS IS THE UNINITIALIZED LIST FORM       '××
+*        ANS('/*THIS IS THE UNINITIALIZED LIST FORM       '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************** @Y30LB02*/')SKIP;
-*        ANS('DCL 1 '××MF(2)××' '××MF(3)××','××
+*        ANS('DCL 1 '||MF(2)||' '||MF(3)||','||
 *        ' /*DEFINE VOLUME REQUEST BLOCK @Y30LB02*/')SKIP;
-*        ANS('    2  DEFVLEN  FIXED(31),/*LENGTH '××
+*        ANS('    2  DEFVLEN  FIXED(31),/*LENGTH '||
 *        'OF DEFINE VOLUME REQ BLK=84 HEX @Y30LB02*/')SKIP;
-*        ANS('    2  DEFVOPCD  FIXED(8),/*DEFINE '××
+*        ANS('    2  DEFVOPCD  FIXED(8),/*DEFINE '||
 *        'OPCODE = 18 HEX @Y30LB02*/')SKIP;
 *        ANS('    2  *  CHAR(1),/*RESERVED AND ZERO @Y30LB02 */')SKIP;
-*        ANS('    2  DEFVFLG   BIT(8) ,/*ONE BYTE'××
+*        ANS('    2  DEFVFLG   BIT(8) ,/*ONE BYTE'||
 *        ' FLAGS AREA @Y30LB02*/')SKIP;
-*        ANS('       3  DEFVCR  BIT(1),/*CREATE ATTRI'××
+*        ANS('       3  DEFVCR  BIT(1),/*CREATE ATTRI'||
 *        'BUTE @Y30LB02*/')SKIP;
-*        ANS('       3  DEFVELM BIT(1),/*ELIMINATE'××
+*        ANS('       3  DEFVELM BIT(1),/*ELIMINATE'||
 *        ' ATTRIBUTE @Y30LB02*/')SKIP;
-*        ANS('       3  DEFVRNM  BIT(1),/*RENAME ATTRI'××
+*        ANS('       3  DEFVRNM  BIT(1),/*RENAME ATTRI'||
 *        'BUTE @Y30LB02*/')SKIP;
-*        ANS('       3  DEFVREP  BIT(1),/*REPLACE VOLUME'××
+*        ANS('       3  DEFVREP  BIT(1),/*REPLACE VOLUME'||
 *        ' FLAGS @Y30LB02*/')SKIP;
-*        ANS('       3  DEFVELTR BIT(1),/*ELIMINATE TRAN'××
+*        ANS('       3  DEFVELTR BIT(1),/*ELIMINATE TRAN'||
 *        'SIENT VOLUME ATTRIBUTE @Y30LB02*/')SKIP;
-*        ANS('       3  DEFVRNTR BIT(1),/*RENAME TRAN'××
+*        ANS('       3  DEFVRNTR BIT(1),/*RENAME TRAN'||
 *        'SIENT VOLUME ATTRIBUTE @Y30LB02*/')SKIP;
-*        ANS('       3  DEFVACT BIT(1),/*ACTIVATE TRAN'××
+*        ANS('       3  DEFVACT BIT(1),/*ACTIVATE TRAN'||
 *        'SIENT VOLUME ATTRIBUTE @Y30LB02*/')SKIP;
-*        ANS('       3  DEFVDACT BIT(1),/*DEACTIVATE'××
+*        ANS('       3  DEFVDACT BIT(1),/*DEACTIVATE'||
 *        ' VOLUME ATTRIBUTE @Y30LB02*/')SKIP;
 *        ANS('    2  DEFVLIB  BIT(8),/*ONE BYTE LIBID @Y30LB02*/')SKIP;
-*        ANS('       3  *       BIT(6),/*RESERVED AND'××
+*        ANS('       3  *       BIT(6),/*RESERVED AND'||
 *        ' MUST BE ZERO @Y30LB02*/')SKIP;
-*        ANS('       3  DEFVLID BIT(2),/*BINARY NUMBER'××
+*        ANS('       3  DEFVLID BIT(2),/*BINARY NUMBER'||
 *        ' ZERO TO THREE @Y30LB02*/')SKIP;
-*        ANS('    2  DEFVOLD CHAR(6) ,/*VOLUME IDENTIFI'××
+*        ANS('    2  DEFVOLD CHAR(6) ,/*VOLUME IDENTIFI'||
 *        'CATION @Y30LB02*/')SKIP;
-*        ANS('    2  DEFVVFLG  BIT(8),'××
+*        ANS('    2  DEFVVFLG  BIT(8),'||
 *        '/*VOLUME FLAG ATTRIB @Y30LB02*/')SKIP;
-*        ANS('       3  DEFVCECT BIT(1),/*CE CARTRIDGE'××
+*        ANS('       3  DEFVCECT BIT(1),/*CE CARTRIDGE'||
 *        ' @Y30LB02*/')SKIP;
-*        ANS('       3  *  BIT(1),/*RESERVED BIT'××
+*        ANS('       3  *  BIT(1),/*RESERVED BIT'||
 *        ' @Y30LB02*/')SKIP;
-*        ANS('       3  DEFVSEC  BIT(1),/*SECURE VOLUME'××
+*        ANS('       3  DEFVSEC  BIT(1),/*SECURE VOLUME'||
 *        ' @Y30LB02*/')SKIP;
-*        ANS('       3  DEFVEXCL  BIT(1),/*EXCLUSIVE '××
+*        ANS('       3  DEFVEXCL  BIT(1),/*EXCLUSIVE '||
 *        ' VOLUME @Y30LB02*/')SKIP;
-*        ANS('       3  *  BIT(1),/*SCRATCH '××
+*        ANS('       3  *  BIT(1),/*SCRATCH '||
 *        'CARTRIDGE RESERVED FOR SUBSYS @Y30LB02*/')SKIP;
-*        ANS('       3  DEFVBIND  BIT(1),/*BIND VOLUME'××
+*        ANS('       3  DEFVBIND  BIT(1),/*BIND VOLUME'||
 *        ' @Y30LB02*/')SKIP;
-*        ANS('       3  DEFVWINH  BIT(1),/*WRITE INHIBIT'××
+*        ANS('       3  DEFVWINH  BIT(1),/*WRITE INHIBIT'||
 *        ' @Y30LB02*/')SKIP;
-*        ANS('       3  *       BIT(1),/*RESERVED-ZERO'××
+*        ANS('       3  *       BIT(1),/*RESERVED-ZERO'||
 *        ' @Y30LB02*/')SKIP;
 *        ANS('    2  *  CHAR(1),/*BYTE RESVD AREA @Y30LB02*/')SKIP;
 *        ANS('    2  DEFVNVOL CHAR(6),/*NEW VOLID @Y30LB02*/')SKIP;
-*        ANS('    2  *          CHAR(2) ,/*2-BYTE RESERVED'××
+*        ANS('    2  *          CHAR(2) ,/*2-BYTE RESERVED'||
 *        ' AREA @Y30LB02*/')SKIP;
-*        ANS('    2  DEFVCSN1     CHAR(12) ,/*CART SEQUENCE'××
+*        ANS('    2  DEFVCSN1     CHAR(12) ,/*CART SEQUENCE'||
 *        ' ONE @Y30LB02*/')SKIP;
-*        ANS('    2  DEFVCSN2     CHAR(12) ,/*CART SEQ'××
+*        ANS('    2  DEFVCSN2     CHAR(12) ,/*CART SEQ'||
 *        ' TWO @Y30LB02*/')SKIP;
-*        ANS('    2  *     CHAR(2) ,'××
+*        ANS('    2  *     CHAR(2) ,'||
 *        '/*RESERVED @Y30LB02*/')SKIP;
-*        ANS('    2  DEFVASID CHAR(2) ,'××
+*        ANS('    2  DEFVASID CHAR(2) ,'||
 *        '/*ASID AREA @Y30LB02*/')SKIP;
-*        ANS('    2  DEFVECB  FIXED(31),/*EVENT '××
+*        ANS('    2  DEFVECB  FIXED(31),/*EVENT '||
 *        'CONTROL BLOCK ADDRESS @Y30LB02*/')SKIP;
-*        ANS('    2  DEFVDATA CHAR(72),'××
+*        ANS('    2  DEFVDATA CHAR(72),'||
 *        '/*USER DATA ARRAY @Y30LB02*/')SKIP;
-*        ANS('       3  DEFR50 CHAR(2),/*RESERVED AND MUST '××
+*        ANS('       3  DEFR50 CHAR(2),/*RESERVED AND MUST '||
 *        'ALWAYS BE ZERO/BLANK @Y30LB02*/')SKIP;
-*        ANS('       3  DEFACSEC CHAR(1),/*ACCESSI'××
+*        ANS('       3  DEFACSEC CHAR(1),/*ACCESSI'||
 *        'BILITY(SECURITY) @Y30LB02*/')SKIP;
-*        ANS('       3  DEFR55 CHAR(26),/*RESERVED AREA '××
+*        ANS('       3  DEFR55 CHAR(26),/*RESERVED AREA '||
 *        'MUST BE ZERO/BLANK @Y30LB02*/')SKIP;
-*        ANS('       3  DEFOWNID CHAR(14),/*OWNER'××
+*        ANS('       3  DEFOWNID CHAR(14),/*OWNER'||
 *        ' IDENTIFICATION @Y30LB02*/')SKIP;
-*        ANS('       3  DEFR60 CHAR(28),/*RESERVED AREA '××
+*        ANS('       3  DEFR60 CHAR(28),/*RESERVED AREA '||
 *        'MUST BE ZERO/BLANK @Y30LB02*/')SKIP;
-*        ANS('       3  DEFTLAB CHAR(1),/*T LABEL '××
+*        ANS('       3  DEFTLAB CHAR(1),/*T LABEL '||
 *        'STANDARD VERSION @Y30LB02*/')SKIP;
-*        ANS('    2  DEFVVEXT  FIXED(31);/*MSVC '××
+*        ANS('    2  DEFVVEXT  FIXED(31);/*MSVC '||
 *        'EXTENSION AREA @Y30LB02*/')SKIP;
 *        GO TO FINISH;     /*BRANCH TO END                   @Y30LB02*/
 */*                                                          @Y30LB02*/
@@ -935,39 +935,39 @@ DEFVVEXT DC    XL4'00000000'       4-BYTE VVICEXT AREA         @Y30LB02
 *     DO;                    /*NO,PRINT OUT ERROR MSG        @Y30LB02*/
 *        ERSW = 1;           /*SET ERROR SWITCH TO ONE       @Y30LB02*/
 *        RETCODE = 12;       /*SET RETURN CODE TO 12         @Y30LB02*/
-*        ANS MSG('  ICB612I - MF(2) MUST CONTAIN REQ BLK '××
+*        ANS MSG('  ICB612I - MF(2) MUST CONTAIN REQ BLK '||
 *        'NAME IF EXEC MACRO FORM REQUESTED')SKIP;         /*@Y30LB02*/
 *        GO TO CKSW;         /*BRANCH TO CHECK ERROR SWITCH  @Y30LB02*/
 *     END;                   /*                              @Y30LB02*/
 */*                                                          @Y30LB02*/
 *   ELSE                     /*REQUEST TO ZERO BLOCK         @Y30LB02*/
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************** @Y30LB02*/')SKIP;
-*        ANS('/*     MACMEAN  MSSC DEFINE VOLUME MACRO    '××
+*        ANS('/*     MACMEAN  MSSC DEFINE VOLUME MACRO    '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*VS1-4/VS2-3 VERSION-- 06/09/74 LEVEL 00   '××
+*        ANS('/*VS1-4/VS2-3 VERSION-- 06/09/74 LEVEL 00   '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*THIS IS THE OUTPUT FOR THE EXECUTE FORM.  '××
+*        ANS('/*THIS IS THE OUTPUT FOR THE EXECUTE FORM.  '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*THE LIST FORM OF THIS MACRO SHOULD BE     '××
+*        ANS('/*THE LIST FORM OF THIS MACRO SHOULD BE     '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*INVOKED FIRST IN ORDER TO SET UP NECESSARY'××
+*        ANS('/*INVOKED FIRST IN ORDER TO SET UP NECESSARY'||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*DECLARES.  IF THE COMPLETE ARGUMENT IS    '××
+*        ANS('/*DECLARES.  IF THE COMPLETE ARGUMENT IS    '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*SPECIFIED THE REQ BLOCK WILL BE ZEROED.   '××
+*        ANS('/*SPECIFIED THE REQ BLOCK WILL BE ZEROED.   '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************** @Y30LB02*/')SKIP;
 */*                                                          @Y30LB02*/
 *   IF MF(3) = 'COMPLETE' THEN  /*COMPLETE SPECIFIED         @Y30LB02*/
 *     DO;                    /*ZERO OUT THE BLOCK            @Y30LB02*/
-*      ANS(' '××MF(2)××'='××MF(2)××'&&'××MF(2)××';/*ZERO '××
+*      ANS(' '||MF(2)||'='||MF(2)||'&&'||MF(2)||';/*ZERO '||
 *        ' AND INIT REQUEST BLOCK @Y30LB02*/')SKIP;
 *     END;                                                 /*@Y30LB02*/
 */*                                                          @Y30LB02*/
 *   ANS('RFY DEFVR1 RSTD;/*RESTRICT REG 1 @Y30LB02*/')SKIP;
-*   ANS('DEFVR1= ADDR('××MF(2)××'); /*R1 PTR'××
+*   ANS('DEFVR1= ADDR('||MF(2)||'); /*R1 PTR'||
 *       ' TO REQUEST BLOCK @Y30LB02*/')SKIP;
 *CKSW:
 *   IF ERSW = 1 THEN        /*SET RETURN CODE TO ONE         @Y30LB02*/
@@ -980,7 +980,7 @@ DEFVVEXT DC    XL4'00000000'       4-BYTE VVICEXT AREA         @Y30LB02
 *     DO;                   /*NO,PROCESS ERROR               @Y30LB02*/
 *        ERSW = 1;          /*SET ERROR SWITCH TO ONE        @Y30LB02*/
 *        RETCODE = 12;      /*SET RETURN CODE TO 12          @Y30LB02*/
-*        ANS MSG('  ICB615I - INVALID MF PARAMETER '××
+*        ANS MSG('  ICB615I - INVALID MF PARAMETER '||
 *             'SPECIFIED, MUST BE L, E, OR NULL')SKIP;     /*@Y30LB02*/
 *        GO TO CKSW2;       /*BRANCH TO CK ERROR SWITCH      @Y30LB02*/
 *     END;                  /*                               @Y30LB02*/
@@ -989,7 +989,7 @@ DEFVVEXT DC    XL4'00000000'       4-BYTE VVICEXT AREA         @Y30LB02
 *     DO;                   /*NO,PROCESS ERROR MSG           @Y30LB02*/
 *        ERSW = 1;          /*SET ERROR SWITCH TO ONE        @Y30LB02*/
 *        RETCODE = 12;      /*SET RETURN CODE TO 12          @Y30LB02*/
-*        ANS MSG('  ICB605I - ECB MUST BE SPECIFIED '××
+*        ANS MSG('  ICB605I - ECB MUST BE SPECIFIED '||
 *        'FOR STANDARD FORM MACRO')SKIP;                   /*@Y30LB02*/
 *        GO TO CKSW2;       /*BRANCH TO CK ERROR SWITCH      @Y30LB02*/
 *     END;                  /*                               @Y30LB02*/
@@ -997,7 +997,7 @@ DEFVVEXT DC    XL4'00000000'       4-BYTE VVICEXT AREA         @Y30LB02
 *     DO;                   /*NO,PRINT ERROR MESSAGE         @Y30LB02*/
 *        ERSW = 1;          /*SET ERROR SWITCH TO ONE        @Y30LB02*/
 *        RETCODE = 12;      /*SET RETURN CODE TO 12          @Y30LB02*/
-*        ANS MSG('  ICB607I - FLAGS MUST BE SPECIFIED '××
+*        ANS MSG('  ICB607I - FLAGS MUST BE SPECIFIED '||
 *        'FOR STANDARD FORM MACRO')SKIP;                   /*@Y30LB02*/
 *     END;                  /*                               @Y30LB02*/
 *CKSW2:
@@ -1005,131 +1005,131 @@ DEFVVEXT DC    XL4'00000000'       4-BYTE VVICEXT AREA         @Y30LB02
 *     GO TO FINISH;         /*YES,BRANCH TO END              @Y30LB02*/
 *   IF DEFVTEST = 1 THEN    /*1ST STANDARD FORM REQ?         @Y30LB02*/
 *     DO;                   /*NO,DON'T PUT OUT DCLS          @Y30LB02*/
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************** @Y30LB02*/')SKIP;
-*        ANS('/*     MACMEAN  MSSC DEFINE VOLUME MACRO    '××
+*        ANS('/*     MACMEAN  MSSC DEFINE VOLUME MACRO    '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '××
+*        ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*THIS IS THE OUTPUT FOR A SECONDARY        '××
+*        ANS('/*THIS IS THE OUTPUT FOR A SECONDARY        '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*INVOCATION OF THE STANDARD FORM MACRO     '××
+*        ANS('/*INVOCATION OF THE STANDARD FORM MACRO     '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************** @Y30LB02*/')SKIP;
 *        ANS('RFY DEFVR1 RSTD;/*RESTRICT REG 1 @Y30LB02*/')SKIP;
-*        ANS('DEFVR1= ADDR(DEFVLEN); /*R1 PTR'××
+*        ANS('DEFVR1= ADDR(DEFVLEN); /*R1 PTR'||
 *            ' TO REQUEST BLOCK @Y30LB02*/')SKIP;
 *        GO TO COMPROC;                                    /*@Y30LB02*/
 *     END;                                                 /*@Y30LB02*/
 */*                                                          @Y30LB02*/
 *   ELSE                /*FIRST INVOC OF STD FORM            @Y30LB02*/
 *     DO;               /*PRINT OUT THE DECLARES             @Y30LB02*/
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************** @Y30LB02*/')SKIP;
-*        ANS('/*     MACMEAN  MSSC DEFINE VOLUME MACRO    '××
+*        ANS('/*     MACMEAN  MSSC DEFINE VOLUME MACRO    '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '××
+*        ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*INVOCATION OF THE STANDARD FORM MACRO     '××
+*        ANS('/*INVOCATION OF THE STANDARD FORM MACRO     '||
 *            '               @Y30LB02*/')SKIP;
-*        ANS('/*******************************************'××
+*        ANS('/*******************************************'||
 *            '************** @Y30LB02*/')SKIP;
-*        ANS('DCL 1 DEFVLS01  STATIC LOCAL,'××
+*        ANS('DCL 1 DEFVLS01  STATIC LOCAL,'||
 *        '/*DEFINE VOLUME REQUEST BLOCK @Y30LB02*/')SKIP;
-*        ANS('    2  DEFVLEN  FIXED(31)INIT('××QUOTE('84')××
+*        ANS('    2  DEFVLEN  FIXED(31)INIT('||QUOTE('84')||
 *        'X),/*LENGTH OF DEFINE VOLUME REQ BLK @Y30LB02*/')SKIP;
-*        ANS('    2  DEFVOPCD  FIXED(8)INIT('××QUOTE('18')××
+*        ANS('    2  DEFVOPCD  FIXED(8)INIT('||QUOTE('18')||
 *        'X),/*DEFINE VOLUME OPCODE @Y30LB02*/')SKIP;
-*        ANS('    2  *       CHAR(1)INIT('××QUOTE('00')××
+*        ANS('    2  *       CHAR(1)INIT('||QUOTE('00')||
 *        'X),/*RESERVED AND ZERO @Y30LB02*/')SKIP;
-*        ANS('    2  DEFVFLG   BIT(8)INIT('××QUOTE
-*        ('00000000')××'B),/*ONE BYTE FLAGS AREA @Y30LB02*/')SKIP;
-*        ANS('       3  DEFVCR  BIT(1),/*CREATE ATTRI'××
+*        ANS('    2  DEFVFLG   BIT(8)INIT('||QUOTE
+*        ('00000000')||'B),/*ONE BYTE FLAGS AREA @Y30LB02*/')SKIP;
+*        ANS('       3  DEFVCR  BIT(1),/*CREATE ATTRI'||
 *        'BUTE @Y30LB02*/')SKIP;
-*        ANS('       3  DEFVELM  BIT(1),/*ELIMINATE'××
+*        ANS('       3  DEFVELM  BIT(1),/*ELIMINATE'||
 *        ' ATTRIBUTE @Y30LB02*/')SKIP;
-*        ANS('       3  DEFVRNM  BIT(1),/*RENAME ATTRI'××
+*        ANS('       3  DEFVRNM  BIT(1),/*RENAME ATTRI'||
 *        'BUTE @Y30LB02*/')SKIP;
-*        ANS('       3  DEFVREP  BIT(1),/*REPLACE VOLUME'××
+*        ANS('       3  DEFVREP  BIT(1),/*REPLACE VOLUME'||
 *        ' FLAGS @Y30LB02*/')SKIP;
-*        ANS('       3  DEFVELTR BIT(1),/*ELIMINATE TRAN'××
+*        ANS('       3  DEFVELTR BIT(1),/*ELIMINATE TRAN'||
 *        'SIENT VOLUME ATTRIBUTE @Y30LB02*/')SKIP;
-*        ANS('       3  DEFVRNTR  BIT(1),/*RENAME TRAN'××
+*        ANS('       3  DEFVRNTR  BIT(1),/*RENAME TRAN'||
 *        'SIENT VOLUME ATTRIBUTE @Y30LB02*/')SKIP;
-*        ANS('       3  DEFVACT BIT(1),/*ACTIVATE TRAN'××
+*        ANS('       3  DEFVACT BIT(1),/*ACTIVATE TRAN'||
 *        'SIENT VOLUME ATTRIBUTE @Y30LB02*/')SKIP;
-*        ANS('       3  DEFVDACT BIT(1),/*DEACTIVATE'××
+*        ANS('       3  DEFVDACT BIT(1),/*DEACTIVATE'||
 *        ' VOLUME ATTRIBUTE @Y30LB02*/')SKIP;
-*        ANS('    2  DEFVLIB  BIT(8)INIT('××QUOTE
-*        ('00000000')××'B), /*ONE BYTE MSF ID @Y30LB02*/')SKIP;
-*        ANS('       3  *       BIT(6),/*RESERVED AND'××
+*        ANS('    2  DEFVLIB  BIT(8)INIT('||QUOTE
+*        ('00000000')||'B), /*ONE BYTE MSF ID @Y30LB02*/')SKIP;
+*        ANS('       3  *       BIT(6),/*RESERVED AND'||
 *        ' MUST BE ZERO @Y30LB02*/')SKIP;
-*        ANS('       3  DEFVLID BIT(2),/*BINARY NUMBER'××
+*        ANS('       3  DEFVLID BIT(2),/*BINARY NUMBER'||
 *        ' ZERO TO THREE @Y30LB02*/')SKIP;
 *        ANS('    2  DEFVOLD CHAR(6) ,/*VOLUME ID @Y30LB02*/')SKIP;
-*        ANS('        3  *(6)  CHAR(1)INIT((6)'××QUOTE
-*        ('00')××'X),/*INIT VOLID AREA TO ZERO @Y30LB02*/')SKIP;
-*        ANS('    2  DEFVVFLG  BIT(8)INIT('××QUOTE
-*        ('00000000')××'B),/*VOLUME FLAG ATTRIB @Y30LB02*/')SKIP;
-*        ANS('       3  DEFVCECT  BIT(1),/*CE CARTRIDGE'××
+*        ANS('        3  *(6)  CHAR(1)INIT((6)'||QUOTE
+*        ('00')||'X),/*INIT VOLID AREA TO ZERO @Y30LB02*/')SKIP;
+*        ANS('    2  DEFVVFLG  BIT(8)INIT('||QUOTE
+*        ('00000000')||'B),/*VOLUME FLAG ATTRIB @Y30LB02*/')SKIP;
+*        ANS('       3  DEFVCECT  BIT(1),/*CE CARTRIDGE'||
 *        ' @Y30LB02*/')SKIP;
-*        ANS('       3  *  BIT(1),/*RESERVED BIT'××
+*        ANS('       3  *  BIT(1),/*RESERVED BIT'||
 *        ' @Y30LB02*/')SKIP;
-*        ANS('       3  DEFVSEC  BIT(1),/*SECURE VOLUME'××
+*        ANS('       3  DEFVSEC  BIT(1),/*SECURE VOLUME'||
 *        ' @Y30LB02*/')SKIP;
-*        ANS('       3  DEFVEXCL  BIT(1),/*EXCLUSIVE '××
+*        ANS('       3  DEFVEXCL  BIT(1),/*EXCLUSIVE '||
 *        ' VOLUME @Y30LB02*/')SKIP;
-*        ANS('       3  *  BIT(1),/*SCRATCH '××
+*        ANS('       3  *  BIT(1),/*SCRATCH '||
 *        'CARTRIDGE - USED BY MSC @Y30LB02*/')SKIP;
-*        ANS('       3  DEFVBIND  BIT(1),/*BIND VOLUME'××
+*        ANS('       3  DEFVBIND  BIT(1),/*BIND VOLUME'||
 *        ' @Y30LB02*/')SKIP;
-*        ANS('       3  DEFVWINH  BIT(1),/*WRITE INHIBIT'××
+*        ANS('       3  DEFVWINH  BIT(1),/*WRITE INHIBIT'||
 *        ' @Y30LB02*/')SKIP;
-*        ANS('       3  *       BIT(1),/*RESERVED-ZERO'××
+*        ANS('       3  *       BIT(1),/*RESERVED-ZERO'||
 *        ' @Y30LB02*/')SKIP;
-*        ANS('    2  *          CHAR(1)INIT('××QUOTE
-*        ('00')××'X),/*1-BYTE RESERVED AREA @Y30LB02*/')SKIP;
-*        ANS('    2  DEFVNVOL     CHAR(6) ,/*NEW VOL'××
+*        ANS('    2  *          CHAR(1)INIT('||QUOTE
+*        ('00')||'X),/*1-BYTE RESERVED AREA @Y30LB02*/')SKIP;
+*        ANS('    2  DEFVNVOL     CHAR(6) ,/*NEW VOL'||
 *        'ID @Y30LB02*/')SKIP;
-*        ANS('        3  *(6)  CHAR(1)INIT((6)'××QUOTE
-*        ('00')××'X),/*INIT NEW VOLID TO ZERO @Y30LB02*/')SKIP;
-*        ANS('    2  *          CHAR(2) ,/*2-BYTE'××
+*        ANS('        3  *(6)  CHAR(1)INIT((6)'||QUOTE
+*        ('00')||'X),/*INIT NEW VOLID TO ZERO @Y30LB02*/')SKIP;
+*        ANS('    2  *          CHAR(2) ,/*2-BYTE'||
 *        ' RESERVED AREA @Y30LB02*/')SKIP;
-*        ANS('        3  *(2)  CHAR(1)INIT((2)'××QUOTE
-*        ('00')××'X),/*INIT RESERVED AREA @Y30LB02*/')SKIP;
-*        ANS('    2  DEFVCSN1     CHAR(12),/*CART SEQ'××
+*        ANS('        3  *(2)  CHAR(1)INIT((2)'||QUOTE
+*        ('00')||'X),/*INIT RESERVED AREA @Y30LB02*/')SKIP;
+*        ANS('    2  DEFVCSN1     CHAR(12),/*CART SEQ'||
 *        ' ONE @Y30LB02*/')SKIP;
-*        ANS('        3  *(12)  CHAR(1)INIT((12)'××QUOTE
-*        ('00')××'X),/*INIT CART SEQ ONE  @Y30LB02*/')SKIP;
-*        ANS('    2  DEFVCSN2    CHAR(12) ,/*CART SEQ'××
+*        ANS('        3  *(12)  CHAR(1)INIT((12)'||QUOTE
+*        ('00')||'X),/*INIT CART SEQ ONE  @Y30LB02*/')SKIP;
+*        ANS('    2  DEFVCSN2    CHAR(12) ,/*CART SEQ'||
 *        ' TWO @Y30LB02*/')SKIP;
-*        ANS('        3  *(12)  CHAR(1)INIT((12)'××QUOTE
-*        ('00')××'X),/*INIT CART SEQ TWO @Y30LB02*/')SKIP;
-*        ANS('    2  *     CHAR(2) INIT('××
-*        QUOTE('0000')××'X),/*RESERVED @Y30LB02*/')SKIP;
-*        ANS('    2  DEFVASID CHAR(2) INIT('××
-*        QUOTE('0000')××'X),/*ASID AREA @Y30LB02*/')SKIP;
-*        ANS('    2  DEFVECB  FIXED(31)INIT(0),/*EVENT '××
+*        ANS('        3  *(12)  CHAR(1)INIT((12)'||QUOTE
+*        ('00')||'X),/*INIT CART SEQ TWO @Y30LB02*/')SKIP;
+*        ANS('    2  *     CHAR(2) INIT('||
+*        QUOTE('0000')||'X),/*RESERVED @Y30LB02*/')SKIP;
+*        ANS('    2  DEFVASID CHAR(2) INIT('||
+*        QUOTE('0000')||'X),/*ASID AREA @Y30LB02*/')SKIP;
+*        ANS('    2  DEFVECB  FIXED(31)INIT(0),/*EVENT '||
 *        'CONTROL BLOCK ADDRESS @Y30LB02*/')SKIP;
-*        ANS('    2  DEFVDATA CHAR(72) INIT('××
-*        QUOTE('')××'B),/*USER DATA ARRAY @Y30LB02*/')SKIP;
-*        ANS('       3  DEFR50 CHAR(2),/*RESERVED AND MUST '××
+*        ANS('    2  DEFVDATA CHAR(72) INIT('||
+*        QUOTE('')||'B),/*USER DATA ARRAY @Y30LB02*/')SKIP;
+*        ANS('       3  DEFR50 CHAR(2),/*RESERVED AND MUST '||
 *        'ALWAYS BE ZERO/BLANK @Y30LB02*/')SKIP;
-*        ANS('       3  DEFACSEC CHAR(1),/*ACCESSI'××
+*        ANS('       3  DEFACSEC CHAR(1),/*ACCESSI'||
 *        'BILITY(SECURITY) @Y30LB02*/')SKIP;
-*        ANS('       3  DEFR55 CHAR(26),/*RESERVED AREA '××
+*        ANS('       3  DEFR55 CHAR(26),/*RESERVED AREA '||
 *        'MUST BE ZERO/BLANK @Y30LB02*/')SKIP;
-*        ANS('       3  DEFOWNID CHAR(14),/*OWNER'××
+*        ANS('       3  DEFOWNID CHAR(14),/*OWNER'||
 *        ' IDENTIFICATION @Y30LB02*/')SKIP;
-*        ANS('       3  DEFR60 CHAR(28),/*RESERVED AREA '××
+*        ANS('       3  DEFR60 CHAR(28),/*RESERVED AREA '||
 *        'MUST BE ZERO/BLANK @Y30LB02*/')SKIP;
-*        ANS('       3  DEFTLAB CHAR(1),/*T LABEL '××
+*        ANS('       3  DEFTLAB CHAR(1),/*T LABEL '||
 *        'STANDARD VERSION @Y30LB02*/')SKIP;
-*        ANS('    2  DEFVVEXT  FIXED(31)INIT(0);/*MSVC '××
+*        ANS('    2  DEFVVEXT  FIXED(31)INIT(0);/*MSVC '||
 *        'EXTENSION AREA @Y30LB02*/')SKIP;
 *        ANS('RFY DEFVR1 RSTD;/*RESTRICT REG 1 @Y30LB02*/')SKIP;
-*        ANS('DEFVR1= ADDR(DEFVLEN); /*R1 PTR'××
+*        ANS('DEFVR1= ADDR(DEFVLEN); /*R1 PTR'||
 *        ' TO REQUEST BLOCK @Y30LB02*/')SKIP;
 *        DEFVTEST = DEFVTEST + 1;    /*INCREM STD FORM CTR   @Y30LB02*/
 *     END;                           /*                      @Y30LB02*/
@@ -1137,47 +1137,47 @@ DEFVVEXT DC    XL4'00000000'       4-BYTE VVICEXT AREA         @Y30LB02
 */*   COMMON PROCESSING FOR EXECUTE AND STANDARDS FORMS      @Y30LB02*/
 */*                                                          @Y30LB02*/
 *COMPROC:
-*        ANS('DEFVLEN= '××QUOTE(DEFVLN)××'X;/*'××
+*        ANS('DEFVLEN= '||QUOTE(DEFVLN)||'X;/*'||
 *        'LENGTH-DEFINE REQUEST BLOCK @Y30LB02*/')SKIP;
-*        ANS('DEFVOPCD= '××QUOTE(DEFVCD)××'X;/*'××
+*        ANS('DEFVOPCD= '||QUOTE(DEFVCD)||'X;/*'||
 *        'DEFINE VOL OPCODE @Y30LB02*/')SKIP;
 */*                                                          @Y30LB02*/
 *   IF FLAGS ^= '' THEN     /*FLAGS SPECIFIED                @Y30LB02*/
 */*                                                          @Y30LB02*/
-*        ANS('DEFVFLG= ' ××FLAGS××';/*VALUE OF FLAGS'××
+*        ANS('DEFVFLG= ' ||FLAGS||';/*VALUE OF FLAGS'||
 *        ' @Y30LB02*/')SKIP;
 */*                                                          @Y30LB02*/
 *   IF LIBID ^= '' THEN    /*LIBID SPECIFIED?                @Y30LB02*/
-*        ANS('DEFVLIB= '××LIBID××';/*VALUE OF LIBID   @Y30LB02*/')SKIP;
+*        ANS('DEFVLIB= '||LIBID||';/*VALUE OF LIBID   @Y30LB02*/')SKIP;
 */*                                                          @Y30LB02*/
 *   IF VOLID ^= '' THEN    /*VOLID SPECIFIED?                @Y30LB02*/
-*        ANS('DEFVOLD= '××VOLID××';/*VOLUME ID @Y30LB02*/')SKIP;
+*        ANS('DEFVOLD= '||VOLID||';/*VOLUME ID @Y30LB02*/')SKIP;
 */*                                                          @Y30LB02*/
 *   IF VOLFLG ^= '' THEN   /*VOLUME FLAGS SPECIFIED?         @Y30LB02*/
-*          ANS('DEFVVFLG= '××VOLFLG××';/*VOLUME FLAGS @Y30LB02*/')SKIP;
+*          ANS('DEFVVFLG= '||VOLFLG||';/*VOLUME FLAGS @Y30LB02*/')SKIP;
 */*                                                          @Y30LB02*/
 *   IF NVOLID ^= '' THEN   /*NEW VOLID SPECIFIED?            @Y30LB02*/
-*        ANS('DEFVNVOL= '××NVOLID××';/*NEW VOLUME ID'××
+*        ANS('DEFVNVOL= '||NVOLID||';/*NEW VOLUME ID'||
 *        ' @Y30LB02*/')SKIP;
 */*                                                          @Y30LB02*/
 *   IF CSN1 ^= '' THEN     /*CSN1 SPECIFIED?                 @Y30LB02*/
-*        ANS('DEFVCSN1= '××CSN1××';/*CARTRIDGE SEQUENCE'××
+*        ANS('DEFVCSN1= '||CSN1||';/*CARTRIDGE SEQUENCE'||
 *        ' ONE @Y30LB02*/')SKIP;
 */*                                                          @Y30LB02*/
 *   IF CSN2 ^= '' THEN     /*CART SEQ NUM 2 SPECIFIED        @Y30LB02*/
-*        ANS('DEFVCSN2= ' ××CSN2××';/*CARTRIDGE SEQUENCE'××
+*        ANS('DEFVCSN2= ' ||CSN2||';/*CARTRIDGE SEQUENCE'||
 *        ' TWO @Y30LB02*/')SKIP;
 */*                                                          @Y30LB02*/
 *   IF ECB ^= '' THEN      /*ECB SPECIFIED?                  @Y30LB02*/
-*        ANS('DEFVECB=ADDR' ××ECB×× ';/*ADDRESS '××
+*        ANS('DEFVECB=ADDR' ||ECB|| ';/*ADDRESS '||
 *        'OF ECB @Y30LB02*/')SKIP;
 */*                                                          @Y30LB02*/
 *   IF USDATA ^= '' THEN   /*USER DATA SPECIFIED?            @Y30LB02*/
-*        ANS('DEFVDATA='××USDATA××' ;/*MOVE 72 BYTES OF'××
+*        ANS('DEFVDATA='||USDATA||' ;/*MOVE 72 BYTES OF'||
 *        'CARTRIDGE DATA TO THE REQ BLK @Y30LB02*/')SKIP;
 */*                                                          @Y30LB02*/
 *   IF VVICEXT ^= '' THEN    /*MSVC EXTENSION SPECIFIED?     @Y30LB02*/
-*        ANS('DEFVVEXT=ADDR'××VVICEXT××';/*ADDRESS '××
+*        ANS('DEFVVEXT=ADDR'||VVICEXT||';/*ADDRESS '||
 *        'OF MSVC EXTENSION @Y30LB02*/')SKIP;
 */*                                                          @Y30LB02*/
 */*      INVOKE SVC AND END PROCESSING                       @Y30LB02*/

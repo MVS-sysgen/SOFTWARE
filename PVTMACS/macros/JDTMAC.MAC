@@ -33,7 +33,7 @@
 .*   CAN THIS MACRO FOLLOW IT?")                                      *
 .*                                                                    *
 .*      FOLLOW->                                                      *
-.*   CAN ×                                                            *
+.*   CAN |                                                            *
 .*       V    JDTMAC  JDVERB  JDKEY  JDPARM  JDSUB  ENDSUB  ENDJDT    *
 .*   JDTMAC     NO      NO      NO     NO      NO     NO      NO      *
 .*   JDVERB     YES     YES     NO     YES     NO     YES     NO   @H2C

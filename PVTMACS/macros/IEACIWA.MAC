@@ -132,7 +132,7 @@ CIWALEN  EQU   *-CIWA -             LENGTH OF CIWA
 *          %THEN %GOTO CIWAPLS1;    /* THEN SKIP DCL                 */
 *DCL 1 CIWA BASED (CIWAPTR)         /* DECLARE CIWA LEVEL 1          */
 *        %GO TO CIWAPLS2;           /* AND SKIP LEVEL TWO DCL        */
-*%CIWAPLS1: CIWADUM=CIWALEVL ××' CIWA'; /* SET LEVEL FOR MINOR       */
+*%CIWAPLS1: CIWADUM=CIWALEVL ||' CIWA'; /* SET LEVEL FOR MINOR       */
 *    CIWADUM                        /* MINOR STRUCTURE NAME PARM     */
 *%CIWAPLS2:;
 *        BDY(WORD),

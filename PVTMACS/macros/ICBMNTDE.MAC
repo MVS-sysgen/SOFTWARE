@@ -67,25 +67,25 @@
 .*                                                             @Y30LB02
 .*   LIST FORMS =                                              @Y30LB02
 .*                                                             @Y30LB02
-.*     BAL - ICBMNTDE MF=(L,MAP),TYPE=MNT×DMNT                 @Y30LB02
+.*     BAL - ICBMNTDE MF=(L,MAP),TYPE=MNT|DMNT                 @Y30LB02
 .*                                                             @ZA28964
 .*       REQUIRED PARAMETERS - MF=L,TYPE                       @ZA28964
 .*                                                             @Y30LB02
-.*     PL/S- ICBMNTDE MF(L,NAME,ATTR) TYPE(MNT×DMNT)           @Y30LB02
+.*     PL/S- ICBMNTDE MF(L,NAME,ATTR) TYPE(MNT|DMNT)           @Y30LB02
 .*                                                             @Y30LB02
 .*       REQUIRED PARAMETERS - MF(L,NAME) TYPE                 @Y30LB02
 .*                                                             @Y30LB02
 .*   STANDARD FORMS =                                          @ZDR2048
 .*                                                             @Y30LB02
-.*     BAL - ICBMNTDE TYPE=MNT×DMNT,VOLID=NAME×(R),            @Y30LB02
-.*                    VUA=NAME×(R),ECB=NAME×(R),               @ZDR2048
-.*                    FLAGS=NAME×(R),MEXTN=NAME×(R),           @G18MB04
-.*                    MJFCB=NAME×(R),HOSTID=NAME×(R)           @G18MB04
+.*     BAL - ICBMNTDE TYPE=MNT|DMNT,VOLID=NAME|(R),            @Y30LB02
+.*                    VUA=NAME|(R),ECB=NAME|(R),               @ZDR2048
+.*                    FLAGS=NAME|(R),MEXTN=NAME|(R),           @G18MB04
+.*                    MJFCB=NAME|(R),HOSTID=NAME|(R)           @G18MB04
 .*                                                             @ZA28964
 .*       REQUIRED PARAMETERS - TYPE,VOLID(FOR DMNT ONLY),      @ZA28964
 .*                             VUA(FOR MNT ONLY)               @ZA28964
 .*                                                             @Y30LB02
-.*     PL/S- ICBMNTDE TYPE(MNT×DMNT) VOLID(NAME) VUA(NAME)     @ZDR2048
+.*     PL/S- ICBMNTDE TYPE(MNT|DMNT) VOLID(NAME) VUA(NAME)     @ZDR2048
 .*                    ECB(NAME) FLAGS(NAME) MEXTN(NAME)        @G18MB04
 .*                    MJFCB(NAME) HOSTID(NAME)                 @G18MB04
 .*                                                             @Y30LB02
@@ -94,15 +94,15 @@
 .*                                                             @Y30LB02
 .*   EXECUTE FORMS =                                           @ZDR2048
 .*                                                             @Y30LB02
-.*     BAL - ICBMNTDE MF=(E,NAME×(R)),TYPE=MNT×DMNT,           @ZDR2048
-.*                    VOLID=NAME×(R),VUA=NAME×(R),             @ZDR2048
-.*                    ECB=NAME×(R),FLAGS=NAME×(R),             @ZDR2048
-.*                    MEXTN=NAME×(R),MJFCB=NAME×(R),           @G18MB04
-.*                    HOSTID=NAME×(R)                          @ZDR2048
+.*     BAL - ICBMNTDE MF=(E,NAME|(R)),TYPE=MNT|DMNT,           @ZDR2048
+.*                    VOLID=NAME|(R),VUA=NAME|(R),             @ZDR2048
+.*                    ECB=NAME|(R),FLAGS=NAME|(R),             @ZDR2048
+.*                    MEXTN=NAME|(R),MJFCB=NAME|(R),           @G18MB04
+.*                    HOSTID=NAME|(R)                          @ZDR2048
 .*                                                             @Y30LB02
-.*       REQUIRED PARAMETERS - MF=(E,NAME×(R)), TYPE           @Y30LB02
+.*       REQUIRED PARAMETERS - MF=(E,NAME|(R)), TYPE           @Y30LB02
 .*                                                             @Y30LB02
-.*     PL/S- ICBMNTDE MF(E,NAME,COMPLETE) TYPE(MNT×DMNT)       @ZDR2048
+.*     PL/S- ICBMNTDE MF(E,NAME,COMPLETE) TYPE(MNT|DMNT)       @ZDR2048
 .*                    VOLID(NAME) VUA(NAME) ECB(NAME)          @ZDR2048
 .*                    FLAGS(NAME) MEXTN(NAME) MJFCB(NAME)      @G18MB04
 .*                    HOSTID(NAME)                             @ZDR2048
@@ -245,7 +245,7 @@
 .*      5  (5)     1    MNTRES1  DMNTRES1 RESERVED             @ZA28964
 .*      6  (6)     2    MNTFLAGS DMNTFLAG FLAGS                @ZA28964
 .*      8  (8)     6    MNTVOLID DMVOLID  VOLUME ID            @ZA28964
-.*     14  (E)     2    MNTVUA   DMNTASID VUA × ASID           @ZA28964
+.*     14  (E)     2    MNTVUA   DMNTASID VUA | ASID           @ZA28964
 .*     16  (10)    5    MNTHOSTD -------- HOST ID (MNT)        @ZA28964
 .*     16  (10)    4    -------- DMNTECB  ECB (DMNT)           @ZA28964
 .*     20  (14)    5    -------- DMHOSTID HOST ID (DMNT)       @ZA28964
@@ -257,7 +257,7 @@
 .*                                                             @Y30LB02
 .* EXIT-NORMAL = VALID INVOCATION                              @Y30LB02
 .*                                                             @Y30LB02
-.*   CONDITION = RETURN CODE = 0 × 4                           @Y30LB02
+.*   CONDITION = RETURN CODE = 0 | 4                           @Y30LB02
 .*                                                             @Y30LB02
 .*   OUTPUT = REQUEST BLOCK AND STATEMENTS GENERATED. IF       @ZA28964
 .*            PL/S WARNING MESSAGES ARE GENERATED (RETCODE=4), @ZA28964
@@ -713,15 +713,15 @@ MDJFCB   EQU   MNTJFCB             COMPATABILITY REDEFINITION  @ZA28964
 */*    ECHO INVOCATION BACK TO CALLING MODULE                @ZA28964*/
 */********************************************************** @Y30LB02*/
 *  ANS('      /* MACRO INVOCATION:      @ZA28964*/')SKIP;  /*@ZA28964*/
-*  ANS('      /*  ' ×× MACLABEL ×× ' ' ×× MACNAME ×× ' ' ××
-*      MACLIST ×× ' ' ×× MACKEYS ×× ' @ZA28964*/')SKIP;    /*@ZA28964*/
+*  ANS('      /*  ' || MACLABEL || ' ' || MACNAME || ' ' ||
+*      MACLIST || ' ' || MACKEYS || ' @ZA28964*/')SKIP;    /*@ZA28964*/
 */*                                                          @Y30LB02*/
 */********************************************************** @Y30LB02*/
 */*            CHECK FOR MUTUALLY EXCLUSIVE PARAMETERS       @G18MB04*/
 */********************************************************** @Y30LB02*/
 *   IF MEXTN ^= '' THEN IF MJFCB ^= '' THEN                /*@G18MB04*/
 *     DO;                    /*ONE MUST BE NULL              @G18MB04*/
-*       ANS MSG('  ICB621I - MEXTN AND MJFCB MUTUALLY'××
+*       ANS MSG('  ICB621I - MEXTN AND MJFCB MUTUALLY'||
 *               ' EXCLUSIVE PARAMETERS SPECIFIED. ')SKIP;
 *       RETCODE=12;               /* SET RETURN CODE         @G18MB04*/
 *       GO TO FINISH;             /* EXIT                    @G18MB04*/
@@ -732,7 +732,7 @@ MDJFCB   EQU   MNTJFCB             COMPATABILITY REDEFINITION  @ZA28964
 */********************************************************** @Y30LB02*/
 *   IF MDTESTR1 = 0 THEN     /*REG 1 NOT DECLARED?           @ZA28964*/
 *     DO;                    /*THEN DECLARE REG 1            @Y30LB02*/
-*       ANS('DCL MDREG1 REG(1) PTR; /*'××
+*       ANS('DCL MDREG1 REG(1) PTR; /*'||
 *           'ADDRESS OF REQUEST BLOCK @Y30LB02*/')SKIP;
 *       MDTESTR1=1;          /*SET REG 1 DECLARED FLAG       @Y30LB02*/
 *     END;                                                 /*@Y30LB02*/
@@ -743,10 +743,10 @@ MDJFCB   EQU   MNTJFCB             COMPATABILITY REDEFINITION  @ZA28964
 *   IF TYPE(1) ^= 'MNT' THEN IF TYPE(1) ^= 'DMNT' THEN     /*@ZA28964*/
 *     DO;                                                  /*@ZA28964*/
 *       IF TYPE='' THEN      /*IS THE TYPE PARM NULL?        @Y30LB02*/
-*         ANS MSG('  ICB600I - TYPE MUST BE '××
+*         ANS MSG('  ICB600I - TYPE MUST BE '||
 *                 'SPECIFIED ')SKIP;                       /*@Y30LB02*/
 *       ELSE                                               /*@Y30LB02*/
-*         ANS MSG('  ICB601I - TYPE IS INCORRECTLY '××
+*         ANS MSG('  ICB601I - TYPE IS INCORRECTLY '||
 *                 'SPECIFIED')SKIP;                        /*@ZA28964*/
 *       RETCODE=12;          /*SET RETURN CODE TO 12         @ZA28964*/
 *       GO TO FINISH;        /*BRANCH TO FINISH              @ZA28964*/
@@ -760,24 +760,24 @@ MDJFCB   EQU   MNTJFCB             COMPATABILITY REDEFINITION  @ZA28964
 */*                                                          @Y30LB02*/
 *   IF MF(2) = '' THEN       /*LIST FORM, NAME ^ SPECIFIED   @ZA28964*/
 *     DO;                                                  /*@ZA28964*/
-*       ANS MSG('  ICB602I - A NAME FOR THE '××
-*               'REQUEST BLOCK MUST BE SPECIFIED IN '××
+*       ANS MSG('  ICB602I - A NAME FOR THE '||
+*               'REQUEST BLOCK MUST BE SPECIFIED IN '||
 *               'MF(2) ')SKIP;                             /*@ZA28964*/
 *       RETCODE=12;          /*SET RETURN CODE TO 12         @ZA28964*/
 *       GO TO FINISH;        /*BRANCH TO FINISH              @ZA28964*/
 *     END;                                                 /*@ZA28964*/
 */*                                                          @Y30LB02*/
-*   IF FLAGS ××              /*FLAGS SPECIFIED?              @ZA28964*/
-*     VOLID ××               /*VOLID SPECIFIED?              @ZA28964*/
-*     VUA ××                 /*VUA SPECIFIED?                @ZA28964*/
-*     MEXTN ××               /*MEXTN SPECIFIED?              @G18MB04*/
-*     HOSTID ××              /*HOST ID SPECIFIED?            @ZA28964*/
-*     ECB ××                 /*ECB SPECIFIED?                @ZA28964*/
+*   IF FLAGS ||              /*FLAGS SPECIFIED?              @ZA28964*/
+*     VOLID ||               /*VOLID SPECIFIED?              @ZA28964*/
+*     VUA ||                 /*VUA SPECIFIED?                @ZA28964*/
+*     MEXTN ||               /*MEXTN SPECIFIED?              @G18MB04*/
+*     HOSTID ||              /*HOST ID SPECIFIED?            @ZA28964*/
+*     ECB ||                 /*ECB SPECIFIED?                @ZA28964*/
 *     MJFCB ^= '' THEN       /*MJFCB SPECIFIED?              @G18MB04*/
 *       DO;                  /*PRINT WARNING MESSAGE         @Y30LB02*/
 *         RETCODE = 4;       /*SET RETURN CODE TO 4          @Y30LB02*/
-*         ANS MSG('  ICB603I - WARNING-ONLY MF'××
-*                 ' AND TYPE PARAMETERS ARE VALID FOR'××
+*         ANS MSG('  ICB603I - WARNING-ONLY MF'||
+*                 ' AND TYPE PARAMETERS ARE VALID FOR'||
 *                 ' LIST FORM ')SKIP;                      /*@Y30LB02*/
 *       END;                                               /*@Y30LB02*/
 */*                                                          @Y30LB02*/
@@ -808,8 +808,8 @@ MDJFCB   EQU   MNTJFCB             COMPATABILITY REDEFINITION  @ZA28964
 *     GO TO SFORM;           /*BRANCH, CK  STANDARD FORM     @Y30LB02*/
 *   IF MF(2)='' THEN         /* IS 2ND SUB-PARM SPECIFIED?   @Y30LB02*/
 *     DO;                    /*PRINT OUT ERROR MESSAGE       @Y30LB02*/
-*        ANS MSG('  ICB612I - MF(2) MUST CONTAIN'××
-*                ' REQ BLK NAME IF EXEC'××
+*        ANS MSG('  ICB612I - MF(2) MUST CONTAIN'||
+*                ' REQ BLK NAME IF EXEC'||
 *                ' MACRO FORM REQUESTED')SKIP;             /*@Y30LB02*/
 *        RETCODE=12;         /*SET RETURN CODE TO 12         @ZA28964*/
 *        GO TO FINISH;                                     /*@ZA28964*/
@@ -820,21 +820,21 @@ MDJFCB   EQU   MNTJFCB             COMPATABILITY REDEFINITION  @ZA28964
 */*                                                          @ZA28964*/
 *EMNTDMTR:                                                 /*@ZA28964*/
 *   IF MF(3) = 'COMPLETE' THEN /*COMPLETE SPECIFIED?         @ZA28964*/
-*     ANS(' '××MF(2)××'='××MF(2)××'&&'××MF(2)××';/*ZERO'××
+*     ANS(' '||MF(2)||'='||MF(2)||'&&'||MF(2)||';/*ZERO'||
 *         ' OUT BLOCK @Y30LB02*/')SKIP;
 *   IF TYPE(1) = 'MNT' THEN /*MOUNT REQUEST?                 @Y30LB02*/
 *     DO;                      /*MOUNT OPCD AND LEN          @Y30LB02*/
-*       ANS('MDLEN='××QUOTE(MLEN)××'X;/*LENGTH OF '××
+*       ANS('MDLEN='||QUOTE(MLEN)||'X;/*LENGTH OF '||
 *           'MOUNT REQUEST BLOCK @Y30LB02*/')SKIP;
-*       ANS('MDOPCD='××QUOTE(MOPCD)××'X;/*MOUNT'××
+*       ANS('MDOPCD='||QUOTE(MOPCD)||'X;/*MOUNT'||
 *           ' OPCODE @Y30LB02*/')SKIP;
 *       GO TO COMPROC;         /*BRANCH, CK PARAMETERS       @Y30LB02*/
 *     END;                     /*                            @Y30LB02*/
 *   ELSE                       /*DEMOUNT LEN AND OPCD        @Y30LB02*/
 *     DO;                      /*PUT OUT LEN AND OPCD        @Y30LB02*/
-*       ANS('DMLEN='××QUOTE(DLEN)××'X;/*LENGTH OF '××
+*       ANS('DMLEN='||QUOTE(DLEN)||'X;/*LENGTH OF '||
 *           'DEMOUNT REQUEST BLOCK @Y30LB02*/')SKIP;
-*       ANS('DMOPCD='××QUOTE(DOPCD)××'X;/*DEMOUNT'××
+*       ANS('DMOPCD='||QUOTE(DOPCD)||'X;/*DEMOUNT'||
 *          ' OPCODE @Y30LB02*/')SKIP;
 *       GO TO COMPROC;         /*BRANCH, CK PARAMETERS       @Y30LB02*/
 *     END;                     /*                            @Y30LB02*/
@@ -845,7 +845,7 @@ MDJFCB   EQU   MNTJFCB             COMPATABILITY REDEFINITION  @ZA28964
 *SFORM:
 *   IF MF(1) ^= '' THEN       /* FORM STANDARD?              @Y30LB02*/
 *     DO;                     /*PRINT ERROR MESSAGE          @Y30LB02*/
-*        ANS MSG('  ICB615I - INVALID MF PARAMETER'××
+*        ANS MSG('  ICB615I - INVALID MF PARAMETER'||
 *                ' SPECIFIED, MUST BE L, E, OR NULL')SKIP; /*@Y30LB02*/
 *        RETCODE=12;          /*SET RETURN CODE TO 12        @Y30LB02*/
 *        GO TO FINISH;                                     /*@ZA28964*/
@@ -854,7 +854,7 @@ MDJFCB   EQU   MNTJFCB             COMPATABILITY REDEFINITION  @ZA28964
 *   IF VOLID = '' THEN IF TYPE(1) = 'DMNT' THEN            /*@ZA28964*/
 *     DO;                   /*PRINT ERROR MESSAGE            @Y30LB02*/
 *        RETCODE = 12;      /*SET RETURN CODE TO 12          @Y30LB02*/
-*        ANS MSG('  ICB610I - VOLID MUST BE SPECIFIED '××
+*        ANS MSG('  ICB610I - VOLID MUST BE SPECIFIED '||
 *                'FOR STANDARD FORM MACRO')SKIP;           /*@Y30LB02*/
 *        GO TO FINISH;                                     /*@ZA28964*/
 *     END;                                                 /*@Y30LB02*/
@@ -862,7 +862,7 @@ MDJFCB   EQU   MNTJFCB             COMPATABILITY REDEFINITION  @ZA28964
 *   IF VUA = '' THEN IF TYPE(1) = 'MNT' THEN               /*@Y30LB02*/
 *     DO;                       /*PRINT ERROR MSG            @Y30LB02*/
 *        RETCODE = 12;          /*SET RETURN CODE TO 12      @Y30LB02*/
-*        ANS MSG('  ICB611I - VUA MUST BE SPECIFIED FOR '××
+*        ANS MSG('  ICB611I - VUA MUST BE SPECIFIED FOR '||
 *                'STANDARD FORM MACRO')SKIP;               /*@Y30LB02*/
 *        GO TO FINISH;                                     /*@ZA28964*/
 *     END;                                                 /*@Y30LB02*/
@@ -899,71 +899,71 @@ MDJFCB   EQU   MNTJFCB             COMPATABILITY REDEFINITION  @ZA28964
 *   IF FLAGS^='' THEN    /*FLAGS SPECIFIED?                  @ZA28964*/
 *     DO;                                                  /*@ZA28964*/
 *       IF TYPE(1) = 'DMNT' THEN /*DEMOUNT REQUEST?          @ZA28964*/
-*         ANS('DMNTFLAG=' ××FLAGS×× '; /*FLAGS @Y30LB02*/')SKIP;
+*         ANS('DMNTFLAG=' ||FLAGS|| '; /*FLAGS @Y30LB02*/')SKIP;
 *       ELSE             /*PUT FLAGS IN REQ BLOCK            @ZA28964*/
-*         ANS('MDFLG=' ××FLAGS×× '; /*FLAGS @Y30LB02*/')SKIP;
+*         ANS('MDFLG=' ||FLAGS|| '; /*FLAGS @Y30LB02*/')SKIP;
 *     END;                                                 /*@ZA28964*/
 */*                                                          @Y30LB02*/
 *   IF VOLID ^= '' THEN        /*VOLID SPECIFIED?            @ZA28964*/
 *     DO;                                                  /*@ZA28964*/
 *       IF TYPE(1) = 'MNT' THEN  /*MOUNT REQUEST?            @ZA28964*/
-*         ANS('MDVOL=' ××VOLID××';/*VALUE OF VOLID @Y30LB02*/')SKIP;
+*         ANS('MDVOL=' ||VOLID||';/*VALUE OF VOLID @Y30LB02*/')SKIP;
 *       ELSE                  /*DEMOUNT REQUEST              @ZA28964*/
-*         ANS('DMVOL=' ××VOLID×× '; /*VALUE OF VOLID @Y30LB02*/')SKIP;
+*         ANS('DMVOL=' ||VOLID|| '; /*VALUE OF VOLID @Y30LB02*/')SKIP;
 *     END;                                                 /*@ZA28964*/
 */*                                                          @Y30LB02*/
 *   IF VUA ^= '' THEN             /*VUA SPECIFIED?           @ZA28964*/
 *     DO;                                                  /*@ZA28964*/
 *       IF TYPE(1)='DMNT' THEN    /*TEST FOR DEMOUNT         @ZDR2048*/
 *         DO;                     /*DEMOUNT REQUEST          @ZDR2048*/
-*           ANS('DMNTVUA=' ××VUA×× '; /*FILL VUA @ZDR2048*/')SKIP;
-*           ANS('DMVUAVAL='××QUOTE(VUAVAL)××'B;/* OR ON'××
+*           ANS('DMNTVUA=' ||VUA|| '; /*FILL VUA @ZDR2048*/')SKIP;
+*           ANS('DMVUAVAL='||QUOTE(VUAVAL)||'B;/* OR ON'||
 *               ' THE VUA VALID ATTRIBUTE FLAG @ZDR2048*/')SKIP;
 *         END;                    /*                         @ZDR2048*/
 *       ELSE                  /*PUT VUA IN BLOCK FOR MNT     @ZDR2048*/
-*         ANS('MDVUA=' ××VUA×× '; /*VALUE OF VUA    @Y30LB02*/')SKIP;
+*         ANS('MDVUA=' ||VUA|| '; /*VALUE OF VUA    @Y30LB02*/')SKIP;
 *     END;                                                 /*@ZA28964*/
 */*                                                          @Y30LB02*/
 *   IF HOSTID ^= '' THEN     /*HOSTID SPECIFIED              @ZA28964*/
 *     DO;                                                  /*@ZA28964*/
 *       IF TYPE(1) = 'MNT' THEN  /*IS THE TYPE MOUNT?        @Y30LB02*/
-*         ANS('MDHOST='××HOSTID××';/*FILL IN HOSTID @Y30LB02*/')SKIP;
+*         ANS('MDHOST='||HOSTID||';/*FILL IN HOSTID @Y30LB02*/')SKIP;
 *       ELSE                                               /*@ZA28964*/
-*         ANS('DMHOST='××HOSTID××';/*FILL IN HOSTID @Y30LB02*/')SKIP;
+*         ANS('DMHOST='||HOSTID||';/*FILL IN HOSTID @Y30LB02*/')SKIP;
 *     END;                                                 /*@ZA28964*/
 */*                                                          @ZA28964*/
 *   IF ECB ^= '' THEN                                      /*@ZA28964*/
 *     DO;                                                  /*@ZA28964*/
 *       IF TYPE(1) = 'DMNT' THEN                           /*@ZA28964*/
-*         ANS('DMNTECB =ADDR'××ECB××';/*ADDRESS OF THE EVENT'××
+*         ANS('DMNTECB =ADDR'||ECB||';/*ADDRESS OF THE EVENT'||
 *             'CONTROL BLOCK @Y30LB02*/')SKIP;
 *       ELSE                 /* TYPE MUST BE MOUNT           @ZA28964*/
 *         DO;                                              /*@ZA28964*/
 *           RETCODE = 4;                                   /*@ZA28964*/
-*           ANS MSG('  ICB618I - WARNING - ECB PARAMETER ' ××
+*           ANS MSG('  ICB618I - WARNING - ECB PARAMETER ' ||
 *                   'VALID ONLY FOR DEMOUNT REQUEST')SKIP; /*@ZA28964*/
 *         END;                                             /*@ZA28964*/
 *     END;                                                 /*@ZA28964*/
 */*                                                          @ZA28964*/
-*   IF MEXTN ×× MJFCB ^= '' THEN   /* MEXTN, MJFCB GIVEN     @ZA28964*/
+*   IF MEXTN || MJFCB ^= '' THEN   /* MEXTN, MJFCB GIVEN     @ZA28964*/
 *     DO;                                                  /*@ZA28964*/
 *       IF TYPE(1) = 'DMNT' THEN  /* ILLEGAL PARAMETER       @ZA28964*/
 *         DO;                                              /*@ZA28964*/
 *           RETCODE = 4;                                   /*@ZA28964*/
-*           ANS MSG('  ICB619I - WARNING - MEXTN/MJFCB ' ××
+*           ANS MSG('  ICB619I - WARNING - MEXTN/MJFCB ' ||
 *                   'PARAMETER VALID ONLY FOR MOUNT REQUEST')SKIP;
 *         END;                                             /*@ZA28964*/
 *       ELSE                 /* MOUNT REQUEST                @ZA28964*/
 *         DO;                                              /*@ZA28964*/
 *           IF MEXTN ^= '' THEN                            /*@ZA28964*/
 *             DO;            /* PROCESS MOUNT EXTENSION      @G18MB04*/
-*               ANS('MNTEXTP=ADDR' ×× MEXTN ××
+*               ANS('MNTEXTP=ADDR' || MEXTN ||
 *                   ';/*FILL IN MEXTN @G18MB04*/')SKIP;
-*               ANS('MDMEXT='××QUOTE(MEXTVAL)××'B;/* SET'××
+*               ANS('MDMEXT='||QUOTE(MEXTVAL)||'B;/* SET'||
 *                   ' THE MOUNT EXT PROVIDED BIT @G18MB04*/')SKIP;
 *             END;           /* END PROCESS MOUNT EXTENSION  @G18MB04*/
 *           ELSE             /* PROCESS MOUNT JFCB           @ZA28964*/
-*             ANS('MDJFCB=ADDR' ×× MJFCB ××
+*             ANS('MDJFCB=ADDR' || MJFCB ||
 *                 ';/*FILL MDJFCB @G18MB04*/')SKIP;
 *         END;                                             /*@ZA28964*/
 *     END;                                                 /*@ZA28964*/
@@ -977,52 +977,52 @@ MDJFCB   EQU   MNTJFCB             COMPATABILITY REDEFINITION  @ZA28964
 */*          AT ONLY ONE POINT IN THE MACRO                  @ZA28964*/
 */********************************************************** @Y30LB02*/
 *  LMNTINT:
-* ANS('/*******************************************'××
+* ANS('/*******************************************'||
 *     '************** @Y30LB02*/')SKIP;
-* ANS('/*MACMEAN  MSSC MOUNT MACRO                 '××
+* ANS('/*MACMEAN  MSSC MOUNT MACRO                 '||
 *     '               @Y30LB02*/')SKIP;
-* ANS('/*         VERSION - VS/2 REL 3    77/12/15 '××
+* ANS('/*         VERSION - VS/2 REL 3    77/12/15 '||
 *     'LEVEL 04       @ZA28964*/')SKIP;
-* ANS('/*THIS IS THE INITIALIZED LIST FORM         '××
+* ANS('/*THIS IS THE INITIALIZED LIST FORM         '||
 *     '               @Y30LB02*/')SKIP;
-* ANS('/*******************************************'××
+* ANS('/*******************************************'||
 *     '************** @Y30LB02*/')SKIP;
-* ANS('DCL 1 ' ××MF(2)×× '  STATIC LOCAL,'××
+* ANS('DCL 1 ' ||MF(2)|| '  STATIC LOCAL,'||
 *     ' /*MOUNT REQUEST BLOCK @Y30LB02*/')SKIP;
-* ANS('    2  MDLEN  FIXED(31)INIT('××QUOTE('1C')××
+* ANS('    2  MDLEN  FIXED(31)INIT('||QUOTE('1C')||
 *     'X),/*LENGTH 0F REQ BLOCK @Y30LB02*/')SKIP;
-* ANS('    2  MDOPCD FIXED(8)INIT('××QUOTE('08')××
+* ANS('    2  MDOPCD FIXED(8)INIT('||QUOTE('08')||
 *     'X),/*MOUNT OPCODE @Y30LB02*/')SKIP;
-* ANS('    2  MNTRES1 CHAR(1)INIT('××QUOTE('00')××
+* ANS('    2  MNTRES1 CHAR(1)INIT('||QUOTE('00')||
 *     'X), /*ONE BYTE OF ZERO @Y30LB02*/')SKIP;
-* ANS('    2  MDFLG BIT(16)INIT('××QUOTE
-*     ('0000000000000000')××'B), /*FLAGS AREA @Y30LB02*/')SKIP;
-* ANS('    3  * BIT(1), /*RESERVED '××
+* ANS('    2  MDFLG BIT(16)INIT('||QUOTE
+*     ('0000000000000000')||'B), /*FLAGS AREA @Y30LB02*/')SKIP;
+* ANS('    3  * BIT(1), /*RESERVED '||
 *     ' @YD00125*/')SKIP;
-* ANS('    3  MDVISMNT BIT(1), /*MSVC ISSUING'××
+* ANS('    3  MDVISMNT BIT(1), /*MSVC ISSUING'||
 *     ' THE MOUNT @Y30LB02*/')SKIP;
-* ANS('    3  MDVSVRQ BIT(1), /*MSVC SECONDARY'××
+* ANS('    3  MDVSVRQ BIT(1), /*MSVC SECONDARY'||
 *     ' VOLUME REQUEST @Y30LB02*/')SKIP;
-* ANS('    3  MDSRTCH BIT(1), /*SCRATCH'××
+* ANS('    3  MDSRTCH BIT(1), /*SCRATCH'||
 *     '  @Y30LB02*/')SKIP;
-* ANS('    3  MDMEXT  BIT(1), /*MOUNT EXTENSION'××
+* ANS('    3  MDMEXT  BIT(1), /*MOUNT EXTENSION'||
 *     '  @G18MB04*/')SKIP;
-* ANS('    3  *      BIT(11),'××
+* ANS('    3  *      BIT(11),'||
 *     ' /* RESERVED BITS @G18MB04*/')SKIP;
 * ANS('    2  MDVOL  CHAR(6) , /*VOLID @Y30LB02*/')SKIP;
-* ANS('     3  *(6) CHAR(1)INIT((6)'××QUOTE
-*     ('00')××'X),/*INIT VOLID AREA TO ZERO @Y30LB02*/')SKIP;
-* ANS('    2  MDVUA  FIXED(15)INIT(0), /*VIRTUAL'××
+* ANS('     3  *(6) CHAR(1)INIT((6)'||QUOTE
+*     ('00')||'X),/*INIT VOLID AREA TO ZERO @Y30LB02*/')SKIP;
+* ANS('    2  MDVUA  FIXED(15)INIT(0), /*VIRTUAL'||
 *     ' UNIT ADDRESS @Y30LB02*/')SKIP;
-* ANS('    2  MDHOST CHAR(5),/*5-BYTES HOSTID '××
+* ANS('    2  MDHOST CHAR(5),/*5-BYTES HOSTID '||
 *     'AREA @Y30LB02*/')SKIP;
-* ANS('     3  *(5) CHAR(1) INIT((5)'××QUOTE
-*     ('00')××'X),/*INIT HOSTID AREA  @Y30LB02*/')SKIP;
-* ANS('    2  MNTRES2  CHAR(3) INIT('××QUOTE
-*     ('')××'B),/*INIT RESERVED AREA  @Y30LB02*/')SKIP;
-* ANS('    2  MNTEXTP PTR(31)INIT(0), /*ADDRESS'××
+* ANS('     3  *(5) CHAR(1) INIT((5)'||QUOTE
+*     ('00')||'X),/*INIT HOSTID AREA  @Y30LB02*/')SKIP;
+* ANS('    2  MNTRES2  CHAR(3) INIT('||QUOTE
+*     ('')||'B),/*INIT RESERVED AREA  @Y30LB02*/')SKIP;
+* ANS('    2  MNTEXTP PTR(31)INIT(0), /*ADDRESS'||
 *     ' OF MOUNT LIST EXTENSION @G18MB04*/')SKIP;
-* ANS('     3  MDJFCB PTR(31); /* ADDRESS'××
+* ANS('     3  MDJFCB PTR(31); /* ADDRESS'||
 *     ' OF JFCB @ZA28964*/')SKIP;
 * ANS('DCL MNTLEN FIXED(31) DEF(MDLEN), /*BAL LABEL @ZA28964*/')SKIP;
 * ANS('  MNTOPCD FIXED(8) DEF(MDOPCD), /*BAL LABEL @ZA28964*/')SKIP;
@@ -1034,45 +1034,45 @@ MDJFCB   EQU   MNTJFCB             COMPATABILITY REDEFINITION  @ZA28964
 *        GO TO FINISH;                                     /*@ZA28964*/
 */*                                                          @ZA28964*/
 *  LDMTINT:
-* ANS('/*******************************************'××
+* ANS('/*******************************************'||
 *     '************** @Y30LB02*/')SKIP;
-* ANS('/*MACMEAN  MSSC DEMOUNT MACRO               '××
+* ANS('/*MACMEAN  MSSC DEMOUNT MACRO               '||
 *     '               @Y30LB02*/')SKIP;
-* ANS('/*         VERSION - VS/2 REL 3  77/12/15   '××
+* ANS('/*         VERSION - VS/2 REL 3  77/12/15   '||
 *     'LEVEL 04       @ZA28964*/')SKIP;
-* ANS('/*THIS IS THE INITIALIZED LIST FORM         '××
+* ANS('/*THIS IS THE INITIALIZED LIST FORM         '||
 *     '               @Y30LB02*/')SKIP;
-* ANS('/*******************************************'××
+* ANS('/*******************************************'||
 *     '************** @Y30LB02*/')SKIP;
-* ANS('DCL 1 ' ××MF(2)×× '  STATIC LOCAL,'××
+* ANS('DCL 1 ' ||MF(2)|| '  STATIC LOCAL,'||
 *     ' /*DEMOUNT REQUEST BLOCK @Y30LB02*/')SKIP;
-* ANS('    2  DMLEN  FIXED(31)INIT('××QUOTE('1C')××
+* ANS('    2  DMLEN  FIXED(31)INIT('||QUOTE('1C')||
 *     'X),/*LENGTH DEMOUNT REQUEST BLK @Y30LB02*/')SKIP;
-* ANS('    2  DMOPCD FIXED(8)INIT('××QUOTE('06')××
+* ANS('    2  DMOPCD FIXED(8)INIT('||QUOTE('06')||
 *     'X),/*DEMOUNT OPCODE @Y30LB02*/')SKIP;
-* ANS('    2  DMNTRES1  CHAR(1)INIT('××QUOTE
-*     ('00')××'X),/*INIT RESERVED AREA TO ZERO @Y30LB02*/')SKIP;
-* ANS('    2  DMNTFLAG BIT(16)INIT('××QUOTE
-*     ('0000000000000000')××'B), /*FLAGS AREA @Y30LB02*/')SKIP;
-* ANS('    3  DMBITRE1 BIT(1), /*ONE'××
+* ANS('    2  DMNTRES1  CHAR(1)INIT('||QUOTE
+*     ('00')||'X),/*INIT RESERVED AREA TO ZERO @Y30LB02*/')SKIP;
+* ANS('    2  DMNTFLAG BIT(16)INIT('||QUOTE
+*     ('0000000000000000')||'B), /*FLAGS AREA @Y30LB02*/')SKIP;
+* ANS('    3  DMBITRE1 BIT(1), /*ONE'||
 *     ' RESERVED BIT @YM02186*/')SKIP;
-* ANS('    3  DMDELRSP BIT(1), /*DEMOUNT '××
+* ANS('    3  DMDELRSP BIT(1), /*DEMOUNT '||
 *     'DELAYED RESPONSE ATTRIBUTE @YM02186*/')SKIP;
-* ANS('    3  DMVUAVAL BIT(1), /*DEMOUNT '××
+* ANS('    3  DMVUAVAL BIT(1), /*DEMOUNT '||
 *     'VUA VALID ATTRIBUTE @ZDR2048*/')SKIP;
-* ANS('    3  DMBITRES BIT(13), /*THIRTEEN'××
+* ANS('    3  DMBITRES BIT(13), /*THIRTEEN'||
 *     ' RESERVED BITS @ZDR2048*/')SKIP;
-* ANS('    2  DMVOL CHAR(6) INIT('××QUOTE
-*     ('')××'B), /*INIT VOLID TO ZERO @Y30LB02*/')SKIP;
-* ANS('    2  DMNTASID  CHAR(2)INIT('××QUOTE
-*     ('')××'B),/*INIT ASID AREA TO ZERO @Y30LB02*/')SKIP;
-* ANS('    2  DMNTECB  PTR(31)INIT(0), /*DEMOUNT'××
+* ANS('    2  DMVOL CHAR(6) INIT('||QUOTE
+*     ('')||'B), /*INIT VOLID TO ZERO @Y30LB02*/')SKIP;
+* ANS('    2  DMNTASID  CHAR(2)INIT('||QUOTE
+*     ('')||'B),/*INIT ASID AREA TO ZERO @Y30LB02*/')SKIP;
+* ANS('    2  DMNTECB  PTR(31)INIT(0), /*DEMOUNT'||
 *     ' EVENT CONTROL BLOCK @ZA28964*/')SKIP;
-* ANS('    2  DMHOST CHAR(5) INIT('××QUOTE
-*     ('')××'B),/*INIT HOSTID AREA  @Y30LB02*/')SKIP;
-* ANS('    2  DMNTRES2  CHAR(1)INIT('××QUOTE
-*     ('')××'B),/*INIT RESERVED AREA TO ZERO @ZDR2048*/')SKIP;
-* ANS('    2  DMNTVUA   FIXED(15)INIT(0); /*VIRTUAL'××
+* ANS('    2  DMHOST CHAR(5) INIT('||QUOTE
+*     ('')||'B),/*INIT HOSTID AREA  @Y30LB02*/')SKIP;
+* ANS('    2  DMNTRES2  CHAR(1)INIT('||QUOTE
+*     ('')||'B),/*INIT RESERVED AREA TO ZERO @ZDR2048*/')SKIP;
+* ANS('    2  DMNTVUA   FIXED(15)INIT(0); /*VIRTUAL'||
 *     ' UNIT ADDRESS @ZDR2048*/')SKIP;
 * ANS('DCL DMNTLEN  FIXED(31) DEF(DMLEN), /*BAL LABEL @ZA28964*/')SKIP;
 * ANS('  DMVOLID CHAR(6) DEF(DMVOL), /*BAL LABEL @ZA28964*/')SKIP;
@@ -1081,45 +1081,45 @@ MDJFCB   EQU   MNTJFCB             COMPATABILITY REDEFINITION  @ZA28964
 *       GO TO FINISH;                                      /*@ZA28964*/
 */*                                                          @ZA28964*/
 *  LMNTUN:
-* ANS('/*******************************************'××
+* ANS('/*******************************************'||
 *     '************** @Y30LB02*/')SKIP;
-* ANS('/*MACMEAN  MSSC MOUNT MACRO                 '××
+* ANS('/*MACMEAN  MSSC MOUNT MACRO                 '||
 *     '               @Y30LB02*/')SKIP;
-* ANS('/*         VERSION - VS/2 REL 3   77/12/15  '××
+* ANS('/*         VERSION - VS/2 REL 3   77/12/15  '||
 *     'LEVEL 04       @ZA28964*/')SKIP;
-* ANS('/*THIS IS THE UNINITIALIZED LIST FORM       '××
+* ANS('/*THIS IS THE UNINITIALIZED LIST FORM       '||
 *     '               @Y30LB02*/')SKIP;
-* ANS('/*******************************************'××
+* ANS('/*******************************************'||
 *     '************** @Y30LB02*/')SKIP;
-* ANS('DCL 1 ' ××MF(2)××'  '××MF(3)××','××
+* ANS('DCL 1 ' ||MF(2)||'  '||MF(3)||','||
 *     ' /*MOUNT REQUEST BLOCK @Y30LB02*/')SKIP;
-* ANS('    2  MDLEN  FIXED(31), /*LENGTH'××
+* ANS('    2  MDLEN  FIXED(31), /*LENGTH'||
 *     ' OF BLOCK = 1C HEX BYTES @Y30LB02*/')SKIP;
-* ANS('    2  MDOPCD FIXED(8), /*MOUNT'××
+* ANS('    2  MDOPCD FIXED(8), /*MOUNT'||
 *     ' OPCODE = 08 HEX @Y30LB02*/')SKIP;
 * ANS('    2  MNTRES1  CHAR(1),/*RESERVED @Y30LB02*/')SKIP;
 * ANS('    2  MDFLG BIT(16) , /*FLAGS AREA @Y30LB02*/')SKIP;
-* ANS('    3  * BIT(1), /*RESERVED '××
+* ANS('    3  * BIT(1), /*RESERVED '||
 *     ' @YD00125*/')SKIP;
-* ANS('    3  MDVISMNT BIT(1), /*MSVC ISSUING'××
+* ANS('    3  MDVISMNT BIT(1), /*MSVC ISSUING'||
 *     ' THE MOUNT @Y30LB02*/')SKIP;
-* ANS('    3  MDVSVRQ BIT(1), /*MSVC SECONDARY'××
+* ANS('    3  MDVSVRQ BIT(1), /*MSVC SECONDARY'||
 *     ' VOLUME REQUEST @Y30LB02*/')SKIP;
-* ANS('    3  MDSRTCH BIT(1), /*SCRATCH'××
+* ANS('    3  MDSRTCH BIT(1), /*SCRATCH'||
 *     '  @Y30LB02*/')SKIP;
-* ANS('    3  MDMEXT  BIT(1), /*MOUNT EXTENSION'××
+* ANS('    3  MDMEXT  BIT(1), /*MOUNT EXTENSION'||
 *     '  @G18MB04*/')SKIP;
-* ANS('    3  *      BIT(11),'××
+* ANS('    3  *      BIT(11),'||
 *     ' /* RESERVED BITS @YD00125*/')SKIP;
 * ANS('    2  MDVOL  CHAR(6) , /*VOLID @Y30LB02*/')SKIP;
-* ANS('    2  MDVUA  FIXED(15), /*VIRTUAL'××
+* ANS('    2  MDVUA  FIXED(15), /*VIRTUAL'||
 *     ' UNIT ADDRESS @Y30LB02*/')SKIP;
-* ANS('    2  MDHOST CHAR(5),/*5-BYTES HOSTID '××
+* ANS('    2  MDHOST CHAR(5),/*5-BYTES HOSTID '||
 *     'AREA @Y30LB02*/')SKIP;
 * ANS('    2  MNTRES2  CHAR(3) , /*RESERVED @Y30LB02*/')SKIP;
-* ANS('    2  MNTEXTP PTR(31), /*ADDRESS'××
+* ANS('    2  MNTEXTP PTR(31), /*ADDRESS'||
 *     ' OF MOUNT LIST EXTENSION @G18MB04*/')SKIP;
-* ANS('     3  MDJFCB PTR(31); /* ADDRESS'××
+* ANS('     3  MDJFCB PTR(31); /* ADDRESS'||
 *     ' OF JFCB @ZA28964*/')SKIP;
 * ANS('DCL MNTLEN FIXED(31) DEF(MDLEN), /*BAL LABEL @ZA28964*/')SKIP;
 * ANS('  MNTOPCD FIXED(8) DEF(MDOPCD), /*BAL LABEL @ZA28964*/')SKIP;
@@ -1131,40 +1131,40 @@ MDJFCB   EQU   MNTJFCB             COMPATABILITY REDEFINITION  @ZA28964
 *        GO TO FINISH;                                     /*@ZA28964*/
 */*                                                          @ZA28964*/
 *  LDMTUN:
-* ANS('/*******************************************'××
+* ANS('/*******************************************'||
 *     '************** @Y30LB02*/')SKIP;
-* ANS('/*MACMEAN  MSSC DEMOUNT MACRO               '××
+* ANS('/*MACMEAN  MSSC DEMOUNT MACRO               '||
 *     '               @Y30LB02*/')SKIP;
-* ANS('/*         VERSION - VS/2 REL 3    77/12/15 '××
+* ANS('/*         VERSION - VS/2 REL 3    77/12/15 '||
 *     'LEVEL 04       @ZA28964*/')SKIP;
-* ANS('/*THIS IS THE UNINITIALIZED LIST FORM       '××
+* ANS('/*THIS IS THE UNINITIALIZED LIST FORM       '||
 *     '               @Y30LB02*/')SKIP;
-* ANS('/*******************************************'××
+* ANS('/*******************************************'||
 *     '************** @Y30LB02*/')SKIP;
-* ANS('DCL 1 ' ××MF(2)××'  '××MF(3)××','××
+* ANS('DCL 1 ' ||MF(2)||'  '||MF(3)||','||
 *     ' /*DEMOUNT REQUEST BLOCK @Y30LB02*/')SKIP;
-* ANS('    2  DMLEN  FIXED(31),/*LENGTH OF'××
+* ANS('    2  DMLEN  FIXED(31),/*LENGTH OF'||
 *     ' DEMOUNT REQ BLK = 1C HEX BYTES @Y30LB02*/')SKIP;
-* ANS('    2  DMOPCD FIXED(8),/*DEMOUNT'××
+* ANS('    2  DMOPCD FIXED(8),/*DEMOUNT'||
 *     ' OPCODE = 06 HEX @Y30LB02*/')SKIP;
 * ANS('    2  DMNTRES1 CHAR(1), /*RESERVED @Y30LB02*/')SKIP;
 * ANS('    2  DMNTFLAG BIT(16),/*FLAGS AREA @Y30LB02*/')SKIP;
-* ANS('    3  DMBITRE1 BIT(1), /*ONE'××
+* ANS('    3  DMBITRE1 BIT(1), /*ONE'||
 *     ' RESERVED BIT @YM02186*/')SKIP;
-* ANS('    3  DMDELRSP BIT(1), /*DEMOUNT '××
+* ANS('    3  DMDELRSP BIT(1), /*DEMOUNT '||
 *     'DELAYED RESPONSE ATTRIBUTE @YM02186*/')SKIP;
-* ANS('    3  DMVUAVAL BIT(1), /*DEMOUNT '××
+* ANS('    3  DMVUAVAL BIT(1), /*DEMOUNT '||
 *     'VUA VALID ATTRIBUTE @ZDR2048*/')SKIP;
-* ANS('    3  DMBITRES BIT(13), /*THIRTEEN'××
+* ANS('    3  DMBITRES BIT(13), /*THIRTEEN'||
 *     ' RESERVED BITS @ZDR2048*/')SKIP;
 * ANS('    2  DMVOL CHAR(6), /* VOLID FIELD @Y30LB02*/')SKIP;
 * ANS('    2  DMNTASID CHAR(2), /*ASID AREA @Y30LB02*/')SKIP;
-* ANS('    2  DMNTECB  PTR(31),/*DEMOUNT'××
+* ANS('    2  DMNTECB  PTR(31),/*DEMOUNT'||
 *     ' EVENT CONTROL BLOCK @ZA28964*/')SKIP;
-* ANS('    2  DMHOST CHAR(5),/*5-BYTE HOSTID '××
+* ANS('    2  DMHOST CHAR(5),/*5-BYTE HOSTID '||
 *     'AREA @Y30LB02*/')SKIP;
 * ANS('    2  DMNTRES2 CHAR(1), /*RESERVED @ZDR2048*/')SKIP;
-* ANS('    2  DMNTVUA  FIXED(15); /*VIRTUAL'××
+* ANS('    2  DMNTVUA  FIXED(15); /*VIRTUAL'||
 *     ' UNIT ADDRESS @ZDR2048*/')SKIP;
 * ANS('DCL DMNTLEN  FIXED(31) DEF(DMLEN), /*BAL LABEL @ZA28964*/')SKIP;
 * ANS('  DMVOLID CHAR(6) DEF(DMVOL), /*BAL LABEL @ZA28964*/')SKIP;
@@ -1173,97 +1173,97 @@ MDJFCB   EQU   MNTJFCB             COMPATABILITY REDEFINITION  @ZA28964
 *        GO TO FINISH;                                     /*@ZA28964*/
 */*                                                          @ZA28964*/
 *  EMNTDMT:
-* ANS('/*******************************************'××
+* ANS('/*******************************************'||
 *     '************** @Y30LB02*/')SKIP;
-* ANS('/*MACMEAN  MSSC MOUNT/DEMOUNT MACRO         '××
+* ANS('/*MACMEAN  MSSC MOUNT/DEMOUNT MACRO         '||
 *     '               @Y30LB02*/')SKIP;
-* ANS('/*         VERSION - VS/2 REL 3   77/12/15  '××
+* ANS('/*         VERSION - VS/2 REL 3   77/12/15  '||
 *     'LEVEL 04       @ZA28964*/')SKIP;
-* ANS('/*THIS IS THE OUTPUT FOR THE EXECUTE FORM.  '××
+* ANS('/*THIS IS THE OUTPUT FOR THE EXECUTE FORM.  '||
 *     '               @Y30LB02*/')SKIP;
-* ANS('/*THE LIST FORM OF THIS MACRO SHOULD BE     '××
+* ANS('/*THE LIST FORM OF THIS MACRO SHOULD BE     '||
 *     '               @Y30LB02*/')SKIP;
-* ANS('/*INVOKED FIRST IN ORDER TO SET UP NECESSARY'××
+* ANS('/*INVOKED FIRST IN ORDER TO SET UP NECESSARY'||
 *     '               @Y30LB02*/')SKIP;
-* ANS('/*DECLARES.  IF THE COMPLETE ARGUMENT IS    '××
+* ANS('/*DECLARES.  IF THE COMPLETE ARGUMENT IS    '||
 *     '               @Y30LB02*/')SKIP;
-* ANS('/*SPECIFIED THE REQ BLOCK WILL BE ZEROED.   '××
+* ANS('/*SPECIFIED THE REQ BLOCK WILL BE ZEROED.   '||
 *     '               @Y30LB02*/')SKIP;
-* ANS('/*******************************************'××
+* ANS('/*******************************************'||
 *     '************** @Y30LB02*/')SKIP;
 * ANS('RFY  MDREG1 RSTD;/*RESTRICT REG 1 @Y30LB02*/')SKIP;
-* ANS('MDREG1= ADDR('××MF(2)××'); /*R1'××
+* ANS('MDREG1= ADDR('||MF(2)||'); /*R1'||
 *     ' PTR TO REQ BLOCK @Y30LB02*/')SKIP;
 * GO TO EMNTDMTR;            /* RETURN TO CALLING POINT      @ZA28964*/
 */*                                                          @ZA28964*/
 * SSMNT:
-* ANS('/*******************************************'××
+* ANS('/*******************************************'||
 *     '************** @Y30LB02*/')SKIP;
-* ANS('/*MACMEAN  MSSC MOUNT MACRO                 '××
+* ANS('/*MACMEAN  MSSC MOUNT MACRO                 '||
 *     '               @Y30LB02*/')SKIP;
-* ANS('/*         VERSION - VS/2 REL 3   77/12/15  '××
+* ANS('/*         VERSION - VS/2 REL 3   77/12/15  '||
 *     'LEVEL 04       @ZA28964*/')SKIP;
-* ANS('/*THIS IS THE OUTPUT FOR A SECONDARY        '××
+* ANS('/*THIS IS THE OUTPUT FOR A SECONDARY        '||
 *     '               @Y30LB02*/')SKIP;
-* ANS('/*INVOCATION OF THE STANDARD FORM MACRO     '××
+* ANS('/*INVOCATION OF THE STANDARD FORM MACRO     '||
 *     '               @Y30LB02*/')SKIP;
-* ANS('/*******************************************'××
+* ANS('/*******************************************'||
 *     '************** @Y30LB02*/')SKIP;
 * ANS('RFY  MDREG1 RSTD;/*RESTRICT REG 1 @Y30LB02*/')SKIP;
 * ANS('MDREG1=ADDR(MDLEN);/*PTR TO LIST @Y30LB02*/')SKIP;
 * GO TO COMPROC;                 /* GO FILL IN BLOCK         @ZA28964*/
 */*                                                          @ZA28964*/
 * SIMNT:
-* ANS('/*******************************************'××
+* ANS('/*******************************************'||
 *     '************** @Y30LB02*/')SKIP;
-* ANS('/*MACMEAN  MSSC MOUNT MACRO                 '××
+* ANS('/*MACMEAN  MSSC MOUNT MACRO                 '||
 *     '               @Y30LB02*/')SKIP;
-* ANS('/*         VERSION - VS/2 REL 3   77/12/15  '××
+* ANS('/*         VERSION - VS/2 REL 3   77/12/15  '||
 *     'LEVEL 04       @ZA28964*/')SKIP;
-* ANS('/*THIS IS THE STANDARD FORM - MOUNT MACRO   '××
+* ANS('/*THIS IS THE STANDARD FORM - MOUNT MACRO   '||
 *     '               @Y30LB02*/')SKIP;
-* ANS('/*******************************************'××
+* ANS('/*******************************************'||
 *     '************** @Y30LB02*/')SKIP;
 * ANS('RFY  MDREG1 RSTD;/*RESTRICT REG 1 @Y30LB02*/')SKIP;
 * ANS('MDREG1=ADDR(MDLEN);/*R1 PTR TO REQBLK @Y30LB02*/')SKIP;
-* ANS('DCL 1  ICBMLST  STATIC LOCAL,'××
+* ANS('DCL 1  ICBMLST  STATIC LOCAL,'||
 *     ' /*MOUNT REQUEST BLOCK @Y30LB02*/')SKIP;
-* ANS('    2  MDLEN  FIXED(31)INIT('××QUOTE('1C')××
+* ANS('    2  MDLEN  FIXED(31)INIT('||QUOTE('1C')||
 *     'X),/*LENGTH OF MOUNT REQ BLK @Y30LB02*/')SKIP;
-* ANS('    2  MDOPCD FIXED(8)INIT('××QUOTE('08')××
+* ANS('    2  MDOPCD FIXED(8)INIT('||QUOTE('08')||
 *     'X),/*MOUNT OPCODE @Y30LB02*/')SKIP;
-* ANS('    2  *    CHAR(1) INIT('××QUOTE('00')××
+* ANS('    2  *    CHAR(1) INIT('||QUOTE('00')||
 *     'X) ,/*RESERVED @Y30LB02*/')SKIP;
-* ANS('    2  MDFLG BIT(16)INIT('××QUOTE
-*     ('0000000000000000')××'B),/*FLAGS AREA @Y30LB02*/')SKIP;
-* ANS('    3  * BIT(1), /* RESERVED '××
+* ANS('    2  MDFLG BIT(16)INIT('||QUOTE
+*     ('0000000000000000')||'B),/*FLAGS AREA @Y30LB02*/')SKIP;
+* ANS('    3  * BIT(1), /* RESERVED '||
 *     ' @YD00125*/')SKIP;
-* ANS('    3  MDVISMNT BIT(1), /*MSVC ISSUING'××
+* ANS('    3  MDVISMNT BIT(1), /*MSVC ISSUING'||
 *     ' THE MOUNT @Y30LB02*/')SKIP;
-* ANS('    3  MDVSVRQ BIT(1), /*MSVC SECONDARY'××
+* ANS('    3  MDVSVRQ BIT(1), /*MSVC SECONDARY'||
 *     ' VOLUME REQUEST @Y30LB02*/')SKIP;
-* ANS('    3  MDSRTCH BIT(1), /*SCRATCH'××
+* ANS('    3  MDSRTCH BIT(1), /*SCRATCH'||
 *     '  @Y30LB02*/')SKIP;
-* ANS('    3  MDMEXT  BIT(1), /*MOUNT EXTENSION'××
+* ANS('    3  MDMEXT  BIT(1), /*MOUNT EXTENSION'||
 *     '  @G18MB04*/')SKIP;
-* ANS('    3  *      BIT(11),'××
+* ANS('    3  *      BIT(11),'||
 *     ' /*RESERVE BITS OF ZERO @Y30LB02*/')SKIP;
 * ANS('    2  MDVOL CHAR(6),/*VOLUME ID @Y30LB02*/')SKIP;
-* ANS('     3  *(6) CHAR(1) INIT((6)'××QUOTE
-*     ('00')××'X),/*INIT VOLID AREA TO ZERO @Y30LB02*/')SKIP;
-* ANS('    2  MDVUA  FIXED(15) INIT(0),/*VIRTUAL '××
+* ANS('     3  *(6) CHAR(1) INIT((6)'||QUOTE
+*     ('00')||'X),/*INIT VOLID AREA TO ZERO @Y30LB02*/')SKIP;
+* ANS('    2  MDVUA  FIXED(15) INIT(0),/*VIRTUAL '||
 *     'UNIT ADDRESS @Y30LB02*/')SKIP;
-* ANS('    2  MDHOST CHAR(5),/*5-BYTE HOSTID '××
+* ANS('    2  MDHOST CHAR(5),/*5-BYTE HOSTID '||
 *     'AREA @Y30LB02*/')SKIP;
-* ANS('     3  *(5) CHAR(1) INIT((5)'××QUOTE
-*     ('00')××'X),/*INIT HOSTID AREA  @Y30LB02*/')SKIP;
-* ANS('    2  * CHAR(3),/*2-BYTE RESERVED '××
+* ANS('     3  *(5) CHAR(1) INIT((5)'||QUOTE
+*     ('00')||'X),/*INIT HOSTID AREA  @Y30LB02*/')SKIP;
+* ANS('    2  * CHAR(3),/*2-BYTE RESERVED '||
 *     'AREA @Y30LB02*/')SKIP;
-* ANS('     3  *(3) CHAR(1) INIT((3)'××QUOTE
-*     ('00')××'X),/*INIT RESERVED AREA  @Y30LB02*/')SKIP;
-* ANS('    2  MNTEXTP PTR(31) INIT(0),/*ADDRESS '××
+* ANS('     3  *(3) CHAR(1) INIT((3)'||QUOTE
+*     ('00')||'X),/*INIT RESERVED AREA  @Y30LB02*/')SKIP;
+* ANS('    2  MNTEXTP PTR(31) INIT(0),/*ADDRESS '||
 *     'OF MOUNT LIST EXTENSION @G18MB04*/')SKIP;
-* ANS('     3  MDJFCB PTR(31); /* ADDRESS'××
+* ANS('     3  MDJFCB PTR(31); /* ADDRESS'||
 *     ' OF JFCB @ZA28964*/')SKIP;
 * ANS('DCL MNTLEN FIXED(31) DEF(MDLEN), /*BAL LABEL @ZA28964*/')SKIP;
 * ANS('  MNTOPCD FIXED(8) DEF(MDOPCD), /*BAL LABEL @ZA28964*/')SKIP;
@@ -1275,64 +1275,64 @@ MDJFCB   EQU   MNTJFCB             COMPATABILITY REDEFINITION  @ZA28964
 *        GO TO COMPROC;          /* GO FILL IN BLOCK         @ZA28964*/
 */*                                                          @ZA28964*/
 * SSDMT:
-* ANS('/*******************************************'××
+* ANS('/*******************************************'||
 *     '************** @Y30LB02*/')SKIP;
-* ANS('/*MACMEAN  MSSC DEMOUNT MACRO               '××
+* ANS('/*MACMEAN  MSSC DEMOUNT MACRO               '||
 *     '               @Y30LB02*/')SKIP;
-* ANS('/*         VERSION - VS/2 REL 3   77/12/15  '××
+* ANS('/*         VERSION - VS/2 REL 3   77/12/15  '||
 *     'LEVEL 04       @ZA28964*/')SKIP;
-* ANS('/*THIS IS THE OUTPUT FOR A SECONDARY        '××
+* ANS('/*THIS IS THE OUTPUT FOR A SECONDARY        '||
 *     '               @Y30LB02*/')SKIP;
-* ANS('/*INVOCATION OF THE STANDARD FORM MACRO     '××
+* ANS('/*INVOCATION OF THE STANDARD FORM MACRO     '||
 *     '               @Y30LB02*/')SKIP;
-* ANS('/*******************************************'××
+* ANS('/*******************************************'||
 *     '************** @Y30LB02*/')SKIP;
 * ANS('RFY  MDREG1 RSTD;/*RESTRICT REG 1 @Y30LB02*/')SKIP;
 * ANS('MDREG1=ADDR(DMLEN);/*PTR TO REQ BLK @Y30LB02*/')SKIP;
 * GO TO COMPROC;                 /* GO FILL IN BLOCK         @ZA28964*/
 */*                                                          @ZA28964*/
 * SIDMT:
-* ANS('/*******************************************'××
+* ANS('/*******************************************'||
 *     '************** @Y30LB02*/')SKIP;
-* ANS('/*MACMEAN  MSSC DEMOUNT MACRO               '××
+* ANS('/*MACMEAN  MSSC DEMOUNT MACRO               '||
 *     '               @Y30LB02*/')SKIP;
-* ANS('/*         VERSION - VS/2 REL 3   77/12/15  '××
+* ANS('/*         VERSION - VS/2 REL 3   77/12/15  '||
 *     'LEVEL 04       @ZA28964*/')SKIP;
-* ANS('/*THIS IS THE STANDARD FORM - DEMOUNT MACRO '××
+* ANS('/*THIS IS THE STANDARD FORM - DEMOUNT MACRO '||
 *     '               @Y30LB02*/')SKIP;
-* ANS('/*******************************************'××
+* ANS('/*******************************************'||
 *     '************** @Y30LB02*/')SKIP;
 * ANS('RFY  MDREG1 RSTD;/*RESTRICT REG 1 @Y30LB02*/')SKIP;
 * ANS('MDREG1=ADDR(DMLEN);/*R1 PTR TO LIST @Y30LB02*/')SKIP;
-* ANS('DCL 1 ICBDMLST  STATIC LOCAL,'××
+* ANS('DCL 1 ICBDMLST  STATIC LOCAL,'||
 *     ' /*DEMOUNT REQUEST BLOCK @Y30LB02*/')SKIP;
-* ANS('    2 DMLEN  FIXED(31)INIT('××QUOTE('1C')××
+* ANS('    2 DMLEN  FIXED(31)INIT('||QUOTE('1C')||
 *     'X),/*LENGTH OF DEMOUNT BLOCK @Y30LB02*/')SKIP;
-* ANS('    2 DMOPCD FIXED(8)INIT('××QUOTE('06')××
+* ANS('    2 DMOPCD FIXED(8)INIT('||QUOTE('06')||
 *     'X),/*DEMOUNT OPCODE @Y30LB02*/')SKIP;
-* ANS('    2  DMNTRES1  CHAR(1)INIT('××QUOTE
-*     ('00')××'X),/*INIT RESERVED AREA TO ZERO @YM02186*/')SKIP;
-* ANS('    2  DMNTFLAG BIT(16)INIT('××QUOTE
-*     ('0000000000000000')××'B), /*FLAGS AREA @YM02186*/')SKIP;
-* ANS('    3  DMBITRE1 BIT(1), /*ONE'××
+* ANS('    2  DMNTRES1  CHAR(1)INIT('||QUOTE
+*     ('00')||'X),/*INIT RESERVED AREA TO ZERO @YM02186*/')SKIP;
+* ANS('    2  DMNTFLAG BIT(16)INIT('||QUOTE
+*     ('0000000000000000')||'B), /*FLAGS AREA @YM02186*/')SKIP;
+* ANS('    3  DMBITRE1 BIT(1), /*ONE'||
 *     ' RESERVED BIT @YM02186*/')SKIP;
-* ANS('    3  DMDELRSP BIT(1), /*DEMOUNT '××
+* ANS('    3  DMDELRSP BIT(1), /*DEMOUNT '||
 *     'DELAYED RESPONSE ATTRIBUTE @Y30LB02*/')SKIP;
-* ANS('    3  DMVUAVAL BIT(1), /*DEMOUNT '××
+* ANS('    3  DMVUAVAL BIT(1), /*DEMOUNT '||
 *     'VUA VALID ATTRIBUTE @ZDR2048*/')SKIP;
-* ANS('    3  DMBITRES BIT(13), /*THIRTEEN'××
+* ANS('    3  DMBITRES BIT(13), /*THIRTEEN'||
 *     ' RESERVED BITS @ZDR2048*/')SKIP;
-* ANS('    2  DMVOL CHAR(6) INIT('××QUOTE
-*     ('')××'B), /*INIT VOLID TO ZERO @Y30LB02*/')SKIP;
-* ANS('    2  DMNTASID  CHAR(2)INIT('××QUOTE
-*     ('')××'B),/*INIT ASID AREA TO ZERO @Y30LB02*/')SKIP;
-* ANS('    2  DMNTECB  PTR(31)INIT(0), /*DEMOUNT'××
+* ANS('    2  DMVOL CHAR(6) INIT('||QUOTE
+*     ('')||'B), /*INIT VOLID TO ZERO @Y30LB02*/')SKIP;
+* ANS('    2  DMNTASID  CHAR(2)INIT('||QUOTE
+*     ('')||'B),/*INIT ASID AREA TO ZERO @Y30LB02*/')SKIP;
+* ANS('    2  DMNTECB  PTR(31)INIT(0), /*DEMOUNT'||
 *     ' EVENT CONTROL BLOCK @ZA28964*/')SKIP;
-* ANS('    2  DMHOST CHAR(5) INIT('××QUOTE
-*     ('')××'B),/*INIT HOSTID AREA  @Y30LB02*/')SKIP;
-* ANS('    2  DMNTRES2  CHAR(1)INIT('××QUOTE
-*     ('')××'B),/*INIT RESERVED AREA TO ZERO @ZDR2048*/')SKIP;
-* ANS('    2  DMNTVUA   FIXED(15)INIT(0); /*VIRTUAL'××
+* ANS('    2  DMHOST CHAR(5) INIT('||QUOTE
+*     ('')||'B),/*INIT HOSTID AREA  @Y30LB02*/')SKIP;
+* ANS('    2  DMNTRES2  CHAR(1)INIT('||QUOTE
+*     ('')||'B),/*INIT RESERVED AREA TO ZERO @ZDR2048*/')SKIP;
+* ANS('    2  DMNTVUA   FIXED(15)INIT(0); /*VIRTUAL'||
 *     ' UNIT ADDRESS @ZDR2048*/')SKIP;
 * ANS('DCL DMNTLEN  FIXED(31) DEF(DMLEN), /*BAL LABEL @ZA28964*/')SKIP;
 * ANS('  DMVOLID CHAR(6) DEF(DMVOL), /*BAL LABEL @ZA28964*/')SKIP;

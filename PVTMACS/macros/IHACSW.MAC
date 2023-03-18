@@ -45,10 +45,10 @@
 * DESCRIPTIVE LAYOUT
 *
 *    _____________________________________________________
-*    ×      ×                  ×            ×            ×
-*    × PROT × ADDR OF LAST CCW × STATUS     × RESIDUAL   ×
-*    × KEY  × EXECUTED + 8     × FLAGS      × COUNT      ×
-*    ×______×__________________×____________×____________×
+*    |      |                  |            |            |
+*    | PROT | ADDR OF LAST CCW | STATUS     | RESIDUAL   |
+*    | KEY  | EXECUTED + 8     | FLAGS      | COUNT      |
+*    |______|__________________|____________|____________|
 *
          AIF   ('&DSECT' EQ 'NO').NODSECT  IF DSECT=YES IS NOT CODED
 .*                                           DO NOT GIVE DSECT STMT

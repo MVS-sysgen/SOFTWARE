@@ -82,11 +82,11 @@
 .* CONTROL BITS SET BY THIS MACRO:
 .*
 .*             L&SYSNDX DC B'&L1&C&B&B&D&R&B&S'
-.*                            ×  × × × × × × ×
-.*                            ×  × 0 0 × × 0 ×
-.*                            ×  ×     × ×   SIZE
-.*                            ×  ×     × RETURN
-.*                            ×  ×     DELETE
+.*                            |  | | | | | | |
+.*                            |  | 0 0 | | 0 |
+.*                            |  |     | |   SIZE
+.*                            |  |     | RETURN
+.*                            |  |     DELETE
 .*                               CALL
 .*                            LOAD
 .*

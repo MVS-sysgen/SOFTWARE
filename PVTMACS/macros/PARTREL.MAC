@@ -61,13 +61,13 @@
 .*     IF 'TTR' OF THE DS1LSTAR FIELD IS ZERO AND THE DATA SET IS
 .*     SEQUENTIAL, ALL SPACE IS RELEASED.
 .*
-.*     'ADDR', IN KEYWORD=ADDR × MF=(E,ADDR)
+.*     'ADDR', IN KEYWORD=ADDR | MF=(E,ADDR)
 .*             MUST BE SPECIFIED AS A LABEL OF AN AREA.
 .*             THIS LABEL MUST REPRESENT A VALID RX-TYPE ADDRESS
 .*             WHEN USED IN THE MACRO'S EXECUTE-FORM, AND A VALID
 .*             A-TYPE ADDRESS WHEN USED IN THE MACRO'S LIST-FORM.
 .*
-.*     'REG', IN KEYWORD=(REG) × MF=(E,(REG))
+.*     'REG', IN KEYWORD=(REG) | MF=(E,(REG))
 .*             MAY BE SPECIFIED AS ANY REGISTER, 2 - 12.
 .*
 .*
@@ -87,7 +87,7 @@
 .*             ISSUED).  THIS FORM OF THE MACRO WILL NOT GENERATE THE
 .*             LOAD, BRANCH, DELETE SEQUENCE FOR DADSM PARTIAL RELEASE.
 .*
-.*  MF=(E,ADDR) × MF=(E,(REG)) × MF=(E,(1))
+.*  MF=(E,ADDR) | MF=(E,(REG)) | MF=(E,(1))
 .*             THE SPECIFICATION OF ANY OF THE ABOVE FORMATS FOR THE
 .*             'MF' KEYWORD WILL RESULT IN THE MODIFICATION OF AN
 .*             EXISTING PARAMETER LIST.  THE ADDRESS OF THE PARAMETER
@@ -105,7 +105,7 @@
 .*             FORM OF THE MACRO WILL NOT GENERATE THE LOAD, BRANCH,
 .*             DELETE SEQUENCE FOR DADSM PARTIAL RELEASE.
 .*
-.*  DSN=ADDR × DSN=(REG)
+.*  DSN=ADDR | DSN=(REG)
 .*             THE 'DSN' KEYWORD MAY BE USED TO SPECIFY THE ADDRESS
 .*             OF AN AREA WHICH DESCRIBES A DATA SET NAME.
 .*             THIS PARAMETER WILL NOT APPLY TO THE DSECT-FORM OF THIS
@@ -183,7 +183,7 @@
 .*                 WHICH PARTIAL RELEASE WILL ATTEMPT TO RELESE    @03A
 .*                 ALLOCATED BUT UNUSED SPACE.                     @03A
 .*                                                                 @03A
-.*  VSAMTYPE=ESDS × RRDS × LDS × VRRDS                             @03A
+.*  VSAMTYPE=ESDS | RRDS | LDS | VRRDS                             @03A
 .*                                                                 @03A
 .*                 PARTIAL RELEASE WILL REJECT THESE FORMS         @03A
 .*                 OF VSAM DATASETS.                               @03A
@@ -254,7 +254,7 @@
 .*                                                                 @03A
 .*                                                                 @03A
 .*                                                                 @03A
-.*  VSAMTRKS=ADDR × VSAMTRKS=(REG)                                 @03A
+.*  VSAMTRKS=ADDR | VSAMTRKS=(REG)                                 @03A
 .*                                                                 @03A
 .*         THE 'VSAMTRKS' KEYWORD MAY BE USED TO SPECIFY THE       @03A
 .*         ADDRESS OF AN AREA WHICH CONTAINS THE NUBER OF TRACKS   @03A
@@ -915,5 +915,5 @@ PRL&NO.E EQU   *                        END OF PARTREL PARM LIST
 *                       VSAM_SECURITY,
 *                       0:1(VSAM_TRACKS_NAME,VSAM_TRACKS_ADDR),
 *                       MF);
-*  ANS('?' ×× MACLABEL ×× ' PARTRELP ' ×× MACKEYS ×× ';') RESCAN SKIP;
+*  ANS('?' || MACLABEL || ' PARTRELP ' || MACKEYS || ';') RESCAN SKIP;
 * %END PARTREL;

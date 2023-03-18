@@ -939,5 +939,5 @@
 * */ ENFREQ : MACRO
 *             KEYS(ACTION,CODE,TYPE,QUAL,QMASK,EXIT,PARM,
 *                  DTOKEN,STOKEN,FREEPRM,MF,RELATED,RETCODE); /* @P1A*/
-*             ANS('?'××MACLABEL××'ENFREQP '××MACLIST××MACKEYS××';');
+*             ANS('?'||MACLABEL||'ENFREQP '||MACLIST||MACKEYS||';');
 *   %END ENFREQ;

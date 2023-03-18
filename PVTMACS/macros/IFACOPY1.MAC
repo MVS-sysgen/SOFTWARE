@@ -74,7 +74,7 @@
 *   IF MACLIST ^= '' THEN           /* MACLIST SUPPLIED ?            */
 *     DO;                           /* YES - ERROR                   */
 *       EHARC = 4;                  /* SET RETURN CODE               */
-*       ANS MSG('AHA0051 THE MACLIST '××QUOTE(MACLIST)××
+*       ANS MSG('AHA0051 THE MACLIST '||QUOTE(MACLIST)||
 *         ' IS NOT ALLOWED. IT IS IGNORED.');
 *     END;
 */********************************************************************/

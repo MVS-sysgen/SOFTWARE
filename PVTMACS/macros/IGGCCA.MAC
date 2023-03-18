@@ -223,7 +223,7 @@
           3 CCATASID CHAR(2),       /* ASID                  @Y30SSPJ*/
           3 CCATQDB PTR(31)BDY(BYTE),/* QDB ADDRESS          @Y30SSPJ*/
         2 CCASC PTR(8),             /* SEARCH CODE             Y02020*/
-        2 CCAQLEN PTR(8),           /* QUALIFIER LENGTH × 0    Y02020*/
+        2 CCAQLEN PTR(8),           /* QUALIFIER LENGTH | 0    Y02020*/
         2 CCARPL1 PTR(31),          /* PTR TO RPL IN USE             */
 *       2 CCADESA CHAR(44),         /* DADSM EXTENTS SAVEAREA        */
 *         3 CCANDEXT PTR(8),        /* COUNT OF EXTENTS              */
