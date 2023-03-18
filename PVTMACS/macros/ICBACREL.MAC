@@ -66,24 +66,24 @@
 .*                                                             @Y30LB02
 .*   LIST FORMS =                                              @Y30LB02
 .*                                                             @Y30LB02
-.*     BAL - ICBACREL MF=(L,MAP),TYPE=ACQ×REL                  @Y30LB02
+.*     BAL - ICBACREL MF=(L,MAP),TYPE=ACQï¿½REL                  @Y30LB02
 .*                                                             @Y30LB02
 .*       REQUIRED PARAMETERS - MF=L,TYPE                       @Y30LB02
 .*                                                             @Y30LB02
-.*     PL/S- ICBACREL MF(L,NAME,ATTR) TYPE(ACQ×REL)            @Y30LB02
+.*     PL/S- ICBACREL MF(L,NAME,ATTR) TYPE(ACQï¿½REL)            @Y30LB02
 .*                                                             @Y30LB02
 .*       REQUIRED PARAMETERS - MF(L,NAME) TYPE                 @Y30LB02
 .*                                                             @Y30LB02
 .*   STANDARD FORMS =                                          @Y30LB02
 .*                                                             @Y30LB02
-.*     BAL - ICBACREL TYPE=ACQ×REL,EXTS=NAME×(R),              @Y30LB02
-.*                    NMEXTS=NAME×(R),VOLID=NAME×(R),          @Y30LB02
-.*                    ECB=NAME×(R),FLAGS=NAME×(R),             @Y30LB02
-.*                    HOSTID=NAME×(R)                          @Y30LB02
+.*     BAL - ICBACREL TYPE=ACQï¿½REL,EXTS=NAMEï¿½(R),              @Y30LB02
+.*                    NMEXTS=NAMEï¿½(R),VOLID=NAMEï¿½(R),          @Y30LB02
+.*                    ECB=NAMEï¿½(R),FLAGS=NAMEï¿½(R),             @Y30LB02
+.*                    HOSTID=NAMEï¿½(R)                          @Y30LB02
 .*                                                             @Y30LB02
 .*       REQUIRED PARAMETERS - TYPE,EXTS,NMEXTS,VOLID          @Y30LB02
 .*                                                             @Y30LB02
-.*     PL/S- ICBACREL TYPE(ACQ×REL) EXTS(NAME) NMEXTS(NAME)    @Y30LB02
+.*     PL/S- ICBACREL TYPE(ACQï¿½REL) EXTS(NAME) NMEXTS(NAME)    @Y30LB02
 .*                    VOLID(NAME) ECB(NAME) FLAGS(NAME)        @Y30LB02
 .*                    HOSTID(NAME)                             @Y30LB02
 .*                                                             @Y30LB02
@@ -91,9 +91,9 @@
 .*                                                             @Y30LB02
 .*   EXECUTE FORMS =                                           @Y30LB02
 .*                                                             @Y30LB02
-.*     BAL - ICBACREL MF=(E,NAME×(R))                          @Y30LB02
+.*     BAL - ICBACREL MF=(E,NAMEï¿½(R))                          @Y30LB02
 .*                                                             @Y30LB02
-.*       REQUIRED PARAMETERS - MF=(E,NAME×(R))                 @Y30LB02
+.*       REQUIRED PARAMETERS - MF=(E,NAMEï¿½(R))                 @Y30LB02
 .*                                                             @Y30LB02
 .*     PL/S- ICBACREL MF(E,NAME)                               @Y30LB02
 .*                                                             @Y30LB02
@@ -381,7 +381,7 @@
 .*                                                             @Y30LB02
 .* EXIT-NORMAL = VALID INVOCATION                              @Y30LB02
 .*                                                             @Y30LB02
-.*   CONDITION = RETURN CODE = 0 × 4                           @Y30LB02
+.*   CONDITION = RETURN CODE = 0 ï¿½ 4                           @Y30LB02
 .*                                                             @Y30LB02
 .*   OUTPUT = REQUEST BLOCK AND STATEMENTS GENERATED. IF PL/S  @ZA28964
 .*       WARNING MESSAGES ARE GENERATED (RETCODE=4), THEY WILL @ZA28964
@@ -733,15 +733,15 @@ ARNMEXT  EQU   ARNMEXTS                COMPATIBILITY DEF       @ZA28964
 */*     ECHO INVOCATION BACK TO CALLING MODULE               @ZA28964*/
 */********************************************************** @ZA28964*/
 *  ANS('     /* MACRO INVOCATION:  @ZA28964*/')SKIP;
-*  ANS('     /* ' ×× MACLABEL ×× ' ' ×× MACNAME ×× ' ' ×× MACLIST ××
-*      ' ' ×× MACKEYS ×× ' @ZA28964*/')SKIP;               /*@ZA28964*/
+*  ANS('     /* ' ï¿½ï¿½ MACLABEL ï¿½ï¿½ ' ' ï¿½ï¿½ MACNAME ï¿½ï¿½ ' ' ï¿½ï¿½ MACLIST ï¿½ï¿½
+*      ' ' ï¿½ï¿½ MACKEYS ï¿½ï¿½ ' @ZA28964*/')SKIP;               /*@ZA28964*/
 */*                                                          @ZA28964*/
 */********************************************************** @ZA28964*/
 */*         DECLARE REGISTER 1                               @ZA28964*/
 */********************************************************** @ZA28964*/
 *  IF ARTESTR1=0 THEN                  /*HAS R1 BEEN DCL'D?  @Y30LB02*/
 *    DO;                               /*NO,DECLARE REG1     @Y30LB02*/
-*      ANS('DCL ARR1 REG(1) PTR ;   '××
+*      ANS('DCL ARR1 REG(1) PTR ;   'ï¿½ï¿½
 *          '/*WILL CONTAIN LIST ADDRESS   @Y30LB02*/') SKIP;
 *      ARTESTR1=1;                     /*SET ARTESTR1 TO 1   @Y30LB02*/
 *    END;                                                  /*@Y30LB02*/
@@ -754,10 +754,10 @@ ARNMEXT  EQU   ARNMEXTS                COMPATIBILITY DEF       @ZA28964
 *  IF TYPE(1) ^= 'ACQ' THEN IF TYPE(1) ^= 'REL' THEN       /*@ZA28964*/
 *    DO;                                                   /*@ZA28964*/
 *      IF TYPE(1) = '' THEN                                /*@ZA28964*/
-*        ANS MSG('  ICB600I - TYPE '××
+*        ANS MSG('  ICB600I - TYPE 'ï¿½ï¿½
 *                'MUST BE SPECIFIED') SKIP(5);             /*@Y30LB02*/
 *      ELSE                                                /*@ZA28964*/
-*        ANS MSG('  ICB601I - TYPE '××
+*        ANS MSG('  ICB601I - TYPE 'ï¿½ï¿½
 *                ' IS INCORRECTLY SPECIFIED') SKIP(5);     /*@Y30LB02*/
 *      RETCODE=12;                     /*SET RETURN CODE     @Y30LB02*/
 *      GO TO FINISH;                                       /*@ZA28964*/
@@ -770,22 +770,22 @@ ARNMEXT  EQU   ARNMEXTS                COMPATIBILITY DEF       @ZA28964
 *    GO TO NOTLIST;                    /* BRANCH             @Y30LB02*/
 *  IF MF(2)='' THEN                    /* WAS A NAME GIVEN?  @Y30LB02*/
 *    DO;                               /* NO,PRT ERROR MSG   @Y30LB02*/
-*      ANS MSG('  ICB602I - A NAME FOR THE REQUEST BLOCK '××
+*      ANS MSG('  ICB602I - A NAME FOR THE REQUEST BLOCK 'ï¿½ï¿½
 *              'MUST BE SPECIFIED IN MF(2) ') SKIP(5);     /*@Y30LB02*/
 *      RETCODE=12;                     /*SET RETURN CODE     @Y30LB02*/
 *      GO TO FINISH;                                       /*@Y30LB02*/
 *    END;                                                  /*@Y30LB02*/
 */*                                                          @Y30LB02*/
-*  IF FLAGS ××                         /*FLAGS SPECIFIED?    @Y30LB02*/
-*     VOLID ××                         /*VOLID SPECIFIED     @Y30LB02*/
-*     ECB ××                           /*ECB SPECIFIED?      @Y30LB02*/
-*     EXTS ××                          /*EXTENTS SPECIFIED?  @Y30LB02*/
-*     HOSTID ××                        /*HOSTID SPECIFIED?   @Y30LB02*/
+*  IF FLAGS ï¿½ï¿½                         /*FLAGS SPECIFIED?    @Y30LB02*/
+*     VOLID ï¿½ï¿½                         /*VOLID SPECIFIED     @Y30LB02*/
+*     ECB ï¿½ï¿½                           /*ECB SPECIFIED?      @Y30LB02*/
+*     EXTS ï¿½ï¿½                          /*EXTENTS SPECIFIED?  @Y30LB02*/
+*     HOSTID ï¿½ï¿½                        /*HOSTID SPECIFIED?   @Y30LB02*/
 *     NMEXTS ^= '' THEN                /*NMEXTS SPECIFIED?   @Y30LB02*/
 *    DO;                               /*PRT WARNING MSG     @Y30LB02*/
 *      RETCODE=4;                      /*RETURN CODE EQ 4    @Y30LB02*/
-*      ANS MSG('  ICB603I - WARNING-ONLY '××
-*              'MF AND TYPE PARAMETERS ARE VALID FOR '××
+*      ANS MSG('  ICB603I - WARNING-ONLY 'ï¿½ï¿½
+*              'MF AND TYPE PARAMETERS ARE VALID FOR 'ï¿½ï¿½
 *              'LIST FORM ')SKIP;                          /*@Y30LB02*/
 *    END;                                                  /*@Y30LB02*/
 *  IF MF(3) = '' THEN        /*ATTRIBUTE ^ SPECIFIED         @Y30LB02*/
@@ -801,7 +801,7 @@ ARNMEXT  EQU   ARNMEXTS                COMPATIBILITY DEF       @ZA28964
 *  NOTLIST:                                                /*@Y30LB02*/
 *  IF MF(1)^='' THEN                   /* IF NOT STD FORM    @Y30LB02*/
 *    DO;                               /* PRT ERROR MESSAGE  @Y30LB02*/
-*      ANS MSG('  ICB615I - INVALID MF PARAMETER'××
+*      ANS MSG('  ICB615I - INVALID MF PARAMETER'ï¿½ï¿½
 *              ' SPECIFIED, MUST BE L, E, OR NULL')SKIP;   /*@Y30LB02*/
 *      RETCODE=12;                     /*SET RETURN CODE     @Y30LB02*/
 *      GO TO FINISH;                   /* AND EXIT           @ZA28964*/
@@ -809,19 +809,19 @@ ARNMEXT  EQU   ARNMEXTS                COMPATIBILITY DEF       @ZA28964
 */*                                                        /*@ZA28964*/
 *  IF NMEXTS = '' THEN                 /* IS NMEXT SPEC'D?   @Y30LB02*/
 *    DO;                                                   /*@Y30LB02*/
-*      ANS MSG('  ICB609I - NMEXTS MUST BE '××
+*      ANS MSG('  ICB609I - NMEXTS MUST BE 'ï¿½ï¿½
 *              'SPECIFIED FOR STANDARD FORM MACRO ')SKIP;
 *      RETCODE = 12;                                       /*@ZA28964*/
 *    END;                                                  /*@Y30LB02*/
 *  IF VOLID = '' THEN                  /* IS VOLID SPEC'D?   @Y30LB02*/
 *    DO;                                                   /*@Y30LB02*/
-*      ANS MSG('  ICB610I - VOLID MUST BE SPECIFIED FOR'××
+*      ANS MSG('  ICB610I - VOLID MUST BE SPECIFIED FOR'ï¿½ï¿½
 *              ' STANDARD FORM MACRO')SKIP;                /*@Y30LB02*/
 *      RETCODE = 12;                                       /*@Y30LB02*/
 *    END;                                                  /*@ZA28964*/
 *  IF EXTS = '' THEN                   /* IS EXTS SPEC'D?    @Y30LB02*/
 *    DO;                                                   /*@Y30LB02*/
-*      ANS MSG('  ICB606I - EXTS MUST BE '××
+*      ANS MSG('  ICB606I - EXTS MUST BE 'ï¿½ï¿½
 *              ' SPECIFIED FOR STANDARD FORM MACRO ')SKIP;
 *      RETCODE=12;           /*SET RETURN CODE               @Y30LB02*/
 *    END;                                                  /*@Y30LB02*/
@@ -842,40 +842,40 @@ ARNMEXT  EQU   ARNMEXTS                COMPATIBILITY DEF       @ZA28964
 */*********************************************************  @Y30LB02*/
 *  FCHECK:                                                 /*@Y30LB02*/
 *  IF FLAGS ^= '' THEN                 /*ARE FLAGS SPEC'D?   @Y30LB02*/
-*    ANS('ARFLG='××FLAGS××';/*FILL IN FLAGS  @Y30LB02*/')SKIP;
+*    ANS('ARFLG='ï¿½ï¿½FLAGSï¿½ï¿½';/*FILL IN FLAGS  @Y30LB02*/')SKIP;
 */*                                                          @ZA28964*/
-*  ANS('ARNMEXT='××NMEXTS××';/*FILL IN NMEXT  @Y30LB02*/')SKIP;
+*  ANS('ARNMEXT='ï¿½ï¿½NMEXTSï¿½ï¿½';/*FILL IN NMEXT  @Y30LB02*/')SKIP;
 */*                                                          @ZA28964*/
-*  ANS('ARVOL='××VOLID××';/*FILL IN VOLID  @Y30LB02*/')SKIP;
+*  ANS('ARVOL='ï¿½ï¿½VOLIDï¿½ï¿½';/*FILL IN VOLID  @Y30LB02*/')SKIP;
 */*                                                          @ZA28964*/
 *  IF ECB ^= '' THEN        /* IF ECB SPECIFIED              @ZA28964*/
-*    ANS('ARECB=ADDR'××ECB××';/*FILL IN ECB @Z30LB02*/')SKIP;
+*    ANS('ARECB=ADDR'ï¿½ï¿½ECBï¿½ï¿½';/*FILL IN ECB @Z30LB02*/')SKIP;
 */*                                                          @ZA28964*/
 *  IF HOSTID ^= '' THEN                /*CK FOR HOSTID       @Y30LB02*/
-*    ANS('ARHOST='××HOSTID××';/*FILL IN HOSTID @Y30LB02*/')SKIP;
+*    ANS('ARHOST='ï¿½ï¿½HOSTIDï¿½ï¿½';/*FILL IN HOSTID @Y30LB02*/')SKIP;
 */*                                                          @ZA28964*/
-*  ANS(' /*THE FOLLOWING CODE MOVES THE'××
+*  ANS(' /*THE FOLLOWING CODE MOVES THE'ï¿½ï¿½
 *      ' EXTENTS INFO INTO THE BLOCK  @Y30LB02*/')SKIP;
 *  IF ARTEST=0 THEN   /* FIRST INVOCATION OF STD FORM        @ZA28964*/
 *    DO;                                                   /*@Y30LB02*/
-*      ANS('DCL ARI FIXED(31) INIT(0);'××
+*      ANS('DCL ARI FIXED(31) INIT(0);'ï¿½ï¿½
 *          '/*LOOP CTR INDEX  @Y30LB02*/') SKIP;
-*      ANS('/*ARSPTR IS PTR USED TO EXTRACT'××
+*      ANS('/*ARSPTR IS PTR USED TO EXTRACT'ï¿½ï¿½
 *          ' # OF EXTENTS AND EXTENTS INFO   */')SKIP;
 *      ANS('DCL ARSPTR PTR(31);') SKIP;
-*      ANS('DCL ARE CHAR(4) BASED(ARSPTR)'××
+*      ANS('DCL ARE CHAR(4) BASED(ARSPTR)'ï¿½ï¿½
 *          ';  /* EXTENTS   @Y30LB02*/') SKIP;
 *      ARTEST=1;              /* SET FLAG ON                 @Y30LB02*/
 *    END;                                                  /*@Y30LB02*/
-*  ANS('/*INITIALIZE ARSPTR TO PTR SPECD '××
+*  ANS('/*INITIALIZE ARSPTR TO PTR SPECD 'ï¿½ï¿½
 *      'FOR EXTS PARAMETER       @Y30LB02*/') SKIP;
-*  ANS('ARSPTR=ADDR'××EXTS××' ;') SKIP;                    /*@Y30LB02*/
-*  ANS('/*THIS DO LOOP MOVES THE BEG AND '××
+*  ANS('ARSPTR=ADDR'ï¿½ï¿½EXTSï¿½ï¿½' ;') SKIP;                    /*@Y30LB02*/
+*  ANS('/*THIS DO LOOP MOVES THE BEG AND 'ï¿½ï¿½
 *      'END CYLINDERS TO LIST @Y30LB02*/') SKIP;
 *  ANS('DO ARI=1 TO ARNMEXT;') SKIP;                       /*@Y30LB02*/
-*  ANS('   AREXT(ARI)=ARE; /*FILL IN '××
+*  ANS('   AREXT(ARI)=ARE; /*FILL IN 'ï¿½ï¿½
 *      'EXTENTS FIELD  @Y30LB02*/') SKIP;
-*  ANS('   ARSPTR=ARSPTR+4;/*INCR PTR TO'××
+*  ANS('   ARSPTR=ARSPTR+4;/*INCR PTR TO'ï¿½ï¿½
 *      ' EXTS FIELD  @Y30LB02*/') SKIP;
 *  ANS('END;')  SKIP;                                      /*@Y30LB02*/
 *  GO TO QUIT;                                             /*@ZA28964*/
@@ -887,8 +887,8 @@ ARNMEXT  EQU   ARNMEXTS                COMPATIBILITY DEF       @ZA28964
 *  EXFORM:                                                 /*@ZA28964*/
 *    IF MF(2)='' THEN                  /*ADDRESS  GIVEN?     @Y30LB02*/
 *      DO;                             /*NO,ERROR MSG PRNTD  @Y30LB02*/
-*        ANS MSG('  ICB612I - MF(2) MUST'××
-*                ' CONTAIN REQ BLK NAME IF '××
+*        ANS MSG('  ICB612I - MF(2) MUST'ï¿½ï¿½
+*                ' CONTAIN REQ BLK NAME IF 'ï¿½ï¿½
 *                'EXEC MACRO FORM REQUESTED') SKIP(5);     /*@Y30LB02*/
 *        RETCODE=12;                                       /*@Y30LB02*/
 *        GO TO FINISH;                  /*BRANCH             @Y30LB02*/
@@ -911,72 +911,72 @@ ARNMEXT  EQU   ARNMEXTS                COMPATIBILITY DEF       @ZA28964
 */********************************************************** @Y30LB02*/
 */*                                                          @Y30LB02*/
 *  LINIT:
-*   ANS('/*******************************************'××
+*   ANS('/*******************************************'ï¿½ï¿½
 *       '*************  @Y30LB02*/')SKIP;
-*   ANS('/*MACMEAN  MSSC ACQUIRE/RELINQUISH MACRO    '××
+*   ANS('/*MACMEAN  MSSC ACQUIRE/RELINQUISH MACRO    'ï¿½ï¿½
 *       '               @Y30LB02*/')SKIP;
-*   ANS('/*         VERSION - VS/2 REL 3   77/12/15  '××
+*   ANS('/*         VERSION - VS/2 REL 3   77/12/15  'ï¿½ï¿½
 *       'LEVEL 02       @ZA28964*/')SKIP;
-*   ANS('/*THIS IS THE INITIALIZED LIST FORM         '××
+*   ANS('/*THIS IS THE INITIALIZED LIST FORM         'ï¿½ï¿½
 *       '               @Y30LB02*/')SKIP;
-*   ANS('/*******************************************'××
+*   ANS('/*******************************************'ï¿½ï¿½
 *       '*************  @Y30LB02*/')SKIP;
-*   ANS('DCL 1   '××MF(2)××' STATIC LOCAL,')SKIP;          /*@Y30LB02*/
+*   ANS('DCL 1   'ï¿½ï¿½MF(2)ï¿½ï¿½' STATIC LOCAL,')SKIP;          /*@Y30LB02*/
 *   ANS('     2 ARLL FIXED(31) INIT(96),/*LENGTH @Y30LB02*/')SKIP;
 *   IF TYPE(1) = 'ACQ' THEN                                /*@ZA28964*/
 *     ANS('    2 AROP FIXED(8) INIT(2),/*OPCODE=02 @Y30LB02*/')SKIP;
 *   ELSE                               /*RELINQUISH REQUEST  @Y30LB02*/
 *     ANS('    2 AROP FIXED(8) INIT(4),/*OPCODE=04 @Y30LB02*/')SKIP;
-*   ANS('      2  * CHAR(1) INIT('××QUOTE('00')××
+*   ANS('      2  * CHAR(1) INIT('ï¿½ï¿½QUOTE('00')ï¿½ï¿½
 *       'X),  /*RESERVED AREA  @Y30LB02*/') SKIP;
-*   ANS('      2  ARFLG BIT(8) INIT('××QUOTE('00000000')××
+*   ANS('      2  ARFLG BIT(8) INIT('ï¿½ï¿½QUOTE('00000000')ï¿½ï¿½
 *       'B), /*FLAGS  @Y30LB02*/') SKIP;
 *   ANS('       3 ARBDUBD BIT(1),/* BIND/UNBIND BIT @Y30LB02*/')SKIP;
 *   ANS('       3 ARDRES BIT(1),/* DELAYED RESPONSE BIT   @Y30LB02*/')
 *        SKIP;
 *   ANS('        3 ARINH BIT(1), /*INHIBIT (DE)STAGE BIT   @Y30LB02*/')
 *        SKIP;
-*   ANS('        3 ARSEC BIT(1), /*NEWLY ALLOCATED SECONDARY EXTENT'××
+*   ANS('        3 ARSEC BIT(1), /*NEWLY ALLOCATED SECONDARY EXTENT'ï¿½ï¿½
 *       ' BIT @G24LB04*/')SKIP;
 *   ANS('        3 * BIT(4), /*THESE BITS ALWAYS ZEROES   @G24LB04*/')
 *        SKIP;
 *   ANS('      2  ARNMEXT FIXED(8) INIT(0),/* #EXTS  @Y30LB02*/')
 *        SKIP;
-*   ANS('      2  ARVOL CHAR(6) INIT('××
-*        QUOTE('000000000000')××'X), /*VOLID  @Y30LB02*/') SKIP;
-*   ANS('      2  ARASID CHAR(2) INIT('××QUOTE('0000')××
+*   ANS('      2  ARVOL CHAR(6) INIT('ï¿½ï¿½
+*        QUOTE('000000000000')ï¿½ï¿½'X), /*VOLID  @Y30LB02*/') SKIP;
+*   ANS('      2  ARASID CHAR(2) INIT('ï¿½ï¿½QUOTE('0000')ï¿½ï¿½
 *        'X),  /*ASID FIELD  @Y30LB02*/') SKIP;
 *   ANS('      2  ARECB PTR(31) INIT(0), /*ADDR OF ECB  @ZA28964*/')
 *        SKIP;
-*   ANS('      2  ARHOST CHAR(5) INIT('××QUOTE('0000000000')
-*       ×× 'X),  /*HOSTID  @Y30LB02*/') SKIP;
-*   ANS('      2  * CHAR(1) INIT('××QUOTE('00')
-*       ×× 'X),  /*ZEROES  @Y30LB02*/') SKIP;
-*   ANS('      2  ARCOMPC CHAR(2) INIT('××QUOTE('0000')
-*       ×× 'X),  /*ZERO COMP CODE FLD  @Y30LB02*/') SKIP;
+*   ANS('      2  ARHOST CHAR(5) INIT('ï¿½ï¿½QUOTE('0000000000')
+*       ï¿½ï¿½ 'X),  /*HOSTID  @Y30LB02*/') SKIP;
+*   ANS('      2  * CHAR(1) INIT('ï¿½ï¿½QUOTE('00')
+*       ï¿½ï¿½ 'X),  /*ZEROES  @Y30LB02*/') SKIP;
+*   ANS('      2  ARCOMPC CHAR(2) INIT('ï¿½ï¿½QUOTE('0000')
+*       ï¿½ï¿½ 'X),  /*ZERO COMP CODE FLD  @Y30LB02*/') SKIP;
 *   ANS('      2  AREXT (16), /*EXTENTS  @Y30LB02*/') SKIP;
-*   ANS('       3 * CHAR(4) INIT('××
-*       QUOTE('00000000')××'X),') SKIP;
+*   ANS('       3 * CHAR(4) INIT('ï¿½ï¿½
+*       QUOTE('00000000')ï¿½ï¿½'X),') SKIP;
 *   ANS('      2  ARNEDB PTR(31) INIT(0);  /*NEDB    @ZA28964*/')
 *        SKIP;
 *   ANS('DCL ARLEN FIXED(31) DEF(ARLL), /*BAL LABEL  @ZA28964*/')SKIP;
 *   ANS('    ARFLAG BIT(8) DEF(ARFLG),/*BAL LABEL @ZA28964*/')SKIP;
-*   ANS('    ARNMEXTS FIXED(8) DEF(ARNMEXT);  ' ××
+*   ANS('    ARNMEXTS FIXED(8) DEF(ARNMEXT);  ' ï¿½ï¿½
 *       '/*BAL LABEL @ZA28964*/')SKIP;
 *   GO TO FINISH;        /* RETURN TO CALLER                 @ZA28964*/
 */*                                                          @ZA28964*/
 *  LUN:
-*   ANS('/*******************************************'××
+*   ANS('/*******************************************'ï¿½ï¿½
 *       '*************  @Y30LB02*/')SKIP;
-*   ANS('/*MACMEAN  MSSC ACQUIRE/RELINQUISH MACRO    '××
+*   ANS('/*MACMEAN  MSSC ACQUIRE/RELINQUISH MACRO    'ï¿½ï¿½
 *       '               @Y30LB02*/')SKIP;
-*   ANS('/*         VERSION - VS/2 REL 3    77/12/15 '××
+*   ANS('/*         VERSION - VS/2 REL 3    77/12/15 'ï¿½ï¿½
 *       'LEVEL 02       @ZA28964*/')SKIP;
-*   ANS('/*THIS IS THE UNINITIALIZED LIST FORM       '××
+*   ANS('/*THIS IS THE UNINITIALIZED LIST FORM       'ï¿½ï¿½
 *       '               @Y30LB02*/')SKIP;
-*   ANS('/*******************************************'××
+*   ANS('/*******************************************'ï¿½ï¿½
 *       '*************  @Y30LB02*/')SKIP;
-*   ANS('DCL 1   '××MF(2)××'  '××MF(3)××',')SKIP;          /*@Y30LB02*/
+*   ANS('DCL 1   'ï¿½ï¿½MF(2)ï¿½ï¿½'  'ï¿½ï¿½MF(3)ï¿½ï¿½',')SKIP;          /*@Y30LB02*/
 *   ANS('      2  ARLL FIXED(31),  /*LENGTH=96 BYTES   @Y30LB02*/')
 *        SKIP;
 *   IF TYPE(1)='ACQ' THEN
@@ -991,7 +991,7 @@ ARNMEXT  EQU   ARNMEXTS                COMPATIBILITY DEF       @ZA28964
 *        SKIP;
 *   ANS('        3 ARINH BIT(1), /*INHIBIT (DE)STAGE BIT   @Y30LB02*/')
 *        SKIP;
-*   ANS('        3 ARSEC BIT(1), /*NEWLY ALLOCATED SECONDARY EXTENT'××
+*   ANS('        3 ARSEC BIT(1), /*NEWLY ALLOCATED SECONDARY EXTENT'ï¿½ï¿½
 *        ' BIT @G24LB04*/')SKIP;
 *   ANS('        3 * BIT(4), /*THESE BITS ALWAYS ZEROES   @G24LB04*/')
 *        SKIP;
@@ -1011,42 +1011,42 @@ ARNMEXT  EQU   ARNMEXTS                COMPATIBILITY DEF       @ZA28964
 *        SKIP;
 *   ANS('DCL ARLEN FIXED(31) DEF(ARLL), /*BAL LABEL @ZA28964*/')SKIP;
 *   ANS('    ARFLAG BIT(8) DEF(ARFLG),/*BAL LABEL @ZA28964*/')SKIP;
-*   ANS('    ARNMEXTS FIXED(8) DEF(ARNMEXT);  ' ××
+*   ANS('    ARNMEXTS FIXED(8) DEF(ARNMEXT);  ' ï¿½ï¿½
 *       '/*BAL LABEL @ZA28964*/')SKIP;
 *   GO TO FINISH;                      /*BRANCH TO END       @Y30LB02*/
 */*                                                          @ZA28964*/
 *  STDSEC:
-*   ANS('/*******************************************'××
+*   ANS('/*******************************************'ï¿½ï¿½
 *       '************  @Y30LB02*/')SKIP;
-*   ANS('/*MACMEAN  MSSC ACQUIRE/RELINQUISH MACRO    '××
+*   ANS('/*MACMEAN  MSSC ACQUIRE/RELINQUISH MACRO    'ï¿½ï¿½
 *       '              @Y30LB02*/')SKIP;
-*   ANS('/*         VERSION - VS/2 REL 3    77/12/15 '××
+*   ANS('/*         VERSION - VS/2 REL 3    77/12/15 'ï¿½ï¿½
 *       'LEVEL 02      @ZA28964*/')SKIP;
-*   ANS('/*THIS IS THE OUTPUT FOR A SECONDARY        '××
+*   ANS('/*THIS IS THE OUTPUT FOR A SECONDARY        'ï¿½ï¿½
 *       '              @Y30LB02*/')SKIP;
-*   ANS('/*INVOCATION OF THE STANDARD FORM MACRO     '××
+*   ANS('/*INVOCATION OF THE STANDARD FORM MACRO     'ï¿½ï¿½
 *       '              @Y30LB02*/')SKIP;
-*   ANS('/*******************************************'××
+*   ANS('/*******************************************'ï¿½ï¿½
 *       '************  @Y30LB02*/')SKIP;
 *   ANS('RFY(ARR1)RSTD;/*RESTRICT R1  @Y30LB02*/')SKIP;
-*   ANS('ARR1=ADDR(ARLL);'××
+*   ANS('ARR1=ADDR(ARLL);'ï¿½ï¿½
 *       '/*ARR1 SET TO ADDRESS OF LIST  @Y30LB02*/') SKIP;
 *   IF TYPE(1)='ACQ' THEN              /* AN ACQ REQUEST?    @Y30LB02*/
-*     ANS('AROP='××QUOTE(AOPCODE)××'X;/*ACQ OPCODE  @Y30LB02*/')SKIP;
+*     ANS('AROP='ï¿½ï¿½QUOTE(AOPCODE)ï¿½ï¿½'X;/*ACQ OPCODE  @Y30LB02*/')SKIP;
 *   ELSE                              /*RELINQUISH CODE      @Y30LB02*/
-*     ANS('AROP='××QUOTE(ROPCODE)××'X;/*REL OPCODE  @Y30LB02*/')SKIP;
+*     ANS('AROP='ï¿½ï¿½QUOTE(ROPCODE)ï¿½ï¿½'X;/*REL OPCODE  @Y30LB02*/')SKIP;
 *   GO TO FCHECK;                    /*BRCH TO STANDF CODE   @Y30LB02*/
 */*                                                          @ZA28964*/
 *  STDINT:
-*   ANS('/*******************************************'××
+*   ANS('/*******************************************'ï¿½ï¿½
 *       '************  @Y30LB02*/')SKIP;
-*   ANS('/*MACMEAN  MSSC ACQUIRE/RELINQUISH MACRO    '××
+*   ANS('/*MACMEAN  MSSC ACQUIRE/RELINQUISH MACRO    'ï¿½ï¿½
 *       '              @Y30LB02*/')SKIP;
-*   ANS('/*         VERSION - VS/2 REL 3    77/12/15 '××
+*   ANS('/*         VERSION - VS/2 REL 3    77/12/15 'ï¿½ï¿½
 *       'LEVEL 02      @ZA28964*/')SKIP;
-*   ANS('/*THIS IS THE STANDARD FORM - ACQ/REL MACRO '××
+*   ANS('/*THIS IS THE STANDARD FORM - ACQ/REL MACRO 'ï¿½ï¿½
 *       '              @Y30LB02*/')SKIP;
-*   ANS('/*******************************************'××
+*   ANS('/*******************************************'ï¿½ï¿½
 *       '************  @Y30LB02*/')SKIP;
 *   ANS('DCL  1  ARLIST,/*ACQUIRE/RELINQUISH @Y30LB02*/') SKIP;
 *   ANS('      2  ARLL FIXED(31) INIT(96), /* LENGTH     @Y30LB02*/')
@@ -1055,9 +1055,9 @@ ARNMEXT  EQU   ARNMEXTS                COMPATIBILITY DEF       @ZA28964
 *     ANS('      2  AROP FIXED(8) INIT(2),/*OPCODE  @Y30LB02*/')SKIP;
 *   ELSE                                                   /*@Y30LB02*/
 *     ANS('      2  AROP FIXED(8) INIT(4),/*OPCODE  @Y30LB02*/')SKIP;
-*   ANS('      2  * CHAR(1) INIT('××QUOTE('00')××
+*   ANS('      2  * CHAR(1) INIT('ï¿½ï¿½QUOTE('00')ï¿½ï¿½
 *        'X), /*RESERVED AREA  @Y30LB02*/') SKIP;
-*   ANS('      2  ARFLG BIT(8) INIT('××QUOTE('00000000')××
+*   ANS('      2  ARFLG BIT(8) INIT('ï¿½ï¿½QUOTE('00000000')ï¿½ï¿½
 *        'B), /*FLAGS  @Y30LB02*/') SKIP;
 *   ANS('        3 ARBDUBD BIT(1),   /* BIND/UNBIND BIT  @Y30LB02*/')
 *        SKIP;
@@ -1065,32 +1065,32 @@ ARNMEXT  EQU   ARNMEXTS                COMPATIBILITY DEF       @ZA28964
 *        SKIP;
 *   ANS('        3 ARINH BIT(1), /*INHIBIT (DE)STAGE BIT  @Y30LB02*/')
 *        SKIP;
-*   ANS('        3 ARSEC BIT(1), /*NEWLY ALLOCATED SECONDARY EXTENT'××
+*   ANS('        3 ARSEC BIT(1), /*NEWLY ALLOCATED SECONDARY EXTENT'ï¿½ï¿½
 *        'BIT @G24LB04*/')SKIP;
 *   ANS('        3 * BIT(4), /*THESE BITS ALWAYS ZEROES   @G24LB04*/')
 *        SKIP;
 *   ANS('      2  ARNMEXT FIXED(8) INIT(0), /* #EXTS  @Y30LB02*/')
 *        SKIP;
-*   ANS('      2  ARVOL CHAR(6) INIT('××
-*        QUOTE('000000000000')××'X), /*VOLID  @Y30LB02*/') SKIP;
-*   ANS('      2  ARASID CHAR(2) INIT('××QUOTE('0000')××
+*   ANS('      2  ARVOL CHAR(6) INIT('ï¿½ï¿½
+*        QUOTE('000000000000')ï¿½ï¿½'X), /*VOLID  @Y30LB02*/') SKIP;
+*   ANS('      2  ARASID CHAR(2) INIT('ï¿½ï¿½QUOTE('0000')ï¿½ï¿½
 *        'X), /*ASID AREA  @Y30LB02*/') SKIP;
 *   ANS('      2  ARECB PTR(31) INIT(0), /*ADDR OF ECB  @ZA28964*/')
 *        SKIP;
-*   ANS('      2  ARHOST CHAR(5) INIT('××QUOTE('0000000000')
-*       ×× 'X),  /*HOSTID  @Y30LB02*/') SKIP;
-*   ANS('      2  * CHAR(1) INIT('××QUOTE('00')
-*       ×× 'X),  /*ZEROES  @Y30LB02*/') SKIP;
-*   ANS('      2  ARCOMPC CHAR(2) INIT('××QUOTE('0000')
-*       ×× 'X),/*ZERO COMP CODE FLD  @Y30LB02*/') SKIP;
+*   ANS('      2  ARHOST CHAR(5) INIT('ï¿½ï¿½QUOTE('0000000000')
+*       ï¿½ï¿½ 'X),  /*HOSTID  @Y30LB02*/') SKIP;
+*   ANS('      2  * CHAR(1) INIT('ï¿½ï¿½QUOTE('00')
+*       ï¿½ï¿½ 'X),  /*ZEROES  @Y30LB02*/') SKIP;
+*   ANS('      2  ARCOMPC CHAR(2) INIT('ï¿½ï¿½QUOTE('0000')
+*       ï¿½ï¿½ 'X),/*ZERO COMP CODE FLD  @Y30LB02*/') SKIP;
 *   ANS('      2  AREXT(16) , /*EXTENTS  @Y30LB02*/') SKIP;
-*   ANS('       3 * CHAR(4) INIT('××
-*      QUOTE('00000000')××'X),') SKIP;
+*   ANS('       3 * CHAR(4) INIT('ï¿½ï¿½
+*      QUOTE('00000000')ï¿½ï¿½'X),') SKIP;
 *   ANS('      2  ARNEDB PTR(31) INIT(0);/*ADDR OF NEDB  @ZA28964*/')
 *        SKIP;
 *   ANS('DCL ARLEN FIXED(31) DEF(ARLL), /*BAL LABEL @ZA28964*/')SKIP;
 *   ANS('    ARFLAG BIT(8) DEF(ARFLG),/*BAL LABEL @ZA28964*/')SKIP;
-*   ANS('    ARNMEXTS FIXED(8) DEF(ARNMEXT);  ' ××
+*   ANS('    ARNMEXTS FIXED(8) DEF(ARNMEXT);  ' ï¿½ï¿½
 *       '/*BAL LABEL @ZA28964*/')SKIP;
 *   ANS('RFY(ARR1)RSTD;/*RESTRICT R1  @Y30LB02*/')SKIP;
 *   ANS('ARR1=ADDR(ARLL);/*ARR1 SET TO ADDRESS OF LIST  @Y30LB02*/')
@@ -1098,26 +1098,26 @@ ARNMEXT  EQU   ARNMEXTS                COMPATIBILITY DEF       @ZA28964
 *   GO TO FCHECK;                                          /*@ZA28964*/
 */*                                                          @ZA28964*/
 *  EXEC:
-*   ANS('/*******************************************'××
+*   ANS('/*******************************************'ï¿½ï¿½
 *       '************  @Y30LB02*/')SKIP;
-*   ANS('/*MACMEAN  MSSC ACQUIRE/RELINQUISH MACRO    '××
+*   ANS('/*MACMEAN  MSSC ACQUIRE/RELINQUISH MACRO    'ï¿½ï¿½
 *       '              @Y30LB02*/')SKIP;
-*   ANS('/*         VERSION - VS/2 REL 3    77/12/15 '××
+*   ANS('/*         VERSION - VS/2 REL 3    77/12/15 'ï¿½ï¿½
 *       'LEVEL 02      @ZA28964*/')SKIP;
-*   ANS('/*THIS IS THE OUTPUT FOR THE EXECUTE FORM.  '××
+*   ANS('/*THIS IS THE OUTPUT FOR THE EXECUTE FORM.  'ï¿½ï¿½
 *       '              @Y30LB02*/')SKIP;
-*   ANS('/*THE LIST FORM OF THIS MACRO SHOULD BE     '××
+*   ANS('/*THE LIST FORM OF THIS MACRO SHOULD BE     'ï¿½ï¿½
 *       '              @Y30LB02*/')SKIP;
-*   ANS('/*INVOKED FIRST IN ORDER TO SET UP NECESSARY'××
+*   ANS('/*INVOKED FIRST IN ORDER TO SET UP NECESSARY'ï¿½ï¿½
 *       '              @Y30LB02*/')SKIP;
-*   ANS('/*DECLARES.  THE EXECUTE FORM WILL ONLY     '××
+*   ANS('/*DECLARES.  THE EXECUTE FORM WILL ONLY     'ï¿½ï¿½
 *       '              @Y30LB02*/')SKIP;
-*   ANS('/*ISSUE THE SVC.                            '××
+*   ANS('/*ISSUE THE SVC.                            'ï¿½ï¿½
 *       '              @Y30LB02*/')SKIP;
-*   ANS('/*******************************************'××
+*   ANS('/*******************************************'ï¿½ï¿½
 *       '************  @Y30LB02*/')SKIP;
 *   ANS('RFY(ARR1)RSTD;/*RESTRICT R1  @Y30LB02*/')SKIP;
-*   ANS('ARR1=ADDR('××MF(2)××
+*   ANS('ARR1=ADDR('ï¿½ï¿½MF(2)ï¿½ï¿½
 *       '); /*SET ARR1 TO ADDR OF LIST  @Y30LB02*/')  SKIP;
 *   GO TO QUIT;                                            /*@ZA28964*/
 */*                                                          @ZA28964*/

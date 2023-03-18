@@ -139,12 +139,12 @@
 .*          THE MACRO.  THE FOLLOWING TABLE GIVES THE          @Y30LB02
 .*          OPCODES FOR EACH REQUEST.                          @Y30LB02
 .*                                                             @Y30LB02
-.*               REQUEST               × OPCODE                @Y30LB02
+.*               REQUEST               ï¿½ OPCODE                @Y30LB02
 .*               -----------------------------------           @Y30LB02
-.*               PURGE                 × HEX'14'               @Y30LB02
-.*               ASSIGN PRIMARY HOST   × HEX'12'               @Y30LB02
-.*               INITIALIZE            × HEX'10'               @Y30LB02
-.*               HOST READY            × HEX'20'               @Y30LB02
+.*               PURGE                 ï¿½ HEX'14'               @Y30LB02
+.*               ASSIGN PRIMARY HOST   ï¿½ HEX'12'               @Y30LB02
+.*               INITIALIZE            ï¿½ HEX'10'               @Y30LB02
+.*               HOST READY            ï¿½ HEX'20'               @Y30LB02
 .*                                                             @Y30LB02
 .*   HOSTID-OPTIONALLY INDICATES THE HOST (OTHER THAN THE      @Y30LB02
 .*          ISSUING HOST) FOR WHICH THE REQUEST IS BEING       @Y30LB02
@@ -157,7 +157,7 @@
 .*                                                             @Y30LB02
 .*   FLAGS:  2 BYTES                                           @Y30LB02
 .*    _________________________________                        @Y30LB02
-.*    × × ×0×0×0×0×0×0×0×0×0×0×0×0×0×0×                        @Y30LB02
+.*    ï¿½ ï¿½ ï¿½0ï¿½0ï¿½0ï¿½0ï¿½0ï¿½0ï¿½0ï¿½0ï¿½0ï¿½0ï¿½0ï¿½0ï¿½0ï¿½0ï¿½                        @Y30LB02
 .*    _________________________________                        @Y30LB02
 .*                                                             @Y30LB02
 .*                                                             @Y30LB02
@@ -447,12 +447,12 @@ PURGHOST DC    XL5'0000000000'         ZERO HOSTID FIELD       @Y30LB02
 *   ESW=1;                             /*TURN ON ESW         @Y30LB02*/
 *   IF TYPE='' THEN                    /*IS TYPE NULL?       @Y30LB02*/
 *        DO;                           /*YES,PRT ERROR MSG   @Y30LB02*/
-*             ANS MSG('  ICB600I - TYPE'××
+*             ANS MSG('  ICB600I - TYPE'ï¿½ï¿½
 *                  ' MUST BE SPECIFIED') SKIP(5);          /*@Y30LB02*/
 *        END;                                              /*@Y30LB02*/
 *   ELSE                               /*PRINT ERROR MSG     @Y30LB02*/
 *        DO;                                               /*@Y30LB02*/
-*             ANS MSG('  ICB601I - TYPE'××
+*             ANS MSG('  ICB601I - TYPE'ï¿½ï¿½
 *                  ' IS INCORRECTLY SPECIFIED') SKIP(5);   /*@Y30LB02*/
 *        END;                                              /*@Y30LB02*/
 *   RETCODE=12;                                            /*@Y30LB02*/
@@ -461,7 +461,7 @@ PURGHOST DC    XL5'0000000000'         ZERO HOSTID FIELD       @Y30LB02
 *   IF PAIRTSTR=0 THEN                 /*WAS R1 ALREADY      @Y30LB02*/
 *                                      /*DECLARED?           @Y30LB02*/
 *        DO;                           /*NO,PRT DCL FOR R1   @Y30LB02*/
-*             ANS('DCL PAIRR1  REG(1) PTR; '××             /*@Y30LB02*/
+*             ANS('DCL PAIRR1  REG(1) PTR; 'ï¿½ï¿½             /*@Y30LB02*/
 *                  '/* WILL CONTAIN BLK ADDRESS @Y30LB02*/') SKIP(1);
 *             PAIRTSTR=1;              /*TURN SWITCH ON      @Y30LB02*/
 *        END;                                              /*@Y30LB02*/
@@ -471,8 +471,8 @@ PURGHOST DC    XL5'0000000000'         ZERO HOSTID FIELD       @Y30LB02
 *        DO;                           /*IF NOT, THEN        @Y30LB02*/
 *             ESW=1;                   /*TURN ON ESW         @Y30LB02*/
 *                                      /*AND,PRT ERROR MSG   @Y30LB02*/
-*             ANS MSG('  ICB602I - A NAME FOR THE '××
-*                  'REQUEST BLOCK MUST BE SPECIFIED '××
+*             ANS MSG('  ICB602I - A NAME FOR THE 'ï¿½ï¿½
+*                  'REQUEST BLOCK MUST BE SPECIFIED 'ï¿½ï¿½
 *                  'IN MF(2)')SKIP(5);                     /*@Y30LB02*/
 *             RETCODE=12;                                  /*@Y30LB02*/
 *        END;                                              /*@Y30LB02*/
@@ -485,70 +485,70 @@ PURGHOST DC    XL5'0000000000'         ZERO HOSTID FIELD       @Y30LB02
 */* START TO PRINT OUT DECLARES FOR LIST FORM                @Y30LB02*/
 */*********************************************************  @Y30LB02*/
 */*                                                          @Y30LB02*/
-*   ANS('/*******************************************'××
+*   ANS('/*******************************************'ï¿½ï¿½
 *       '************** @Y30LB02*/')SKIP;
-*   ANS('/*MACMEAN  MSSC PURG/ASSIGN/INITL/READY MACRO'××
+*   ANS('/*MACMEAN  MSSC PURG/ASSIGN/INITL/READY MACRO'ï¿½ï¿½
 *       '              @Y30LB02*/')SKIP;
-*   ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '××
+*   ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    'ï¿½ï¿½
 *       '               @Y30LB02*/')SKIP;
-*   ANS('/*THIS IS THE INITIALIZED LIST FORM         '××
+*   ANS('/*THIS IS THE INITIALIZED LIST FORM         'ï¿½ï¿½
 *       '               @Y30LB02*/')SKIP;
-*   ANS('/*******************************************'××
+*   ANS('/*******************************************'ï¿½ï¿½
 *       '************** @Y30LB02*/')SKIP;
-*   ANS('DCL 1   '××MF(2)××'  STATIC LOCAL,') SKIP(1);     /*@Y30LB02*/
+*   ANS('DCL 1   'ï¿½ï¿½MF(2)ï¿½ï¿½'  STATIC LOCAL,') SKIP(1);     /*@Y30LB02*/
 *   IF TYPE(1)^='PURG' THEN             /*NOT A PURG REQ?    @Y30LB02*/
 *        DO;                                               /*@Y30LB02*/
-*             ANS('      2  AIRLL FIXED(31) INIT('××QUOTE('08')××
+*             ANS('      2  AIRLL FIXED(31) INIT('ï¿½ï¿½QUOTE('08')ï¿½ï¿½
 *                  'X), /*LENGTH @Y30LB02*/')  SKIP(1);
 *             IF TYPE(1)='APH' THEN    /*APH REQUEST?        @Y30LB02*/
 *                  DO;                 /*PUT IN APH  OPCODE  @Y30LB02*/
 *                       ANS('      2  AIROP FIXED(8) INIT('
-*                            ××QUOTE(AOPCODE)××
+*                            ï¿½ï¿½QUOTE(AOPCODE)ï¿½ï¿½
 *                            'X), /*OPCODE @Y30LB02*/') SKIP(1);
 *                  END;                                    /*@Y30LB02*/
 *             ELSE
 *                  IF TYPE(1)='INITL' THEN /*INITL REQUEST?  @Y30LB02*/
 *                     DO;              /*PUT IN INITL  OPCD  @Y30LB02*/
 *                       ANS('      2  AIROP FIXED(8) INIT('
-*                            ××QUOTE(IOPCODE)××
+*                            ï¿½ï¿½QUOTE(IOPCODE)ï¿½ï¿½
 *                            'X),/*OPCODE @Y30LB02*/') SKIP(1);
 *                     END;                                 /*@Y30LB02*/
 *                  ELSE
 *                     DO;              /*PUT IN RDY OPCODE   @Y30LB02*/
 *                       ANS('      2  AIROP FIXED(8) INIT('
-*                            ××QUOTE(ROPCODE)××
+*                            ï¿½ï¿½QUOTE(ROPCODE)ï¿½ï¿½
 *                            'X),/*OPCODE @Y30LB02*/') SKIP(1);
 *                     END;                                 /*@Y30LB02*/
-*             ANS ('      2  * CHAR(1) INIT('××
-*                  QUOTE('00')××'X), /*ZEROES   @Y30LB02*/') SKIP(1);
-*             ANS ('      2  AIRFLAG BIT(16) INIT('××
-*                 QUOTE('0000000000000000')××
+*             ANS ('      2  * CHAR(1) INIT('ï¿½ï¿½
+*                  QUOTE('00')ï¿½ï¿½'X), /*ZEROES   @Y30LB02*/') SKIP(1);
+*             ANS ('      2  AIRFLAG BIT(16) INIT('ï¿½ï¿½
+*                 QUOTE('0000000000000000')ï¿½ï¿½
 *                 'B),/*FLAGS/ZEROES @Y30LB02*/') SKIP(1);
-*             ANS ('        3  AIRRESV BIT(1),'××
+*             ANS ('        3  AIRRESV BIT(1),'ï¿½ï¿½
 *                  '/*RESERVED BIT  @Y30LB02*/') SKIP(1);
-*             ANS ('        3  AIRCPUS BIT(1),'××
+*             ANS ('        3  AIRCPUS BIT(1),'ï¿½ï¿½
 *                  '/*INITIALIZE BOTH CPUS  @Y30LB02*/') SKIP(1);
-*             ANS ('        3  *      BIT(14);'××          /*@Y30LB02*/
+*             ANS ('        3  *      BIT(14);'ï¿½ï¿½          /*@Y30LB02*/
 *                  '/*RESERVED BITS  @Y30LB02*/') SKIP(1);
 *        END;                                              /*@Y30LB02*/
 *   ELSE                               /*PURG REQUEST        @Y30LB02*/
 *        DO;                           /*DCL PURGE LIST      @Y30LB02*/
-*             ANS('      2  PURGLL FIXED(31) INIT('××QUOTE('0D')××
+*             ANS('      2  PURGLL FIXED(31) INIT('ï¿½ï¿½QUOTE('0D')ï¿½ï¿½
 *                  'X), /*LENGTH @Y30LB02*/')  SKIP(1);
-*             ANS('      2  PURGOP FIXED(8) INIT('××
-*                  QUOTE(POPCODE)××'X), /*OPCODE @Y30LB02*/') SKIP(1);
-*             ANS ('      2  * CHAR(1) INIT('××
-*                  QUOTE('00')××'X), /*ZEROES   @Y30LB02*/')
+*             ANS('      2  PURGOP FIXED(8) INIT('ï¿½ï¿½
+*                  QUOTE(POPCODE)ï¿½ï¿½'X), /*OPCODE @Y30LB02*/') SKIP(1);
+*             ANS ('      2  * CHAR(1) INIT('ï¿½ï¿½
+*                  QUOTE('00')ï¿½ï¿½'X), /*ZEROES   @Y30LB02*/')
 *                  SKIP(1);                                /*@Y30LB02*/
-*             ANS ('      2  PURGFLG BIT(16) INIT('××
-*                  QUOTE('0000000000000000')××'B),'××
+*             ANS ('      2  PURGFLG BIT(16) INIT('ï¿½ï¿½
+*                  QUOTE('0000000000000000')ï¿½ï¿½'B),'ï¿½ï¿½
 *                  '/*ZEROES   @Y30LB02*/') SKIP(1);
-*             ANS ('        3  PURGMPP BIT(1),'××
+*             ANS ('        3  PURGMPP BIT(1),'ï¿½ï¿½
 *                  '/*PURGE OTHER PROCESSOR  @Y30LB02*/') SKIP(1);
-*             ANS ('        3  *      BIT(15),'××
+*             ANS ('        3  *      BIT(15),'ï¿½ï¿½
 *                  '/*RESERVED BITS  @Y30LB02*/') SKIP(1);
-*             ANS('      2  PURGHOST CHAR(5) INIT('××
-*                  QUOTE('0000000000')××'X); /*HOSTID @Y30LB02*/')
+*             ANS('      2  PURGHOST CHAR(5) INIT('ï¿½ï¿½
+*                  QUOTE('0000000000')ï¿½ï¿½'X); /*HOSTID @Y30LB02*/')
 *                  SKIP(1);                                /*@Y30LB02*/
 *        END;                                              /*@Y30LB02*/
 *   GO TO EXIT;                        /*BRANCH TO EXIT      @Y30LB02*/
@@ -558,63 +558,63 @@ PURGHOST DC    XL5'0000000000'         ZERO HOSTID FIELD       @Y30LB02
 */*********************************************************  @Y30LB02*/
 */*                                                          @Y30LB02*/
 *ATTRLST:
-*   ANS('/*******************************************'××
+*   ANS('/*******************************************'ï¿½ï¿½
 *       '************* @Y30LB02*/')SKIP;
-*   ANS('/*MACMEAN  MSSC PURG/ASSIGN/INITL/READY MACRO'××
+*   ANS('/*MACMEAN  MSSC PURG/ASSIGN/INITL/READY MACRO'ï¿½ï¿½
 *       '             @Y30LB02*/')SKIP;
-*   ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '××
+*   ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    'ï¿½ï¿½
 *       '              @Y30LB02*/')SKIP;
-*   ANS('/*THIS IS THE UNINITIALIZED LIST FORM       '××
+*   ANS('/*THIS IS THE UNINITIALIZED LIST FORM       'ï¿½ï¿½
 *       '              @Y30LB02*/')SKIP;
-*   ANS('/*******************************************'××
+*   ANS('/*******************************************'ï¿½ï¿½
 *       '************* @Y30LB02*/')SKIP;
-*   ANS('DCL 1   '××MF(2)××' '××MF(3)××','××
+*   ANS('DCL 1   'ï¿½ï¿½MF(2)ï¿½ï¿½' 'ï¿½ï¿½MF(3)ï¿½ï¿½','ï¿½ï¿½
 *              '/*REQUEST BLOCK @Y30LB02*/') SKIP(1);
 *   IF TYPE(1)^='PURG' THEN             /*NOT A PURG REQ?    @Y30LB02*/
 *        DO;                                               /*@Y30LB02*/
-*             ANS('      2  AIRLL FIXED(31) ,  '××
+*             ANS('      2  AIRLL FIXED(31) ,  'ï¿½ï¿½
 *                  ' /*LENGTH  = 8 BYTES @Y30LB02*/')  SKIP(1);
 *             IF TYPE(1)='APH' THEN    /*APH REQUEST?        @Y30LB02*/
 *                  DO;                 /*PUT IN APH  OPCODE  @Y30LB02*/
-*                       ANS('      2  AIROP FIXED(8),'××
+*                       ANS('      2  AIROP FIXED(8),'ï¿½ï¿½
 *                            ' /*OPCODE=12 HEX @Y30LB02*/') SKIP(1);
 *                  END;                                    /*@Y30LB02*/
 *             ELSE
 *                  IF TYPE(1)='INITL' THEN /*INITL REQUEST?  @Y30LB02*/
 *                     DO;              /*PUT IN INITL  OPCD  @Y30LB02*/
-*                       ANS('      2  AIROP FIXED(8),'××
+*                       ANS('      2  AIROP FIXED(8),'ï¿½ï¿½
 *                            '/*OPCODE=10 HEX @Y30LB02*/') SKIP(1);
 *                     END;                                 /*@Y30LB02*/
 *                  ELSE
 *                     DO;              /*PUT IN RDY OPCODE   @Y30LB02*/
-*                       ANS('      2  AIROP FIXED(8),'××
+*                       ANS('      2  AIROP FIXED(8),'ï¿½ï¿½
 *                            '/*OPCODE=20 HEX @Y30LB02*/') SKIP(1);
 *                     END;                                 /*@Y30LB02*/
 *             ANS ('      2  * CHAR(1),/*ZEROES   @Y30LB02*/') SKIP(1);
-*             ANS ('      2  AIRFLAG BIT(16),'××
+*             ANS ('      2  AIRFLAG BIT(16),'ï¿½ï¿½
 *                 '/*FLAGS/ZEROES @Y30LB02*/') SKIP(1);
-*             ANS ('        3  AIRRESV BIT(1),'××
+*             ANS ('        3  AIRRESV BIT(1),'ï¿½ï¿½
 *                  '/*RESERVED BIT  @Y30LB02*/') SKIP(1);
-*             ANS ('        3  AIRCPUS BIT(1),'××
+*             ANS ('        3  AIRCPUS BIT(1),'ï¿½ï¿½
 *                  '/*INITIALIZE BOTH CPUS  @Y30LB02*/') SKIP(1);
-*             ANS ('        3  *      BIT(14);'××          /*@Y30LB02*/
+*             ANS ('        3  *      BIT(14);'ï¿½ï¿½          /*@Y30LB02*/
 *                  '/*RESERVED BITS  @Y30LB02*/') SKIP(1);
 *        END;                                              /*@Y30LB02*/
 *   ELSE                               /*PURG REQUEST        @Y30LB02*/
 *        DO;                           /*DCL PURGE LIST      @Y30LB02*/
-*             ANS('      2  PURGLL FIXED(31),  '××
+*             ANS('      2  PURGLL FIXED(31),  'ï¿½ï¿½
 *                  ' /*LENGTH=13 BYTES @Y30LB02*/')  SKIP(1);
-*             ANS('      2  PURGOP FIXED(8),'××
+*             ANS('      2  PURGOP FIXED(8),'ï¿½ï¿½
 *                  ' /*OPCODE=14 HEX @Y30LB02*/') SKIP(1);
-*             ANS ('      2  * CHAR(1),'××
+*             ANS ('      2  * CHAR(1),'ï¿½ï¿½
 *                 '/*RESERVED/ZEROES @Y30LB02*/') SKIP(1);
-*             ANS ('      2  PURGFLG BIT(16),'××
+*             ANS ('      2  PURGFLG BIT(16),'ï¿½ï¿½
 *                  '/*FLAGS FIELD   @Y30LB02*/') SKIP(1);
-*             ANS ('        3  PURGMPP BIT(1),'××
+*             ANS ('        3  PURGMPP BIT(1),'ï¿½ï¿½
 *                  '/*PURGE OTHER PROCESSOR  @Y30LB02*/') SKIP(1);
-*             ANS ('        3  *      BIT(15),'××
+*             ANS ('        3  *      BIT(15),'ï¿½ï¿½
 *                  '/*RESERVED BITS  @Y30LB02*/') SKIP(1);
-*             ANS('      2  PURGHOST CHAR(5);'××
+*             ANS('      2  PURGHOST CHAR(5);'ï¿½ï¿½
 *                  ' /*HOSTID @Y30LB02*/') SKIP(1);
 *        END;                                              /*@Y30LB02*/
 *   GO TO EXIT;                        /*BRANCH TO EXIT      @Y30LB02*/
@@ -631,21 +631,21 @@ PURGHOST DC    XL5'0000000000'         ZERO HOSTID FIELD       @Y30LB02
 *                                      /*BEEN INVOKED ALRDY  @Y30LB02*/
 *             DO;                      /*SET UP REG1 TO PT   @Y30LB02*/
 *                                      /*TO PURG LIST        @Y30LB02*/
-*   ANS('/*******************************************'××
+*   ANS('/*******************************************'ï¿½ï¿½
 *       '************* @Y30LB02*/')SKIP;
-*   ANS('/*MACMEAN  MSSC PURGE MACRO                 '××
+*   ANS('/*MACMEAN  MSSC PURGE MACRO                 'ï¿½ï¿½
 *       '              @Y30LB02*/')SKIP;
-*   ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '××
+*   ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    'ï¿½ï¿½
 *       '              @Y30LB02*/')SKIP;
-*   ANS('/*THIS IS THE OUTPUT FOR A SECONDARY        '××
+*   ANS('/*THIS IS THE OUTPUT FOR A SECONDARY        'ï¿½ï¿½
 *       '              @Y30LB02*/')SKIP;
-*   ANS('/*INVOCATION OF THE STANDARD FORM MACRO     '××
+*   ANS('/*INVOCATION OF THE STANDARD FORM MACRO     'ï¿½ï¿½
 *       '              @Y30LB02*/')SKIP;
-*   ANS('/*******************************************'××
+*   ANS('/*******************************************'ï¿½ï¿½
 *       '************* @Y30LB02*/')SKIP;
-*                  ANS ('RFY(PAIRR1)RSTD;/*RESTRICT '××
+*                  ANS ('RFY(PAIRR1)RSTD;/*RESTRICT 'ï¿½ï¿½
 *                       'R1 @Y30LB02*/')SKIP;
-*                  ANS ('PAIRR1=ADDR(PURGLL);'××           /*@Y30LB02*/
+*                  ANS ('PAIRR1=ADDR(PURGLL);'ï¿½ï¿½           /*@Y30LB02*/
 *                    '/*PAIRR1 SET TO ADDR OF PURG LIST @Y30LB02*/')
 *                     SKIP(1);                             /*@Y30LB02*/
 *                  GO TO TEST2;        /*BRANCH              @Y30LB02*/
@@ -655,21 +655,21 @@ PURGHOST DC    XL5'0000000000'         ZERO HOSTID FIELD       @Y30LB02
 *                                      /*BEEN INVOKED ALRDY  @Y30LB02*/
 *             DO;                      /*SET UP REG1 TO PT   @Y30LB02*/
 *                                      /*TO REQUEST BLOCK   @Y30LB02*/
-*   ANS('/*******************************************'××
+*   ANS('/*******************************************'ï¿½ï¿½
 *       '************* @Y30LB02*/')SKIP;
-*   ANS('/*MACMEAN  MSSC ASSIGN/INITIALIZE/READY MACRO'××
+*   ANS('/*MACMEAN  MSSC ASSIGN/INITIALIZE/READY MACRO'ï¿½ï¿½
 *       '              @Y30LB02*/')SKIP;
-*   ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '××
+*   ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    'ï¿½ï¿½
 *       '              @Y30LB02*/')SKIP;
-*   ANS('/*THIS IS THE OUTPUT FOR A SECONDARY        '××
+*   ANS('/*THIS IS THE OUTPUT FOR A SECONDARY        'ï¿½ï¿½
 *       '              @Y30LB02*/')SKIP;
-*   ANS('/*INVOCATION OF THE STANDARD FORM MACRO     '××
+*   ANS('/*INVOCATION OF THE STANDARD FORM MACRO     'ï¿½ï¿½
 *       '              @Y30LB02*/')SKIP;
-*   ANS('/*******************************************'××
+*   ANS('/*******************************************'ï¿½ï¿½
 *       '************* @Y30LB02*/')SKIP;
-*                  ANS ('RFY(PAIRR1)RSTD;/*RESTRICT '××
+*                  ANS ('RFY(PAIRR1)RSTD;/*RESTRICT 'ï¿½ï¿½
 *                       'R1 @Y30LB02*/')SKIP;
-*                  ANS ('PAIRR1=ADDR(AIRLL);'××            /*@Y30LB02*/
+*                  ANS ('PAIRR1=ADDR(AIRLL);'ï¿½ï¿½            /*@Y30LB02*/
 *                    '/*PAIRR1 SET TO ADDR OF AIR LIST @Y30LB02*/')
 *                     SKIP(1);                             /*@Y30LB02*/
 *                  GO TO TEST2;        /*BRANCH              @Y30LB02*/
@@ -681,89 +681,89 @@ PURGHOST DC    XL5'0000000000'         ZERO HOSTID FIELD       @Y30LB02
 */*                                                          @Y30LB02*/
 *   IF TYPE(1)^='PURG' THEN             /*NOT A PURG REQ?    @Y30LB02*/
 *        DO;                                               /*@Y30LB02*/
-*             ANS('/*******************************************'××
+*             ANS('/*******************************************'ï¿½ï¿½
 *                 '************* @Y30LB02*/')SKIP;
-*             ANS('/*MACMEAN  MSSC ASSIGN/INITIALIZE/READY MACRO'××
+*             ANS('/*MACMEAN  MSSC ASSIGN/INITIALIZE/READY MACRO'ï¿½ï¿½
 *                 '             @Y30LB02*/')SKIP;
-*             ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '××
+*             ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    'ï¿½ï¿½
 *                 '              @Y30LB02*/')SKIP;
-*             ANS('/*THIS IS THE STANDARD FORM - ICBPAIR MACRO '××
+*             ANS('/*THIS IS THE STANDARD FORM - ICBPAIR MACRO 'ï¿½ï¿½
 *                 '              @Y30LB02*/')SKIP;
-*             ANS('/*******************************************'××
+*             ANS('/*******************************************'ï¿½ï¿½
 *                 '************* @Y30LB02*/')SKIP;
 *             ANS('DCL  1   AIRLIST  STATIC LOCAL,') SKIP(1);
-*             ANS('      2  AIRLL FIXED(31) INIT('××QUOTE('08')××
+*             ANS('      2  AIRLL FIXED(31) INIT('ï¿½ï¿½QUOTE('08')ï¿½ï¿½
 *                  'X), /*LENGTH @Y30LB02*/')  SKIP(1);
 *             IF TYPE(1)='APH' THEN    /*APH REQUEST?        @Y30LB02*/
 *                  DO;                 /*PUT IN APH  OPCODE  @Y30LB02*/
 *                       ANS('      2  AIROP FIXED(8) INIT('
-*                            ××QUOTE(AOPCODE)××
+*                            ï¿½ï¿½QUOTE(AOPCODE)ï¿½ï¿½
 *                            'X), /*OPCODE @Y30LB02*/') SKIP(1);
 *                  END;                                    /*@Y30LB02*/
 *             ELSE
 *                  IF TYPE(1)='INITL' THEN /*INITL REQUEST?  @Y30LB02*/
 *                     DO;              /*PUT IN INITL  OPCD  @Y30LB02*/
 *                       ANS('      2  AIROP FIXED(8) INIT('
-*                            ××QUOTE(IOPCODE)××
+*                            ï¿½ï¿½QUOTE(IOPCODE)ï¿½ï¿½
 *                            'X),/*OPCODE @Y30LB02*/') SKIP(1);
 *                     END;                                 /*@Y30LB02*/
 *                  ELSE
 *                     DO;              /*PUT IN RDY OPCODE   @Y30LB02*/
 *                       ANS('      2  AIROP FIXED(8) INIT('
-*                            ××QUOTE(ROPCODE)××
+*                            ï¿½ï¿½QUOTE(ROPCODE)ï¿½ï¿½
 *                            'X),/*OPCODE @Y30LB02*/') SKIP(1);
 *                     END;                                 /*@Y30LB02*/
-*             ANS ('      2  * CHAR(1) INIT('××
-*                  QUOTE('00')××'X), /*ZEROES   @Y30LB02*/') SKIP(1);
-*             ANS ('      2  AIRFLAG BIT(16) INIT('××
-*                 QUOTE('0000000000000000')××
+*             ANS ('      2  * CHAR(1) INIT('ï¿½ï¿½
+*                  QUOTE('00')ï¿½ï¿½'X), /*ZEROES   @Y30LB02*/') SKIP(1);
+*             ANS ('      2  AIRFLAG BIT(16) INIT('ï¿½ï¿½
+*                 QUOTE('0000000000000000')ï¿½ï¿½
 *                 'B),/*FLAGS/ZEROES @Y30LB02*/') SKIP(1);
-*             ANS ('        3  AIRRESV BIT(1),'××
+*             ANS ('        3  AIRRESV BIT(1),'ï¿½ï¿½
 *                  '/*RESERVED BIT  @Y30LB02*/') SKIP(1);
-*             ANS ('        3  AIRCPUS BIT(1),'××
+*             ANS ('        3  AIRCPUS BIT(1),'ï¿½ï¿½
 *                  '/*INITIALIZE BOTH CPUS  @Y30LB02*/') SKIP(1);
-*             ANS ('        3  *      BIT(14);'××
+*             ANS ('        3  *      BIT(14);'ï¿½ï¿½
 *                  '/*RESERVED BITS  @Y30LB02*/') SKIP(1);
-*             ANS ('RFY(PAIRR1)RSTD;/*RESTRICT '××
+*             ANS ('RFY(PAIRR1)RSTD;/*RESTRICT 'ï¿½ï¿½
 *                  'R1 @Y30LB02*/')SKIP;
-*             ANS('PAIRR1=ADDR(AIRLL); '××                 /*@Y30LB02*/
+*             ANS('PAIRR1=ADDR(AIRLL); 'ï¿½ï¿½                 /*@Y30LB02*/
 *                '/*PAIRR1 SET TO ADDR OF BLK @Y30LB02*/') SKIP(1);
 *             AIRTEST=1;               /*SET SO KNOW STD     @Y30LB02*/
 *                                      /*HAS BEEN INVOKED    @Y30LB02*/
 *        END;                                              /*@Y30LB02*/
 *   ELSE                               /*PURG REQUEST        @Y30LB02*/
 *        DO;                           /*DCL PURGE LIST      @Y30LB02*/
-*             ANS('/*******************************************'××
+*             ANS('/*******************************************'ï¿½ï¿½
 *                 '************* @Y30LB02*/')SKIP;
-*             ANS('/*MACMEAN  MSSC PURGE MACRO                 '××
+*             ANS('/*MACMEAN  MSSC PURGE MACRO                 'ï¿½ï¿½
 *                 '              @Y30LB02*/')SKIP;
-*             ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '××
+*             ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    'ï¿½ï¿½
 *                 '              @Y30LB02*/')SKIP;
-*             ANS('/*THIS IS THE STANDARD FORM - ICBPAIR MACRO '××
+*             ANS('/*THIS IS THE STANDARD FORM - ICBPAIR MACRO 'ï¿½ï¿½
 *                 '              @Y30LB02*/')SKIP;
-*             ANS('/*******************************************'××
+*             ANS('/*******************************************'ï¿½ï¿½
 *                 '************* @Y30LB02*/')SKIP;
 *             ANS('DCL  1   PURGLIST  STATIC LOCAL,') SKIP;/*@Y30LB02*/
-*             ANS('      2  PURGLL FIXED(31) INIT('××QUOTE('0D')××
+*             ANS('      2  PURGLL FIXED(31) INIT('ï¿½ï¿½QUOTE('0D')ï¿½ï¿½
 *                  'X), /*LENGTH @Y30LB02*/')  SKIP(1);
-*             ANS('      2  PURGOP FIXED(8) INIT('××
-*                  QUOTE(POPCODE)××'X), /*OPCODE @Y30LB02*/') SKIP(1);
-*             ANS ('      2  * CHAR(1) INIT('××
-*                  QUOTE('00')××'X), /*ZEROES   @Y30LB02*/')
+*             ANS('      2  PURGOP FIXED(8) INIT('ï¿½ï¿½
+*                  QUOTE(POPCODE)ï¿½ï¿½'X), /*OPCODE @Y30LB02*/') SKIP(1);
+*             ANS ('      2  * CHAR(1) INIT('ï¿½ï¿½
+*                  QUOTE('00')ï¿½ï¿½'X), /*ZEROES   @Y30LB02*/')
 *                  SKIP(1);                                /*@Y30LB02*/
-*             ANS ('      2  PURGFLG BIT(16) INIT('××
-*                  QUOTE('0000000000000000')××'B),'××
+*             ANS ('      2  PURGFLG BIT(16) INIT('ï¿½ï¿½
+*                  QUOTE('0000000000000000')ï¿½ï¿½'B),'ï¿½ï¿½
 *                  '/*ZEROES   @Y30LB02*/') SKIP(1);
-*             ANS ('        3  PURGMPP BIT(1),'××
+*             ANS ('        3  PURGMPP BIT(1),'ï¿½ï¿½
 *                  '/*PURGE OTHER PROCESSOR  @Y30LB02*/') SKIP(1);
-*             ANS ('        3  *      BIT(15),'××
+*             ANS ('        3  *      BIT(15),'ï¿½ï¿½
 *                  '/*RESERVED BITS  @Y30LB02*/') SKIP(1);
-*             ANS('      2  PURGHOST CHAR(5) INIT('××
-*                  QUOTE('0000000000')××'X); /*HOSTID @Y30LB02*/')
+*             ANS('      2  PURGHOST CHAR(5) INIT('ï¿½ï¿½
+*                  QUOTE('0000000000')ï¿½ï¿½'X); /*HOSTID @Y30LB02*/')
 *                  SKIP(1);                                /*@Y30LB02*/
-*             ANS ('RFY(PAIRR1)RSTD;/*RESTRICT'××
+*             ANS ('RFY(PAIRR1)RSTD;/*RESTRICT'ï¿½ï¿½
 *                  ' R1 @Y30LB02*/')SKIP;
-*             ANS('PAIRR1=ADDR(PURGLL); '××                /*@Y30LB02*/
+*             ANS('PAIRR1=ADDR(PURGLL); 'ï¿½ï¿½                /*@Y30LB02*/
 *                 '/*PAIRR1 SET TO ADDR OF LIST @Y30LB02*/') SKIP(1);
 *             PURGTEST=1;              /*SET SO KNOW STD     @Y30LB02*/
 *                                      /*HAS BEEN INVOKED    @Y30LB02*/
@@ -784,7 +784,7 @@ PURGHOST DC    XL5'0000000000'         ZERO HOSTID FIELD       @Y30LB02
 *             GO TO EXFORM;            /*YES, BRANCH         @Y30LB02*/
 *   ESW=1;                             /*TURN ON ESW         @Y30LB02*/
 *   DO;                                /*PRINT ERROR MSG     @Y30LB02*/
-*        ANS MSG('  ICB615I - INVALID MF PARAMETER SPECIFIED,'××
+*        ANS MSG('  ICB615I - INVALID MF PARAMETER SPECIFIED,'ï¿½ï¿½
 *             ' MUST BE L, E, OR NULL ') SKIP(1);          /*@Y30LB02*/
 *   END;                                /*                   @Y30LB02*/
 *   RETCODE=12;                        /*SET RETURN CODE     @Y30LB02*/
@@ -792,43 +792,43 @@ PURGHOST DC    XL5'0000000000'         ZERO HOSTID FIELD       @Y30LB02
 *EXFORM: IF MF(2)='' THEN              /*ADDRESS GIVEN?      @Y30LB02*/
 *             DO;                      /*NO,TURN ON ESW AND  @Y30LB02*/
 *                  ESW=1;              /*PRINT ERROR MSG     @Y30LB02*/
-*                  ANS MSG('  ICB612I - MF(2) MUST CONTAIN'××
-*                       ' REQ BLK NAME IF EXEC MACRO '××
+*                  ANS MSG('  ICB612I - MF(2) MUST CONTAIN'ï¿½ï¿½
+*                       ' REQ BLK NAME IF EXEC MACRO 'ï¿½ï¿½
 *                       'FORM REQUESTED')SKIP(5);          /*@Y30LB02*/
 *                  RETCODE=12;         /*SET RETURN CODE     @Y30LB02*/
 *                  GO TO TEST2;        /*BRANCH              @Y30LB02*/
 *             END;                                         /*@Y30LB02*/
-*   ANS('/*******************************************'××
+*   ANS('/*******************************************'ï¿½ï¿½
 *       '************* @Y30LB02*/')SKIP;
-*   ANS('/*MACMEAN  PURGE/ASSIGN/INITIALIZE/READY    '××
+*   ANS('/*MACMEAN  PURGE/ASSIGN/INITIALIZE/READY    'ï¿½ï¿½
 *       'MACRO         @Y30LB02*/')SKIP;
-*   ANS('/*VS1-4/VS2-3 VERSION-- 06/09/74 LEVEL 00   '××
+*   ANS('/*VS1-4/VS2-3 VERSION-- 06/09/74 LEVEL 00   'ï¿½ï¿½
 *       '              @Y30LB02*/')SKIP;
-*   ANS('/*THIS IS THE OUTPUT FOR THE EXECUTE FORM.  '××
+*   ANS('/*THIS IS THE OUTPUT FOR THE EXECUTE FORM.  'ï¿½ï¿½
 *       '              @Y30LB02*/')SKIP;
-*   ANS('/*THE LIST FORM OF THIS MACRO SHOULD BE     '××
+*   ANS('/*THE LIST FORM OF THIS MACRO SHOULD BE     'ï¿½ï¿½
 *       '              @Y30LB02*/')SKIP;
-*   ANS('/*INVOKED FIRST IN ORDER TO SET UP NECESSARY'××
+*   ANS('/*INVOKED FIRST IN ORDER TO SET UP NECESSARY'ï¿½ï¿½
 *       '              @Y30LB02*/')SKIP;
-*   ANS('/*DECLARES.  IF THE COMPLETE ARGUMENT IS    '××
+*   ANS('/*DECLARES.  IF THE COMPLETE ARGUMENT IS    'ï¿½ï¿½
 *       '              @Y30LB02*/')SKIP;
-*   ANS('/*SPECIFIED THE REQ BLOCK WILL BE ZEROED.   '××
+*   ANS('/*SPECIFIED THE REQ BLOCK WILL BE ZEROED.   'ï¿½ï¿½
 *       '              @Y30LB02*/')SKIP;
-*   ANS('/*******************************************'××
+*   ANS('/*******************************************'ï¿½ï¿½
 *       '************* @Y30LB02*/')SKIP;
 *   ANS ('RFY(PAIRR1)RSTD;/*RESTRICT  R1 @Y30LB02*/')SKIP;
-*   ANS('PAIRR1=ADDR('××MF(2)××
+*   ANS('PAIRR1=ADDR('ï¿½ï¿½MF(2)ï¿½ï¿½
 *        '); /*SET PAIRR1 TO REQ BLOCK @Y30LB02*/')  SKIP(1);
 *   IF MF(3) = 'COMPLETE' THEN
 *      DO;                                                 /*@Y30LB02*/
-*        ANS(' '××MF(2)××'='××MF(2)××'&&'××MF(2)××';'××    /*@Y30LB02*/
+*        ANS(' 'ï¿½ï¿½MF(2)ï¿½ï¿½'='ï¿½ï¿½MF(2)ï¿½ï¿½'&&'ï¿½ï¿½MF(2)ï¿½ï¿½';'ï¿½ï¿½    /*@Y30LB02*/
 *           '/*ZERO REQUEST BLOCK @Y30LB02*/')SKIP;
 *      END;                                                /*@Y30LB02*/
 *   IF TYPE(1)='PURG' THEN             /*SET LENGTH FLD=13   @Y30LB02*/
-*        ANS('PURGLL='××QUOTE(PLENGTH)××'X; /*SET LENGTH '××
+*        ANS('PURGLL='ï¿½ï¿½QUOTE(PLENGTH)ï¿½ï¿½'X; /*SET LENGTH 'ï¿½ï¿½
 *            'FIELD @Y30LB02*/')SKIP(1);
 *   ELSE                               /*SET LENGTH FLD=8    @Y30LB02*/
-*        ANS('AIRLL='××QUOTE(LENGTH)××'X; /*SET LENGTH '××
+*        ANS('AIRLL='ï¿½ï¿½QUOTE(LENGTH)ï¿½ï¿½'X; /*SET LENGTH 'ï¿½ï¿½
 *            'FIELD @Y30LB02*/')SKIP(1);
 *TEST2: IF ESW=1 THEN                  /*IS ESW ON?          @Y30LB02*/
 *        GO TO EXIT;                   /*YES, BRANCH         @Y30LB02*/
@@ -837,26 +837,26 @@ PURGHOST DC    XL5'0000000000'         ZERO HOSTID FIELD       @Y30LB02
 *   IF TYPE(1)='PURG' THEN             /*PURG REQUEST?       @Y30LB02*/
 *        DO;                           /*YES,PUT IN PURG     @Y30LB02*/
 *                                      /*OPCODE              @Y30LB02*/
-*             ANS('PURGOP='××QUOTE(POPCODE)××'X;'××
+*             ANS('PURGOP='ï¿½ï¿½QUOTE(POPCODE)ï¿½ï¿½'X;'ï¿½ï¿½
 *                  '/*PURG  OPCODE @Y30LB02*/') SKIP(1);
 *        END;                                              /*@Y30LB02*/
 *   ELSE
 *        IF TYPE(1)='APH' THEN         /*APH  REQUEST?       @Y30LB02*/
 *             DO;                      /*YES,PUT IN APH      @Y30LB02*/
 *                                      /*OPCODE              @Y30LB02*/
-*                  ANS('AIROP='××QUOTE(AOPCODE)××'X;'××
+*                  ANS('AIROP='ï¿½ï¿½QUOTE(AOPCODE)ï¿½ï¿½'X;'ï¿½ï¿½
 *                       '/*APH  OPCODE @Y30LB02*/') SKIP(1);
 *             END;                                         /*@Y30LB02*/
 *        ELSE
 *             IF TYPE(1)='INITL' THEN  /*INITL REQUEST?      @Y30LB02*/
 *                  DO;                 /*YES,PUT IN INITL    @Y30LB02*/
 *                                      /*OPCODE              @Y30LB02*/
-*                       ANS('AIROP='××QUOTE(IOPCODE)××'X;'××
+*                       ANS('AIROP='ï¿½ï¿½QUOTE(IOPCODE)ï¿½ï¿½'X;'ï¿½ï¿½
 *                            '/*INITL OPCODE @Y30LB02*/') SKIP(1);
 *                  END;                                    /*@Y30LB02*/
 *             ELSE
 *                  DO;                 /*PUT IN RDY OPCODE   @Y30LB02*/
-*                       ANS('AIROP='××QUOTE(ROPCODE)××'X;'××
+*                       ANS('AIROP='ï¿½ï¿½QUOTE(ROPCODE)ï¿½ï¿½'X;'ï¿½ï¿½
 *                            '/*RDY OPCODE @Y30LB02*/') SKIP(1);
 *                  END;                                    /*@Y30LB02*/
 *TYPECK: IF TYPE(1)='PURG' THEN
@@ -866,7 +866,7 @@ PURGHOST DC    XL5'0000000000'         ZERO HOSTID FIELD       @Y30LB02
 *             IF FLAGS^='' THEN        /*IS FLAGS NULL?      @Y30LB02*/
 *                  DO;                 /*NO,FILL IN FLAGS    @Y30LB02*/
 *                                      /*FIELD               @Y30LB02*/
-*                       ANS('AIRFLAG='××FLAGS××
+*                       ANS('AIRFLAG='ï¿½ï¿½FLAGSï¿½ï¿½
 *                            ';/*FILL IN FLAGS FIELD @Y30LB02*/')
 *                            SKIP(1);                      /*@Y30LB02*/
 *                  END;                                    /*@Y30LB02*/
@@ -877,7 +877,7 @@ PURGHOST DC    XL5'0000000000'         ZERO HOSTID FIELD       @Y30LB02
 *             IF FLAGS^='' THEN        /*IS FLAGS NULL?      @Y30LB02*/
 *                  DO;                 /*NO,FILL IN FLAGS    @Y30LB02*/
 *                                      /*FIELD               @Y30LB02*/
-*                       ANS('PURGFLG='××FLAGS××
+*                       ANS('PURGFLG='ï¿½ï¿½FLAGSï¿½ï¿½
 *                            ';/*FILL IN FLAGS FIELD @Y30LB02*/')
 *                            SKIP(1);                      /*@Y30LB02*/
 *                  END;                                    /*@Y30LB02*/
@@ -888,10 +888,10 @@ PURGHOST DC    XL5'0000000000'         ZERO HOSTID FIELD       @Y30LB02
 *   IF LSW=1 THEN                      /*LSW ON?             @Y30LB02*/
 *        GO TO LINK;                   /*YES, BRANCH         @Y30LB02*/
 */* OTHERWISE PUT HOSTID IN HOSTID FIELD & INVOKE SVC INST   @Y30LB02*/
-*   ANS ('PURGHOST='××HOSTID××'; /*FILL IN HOSTID FIELD @Y30LB02*/')
+*   ANS ('PURGHOST='ï¿½ï¿½HOSTIDï¿½ï¿½'; /*FILL IN HOSTID FIELD @Y30LB02*/')
 *        SKIP(1);                                          /*@Y30LB02*/
 *LINK: ANS('SVC  (126); /*ISSUE SVC INST.  @Y30LB02*/') SKIP(1);
-*      ANS ('RFY(PAIRR1)UNRSTD;/*UNRESTRICT'××
+*      ANS ('RFY(PAIRR1)UNRSTD;/*UNRESTRICT'ï¿½ï¿½
 *           ' R1 @Y30LB02*/')SKIP;
 *EXIT: RETURN CODE(RETCODE);                               /*@Y30LB02*/
 *   %END;                                                  /*@Y30LB02*/

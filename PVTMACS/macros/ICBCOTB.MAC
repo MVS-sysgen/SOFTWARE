@@ -127,7 +127,7 @@
 .*                                                             @Y30LB02
 .*     BITS 0-7                                                @Y30LB02
 .*     ____________________________                            @Y30LB02
-.*     × X ×X ×X × X× 0× 0 ×0 × 0×                             @Y30LB02
+.*     ï¿½ X ï¿½X ï¿½X ï¿½ Xï¿½ 0ï¿½ 0 ï¿½0 ï¿½ 0ï¿½                             @Y30LB02
 .*     ----------------------------                            @Y30LB02
 .*                                                             @Y30LB02
 .*                                                             @Y30LB02
@@ -161,7 +161,7 @@
 .*                                                             @Y30LB02
 .*    BITS 8-15                                                @Y30LB02
 .*     ____________________________                            @Y30LB02
-.*     × X ×X ×X × X× 0× 0 ×0 × 0×                             @Y30LB02
+.*     ï¿½ X ï¿½X ï¿½X ï¿½ Xï¿½ 0ï¿½ 0 ï¿½0 ï¿½ 0ï¿½                             @Y30LB02
 .*     ____________________________                            @Y30LB02
 .*                                                             @Y30LB02
 .*                                                             @Y30LB02
@@ -457,7 +457,7 @@ COTBECB  DC    XL4'00000000'           ECB FIELD               @Y30LB02
 */* END OF DECLARES AND INITIALIZATION                       @Y30LB02*/
 *   IF COTESTR1=0 THEN                 /*HAS R1 BEEN DCL'D?  @Y30LB02*/
 *             DO;                      /*NO,DECLARE IT       @Y30LB02*/
-*                  ANS('DCL COTBR1 PTR REG(1) ;'××         /*@Y30LB02*/
+*                  ANS('DCL COTBR1 PTR REG(1) ;'ï¿½ï¿½         /*@Y30LB02*/
 *                       '/*WILL CONTAIN BLOCK ADDRESS @Y30LB02*/')
 *                       SKIP(1);                           /*@Y30LB02*/
 *                  COTESTR1=1;         /*COTESTR1 SET TO 1   @Y30LB02*/
@@ -467,8 +467,8 @@ COTBECB  DC    XL4'00000000'           ECB FIELD               @Y30LB02
 *   IF MF(2)='' THEN                   /*WAS A NAME GIVEN?   @Y30LB02*/
 *        DO;                           /*NO,TURN ESW ON AND  @Y30LB02*/
 *             ESW=1;                   /*PRINT ERROR MSG     @Y30LB02*/
-*             ANS MSG('  ICB602I - A NAME FOR THE '××
-*                  'REQUEST BLOCK MUST BE SPECIFIED '××
+*             ANS MSG('  ICB602I - A NAME FOR THE 'ï¿½ï¿½
+*                  'REQUEST BLOCK MUST BE SPECIFIED 'ï¿½ï¿½
 *                  'IN MF(2)')SKIP(5);                     /*@Y30LB02*/
 *             RETCODE=12;              /*SET RETURN CODE     @Y30LB02*/
 *        END;                          /*                    @Y30LB02*/
@@ -485,8 +485,8 @@ COTBECB  DC    XL4'00000000'           ECB FIELD               @Y30LB02
 *        IF CTR > 0 THEN      /*COUNTER GT ZERO?             @Y30LB02*/
 *          DO;                /*YES,PRINT WARNING MSG        @Y30LB02*/
 *             RETCODE = 4;    /*SET RETURN CODE TO 4         @Y30LB02*/
-*             ANS MSG('  ICB604I - WARNING-ONLY'××
-*                 ' THE MF PARAMETER IS VALID FOR THE'××
+*             ANS MSG('  ICB604I - WARNING-ONLY'ï¿½ï¿½
+*                 ' THE MF PARAMETER IS VALID FOR THE'ï¿½ï¿½
 *                 ' LIST FORM  ')SKIP;                     /*@Y30LB02*/
 *          END;               /*                             @Y30LB02*/
 *   IF MF(3) ^= '' THEN                /*PLS ATTR SPCD?      @Y30LB02*/
@@ -496,47 +496,47 @@ COTBECB  DC    XL4'00000000'           ECB FIELD               @Y30LB02
 */* PRINT OUT DECLARES FOR LIST FORM                         @Y30LB02*/
 */*********************************************************  @Y30LB02*/
 */*                                                          @Y30LB02*/
-*   ANS('/*******************************************'××
+*   ANS('/*******************************************'ï¿½ï¿½
 *       '************** @Y30LB02*/')SKIP;
-*   ANS('/*    MACMEAN  MSSC COPY TABLES MACRO       '××
+*   ANS('/*    MACMEAN  MSSC COPY TABLES MACRO       'ï¿½ï¿½
 *       '               @Y30LB02*/')SKIP;
-*   ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '××
+*   ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    'ï¿½ï¿½
 *       '               @Y30LB02*/')SKIP;
-*   ANS('/*THIS IS THE INITIALIZED LIST FORM         '××
+*   ANS('/*THIS IS THE INITIALIZED LIST FORM         'ï¿½ï¿½
 *       '               @Y30LB02*/')SKIP;
-*   ANS('/*******************************************'××
+*   ANS('/*******************************************'ï¿½ï¿½
 *       '************** @Y30LB02*/')SKIP;
-*   ANS('DCL 1  '××MF(2)××'  STATIC LOCAL,') SKIP(1);      /*@Y30LB02*/
-*   ANS('      2  COTBLL FIXED(31) INIT('××QUOTE('18')××
+*   ANS('DCL 1  'ï¿½ï¿½MF(2)ï¿½ï¿½'  STATIC LOCAL,') SKIP(1);      /*@Y30LB02*/
+*   ANS('      2  COTBLL FIXED(31) INIT('ï¿½ï¿½QUOTE('18')ï¿½ï¿½
 *        'X), /*LENGTH OF REQUEST BLOCK @Y30LB02*/') SKIP(1);
-*   ANS('      2  COTBOP FIXED(8) INIT('××QUOTE(COPCODE)××
+*   ANS('      2  COTBOP FIXED(8) INIT('ï¿½ï¿½QUOTE(COPCODE)ï¿½ï¿½
 *        'X), /*OPCODE @Y30LB02*/') SKIP(1);
-*   ANS('      2  * CHAR(1) INIT('××QUOTE('00')××
+*   ANS('      2  * CHAR(1) INIT('ï¿½ï¿½QUOTE('00')ï¿½ï¿½
 *        'X), /*RESERVED AREA @Y30LB02*/') SKIP(1);
-*   ANS('      2  COTBFLG BIT(16) INIT('××
-*        QUOTE('0000000000000000')××'B), /*FLAGS FIELD @Y30LB02*/')
+*   ANS('      2  COTBFLG BIT(16) INIT('ï¿½ï¿½
+*        QUOTE('0000000000000000')ï¿½ï¿½'B), /*FLAGS FIELD @Y30LB02*/')
 *        SKIP(1);                                          /*@Y30LB02*/
-*   ANS('        3  COTBTID BIT(4),/*TABLE IDENTIFI'××
-*        'CATION, MUST BE SET TO 8 FOR TABLES OTHER '××
+*   ANS('        3  COTBTID BIT(4),/*TABLE IDENTIFI'ï¿½ï¿½
+*        'CATION, MUST BE SET TO 8 FOR TABLES OTHER 'ï¿½ï¿½
 *        'THAN TRACE  @Y30LB02*/') SKIP(1);
-*   ANS('        3  *       BIT(4),/*RESERVED BITS'××
+*   ANS('        3  *       BIT(4),/*RESERVED BITS'ï¿½ï¿½
 *        ' AND MUST BE ZERO @Y30LB02*/') SKIP(1);
-*   ANS('        3  COTBTRX BIT(1),/*COPY TRACEX'××
+*   ANS('        3  COTBTRX BIT(1),/*COPY TRACEX'ï¿½ï¿½
 *        ' ATTRIBUTE @Y30LB02*/') SKIP(1);
-*   ANS('        3  COTBTRY BIT(1),/*COPY TRACEY'××
+*   ANS('        3  COTBTRY BIT(1),/*COPY TRACEY'ï¿½ï¿½
 *        ' ATTRIBUTE @Y30LB02*/') SKIP(1);
-*   ANS('        3  COTBTRA BIT(1),/*COPY TRACE'××
+*   ANS('        3  COTBTRA BIT(1),/*COPY TRACE'ï¿½ï¿½
 *        ' ACTIVE ATTRIBUTE @Y30LB02*/') SKIP(1);
-*   ANS('        3  COTBTRI BIT(1),/*COPY TRACE'××
+*   ANS('        3  COTBTRI BIT(1),/*COPY TRACE'ï¿½ï¿½
 *        ' INACTIVE ATTRIBUTE @Y30LB02*/') SKIP(1);
-*   ANS('        3  *       BIT(4),/*RESERVED BITS '××
+*   ANS('        3  *       BIT(4),/*RESERVED BITS 'ï¿½ï¿½
 *        'AND MUST BE ZERO @Y30LB02*/') SKIP(1);
-*   ANS('      2  COTBEXTS CHAR(4) INIT('××QUOTE('00000000')
-*        ××'X), /*BEG AND END EXTENTS @Y30LB02*/') SKIP(1);
-*   ANS('      2  COTBVOL CHAR(6) INIT('××
-*        QUOTE('000000000000')××'X), /*VOLID FIELD @Y30LB02*/')
+*   ANS('      2  COTBEXTS CHAR(4) INIT('ï¿½ï¿½QUOTE('00000000')
+*        ï¿½ï¿½'X), /*BEG AND END EXTENTS @Y30LB02*/') SKIP(1);
+*   ANS('      2  COTBVOL CHAR(6) INIT('ï¿½ï¿½
+*        QUOTE('000000000000')ï¿½ï¿½'X), /*VOLID FIELD @Y30LB02*/')
 *        SKIP(1);
-*   ANS('      2  COTBASID CHAR(2) INIT('××QUOTE('0000')××
+*   ANS('      2  COTBASID CHAR(2) INIT('ï¿½ï¿½QUOTE('0000')ï¿½ï¿½
 *        'X), /*ASID FIELD @Y30LB02*/') SKIP(1);
 *   ANS('      2  COTBECB FIXED(31) INIT(0);/*NAME OF ECB @Y30LB02*/')
 *        SKIP(1);                                          /*@Y30LB02*/
@@ -548,45 +548,45 @@ COTBECB  DC    XL4'00000000'           ECB FIELD               @Y30LB02
 */*                                                          @Y30LB02*/
 *ATTRLST:
 */*                                                          @Y30LB02*/
-*   ANS('/*******************************************'××
+*   ANS('/*******************************************'ï¿½ï¿½
 *       '************* @Y30LB02*/')SKIP;
-*   ANS('/*     MACMEAN  MSSC COPY TABLES MACRO      '××
+*   ANS('/*     MACMEAN  MSSC COPY TABLES MACRO      'ï¿½ï¿½
 *       '              @Y30LB02*/')SKIP;
-*   ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '××
+*   ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    'ï¿½ï¿½
 *       '              @Y30LB02*/')SKIP;
-*   ANS('/*THIS IS THE UNINITIALIZED LIST FORM       '××
+*   ANS('/*THIS IS THE UNINITIALIZED LIST FORM       'ï¿½ï¿½
 *       '              @Y30LB02*/')SKIP;
-*   ANS('/*******************************************'××
+*   ANS('/*******************************************'ï¿½ï¿½
 *       '************* @Y30LB02*/')SKIP;
-*   ANS('DCL 1  '××MF(2)××' '××MF(3)××','××
+*   ANS('DCL 1  'ï¿½ï¿½MF(2)ï¿½ï¿½' 'ï¿½ï¿½MF(3)ï¿½ï¿½','ï¿½ï¿½
 *   '/*COPY TABLES REQUEST BLOCK*/ ') SKIP(1);
-*   ANS('      2  COTBLL FIXED(31), /*LENGTH'××
+*   ANS('      2  COTBLL FIXED(31), /*LENGTH'ï¿½ï¿½
 *        ' = 18 BYTES HEX @Y30LB02*/')SKIP(1);
-*   ANS('      2  COTBOP FIXED(8) , /*OPCODE='××
+*   ANS('      2  COTBOP FIXED(8) , /*OPCODE='ï¿½ï¿½
 *        ' 16 HEX @Y30LB02*/') SKIP(1);
 *   ANS('      2  * CHAR(1), /*RESERVED AREA @Y30LB02*/') SKIP(1);
-*   ANS('      2  COTBFLG BIT(16),'××
+*   ANS('      2  COTBFLG BIT(16),'ï¿½ï¿½
 *        ' /*FLAGS FIELD @Y30LB02*/') SKIP(1);
-*   ANS('        3  COTBTID BIT(4),/*TABLE IDENTIFI'××
-*        'CATION, MUST BE SET TO 8 FOR TABLES OTHER '××
+*   ANS('        3  COTBTID BIT(4),/*TABLE IDENTIFI'ï¿½ï¿½
+*        'CATION, MUST BE SET TO 8 FOR TABLES OTHER 'ï¿½ï¿½
 *        'THAN TRACE  @Y30LB02*/') SKIP(1);
-*   ANS('        3  *       BIT(4),/*RESERVED BITS'××
+*   ANS('        3  *       BIT(4),/*RESERVED BITS'ï¿½ï¿½
 *        ' AND MUST BE ZERO @Y30LB02*/') SKIP(1);
-*   ANS('        3  COTBTRX BIT(1),/*COPY TRACEX'××
+*   ANS('        3  COTBTRX BIT(1),/*COPY TRACEX'ï¿½ï¿½
 *        ' ATTRIBUTE @Y30LB02*/') SKIP(1);
-*   ANS('        3  COTBTRY BIT(1),/*COPY TRACEY'××
+*   ANS('        3  COTBTRY BIT(1),/*COPY TRACEY'ï¿½ï¿½
 *        ' ATTRIBUTE @Y30LB02*/') SKIP(1);
-*   ANS('        3  COTBTRA BIT(1),/*COPY TRACE'××
+*   ANS('        3  COTBTRA BIT(1),/*COPY TRACE'ï¿½ï¿½
 *        ' ACTIVE ATTRIBUTE @Y30LB02*/') SKIP(1);
-*   ANS('        3  COTBTRI BIT(1),/*COPY TRACE'××
+*   ANS('        3  COTBTRI BIT(1),/*COPY TRACE'ï¿½ï¿½
 *        ' INACTIVE ATTRIBUTE @Y30LB02*/') SKIP(1);
-*   ANS('        3  *       BIT(4),/*RESERVED BITS '××
+*   ANS('        3  *       BIT(4),/*RESERVED BITS 'ï¿½ï¿½
 *        'AND MUST BE ZERO @Y30LB02*/') SKIP(1);
-*   ANS('      2  COTBEXTS CHAR(4),'××
+*   ANS('      2  COTBEXTS CHAR(4),'ï¿½ï¿½
 *        ' /*BEG AND END EXTENTS @Y30LB02*/') SKIP(1);
-*   ANS('      2  COTBVOL CHAR(6),'××
+*   ANS('      2  COTBVOL CHAR(6),'ï¿½ï¿½
 *        ' /*VOLID FIELD @Y30LB02*/') SKIP(1);
-*   ANS('      2  COTBASID CHAR(2), /*ASID AREA '××
+*   ANS('      2  COTBASID CHAR(2), /*ASID AREA 'ï¿½ï¿½
 *        'USED BY THE SVC @Y30LB02*/') SKIP(1);
 *   ANS('      2  COTBECB FIXED(31);/*NAME OF ECB @Y30LB02*/')
 *        SKIP(1);                                          /*@Y30LB02*/
@@ -603,21 +603,21 @@ COTBECB  DC    XL4'00000000'           ECB FIELD               @Y30LB02
 *                                      /*BEEN INVOKED ALRDY  @Y30LB02*/
 *        DO;                           /*SET UP REG1 TO PNT  @Y30LB02*/
 *                                      /*TO REQUEST BLOCK    @Y30LB02*/
-*           ANS('/***********************************'××
+*           ANS('/***********************************'ï¿½ï¿½
 *               '********************* @Y30LB02*/')SKIP;
-*           ANS('/*     MACMEAN  MSSC COPY TABLES    '××
+*           ANS('/*     MACMEAN  MSSC COPY TABLES    'ï¿½ï¿½
 *               ' MACRO                @Y30LB02*/')SKIP;
-*           ANS('/*     VS1-4/VS2-3 VERSION--06/09/74'××
+*           ANS('/*     VS1-4/VS2-3 VERSION--06/09/74'ï¿½ï¿½
 *               'LEVEL 00              @Y30LB02*/')SKIP;
-*           ANS('/*     THIS IS THE OUTPUT FOR A     '××
+*           ANS('/*     THIS IS THE OUTPUT FOR A     'ï¿½ï¿½
 *               'SECONDARY             @Y30LB02*/')SKIP;
-*           ANS('/*     INVOCATION OF THE STANDARD   '××
+*           ANS('/*     INVOCATION OF THE STANDARD   'ï¿½ï¿½
 *               'FORM MACRO            @Y30LB02*/')SKIP;
-*           ANS('/***********************************'××
+*           ANS('/***********************************'ï¿½ï¿½
 *               '********************* @Y30LB02*/')SKIP;
-*             ANS('RFY(COTBR1)RSTD;'××                     /*@Y30LB02*/
+*             ANS('RFY(COTBR1)RSTD;'ï¿½ï¿½                     /*@Y30LB02*/
 *                '/*RESTRICT REGISTER 1 @Y30LB02*/')SKIP(1);
-*             ANS('COTBR1=ADDR(COTBLL);'××                 /*@Y30LB02*/
+*             ANS('COTBR1=ADDR(COTBLL);'ï¿½ï¿½                 /*@Y30LB02*/
 *                '/*COTBR1 ADDRESS OF REQ BLOCK @Y30LB02*/')SKIP(1);
 *             GO TO TEST1;                                 /*@Y30LB02*/
 *        END;                                              /*@Y30LB02*/
@@ -626,46 +626,46 @@ COTBECB  DC    XL4'00000000'           ECB FIELD               @Y30LB02
 */* OTHERWISE, PRINT OUT DECLARES FOR STD FORM               @Y30LB02*/
 */*********************************************************  @Y30LB02*/
 */*                                                          @Y30LB02*/
-*   ANS('/*******************************************'××
+*   ANS('/*******************************************'ï¿½ï¿½
 *       '************* @Y30LB02*/')SKIP;
-*   ANS('/*     MACMEAN  MSSC COPY TABLES MACRO      '××
+*   ANS('/*     MACMEAN  MSSC COPY TABLES MACRO      'ï¿½ï¿½
 *       '              @Y30LB02*/')SKIP;
-*   ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    '××
+*   ANS('/*VS1-4/VS2-3 VERSION--06/09/74 LEVEL 00    'ï¿½ï¿½
 *       '              @Y30LB02*/')SKIP;
-*   ANS('/*INVOCATION OF THE STANDARD FORM MACRO     '××
+*   ANS('/*INVOCATION OF THE STANDARD FORM MACRO     'ï¿½ï¿½
 *       '              @Y30LB02*/')SKIP;
-*   ANS('/*******************************************'××
+*   ANS('/*******************************************'ï¿½ï¿½
 *       '************* @Y30LB02*/')SKIP;
 *   ANS ('DCL  1 COTBLIST  STATIC LOCAL,') SKIP(1);        /*@Y30LB02*/
-*   ANS('      2  COTBLL FIXED(31) INIT('××QUOTE('18')××
+*   ANS('      2  COTBLL FIXED(31) INIT('ï¿½ï¿½QUOTE('18')ï¿½ï¿½
 *        'X), /*LENGTH OF REQUEST BLOCK @Y30LB02*/') SKIP(1);
-*   ANS('      2  COTBOP FIXED(8) INIT('××QUOTE(COPCODE)××
+*   ANS('      2  COTBOP FIXED(8) INIT('ï¿½ï¿½QUOTE(COPCODE)ï¿½ï¿½
 *        'X), /*OPCODE @Y30LB02*/') SKIP(1);
-*   ANS('      2  * CHAR(1) INIT('××QUOTE('00')××
+*   ANS('      2  * CHAR(1) INIT('ï¿½ï¿½QUOTE('00')ï¿½ï¿½
 *        'X), /*RESERVED AREA @Y30LB02*/') SKIP(1);
-*   ANS('      2  COTBFLG BIT(16) INIT('××
-*        QUOTE('0000000000000000')××'B), /*FLAGS FIELD @Y30LB02*/')
+*   ANS('      2  COTBFLG BIT(16) INIT('ï¿½ï¿½
+*        QUOTE('0000000000000000')ï¿½ï¿½'B), /*FLAGS FIELD @Y30LB02*/')
 *        SKIP(1);
-*   ANS('        3  COTBTID BIT(4),/*TABLE IDENTIFI'××
+*   ANS('        3  COTBTID BIT(4),/*TABLE IDENTIFI'ï¿½ï¿½
 *        'CATION @Y30LB02*/') SKIP(1);
-*   ANS('        3  *       BIT(4),/*RESERVED BITS'××
+*   ANS('        3  *       BIT(4),/*RESERVED BITS'ï¿½ï¿½
 *        ' AND MUST BE ZERO @Y30LB02*/') SKIP(1);
-*   ANS('        3  COTBTRX BIT(1),/*COPY TRACEX'××
+*   ANS('        3  COTBTRX BIT(1),/*COPY TRACEX'ï¿½ï¿½
 *        ' ATTRIBUTE @Y30LB02*/') SKIP(1);
-*   ANS('        3  COTBTRY BIT(1),/*COPY TRACEY'××
+*   ANS('        3  COTBTRY BIT(1),/*COPY TRACEY'ï¿½ï¿½
 *        ' ATTRIBUTE @Y30LB02*/') SKIP(1);
-*   ANS('        3  COTBTRA BIT(1),/*COPY TRACE'××
+*   ANS('        3  COTBTRA BIT(1),/*COPY TRACE'ï¿½ï¿½
 *        ' ACTIVE ATTRIBUTE @Y30LB02*/') SKIP(1);
-*   ANS('        3  COTBTRI BIT(1),/*COPY TRACE'××
+*   ANS('        3  COTBTRI BIT(1),/*COPY TRACE'ï¿½ï¿½
 *        ' INACTIVE ATTRIBUTE @Y30LB02*/') SKIP(1);
-*   ANS('        3  *       BIT(4),/*RESERVED BITS '××
+*   ANS('        3  *       BIT(4),/*RESERVED BITS 'ï¿½ï¿½
 *        'AND MUST BE ZERO @Y30LB02*/') SKIP(1);
-*   ANS('      2  COTBEXTS CHAR(4) INIT('××QUOTE('00000000')
-*        ××'X), /*BEG AND END EXTENTS @Y30LB02*/') SKIP(1);
-*   ANS('      2  COTBVOL CHAR(6) INIT('××
-*        QUOTE('000000000000')××'X), /*VOLID FIELD @Y30LB02*/')
+*   ANS('      2  COTBEXTS CHAR(4) INIT('ï¿½ï¿½QUOTE('00000000')
+*        ï¿½ï¿½'X), /*BEG AND END EXTENTS @Y30LB02*/') SKIP(1);
+*   ANS('      2  COTBVOL CHAR(6) INIT('ï¿½ï¿½
+*        QUOTE('000000000000')ï¿½ï¿½'X), /*VOLID FIELD @Y30LB02*/')
 *        SKIP(1);
-*   ANS('      2  COTBASID CHAR(2) INIT('××QUOTE('0000')××
+*   ANS('      2  COTBASID CHAR(2) INIT('ï¿½ï¿½QUOTE('0000')ï¿½ï¿½
 *        'X), /*ASID FIELD @Y30LB02*/') SKIP(1);
 *   ANS('      2  COTBECB FIXED(31) INIT(0);/*NAME OF ECB @Y30LB02*/')
 *        SKIP(1);                                          /*@Y30LB02*/
@@ -689,7 +689,7 @@ COTBECB  DC    XL4'00000000'           ECB FIELD               @Y30LB02
 *             GO TO EXFORM;            /*YES, BRANCH         @Y30LB02*/
 *   ESW=1;                             /*TURN EXIT-SWTCH ON  @Y30LB02*/
 *   DO;                                /*PRINT THIS ERR MSG  @Y30LB02*/
-*        ANS MSG('  ICB615I - INVALID MF PARAMETER'××
+*        ANS MSG('  ICB615I - INVALID MF PARAMETER'ï¿½ï¿½
 *             ' SPECIFIED, MUST BE L, E, OR NULL') SKIP(5);/*@Y30LB02*/
 *   END;                                /*                   @Y30LB02*/
 *   RETCODE=12;                        /*SET RETURN CODE     @Y30LB02*/
@@ -697,41 +697,41 @@ COTBECB  DC    XL4'00000000'           ECB FIELD               @Y30LB02
 *EXFORM: IF MF(2)='' THEN              /*ADDR OF LIST GIVEN  @Y30LB02*/
 *             DO;                      /*NO,PRINT ERROR MSG  @Y30LB02*/
 *                  ESW=1;              /*TURN EXIT-SWTCH ON  @Y30LB02*/
-*                  ANS MSG('  ICB612I - MF(2) MUST '××
-*                  'CONTAIN REQ BLK NAME IF '××
+*                  ANS MSG('  ICB612I - MF(2) MUST 'ï¿½ï¿½
+*                  'CONTAIN REQ BLK NAME IF 'ï¿½ï¿½
 *                  'EXEC MACRO FORM REQUESTED ') SKIP(5);  /*@Y30LB02*/
 *                  RETCODE=12;         /*SET RETURN CODE     @Y30LB02*/
 *                  GO TO TEST1;        /*BRANCH              @Y30LB02*/
 *             END;                     /*                    @Y30LB02*/
-*   ANS('/*******************************************'××
+*   ANS('/*******************************************'ï¿½ï¿½
 *       '************* @Y30LB02*/')SKIP;
-*   ANS('/*     MACMEAN  MSSC COPY TABLES MACRO      '××
+*   ANS('/*     MACMEAN  MSSC COPY TABLES MACRO      'ï¿½ï¿½
 *       '              @Y30LB02*/')SKIP;
-*   ANS('/*VS1-4/VS2-3 VERSION-- 06/09/74 LEVEL 00   '××
+*   ANS('/*VS1-4/VS2-3 VERSION-- 06/09/74 LEVEL 00   'ï¿½ï¿½
 *       '              @Y30LB02*/')SKIP;
-*   ANS('/*THIS IS THE OUTPUT FOR THE EXECUTE FORM.  '××
+*   ANS('/*THIS IS THE OUTPUT FOR THE EXECUTE FORM.  'ï¿½ï¿½
 *       '              @Y30LB02*/')SKIP;
-*   ANS('/*THE LIST FORM OF THIS MACRO SHOULD BE     '××
+*   ANS('/*THE LIST FORM OF THIS MACRO SHOULD BE     'ï¿½ï¿½
 *       '              @Y30LB02*/')SKIP;
-*   ANS('/*INVOKED FIRST IN ORDER TO SET UP NECESSARY'××
+*   ANS('/*INVOKED FIRST IN ORDER TO SET UP NECESSARY'ï¿½ï¿½
 *       '              @Y30LB02*/')SKIP;
-*   ANS('/*DECLARES.  IF THE COMPLETE ARGUMENT IS    '××
+*   ANS('/*DECLARES.  IF THE COMPLETE ARGUMENT IS    'ï¿½ï¿½
 *       '              @Y30LB02*/')SKIP;
-*   ANS('/*SPECIFIED THE REQ BLOCK WILL BE ZEROED.   '××
+*   ANS('/*SPECIFIED THE REQ BLOCK WILL BE ZEROED.   'ï¿½ï¿½
 *       '              @Y30LB02*/')SKIP;
-*   ANS('/*******************************************'××
+*   ANS('/*******************************************'ï¿½ï¿½
 *       '************* @Y30LB02*/')SKIP;
 *   ANS('RFY(COTBR1)RSTD;/*RESTRICT REGISTER 1 @Y30LB02*/')SKIP;
-*   ANS('COTBR1=ADDR('××MF(2)××
+*   ANS('COTBR1=ADDR('ï¿½ï¿½MF(2)ï¿½ï¿½
 *        '); /*SET COTBR1 TO ADDR OF REQ BLK @Y30LB02*/') SKIP(1);
 *  IF MF(3) = 'COMPLETE' THEN    /*REQUEST TO ZERO?          @Y30LB02*/
 *   DO;                          /*YES,ZERO BLK              @Y30LB02*/
-*   ANS(' '××MF(2)××'='××MF(2)××'&&'××MF(2)××';'××         /*@Y30LB02*/
+*   ANS(' 'ï¿½ï¿½MF(2)ï¿½ï¿½'='ï¿½ï¿½MF(2)ï¿½ï¿½'&&'ï¿½ï¿½MF(2)ï¿½ï¿½';'ï¿½ï¿½         /*@Y30LB02*/
 *       '/*ZERO REQUEST BLOCK @Y30LB02*/')SKIP;
 *   END;                        /*                           @Y30LB02*/
-*   ANS('COTBLL='××QUOTE(LENGTH)××'X;'××                   /*@Y30LB02*/
+*   ANS('COTBLL='ï¿½ï¿½QUOTE(LENGTH)ï¿½ï¿½'X;'ï¿½ï¿½                   /*@Y30LB02*/
 *       '/*SET LENGTH FIELD @Y30LB02*/')SKIP(1);
-*   ANS('COTBOP='××QUOTE(COPCODE)××'X; /*OPCODE @Y30LB02*/') SKIP(1);
+*   ANS('COTBOP='ï¿½ï¿½QUOTE(COPCODE)ï¿½ï¿½'X; /*OPCODE @Y30LB02*/') SKIP(1);
 *TEST1: BSW=0;                                             /*@Y30LB02*/
 *   IF ESW=1 THEN                      /*EXIT-SWITCH ON?     @Y30LB02*/
 *        GO TO EXIT;                   /*YES, BRANCH TO END  @Y30LB02*/
@@ -741,8 +741,8 @@ COTBECB  DC    XL4'00000000'           ECB FIELD               @Y30LB02
 *                  DO;                 /*IF STD FORM,TURN    @Y30LB02*/
 *                       ESW=1;         /*EXIT-SWITCH ON AND  @Y30LB02*/
 *                                      /*PRINT ERROR MSG     @Y30LB02*/
-*                       ANS MSG('  ICB607I - FLAGS'××
-*                        ' MUST BE SPECIFIED FOR STANDARD'××
+*                       ANS MSG('  ICB607I - FLAGS'ï¿½ï¿½
+*                        ' MUST BE SPECIFIED FOR STANDARD'ï¿½ï¿½
 *                        ' FORM MACRO') SKIP(5);           /*@Y30LB02*/
 *                       RETCODE=12;    /*SET RETURN CODE     @Y30LB02*/
 *                  END;                /*                    @Y30LB02*/
@@ -753,7 +753,7 @@ COTBECB  DC    XL4'00000000'           ECB FIELD               @Y30LB02
 *        GO TO EXIT;                   /*YES, GO TO END      @Y30LB02*/
 *   IF BSW=1 THEN                      /*BRCH-SWITCH ON?     @Y30LB02*/
 *        GO TO VOLCHECK;               /*YES,GO CK FOR ECB   @Y30LB02*/
-*   ANS('COTBFLG='××FLAGS××';/*FILL IN FLAGS FIELD @Y30LB02*/')
+*   ANS('COTBFLG='ï¿½ï¿½FLAGSï¿½ï¿½';/*FILL IN FLAGS FIELD @Y30LB02*/')
 *        SKIP(1);                                          /*@Y30LB02*/
 *VOLCHECK:  BSW=0;                                         /*@Y30LB02*/
 *   IF ESW=1 THEN                      /*EXIT-SWITCH ON?     @Y30LB02*/
@@ -764,8 +764,8 @@ COTBECB  DC    XL4'00000000'           ECB FIELD               @Y30LB02
 *                  DO;                 /*IF STD FORM,TURN    @Y30LB02*/
 *                       ESW=1;         /*EXIT-SWITCH ON AND  @Y30LB02*/
 *                                      /*PRINT ERROR MSG     @Y30LB02*/
-*                       ANS MSG('  ICB610I - VOLID'××
-*                        ' MUST BE SPECIFIED FOR STANDARD'××
+*                       ANS MSG('  ICB610I - VOLID'ï¿½ï¿½
+*                        ' MUST BE SPECIFIED FOR STANDARD'ï¿½ï¿½
 *                        ' FORM MACRO') SKIP(5);           /*@Y30LB02*/
 *                       RETCODE=12;    /*SET RETURN CODE     @Y30LB02*/
 *                  END;                /*                    @Y30LB02*/
@@ -776,7 +776,7 @@ COTBECB  DC    XL4'00000000'           ECB FIELD               @Y30LB02
 *        GO TO EXIT;                   /*YES, GO TO END      @Y30LB02*/
 *   IF BSW=1 THEN                      /*BRCH-SWITCH ON?     @Y30LB02*/
 *        GO TO ECBCHECK;               /*YES,GO CK FOR ECB   @Y30LB02*/
-*   ANS('COTBVOL='××VOLID××';/*FILL IN VOLID FIELD @Y30LB02*/')
+*   ANS('COTBVOL='ï¿½ï¿½VOLIDï¿½ï¿½';/*FILL IN VOLID FIELD @Y30LB02*/')
 *        SKIP(1);
 *ECBCHECK:  BSW=0;                     /*RESET BRCH-SWITCH   @Y30LB02*/
 *   IF ECB='' THEN                     /*ECB   SPECIFIED?    @Y30LB02*/
@@ -785,8 +785,8 @@ COTBECB  DC    XL4'00000000'           ECB FIELD               @Y30LB02
 *                  DO;                 /*IF STD FORM,TURN    @Y30LB02*/
 *                       ESW=1;         /*EXIT-SWITCH ON AND  @Y30LB02*/
 *                                      /*PRINT ERROR MSG     @Y30LB02*/
-*                       ANS MSG('  ICB605I - ECB'××
-*                        ' MUST BE SPECIFIED FOR STANDARD'××
+*                       ANS MSG('  ICB605I - ECB'ï¿½ï¿½
+*                        ' MUST BE SPECIFIED FOR STANDARD'ï¿½ï¿½
 *                        ' FORM MACRO') SKIP(5);           /*@Y30LB02*/
 *                       RETCODE=12;    /*SET RETURN CODE     @Y30LB02*/
 *                  END;                                    /*@Y30LB02*/
@@ -797,7 +797,7 @@ COTBECB  DC    XL4'00000000'           ECB FIELD               @Y30LB02
 *        GO TO EXIT;                   /*YES, GO TO END      @Y30LB02*/
 *   IF BSW=1 THEN                      /*BRCH-SWITCH ON?     @Y30LB02*/
 *        GO TO EXTSCK;                 /*YES,GO CK FOR EXTS  @Y30LB02*/
-*   ANS('COTBECB=ADDR'××ECB××';/*FILL IN ECB FIELD @Y30LB02*/')
+*   ANS('COTBECB=ADDR'ï¿½ï¿½ECBï¿½ï¿½';/*FILL IN ECB FIELD @Y30LB02*/')
 *        SKIP(1);                                          /*@Y30LB02*/
 *EXTSCK:  BSW=0;                       /*RESET BRCH-SWITCH   @Y30LB02*/
 *   IF EXTS='' THEN                    /*EXTS  SPECIFIED?    @Y30LB02*/
@@ -806,8 +806,8 @@ COTBECB  DC    XL4'00000000'           ECB FIELD               @Y30LB02
 *                  DO;                 /*IF STD FORM,TURN    @Y30LB02*/
 *                       ESW=1;         /*EXIT-SWITCH ON AND  @Y30LB02*/
 *                                      /*PRINT ERROR MSG     @Y30LB02*/
-*                       ANS MSG('  ICB606I - EXTS'××
-*                        ' MUST BE SPECIFIED FOR STANDARD'××
+*                       ANS MSG('  ICB606I - EXTS'ï¿½ï¿½
+*                        ' MUST BE SPECIFIED FOR STANDARD'ï¿½ï¿½
 *                        ' FORM MACRO') SKIP(5);           /*@Y30LB02*/
 *                       RETCODE=12;    /*SET RETURN CODE     @Y30LB02*/
 *                  END;                /*                    @Y30LB02*/
@@ -818,7 +818,7 @@ COTBECB  DC    XL4'00000000'           ECB FIELD               @Y30LB02
 *        GO TO EXIT;                   /*YES, GO TO END      @Y30LB02*/
 *   IF BSW=1 THEN                      /*BRCH-SWITCH ON?     @Y30LB02*/
 *        GO TO LINK;                   /*YES,BR TO SVC INST  @Y30LB02*/
-*   ANS('COTBEXTS='××EXTS××';/*FILL IN EXTS FIELD @Y30LB02*/') SKIP(1);
+*   ANS('COTBEXTS='ï¿½ï¿½EXTSï¿½ï¿½';/*FILL IN EXTS FIELD @Y30LB02*/') SKIP(1);
 *LINK: ANS(' SVC (126); /*ISSUE SVC INSTRUCTION @Y30LB02*/')
 *        SKIP(1);
 *      ANS('RFY  COTBR1 UNRSTD;/*UNRESTRCT REG 1 @Y30LB02*/')SKIP;
