@@ -42,9 +42,6 @@
 +
 + Option ===>_ZCMD                                                     +
 +                                                     
-% R {RAKF       + RAKF Administrator Panels          / /
-% G {Games      + TSO Games                          / /
-% C {Calendar   + A calendar for ISPF                / /
 % F {DFSPCE     + DASD Freespace                     / /
 % A {DALCDS     + ISRDDN Like TSO Allocations listing / /
 % D {DUCBD      + Display UCB information            / / 
