@@ -1,3 +1,3 @@
 This package was generated with package_release.py
-Package generated on: 07/29/22 02:49:54
-Command arguments: ['/MVSCE/MVP/extras/package_release.py', '--xmi-files', 'FTPD.xmi', '--task-files', '#001JCL.jcl', '--mvsce', '/MVSCE', '--name', './FTPD']
+Package generated on: 02/29/24 16:14:13
+Command arguments: ['../../MVP/extras/package_release.py', '-x', 'FTPD.xmi', '-t', '#001JCL.jcl', '--mvsce', '../../MVSCE']

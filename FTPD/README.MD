@@ -14,4 +14,5 @@ you can edit the config file `SYS1.PARMLIB(FTPDPM00)`.
 # How to Make Release
 
 1) Download a recently release of MVS/CE (or build your own)
-2) Run this script `python3 make_release.py -x FTPD.xmi -t \#001JCL.jcl --mvsce path/to/MVSCE`
+2) Download the tool `package_release.py` in the MVP extras folder
+3) Run the package release script: `python3 package_release.py -x FTPD.xmi -t \#001JCL.jcl --mvsce path/to/MVSCE`
