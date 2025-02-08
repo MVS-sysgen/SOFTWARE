@@ -314,8 +314,8 @@ with open("header.jcl",'r') as h:
 xmi_upload = '''//COPY     EXEC PGM=IEBGENER
 //SYSUT2   DD   DSN=MVP.STAGING({}),DISP=SHR
 //SYSPRINT DD   SYSOUT=*
-//SYSIN    DD   DUMMY
-//SYSUT1   DD   *
+//SYSIN    DD DUMMY
+//SYSUT1   DD   DATA,DLM='@?'
 '''
 
 footer = '''//XMITLLIB EXEC PGM=XMIT370
@@ -343,14 +343,15 @@ my_file.unlink(missing_ok=True)
 # open("punchcards/pch00d.txt", 'a').close()
 
 Path("temp").mkdir(parents=True, exist_ok=True)
+xtemp = ''.encode('cp1141')
 
-url = "http://www.prycroft6.com.au/REVIEW/download/{}.zip"
+url = "https://www.prycroft6.com.au/REVIEW/download/{}.zip"
 download = [
-            #'rev370',
-            'revhelp',
+            ##'rev370',
             'rev370ld',
+            'revhelp',
             'revclist',
-            # 'revasm'
+            ## 'revasm'
             ]
 
 rev_member = {
@@ -362,6 +363,7 @@ rev_member = {
 for rev in download:
     print("downloading {}".format(url.format(rev)))
     r = requests.get(url.format(rev))
+    print("extracting zip file")
     z = zipfile.ZipFile(io.BytesIO(r.content))
     z.extractall("temp/")
     x = xmi_upload.format(rev_member[rev])
@@ -370,9 +372,15 @@ for rev in download:
         t = line.format(l)
         temp += t.encode('cp1047')
 
-    with open("temp/{}.xmi".format(rev), 'rb') as xmi:
-        temp += xmi.read()
+    try:
 
+        with open("temp/{}.XMI".format(rev.upper()), 'rb') as xmi:
+            temp += xmi.read()
+    except:
+        with open("temp/{}.xmi".format(rev), 'rb') as xmi:
+            temp += xmi.read()
+
+    temp += line.format('@?').encode('cp1047')
 
 for l in footer.splitlines():
     t = line.format(l)
@@ -381,6 +389,9 @@ for l in footer.splitlines():
 
 with open("make_xmi.ebcdic.jcl", 'wb') as outdd:
     outdd.write(temp)
+    decoded_text = temp.decode('cp1047')
+    for i in range(0, len(decoded_text), 80):
+        print(decoded_text[i:i+80])
 
 # tail -c +161 ftpdrakf.punch |head -c -80 > ftpdrac.pch
 build = herc_automation()
@@ -388,9 +399,9 @@ try:
   build.ipl()
   build.send_oper("$s punch1")
   build.submit(temp,port=3506,ebcdic=True)
-  build.wait_for_string("$HASP190 RFEINST5 SETUP -- PUNCH1")
+  build.wait_for_string("$HASP190 HEADER   SETUP -- PUNCH1")
   build.send_oper("$s punch1")
-  build.wait_for_string("HASP250 RFEINST5 IS PURGED")
+  build.wait_for_string("HASP250 HEADER   IS PURGED")
 finally:
   build.quit_hercules()
 
