@@ -1,4 +1,4 @@
-//INSTALL JOB (FTPD),
+//#001JCL  JOB (FTPD),
 //            'FTPD INSTALL',
 //            CLASS=A,
 //            MSGCLASS=A,
